@@ -1,0 +1,12 @@
+name: upath
+channels:
+    - defaults
+    - conda-forge
+dependencies:
+    - python==3.8
+    - fsspec==0.8.4
+    - requests
+    - jupyter
+    - ipython
+    - pylint
+    - flake8
