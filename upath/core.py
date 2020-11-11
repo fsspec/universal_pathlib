@@ -3,6 +3,7 @@ import pathlib
 from pathlib import *
 import urllib
 import re
+import inspect
 
 from fsspec.core import url_to_fs
 from fsspec.registry import _registry, filesystem
@@ -53,7 +54,7 @@ class _FSSpecAccessor:
             if method:
                 return lambda *args, **kwargs: argument_upath_self_to_filepath(method)(*args, **kwargs)
             else:
-                raise NotImplementedError(r'{fs} has not attribute {item}')
+                raise NotImplementedError(f'{fs.protocol} filesystem has not attribute {item}')
 
 
 class PureUniversalPath(PurePath):
@@ -97,6 +98,9 @@ class UniversalPath(Path, PureUniversalPath):
 
     __slots__ = ('_url', '_kwargs')
 
+    not_implemented = ['cwd', 'home', 'expanduser']
+    
+
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
         self._root = '/'
@@ -127,6 +131,19 @@ class UniversalPath(Path, PureUniversalPath):
                         "object returning str, not %r"
                         % type(a))
         return cls._flavour.parse_parts(parts)
+
+
+    def __getattribute__(self, item):
+        if item == '__class__':
+            return UniversalPath
+        not_implemented = getattr(UniversalPath, 'not_implemented')
+        if item in not_implemented:
+            raise NotImplementedError(f'UniversalPath has no attribute {item}')
+        else:
+            return super().__getattribute__(item)
+            # ar = getattr(UniversalPath, item)
+            # print(ar)
+            # return ar
 
 
     @classmethod
@@ -194,4 +211,5 @@ class UniversalPath(Path, PureUniversalPath):
         if info['type'] == 'file':
             return True
         return False
+
 

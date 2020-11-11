@@ -3,32 +3,27 @@ import pytest
 from upath import UPath
 
 
+base_path = 'mock:/'
+
 class TestUpath:
 
-    @pytest.mark.xfail
     def test_cwd(self, afs):
-        # should raise not implimented if UniversalPath
-        path = UPath('/')
-        print(path.cwd())
-        assert False
+        path = UPath(base_path)
+        with pytest.raises(NotImplementedError):
+            path.cwd()
         
-    @pytest.mark.xfail
     def test_home(self, afs):
-        # should raise not implimented if UniversalPath
-        path = UPath('/')
-        print(path.home())
-        assert False
+        path = UPath(base_path)
+        with pytest.raises(NotImplementedError):
+            path.home()
 
 
     def test_stat(self, afs):
         path = UPath('mock:top_level')
-        print(path.stat())
-        
-        path = UPath('/tmp')
-        print(path.stat())
-        assert False
-        pass
+        stat = path.stat()
+        assert all(map(lambda x: x in stat, ['type', 'name']))
 
+        
     def test_chmod(self, afs):
         path = UPath('mock:/')
         with pytest.raises(NotImplementedError):
