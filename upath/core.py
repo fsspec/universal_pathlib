@@ -5,6 +5,9 @@ import urllib
 import re
 
 from fsspec.core import url_to_fs
+from fsspec.registry import _registry, filesystem
+
+print(list(_registry))
 
 
 def argument_upath_self_to_filepath(func):
@@ -28,7 +31,10 @@ class _FSSpecAccessor:
 
     def __init__(self, parsed_url, *args, **kwargs):
         self._url = parsed_url
-        self._fs, url = url_to_fs(urllib.parse.urlunparse(self._url), **kwargs)
+        from fsspec.registry import _registry
+
+        self._fs = filesystem(self._url.scheme, **kwargs)
+        # self._fs, url = url_to_fs(urllib.parse.urlunparse(self._url), **kwargs)
 
     def __getattribute__(self, item):
         class_attrs = ['_url', '_fs']
@@ -46,8 +52,8 @@ class _FSSpecAccessor:
             method = getattr(fs, item, None)
             if method:
                 return lambda *args, **kwargs: argument_upath_self_to_filepath(method)(*args, **kwargs)
-        else:
-            super().__getattribute__(item)
+            else:
+                raise NotImplementedError(r'{fs} has not attribute {item}')
 
 
 class PureUniversalPath(PurePath):
@@ -165,3 +171,27 @@ class UniversalPath(Path, PureUniversalPath):
             yield self._make_child_relpath(name)
             if self._closed:
                 self._raise_closed()
+
+    def exists(self):
+        """
+        Whether this path exists.
+        """
+        try:
+            super().exists()
+        # fsspec raises FileNotFoundError
+        except FileNotFoundError:
+            return False
+        return True
+
+    def is_dir(self):
+        info = self._accessor.info(self)
+        if info['type'] == 'directory':
+            return True
+        return False
+
+    def is_file(self):
+        info = self._accessor.info(self)
+        if info['type'] == 'file':
+            return True
+        return False
+
