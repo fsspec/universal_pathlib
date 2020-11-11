@@ -162,8 +162,6 @@ class UniversalPath(Path, PureUniversalPath):
                 continue
             # only want the path name with iterdir
             name = re.sub(f'^{self.path}/', '', name)
-            print(name)
-            #name = PurePath(name).name
             yield self._make_child_relpath(name)
             if self._closed:
                 self._raise_closed()
