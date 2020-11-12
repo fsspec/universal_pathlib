@@ -31,7 +31,7 @@ class _FSSpecAccessor:
 
     def __init__(self, parsed_url, *args, **kwargs):
         self._url = parsed_url
-        from fsspec.registry import _registry
+        #from fsspec.registry import _registry
 
         self._fs = filesystem(self._url.scheme, **kwargs)
 
