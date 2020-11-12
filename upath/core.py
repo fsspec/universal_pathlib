@@ -3,12 +3,8 @@ import pathlib
 from pathlib import *
 import urllib
 import re
-import inspect
 
-from fsspec.core import url_to_fs
-from fsspec.registry import _registry, filesystem
-
-print(list(_registry))
+from fsspec.registry import filesystem
 
 
 def argument_upath_self_to_filepath(func):
@@ -20,10 +16,11 @@ def argument_upath_self_to_filepath(func):
         if args:
             args = list(args)
             first_arg = args.pop(0)
-            if isinstance(first_arg, UniversalPath):
-                first_arg = first_arg.path
-            args.insert(0, first_arg)
-            args = tuple(args)
+            if not kwargs.get('path'):
+                if isinstance(first_arg, UniversalPath):
+                    first_arg = first_arg.path
+                    args.insert(0, first_arg)
+                args = tuple(args)
         return func(*args, **kwargs)
     return wrapper
 
@@ -35,7 +32,6 @@ class _FSSpecAccessor:
         from fsspec.registry import _registry
 
         self._fs = filesystem(self._url.scheme, **kwargs)
-        # self._fs, url = url_to_fs(urllib.parse.urlunparse(self._url), **kwargs)
 
     def __getattribute__(self, item):
         class_attrs = ['_url', '_fs']
@@ -98,12 +94,16 @@ class UniversalPath(Path, PureUniversalPath):
 
     __slots__ = ('_url', '_kwargs')
 
-    not_implemented = ['cwd', 'home', 'expanduser']
+    not_implemented = ['cwd', 'home', 'expanduser', 'group', 'is_mount',
+                       'is_symlink', 'is_socket', 'is_fifo', 'is_block_device',
+                       'is_char_device', 'lchmod', 'lstat', 'owner', 'readlink',
+    ]
     
 
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
-        self._root = '/'
+        if not self._root and self._parts[0] == '/':
+            self._root = self._parts.pop(0)
         if getattr(self, '_str', None):
             delattr(self, '_str')
 
@@ -132,7 +132,6 @@ class UniversalPath(Path, PureUniversalPath):
                         % type(a))
         return cls._flavour.parse_parts(parts)
 
-
     def __getattribute__(self, item):
         if item == '__class__':
             return UniversalPath
@@ -141,10 +140,6 @@ class UniversalPath(Path, PureUniversalPath):
             raise NotImplementedError(f'UniversalPath has no attribute {item}')
         else:
             return super().__getattribute__(item)
-            # ar = getattr(UniversalPath, item)
-            # print(ar)
-            # return ar
-
 
     @classmethod
     def _format_parsed_parts(cls, drv, root, parts):
@@ -163,12 +158,13 @@ class UniversalPath(Path, PureUniversalPath):
     def path(self):
         if self._parts:
             join_parts = self._parts[1:] if self._parts[0] == '/' else self._parts
-            return self._flavour.join(join_parts)
+            path = self._flavour.join(join_parts)
+            return self._root + path
         else:
             return '/'
 
     def open(self, *args, **kwargs):
-        return self._accessor.open(self.path, *args, **kwargs)
+        return self._accessor.open(self, *args, **kwargs)
 
     def iterdir(self):
         """Iterate over the files in this directory.  Does not yield any
@@ -194,8 +190,7 @@ class UniversalPath(Path, PureUniversalPath):
         Whether this path exists.
         """
         try:
-            super().exists()
-        # fsspec raises FileNotFoundError
+            self._accessor.stat(self)
         except FileNotFoundError:
             return False
         return True
@@ -211,5 +206,13 @@ class UniversalPath(Path, PureUniversalPath):
         if info['type'] == 'file':
             return True
         return False
+
+    def glob(self, pattern):
+        path = self.joinpath(pattern)
+        return self._accessor.glob(self, path=path)
+
+    def rename(self, target):
+        # can be implimented, but may be tricky
+        raise NotImplementedError
 
 
