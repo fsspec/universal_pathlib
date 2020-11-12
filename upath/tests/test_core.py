@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from upath import UPath
+from upath.errors import NotDirectoryError
 
 
 @pytest.fixture()
@@ -149,8 +150,17 @@ class TestUpath:
     def test_rglob(self, testingdir):
         pass
 
-    def test_rmdir(self, testingdir):
-        pass
+    def test_rmdir(self, mock_base, pathlib_base):
+        dirname = 'rmdir_test'
+        pl_dir = pathlib_base.joinpath(dirname)
+        pl_dir.mkdir()
+        assert pl_dir.exists()
+        mock_dir = mock_base.joinpath(dirname)
+        mock_dir.rmdir()
+        assert not pl_dir.exists()
+
+        with pytest.raises(NotDirectoryError):
+            mock_base.joinpath('file1.txt').rmdir()
 
     def test_samefile(self, testingdir):
         pass
@@ -158,18 +168,44 @@ class TestUpath:
     def test_symlink_to(self, testingdir):
         pass
 
-    def test_touch(self, testingdir):
-        pass
+    def test_touch(self, mock_base):
+        path = mock_base.joinpath('test_touch.txt')
+        path.touch()
 
-    def test_unlink(self, testingdir):
-        pass
+        pl_path = Path(path.path)
+        assert pl_path.exists()
+
+    def test_unlink(self, mock_base, pathlib_base):
+        fn = 'unlink_test.txt'
+        pl = pathlib_base.joinpath(fn)
+        pl.touch()
+        assert pl.exists()
+        mock = mock_base.joinpath(fn)
+        mock.unlink()
+        assert not pl.exists()
+
+        # should raise FileNotFoundError since file is missing
+        with pytest.raises(FileNotFoundError):
+            mock.unlink()
+
+        # file doesn't exists, but missing_ok is True
+        mock.unlink(missing_ok=True)
+
 
     def test_link_to(self, testingdir):
         pass
 
-    def test_write_bytes(self, testingdir):
-        pass
+    def test_write_bytes(self, mock_base, pathlib_base):
+        fn = 'test_write_bytes.txt'
+        s = b'hello_world'
+        mock_base.joinpath(fn).write_bytes(s)
+        assert pathlib_base.joinpath(fn).read_bytes() == s
 
-    def test_write_text(self, testingdir):
-        pass
+
+    def test_write_text(self, mock_base, pathlib_base):
+        fn = 'test_write_text.txt'
+        s = b'hello_world'
+        mock_base.joinpath(fn).write_bytes(s)
+        assert pathlib_base.joinpath(fn).read_bytes() == s
+
 

@@ -6,6 +6,8 @@ import re
 
 from fsspec.registry import filesystem
 
+from upath.errors import NotDirectoryError
+
 
 def argument_upath_self_to_filepath(func):
     '''if arguments are passed to the wrapped function, and if the first
@@ -215,4 +217,29 @@ class UniversalPath(Path, PureUniversalPath):
         # can be implimented, but may be tricky
         raise NotImplementedError
 
+    def touch(self, trunicate=True, **kwargs):
+        self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
+    def unlink(self, missing_ok=False):
+        if not self.exists():
+            if not missing_ok:
+                raise FileNotFoundError
+            else:
+                return
+        try:
+            self._accessor.rm_file(self)
+        except:
+            self._accessor.rm(self, recursive=False)
+
+    def rmdir(self, recursive=True):
+        '''Add warning if directory not empty
+        assert is_dir?
+        '''
+        try:
+            assert self.is_dir()
+        except:
+            raise NotDirectoryError
+        self._accessor.rm(self, recursive=recursive)
+        
+
+        
