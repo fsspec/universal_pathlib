@@ -5,8 +5,10 @@ channels:
 dependencies:
     - python==3.8
     - fsspec==0.8.4
+    # optional
     - requests
-    - jupyter
+    - s3fs
+    - jupyter   
     - ipython
     - pytest
     - pylint

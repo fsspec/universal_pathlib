@@ -4,43 +4,52 @@ from pathlib import *
 import urllib
 import re
 
-from fsspec.registry import filesystem
+from fsspec.core import url_to_fs
+from fsspec.registry import filesystem, get_filesystem_class
 
 from upath.errors import NotDirectoryError
 
 
-def argument_upath_self_to_filepath(func):
-    '''if arguments are passed to the wrapped function, and if the first
-    argument is a UniversalPath instance, that argument is replaced with
-    the UniversalPath's path attribute
-    '''
-    def wrapper(*args, **kwargs):
-        if args:
-            args = list(args)
-            first_arg = args.pop(0)
-            if not kwargs.get('path'):
-                if isinstance(first_arg, UniversalPath):
-                    first_arg = first_arg.path
-                    args.insert(0, first_arg)
-                args = tuple(args)
-        return func(*args, **kwargs)
-    return wrapper
+
 
 
 class _FSSpecAccessor:
 
     def __init__(self, parsed_url, *args, **kwargs):
         self._url = parsed_url
-        #from fsspec.registry import _registry
+        cls = get_filesystem_class(self._url.scheme)
+        url_kwargs = cls._get_kwargs_from_urls(urllib.parse.urlunparse(self._url))
+        url_kwargs.update(kwargs)
+        self._fs = cls(**url_kwargs)
 
-        self._fs = filesystem(self._url.scheme, **kwargs)
+    def argument_upath_self_to_filepath(self, func):
+        '''if arguments are passed to the wrapped function, and if the first
+        argument is a UniversalPath instance, that argument is replaced with
+        the UniversalPath's path attribute
+        '''
+        def wrapper(*args, **kwargs):
+            if args:
+                args = list(args)
+                first_arg = args.pop(0)
+                if not kwargs.get('path'):
+                    if isinstance(first_arg, UniversalPath):
+                        first_arg = first_arg.path
+                        if not self._fs.root_marker and first_arg.startswith('/'):
+                            first_arg = first_arg[1:]
+                        args.insert(0, first_arg)
+                    args = tuple(args)
+                else:
+                    if not self._fs.root_marker and kwargs['path'].startswith('/'):
+                        kwargs['path'] = kwargs['path'][1:]
+            return func(*args, **kwargs)
+        return wrapper
 
     def __getattribute__(self, item):
         class_attrs = ['_url', '_fs']
         if item in class_attrs:
             x = super().__getattribute__(item)
             return x
-        class_methods =['__init__', '__getattribute__'] 
+        class_methods =['__init__', '__getattribute__', 'argument_upath_self_to_filepath'] 
         if item in class_methods:
             return lambda *args, **kwargs: getattr(_FSSpecAccessor, item)(self, *args, **kwargs)
         if item == '__class__':
@@ -50,7 +59,7 @@ class _FSSpecAccessor:
         if fs is not None:
             method = getattr(fs, item, None)
             if method:
-                return lambda *args, **kwargs: argument_upath_self_to_filepath(method)(*args, **kwargs)
+                return lambda *args, **kwargs: self.argument_upath_self_to_filepath(method)(*args, **kwargs)
             else:
                 raise NotImplementedError(f'{fs.protocol} filesystem has not attribute {item}')
 
@@ -76,7 +85,7 @@ class UPath(pathlib.Path):
             else:
                 cls = UniversalPath
                 cls._url = parsed_url
-                kwargs['_url'] = parsed_url
+                #kwargs['_url'] = parsed_url
                 cls._kwargs = kwargs
                 new_args.insert(0, parsed_url.path)
                 args = tuple(new_args)
@@ -104,8 +113,11 @@ class UniversalPath(Path, PureUniversalPath):
 
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
-        if not self._root and self._parts[0] == '/':
-            self._root = self._parts.pop(0)
+        if not self._root:
+            if not self._parts:
+                self._root = '/'
+            elif self._parts[0] == '/':
+                self._root = self._parts.pop(0)
         if getattr(self, '_str', None):
             delattr(self, '_str')
 
@@ -182,7 +194,8 @@ class UniversalPath(Path, PureUniversalPath):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            name = re.sub(f'^{self.path}/', '', name)
+            sp = self.path
+            name = re.sub(f'^({sp}|{sp[1:]})/', '', name)
             yield self._make_child_relpath(name)
             if self._closed:
                 self._raise_closed()
@@ -211,7 +224,11 @@ class UniversalPath(Path, PureUniversalPath):
 
     def glob(self, pattern):
         path = self.joinpath(pattern)
-        return self._accessor.glob(self, path=path)
+        for name in self._accessor.glob(self, path=path.path):
+            sp = self.path
+            name = re.sub(f'^({sp}|{sp[1:]})/', '', name)
+            name = name.split(self._flavour.sep)
+            yield self._make_child(self._parts + name)
 
     def rename(self, target):
         # can be implimented, but may be tricky

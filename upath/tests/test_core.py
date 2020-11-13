@@ -45,11 +45,16 @@ class TestUpath:
             mock_base.expanduser()
 
     def test_glob(self, mock_base, pathlib_base):
-        mock_glob = mock_base.glob('**/*.txt')
-        path_glob = pathlib_base.glob('**/*.txt')
+        mock_glob = list(mock_base.glob('**.txt'))
+        path_glob = list(pathlib_base.glob('**/*.txt'))
 
-        for m, p in zip(mock_glob, path_glob):
-            assert m.path == str(p)
+        print(mock_glob)
+        print(path_glob)
+
+        assert len(mock_glob) == len(path_glob)
+        assert all(map(lambda m: m.path in [str(p) for p in path_glob], mock_glob))
+        # for m, p in zip(mock_glob, path_glob):
+        #     assert m.path == str(p)
 
     def test_group(self, mock_base):
         with pytest.raises(NotImplementedError):
