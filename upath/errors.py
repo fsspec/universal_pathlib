@@ -1,0 +1,2 @@
+class NotDirectoryError(Exception):
+    pass
