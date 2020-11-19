@@ -21,6 +21,9 @@ class _FSSpecAccessor:
         url_kwargs = cls._get_kwargs_from_urls(urllib.parse.urlunparse(self._url))
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
+        if self._url.scheme in ['hdfs']:
+            self._fs.root_marker = '/'
+            
 
     def argument_upath_self_to_filepath(self, func):
         '''if arguments are passed to the wrapped function, and if the first
@@ -103,7 +106,7 @@ class UPath(pathlib.Path):
 
 class UniversalPath(Path, PureUniversalPath):
 
-    __slots__ = ('_url', '_kwargs')
+    __slots__ = ('_url', '_kwargs', '_closed')
 
     not_implemented = ['cwd', 'home', 'expanduser', 'group', 'is_mount',
                        'is_symlink', 'is_socket', 'is_fifo', 'is_block_device',
