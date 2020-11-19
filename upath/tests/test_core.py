@@ -214,3 +214,9 @@ class TestUpath:
         assert pathlib_base.joinpath(fn).read_bytes() == s
 
 
+
+def test_hdfs(hdfs_test_client):
+    host, user, port = hdfs_test_client
+    path = UPath('hdfs:/', host=host, user=user, port=port, driver='libhdfs3')
+    assert path.exists()
+

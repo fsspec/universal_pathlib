@@ -207,11 +207,15 @@ class UniversalPath(Path, PureUniversalPath):
         """
         Whether this path exists.
         """
-        try:
-            self._accessor.stat(self)
-        except FileNotFoundError:
-            return False
-        return True
+        if not getattr(self._accessor, 'exists'):
+            try:
+                self._accessor.stat(self)
+            except (FileNotFoundError):
+                return False
+            return True
+        else:
+            return self._accessor.exists(self)
+                
 
     def is_dir(self):
         info = self._accessor.info(self)

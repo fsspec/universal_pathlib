@@ -13,4 +13,9 @@ dependencies:
     - pytest
     - pylint
     - flake8
+    - pyarrow
+    - libhdfs3
+    - pip
+    - pip:
+      - hadoop-test-cluster
     

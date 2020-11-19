@@ -47,3 +47,19 @@ def testingdir(clear_registry):
     yield tempdir
     shutil.rmtree(tempdir)
 
+@pytest.fixture()
+def hdfs_test_client():
+    import os
+    pyarrow = pytest.importorskip('pyarrow')
+    host = os.environ.get('ARROW_HDFS_TEST_HOST', '0.0.0.0')
+    user = os.environ.get('ARROW_HDFS_TEST_USER', 'hdfs')
+    try:
+        port = int(os.environ.get('ARROW_HDFS_TEST_PORT', 9000))
+    except ValueError:
+        raise ValueError('Env variable ARROW_HDFS_TEST_PORT was not '
+                         'an integer')
+
+    hdfs = pyarrow.hdfs.connect(host='0.0.0.0', port=9000, user=user, driver='libhdfs3')
+    hdfs.mkdir('/folder1')
+    return host, user, port
+
