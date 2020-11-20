@@ -1,9 +1,14 @@
+import os
 import tempfile
 import shutil
 from pathlib import Path
+import subprocess
+import shlex
+import time
 
 
 import pytest
+from fsspec import filesystem
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import (
     register_implementation,
@@ -23,11 +28,25 @@ def clear_registry():
     finally:
         _registry.clear()
 
+        
+# folder_structure = {
+#     'folders': {'folder1': {'folders': {},
+#                             'files': {'file1.txt': 'file1.txt',
+#                                       'file2.txt': 'file2.txt'}}
+#     'files': {'file1.txt': 'hello_world',
+#               'file2.txt': 'hello_world'}
+        
+    
+# }
 
 @pytest.fixture()
-def testingdir(clear_registry):
+def tempdir(clear_registry):
     tempdir = tempfile.TemporaryDirectory()
     tempdir = tempdir.name
+    return tempdir
+
+@pytest.fixture()
+def local_testdir(tempdir, clear_registry):   
     tmp = Path(tempdir)
     tmp.mkdir()
     folder1 = tmp.joinpath('folder1')
@@ -47,19 +66,90 @@ def testingdir(clear_registry):
     yield tempdir
     shutil.rmtree(tempdir)
 
+@pytest.fixture(scope='session')
+def htcluster():
+    proc = subprocess.Popen(shlex.split("htcluster startup"),
+                            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    time.sleep(30)
+    yield
+    proc.terminate()
+    proc.wait()
+    proc1 = subprocess.Popen(shlex.split("htcluster shutdown"),
+                            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    proc1.terminate()
+    proc1.wait()
+    time.sleep(10)
+    
 @pytest.fixture()
-def hdfs_test_client():
-    import os
+def hdfs(htcluster, tempdir, local_testdir):
+    
     pyarrow = pytest.importorskip('pyarrow')
-    host = os.environ.get('ARROW_HDFS_TEST_HOST', '0.0.0.0')
-    user = os.environ.get('ARROW_HDFS_TEST_USER', 'hdfs')
-    try:
-        port = int(os.environ.get('ARROW_HDFS_TEST_PORT', 9000))
-    except ValueError:
-        raise ValueError('Env variable ARROW_HDFS_TEST_PORT was not '
-                         'an integer')
+    host, user, port = '0.0.0.0', 'hdfs', 9000
+    #hdfs = filesystem('hdfs', host=host, user=user, port=port, driver='libhdfs3')
+    hdfs = pyarrow.hdfs.connect(host='0.0.0.0', port=9000, user=user)
+    print(tempdir)
+    hdfs.mkdir(tempdir, create_parents=True)
+    for x in Path(local_testdir).glob('**/*'):
+        print(x)
+        if x.is_file():
+            text = x.read_text().encode('utf8')
+            print(text)
+            if not hdfs.exists(str(x.parent)):
+                hdfs.mkdir(str(x.parent), create_parents=True)
+            print(hdfs.exists(str(x.parent)))
+            with hdfs.open(str(x), 'wb') as f:
+                f.write(text)
+        else:
+            hdfs.mkdir(str(x))    
+    hdfs.close()
+    yield host, user, port
+    
 
-    hdfs = pyarrow.hdfs.connect(host='0.0.0.0', port=9000, user=user, driver='libhdfs3')
-    hdfs.mkdir('/folder1')
-    return host, user, port
+@pytest.fixture()
+def s3(tempdir, local_testdir):
+    # writable local S3 system
+    if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
+        os.environ["BOTO_CONFIG"] = "/dev/null"
+    if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
+        os.environ["AWS_ACCESS_KEY_ID"] = "foo"
+    if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
+    requests = pytest.importorskip("requests")
+    s3fs = pytest.importorskip("s3fs")
+    pytest.importorskip("moto")
 
+    port = 5555
+    endpoint_uri = 'http://127.0.0.1:%s/' % port
+    proc = subprocess.Popen(shlex.split("moto_server s3 -p %s" % port),
+                            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+    timeout = 5
+    while timeout > 0:
+        try:
+            r = requests.get(endpoint_uri)
+            if r.ok:
+                break
+        except Exception:  # pragma: no cover
+            pass
+        timeout -= 0.1  # pragma: no cover
+        time.sleep(0.1)  # pragma: no cover
+    anon = False
+    s3so = dict(client_kwargs={'endpoint_url': endpoint_uri},
+                use_listings_cache=False)
+    s3 = s3fs.S3FileSystem(anon=False, **s3so)
+    s3.mkdir(tempdir, create_parents=True)
+    for x in Path(local_testdir).glob('**/*'):
+        print(x)
+        if x.is_file():
+            text = x.read_text().encode('utf8')
+            print(text)
+            if not s3.exists(str(x.parent)):
+                s3.mkdir(str(x.parent), create_parents=True)
+            print(s3.exists(str(x.parent)))
+            with s3.open(str(x), 'wb') as f:
+                f.write(text)
+        else:
+            s3.mkdir(str(x))    
+    yield anon, s3so
+    proc.terminate()
+    proc.wait()

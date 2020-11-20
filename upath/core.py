@@ -10,9 +10,6 @@ from fsspec.registry import filesystem, get_filesystem_class
 from upath.errors import NotDirectoryError
 
 
-
-
-
 class _FSSpecAccessor:
 
     def __init__(self, parsed_url, *args, **kwargs):
@@ -44,6 +41,14 @@ class _FSSpecAccessor:
                 else:
                     if not self._fs.root_marker and kwargs['path'].startswith('/'):
                         kwargs['path'] = kwargs['path'][1:]
+                if self._url.scheme == 'hdfs':
+                    if 'trunicate' in kwargs:
+                        kwargs.pop('trunicate')
+                    if func.__name__ == 'mkdir':
+                        args = args[:1]
+                    
+            print('args:', args)
+            print('kwargs:', kwargs)
             return func(*args, **kwargs)
         return wrapper
 
@@ -225,6 +230,7 @@ class UniversalPath(Path, PureUniversalPath):
 
     def is_file(self):
         info = self._accessor.info(self)
+        print(info)
         if info['type'] == 'file':
             return True
         return False
@@ -264,6 +270,10 @@ class UniversalPath(Path, PureUniversalPath):
         except:
             raise NotDirectoryError
         self._accessor.rm(self, recursive=recursive)
+
+    # def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+    #     super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+
         
 
         
