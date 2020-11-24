@@ -87,16 +87,12 @@ def hdfs(htcluster, tempdir, local_testdir):
     host, user, port = '0.0.0.0', 'hdfs', 9000
     #hdfs = filesystem('hdfs', host=host, user=user, port=port, driver='libhdfs3')
     hdfs = pyarrow.hdfs.connect(host='0.0.0.0', port=9000, user=user)
-    print(tempdir)
     hdfs.mkdir(tempdir, create_parents=True)
     for x in Path(local_testdir).glob('**/*'):
-        print(x)
         if x.is_file():
             text = x.read_text().encode('utf8')
-            print(text)
             if not hdfs.exists(str(x.parent)):
                 hdfs.mkdir(str(x.parent), create_parents=True)
-            print(hdfs.exists(str(x.parent)))
             with hdfs.open(str(x), 'wb') as f:
                 f.write(text)
         else:
@@ -105,8 +101,8 @@ def hdfs(htcluster, tempdir, local_testdir):
     yield host, user, port
     
 
-@pytest.fixture()
-def s3(tempdir, local_testdir):
+@pytest.fixture(scope='session')
+def s3_server():
     # writable local S3 system
     if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
         os.environ["BOTO_CONFIG"] = "/dev/null"
@@ -115,7 +111,7 @@ def s3(tempdir, local_testdir):
     if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
         os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
     requests = pytest.importorskip("requests")
-    s3fs = pytest.importorskip("s3fs")
+    
     pytest.importorskip("moto")
 
     port = 5555
@@ -136,20 +132,24 @@ def s3(tempdir, local_testdir):
     anon = False
     s3so = dict(client_kwargs={'endpoint_url': endpoint_uri},
                 use_listings_cache=False)
-    s3 = s3fs.S3FileSystem(anon=False, **s3so)
-    s3.mkdir(tempdir, create_parents=True)
-    for x in Path(local_testdir).glob('**/*'):
-        print(x)
-        if x.is_file():
-            text = x.read_text().encode('utf8')
-            print(text)
-            if not s3.exists(str(x.parent)):
-                s3.mkdir(str(x.parent), create_parents=True)
-            print(s3.exists(str(x.parent)))
-            with s3.open(str(x), 'wb') as f:
-                f.write(text)
-        else:
-            s3.mkdir(str(x))    
+    
     yield anon, s3so
     proc.terminate()
     proc.wait()
+
+@pytest.fixture
+def s3(s3_server, tempdir, local_testdir):
+    s3fs = pytest.importorskip("s3fs")
+    anon, s3so = s3_server
+    s3 = s3fs.S3FileSystem(anon=False, **s3so)
+    s3.mkdir(tempdir, create_parents=True)
+    for x in Path(local_testdir).glob('**/*'):
+        if x.is_file():
+            text = x.read_text().encode('utf8')
+            if not s3.exists(str(x.parent)):
+                s3.mkdir(str(x.parent), create_parents=True)
+            with s3.open(str(x), 'wb') as f:
+                f.write(text)
+        else:
+            s3.mkdir(str(x))
+    yield anon, s3so

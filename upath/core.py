@@ -3,7 +3,10 @@ import pathlib
 from pathlib import *
 import urllib
 import re
+import asyncio
 
+import fsspec
+from fsspec.asyn import AsyncFileSystem
 from fsspec.core import url_to_fs
 from fsspec.registry import filesystem, get_filesystem_class
 
@@ -47,8 +50,6 @@ class _FSSpecAccessor:
                     if func.__name__ == 'mkdir':
                         args = args[:1]
                     
-            print('args:', args)
-            print('kwargs:', kwargs)
             return func(*args, **kwargs)
         return wrapper
 
@@ -80,8 +81,10 @@ class PureUniversalPath(PurePath):
 class UPath(pathlib.Path):
 
     def __new__(cls, *args, **kwargs):
+        print('new')
         if cls is UPath:
             new_args = list(args)
+            print(new_args)
             first_arg = new_args.pop(0)
             parsed_url = urllib.parse.urlparse(first_arg)
             for key in ['scheme', 'netloc']:
@@ -92,13 +95,12 @@ class UPath(pathlib.Path):
                 cls = WindowsPath if os.name == 'nt' else PosixPath
             else:
                 cls = UniversalPath
-                cls._url = parsed_url
-                #kwargs['_url'] = parsed_url
-                cls._kwargs = kwargs
+                # cls._url = parsed_url
+                kwargs['_url'] = parsed_url
                 new_args.insert(0, parsed_url.path)
                 args = tuple(new_args)
                 
-        self = cls._from_parts(args, init=False)
+        self = cls._from_parts_init(args, init=False)
         if not self._flavour.is_supported:
             raise NotImplementedError("cannot instantiate %r on your system"
                                       % (cls.__name__,))
@@ -109,18 +111,22 @@ class UPath(pathlib.Path):
         return self
 
 
-class UniversalPath(Path, PureUniversalPath):
+class UniversalPath(UPath, PureUniversalPath):
 
-    __slots__ = ('_url', '_kwargs', '_closed')
+    __slots__ = ('_url', '_kwargs', '_closed', 'fs')
 
     not_implemented = ['cwd', 'home', 'expanduser', 'group', 'is_mount',
                        'is_symlink', 'is_socket', 'is_fifo', 'is_block_device',
-                       'is_char_device', 'lchmod', 'lstat', 'owner', 'readlink',
-    ]
-    
+                       'is_char_device', 'lchmod', 'lstat', 'owner', 'readlink']
 
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
+        if not kwargs:
+            kwargs = dict(**self._kwargs)
+        else:
+            self._kwargs = dict(**kwargs)
+        self._url = kwargs.pop('_url') if kwargs.get('_url') else None
+
         if not self._root:
             if not self._parts:
                 self._root = '/'
@@ -128,49 +134,27 @@ class UniversalPath(Path, PureUniversalPath):
                 self._root = self._parts.pop(0)
         if getattr(self, '_str', None):
             delattr(self, '_str')
-
         if template is not None:
             self._accessor = template._accessor
         else:
-            self._accessor = _FSSpecAccessor(self._url, *args, **self._kwargs)
-
-    @classmethod
-    def _parse_args(cls, args):
-        # This is useful when you don't want to create an instance, just
-        # canonicalize some constructor arguments.
-        parts = []
-        for a in args:
-            if isinstance(a, PurePath):
-                parts += a._parts
-            else:
-                a = os.fspath(a)
-                if isinstance(a, str):
-                    # Force-cast str subclasses to str (issue #21127)
-                    parts.append(str(a))
-                else:
-                    raise TypeError(
-                        "argument should be a str object or an os.PathLike "
-                        "object returning str, not %r"
-                        % type(a))
-        return cls._flavour.parse_parts(parts)
+            self._accessor = _FSSpecAccessor(self._url, *args, **kwargs)
+        self.fs = self._accessor._fs
 
     def __getattribute__(self, item):
         if item == '__class__':
             return UniversalPath
-        not_implemented = getattr(UniversalPath, 'not_implemented')
-        if item in not_implemented:
+        if item in getattr(UniversalPath, 'not_implemented'):
             raise NotImplementedError(f'UniversalPath has no attribute {item}')
         else:
             return super().__getattribute__(item)
 
-    @classmethod
-    def _format_parsed_parts(cls, drv, root, parts):
+    def _format_parsed_parts(self, drv, root, parts):
         join_parts = parts[1:] if parts[0] == '/' else parts
         if (drv or root):
-            path = drv + root + cls._flavour.join(join_parts)
+            path = drv + root + self._flavour.join(join_parts)
         else:
-            path = cls._flavour.join(join_parts)
-        scheme, netloc = cls._url.scheme, cls._url.netloc
+            path = self._flavour.join(join_parts)
+        scheme, netloc = self._url.scheme, self._url.netloc
         scheme = scheme + ':'
         netloc = '//' + netloc if netloc else ''
         formatted = scheme + netloc + path
@@ -230,7 +214,6 @@ class UniversalPath(Path, PureUniversalPath):
 
     def is_file(self):
         info = self._accessor.info(self)
-        print(info)
         if info['type'] == 'file':
             return True
         return False
@@ -251,15 +234,26 @@ class UniversalPath(Path, PureUniversalPath):
         self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
     def unlink(self, missing_ok=False):
+        async def async_unlink():
+            async def rm():
+                try:
+                    await self._accessor.rm_file(self)
+                except:
+                    await self._accessor.rm(self, recursive=False)
+                    
+                        
+            coro = rm()
+            done, pending = await asyncio.wait({coro})
+            if coro is done:
+                return
+
+        # print('exists:', self.exists())
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError
             else:
                 return
-        try:
-            self._accessor.rm_file(self)
-        except:
-            self._accessor.rm(self, recursive=False)
+        asyncio.run(async_unlink())
 
     def rmdir(self, recursive=True):
         '''Add warning if directory not empty
@@ -271,9 +265,30 @@ class UniversalPath(Path, PureUniversalPath):
             raise NotDirectoryError
         self._accessor.rm(self, recursive=recursive)
 
-    # def mkdir(self, mode=0o777, parents=False, exist_ok=False):
-    #     super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+    @classmethod
+    def _from_parts_init(cls, args, init=False):
+        print(args)
+        print(init)
+        return super()._from_parts(args, init=init)
 
-        
+    def _from_parts(self, args, init=True):
+        # We need to call _parse_args on the instance, so as to get the
+        # right flavour.
+        obj = object.__new__(UniversalPath)
+        drv, root, parts = self._parse_args(args)
+        obj._drv = drv
+        obj._root = root
+        obj._parts = parts
+        if init:
+            obj._init(**self._kwargs)
+        return obj
 
+    def _from_parsed_parts(self, drv, root, parts, init=True):
+        obj = object.__new__(UniversalPath)
+        obj._drv = drv
+        obj._root = root
+        obj._parts = parts
+        if init:
+            obj._init(**self._kwargs)
+        return obj
         

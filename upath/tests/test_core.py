@@ -116,6 +116,7 @@ class TestUpath:
     def test_mkdir(self):
         new_dir = self.path.joinpath('new_dir')
         new_dir.mkdir()
+        print(new_dir._accessor.info(new_dir))
         assert new_dir.exists()
 
     def test_open(self):
@@ -152,15 +153,7 @@ class TestUpath:
     def test_rglob(self):
         pass
 
-    def test_rmdir(self, local_testdir):
-        dirname = 'rmdir_test'
-        mock_dir = self.path.joinpath(dirname)
-        mock_dir.mkdir()
-        mock_dir.rmdir()
-        assert not mock_dir.exists()
 
-        with pytest.raises(NotDirectoryError):
-            self.path.joinpath('file1.txt').rmdir()
 
     def test_samefile(self):
         pass
@@ -205,9 +198,7 @@ class TestUPathHDFS(TestUpath):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, hdfs):
         host, user, port = hdfs
-        print(local_testdir)
         path = f'hdfs:{local_testdir}'
-        print(path)
         self.path = UPath(path,
                           host=host,
                           user=user,
@@ -225,3 +216,52 @@ class TestUPathS3(TestUpath):
         anon, s3so = s3
         path = f's3:{local_testdir}'
         self.path = UPath(path, anon=anon, **s3so)
+
+    def test_chmod(self):
+        # todo
+        pass
+
+    def test_mkdir(self):
+        new_dir = self.path.joinpath('new_dir')
+        #new_dir.mkdir()
+        # mkdir doesnt really do anything. A directory only exists in s3
+        # if some file or something is written to it
+        f = new_dir.joinpath('test.txt').touch()
+        assert new_dir.exists()
+
+    def test_rmdir(self, local_testdir):
+        dirname = 'rmdir_test'
+        mock_dir = self.path.joinpath(dirname)
+        f = mock_dir.joinpath('test.txt').touch()
+        mock_dir.rmdir()
+        assert not mock_dir.exists()
+        with pytest.raises(NotDirectoryError):
+            self.path.joinpath('file1.txt').rmdir()
+
+    def test_touch_unlink(self):
+        path = self.path.joinpath('test_touch.txt')
+        path.touch()
+        assert path.exists()
+        path.unlink()
+        assert not path.exists()
+
+        # should raise FileNotFoundError since file is missing
+        with pytest.raises(FileNotFoundError):
+            path.unlink()
+
+        # file doesn't exists, but missing_ok is True
+        path.unlink(missing_ok=True)
+
+def test_multiple_backend_paths(local_testdir, s3, hdfs):
+    anon, s3so = s3
+    path = f's3:{local_testdir}'
+    s3_path = UPath(path, anon=anon, **s3so)
+    assert s3_path.joinpath('text.txt')._url.scheme == 's3'
+    host, user, port = hdfs
+    path = f'hdfs:{local_testdir}'
+    hdfs_path = UPath(path,
+                      host=host,
+                      user=user,
+                      port=port)
+    assert s3_path.joinpath('text1.txt')._url.scheme == 's3'
+    
