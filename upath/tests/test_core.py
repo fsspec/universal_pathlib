@@ -51,9 +51,6 @@ class TestUpath:
         mock_glob = list(self.path.glob('**.txt'))
         path_glob = list(pathlib_base.glob('**/*.txt'))
 
-        print(mock_glob)
-        print(path_glob)
-
         assert len(mock_glob) == len(path_glob)
         assert all(map(lambda m: m.path in [str(p) for p in path_glob], mock_glob))
 

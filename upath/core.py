@@ -4,6 +4,7 @@ from pathlib import *
 import urllib
 import re
 import asyncio
+import inspect
 
 import fsspec
 from fsspec.asyn import AsyncFileSystem
@@ -68,6 +69,9 @@ class _FSSpecAccessor:
         if fs is not None:
             method = getattr(fs, item, None)
             if method:
+                awaitable = inspect.isawaitable(lambda args, kwargs: method(*args, **kwargs))
+                print(item)
+                print('is awaitable:', awaitable)
                 return lambda *args, **kwargs: self.argument_upath_self_to_filepath(method)(*args, **kwargs)
             else:
                 raise NotImplementedError(f'{fs.protocol} filesystem has not attribute {item}')
@@ -111,6 +115,24 @@ class UPath(pathlib.Path):
         return self
 
 
+def run_as_async(self, func, *args, **kwargs):
+    def wrapper(*args, **kwargs):
+        if isinstance(self.fs, AsyncFileSystem):
+            result = None
+            async def async_runner():
+                async def async_func():
+                    return await func(*args, **kwargs)
+                coro = async_func()
+                done, pending = await asyncio.wait({coro})
+                if coro is done:
+                    result = coro
+            asyncio.run(async_runner())
+            return result
+        else:
+            return func(*args, **kwargs)
+    return wrapper
+            
+
 class UniversalPath(UPath, PureUniversalPath):
 
     __slots__ = ('_url', '_kwargs', '_closed', 'fs')
@@ -146,7 +168,7 @@ class UniversalPath(UPath, PureUniversalPath):
         if item in getattr(UniversalPath, 'not_implemented'):
             raise NotImplementedError(f'UniversalPath has no attribute {item}')
         else:
-            return super().__getattribute__(item)
+             return super().__getattribute__(item)
 
     def _format_parsed_parts(self, drv, root, parts):
         join_parts = parts[1:] if parts[0] == '/' else parts
@@ -234,26 +256,32 @@ class UniversalPath(UPath, PureUniversalPath):
         self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
     def unlink(self, missing_ok=False):
-        async def async_unlink():
-            async def rm():
-                try:
-                    await self._accessor.rm_file(self)
-                except:
-                    await self._accessor.rm(self, recursive=False)
+        # async def async_unlink():
+        #     async def rm():
+        #         try:
+        #             await self._accessor.rm_file(self)
+        #         except:
+        #             await self._accessor.rm(self, recursive=False)
                     
                         
-            coro = rm()
-            done, pending = await asyncio.wait({coro})
-            if coro is done:
-                return
+        #     coro = rm()
+        #     done, pending = await asyncio.wait({coro})
+        #     if coro is done:
+        #         return
 
         # print('exists:', self.exists())
+        
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError
             else:
                 return
-        asyncio.run(async_unlink())
+        try:
+            self._accessor.rm(self, recursive=False)
+        except:
+            self._accessor.rm_file(self)
+
+        # asyncio.run(async_unlink())
 
     def rmdir(self, recursive=True):
         '''Add warning if directory not empty
