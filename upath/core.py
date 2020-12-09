@@ -70,8 +70,6 @@ class _FSSpecAccessor:
             method = getattr(fs, item, None)
             if method:
                 awaitable = inspect.isawaitable(lambda args, kwargs: method(*args, **kwargs))
-                print(item)
-                print('is awaitable:', awaitable)
                 return lambda *args, **kwargs: self.argument_upath_self_to_filepath(method)(*args, **kwargs)
             else:
                 raise NotImplementedError(f'{fs.protocol} filesystem has not attribute {item}')
@@ -85,10 +83,8 @@ class PureUniversalPath(PurePath):
 class UPath(pathlib.Path):
 
     def __new__(cls, *args, **kwargs):
-        print('new')
         if cls is UPath:
             new_args = list(args)
-            print(new_args)
             first_arg = new_args.pop(0)
             parsed_url = urllib.parse.urlparse(first_arg)
             for key in ['scheme', 'netloc']:
@@ -104,7 +100,10 @@ class UPath(pathlib.Path):
                 new_args.insert(0, parsed_url.path)
                 args = tuple(new_args)
                 
-        self = cls._from_parts_init(args, init=False)
+        if cls is UniversalPath:
+            self = cls._from_parts_init(args, init=False)
+        else:
+            self = cls._from_parts(args, init=False)
         if not self._flavour.is_supported:
             raise NotImplementedError("cannot instantiate %r on your system"
                                       % (cls.__name__,))
@@ -256,21 +255,6 @@ class UniversalPath(UPath, PureUniversalPath):
         self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
     def unlink(self, missing_ok=False):
-        # async def async_unlink():
-        #     async def rm():
-        #         try:
-        #             await self._accessor.rm_file(self)
-        #         except:
-        #             await self._accessor.rm(self, recursive=False)
-                    
-                        
-        #     coro = rm()
-        #     done, pending = await asyncio.wait({coro})
-        #     if coro is done:
-        #         return
-
-        # print('exists:', self.exists())
-        
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError
@@ -295,8 +279,6 @@ class UniversalPath(UPath, PureUniversalPath):
 
     @classmethod
     def _from_parts_init(cls, args, init=False):
-        print(args)
-        print(init)
         return super()._from_parts(args, init=init)
 
     def _from_parts(self, args, init=True):

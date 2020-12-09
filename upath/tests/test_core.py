@@ -1,3 +1,4 @@
+import pathlib
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,10 @@ from upath.errors import NotDirectoryError
 @pytest.fixture()
 def pathlib_base(local_testdir):
     return Path(local_testdir)
+
+
+def test_posix_path(local_testdir):
+    assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
 
 class TestUpath:
