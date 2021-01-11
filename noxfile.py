@@ -15,5 +15,5 @@ def install(session):
 @nox.session(reuse_venv=True)
 def test(session):
     session.install(*"pytest".split())
-    session.install(".[test] --no-deps".split())
+    session.install(*".[test] --no-deps".split())
     session.run("pytest")
