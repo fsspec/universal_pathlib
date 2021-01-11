@@ -12,8 +12,7 @@ def install(session):
     session.install(".")
 
 
-@nox.session(reuse_venv=True)
-def test(session):
+@nox.session(python=False)
+def smoke(session):
     session.install(*"pytest".split())
-    session.install(*".[test] --no-deps".split())
     session.run("pytest")

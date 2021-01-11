@@ -19,7 +19,7 @@ jobs:
         nox -s install
     - name: Test with pytest
       run: |
-        nox -s test
+        nox -s smoke
         
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
