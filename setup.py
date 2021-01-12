@@ -1,5 +1,8 @@
 import setuptools
 
+with open("README.md") as f:
+    long_description = f.read()
+
 setuptools.setup(
     name="universal_pathlib",
     version="0.0.1",
@@ -7,5 +10,8 @@ setuptools.setup(
     author_email="andrewfulton9@gmail.com",
     url="https://github.com/Quansight/universal_pathlib",
     packages=setuptools.find_packages(),
-    python_requires=">=3.7"
+    python_requires=">=3.7",
+    description="pathlib api extended to use fsspec backends",
+    long_description=long_description,
+    long_description_content_type='text/x-rst'
 )
