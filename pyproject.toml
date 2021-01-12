@@ -5,6 +5,7 @@ requires = ["flit_core>=2,<4"]
 [tool]
 [tool.flit]
 [tool.flit.metadata]
+dist-name = "universal_pathlib"
 author = "Andrew Fulton"
 author-email = "andrewfulton9@gmail.com"
 classifiers = []
