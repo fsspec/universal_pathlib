@@ -26,4 +26,4 @@ jobs:
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: andrewfulton9
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        password: ${{ secrets.UPATH_GIT_REPO }}
