@@ -8,12 +8,33 @@ import time
 
 
 import pytest
-from fsspec import filesystem
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import (
     register_implementation,
     _registry
 )
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--skiphdfs",
+        action="store_true",
+        default=False,
+        help="skip hdfs tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "hdfs: mark test as hdfs")
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--skiphdfs"):
+        return
+    skip_hdfs = pytest.mark.skip(reason="skipping hdfs")
+    for item in items:
+        if "hdfs" in item.keywords:
+            item.add_marker(skip_hdfs)
 
 
 class DummyTestFS(LocalFileSystem):
@@ -28,16 +49,6 @@ def clear_registry():
     finally:
         _registry.clear()
 
-        
-# folder_structure = {
-#     'folders': {'folder1': {'folders': {},
-#                             'files': {'file1.txt': 'file1.txt',
-#                                       'file2.txt': 'file2.txt'}}
-#     'files': {'file1.txt': 'hello_world',
-#               'file2.txt': 'hello_world'}
-        
-    
-# }
 
 @pytest.fixture()
 def tempdir(clear_registry):
@@ -45,8 +56,9 @@ def tempdir(clear_registry):
     tempdir = tempdir.name
     return tempdir
 
+
 @pytest.fixture()
-def local_testdir(tempdir, clear_registry):   
+def local_testdir(tempdir, clear_registry):
     tmp = Path(tempdir)
     tmp.mkdir()
     folder1 = tmp.joinpath('folder1')
@@ -66,26 +78,28 @@ def local_testdir(tempdir, clear_registry):
     yield tempdir
     shutil.rmtree(tempdir)
 
+
 @pytest.fixture(scope='session')
 def htcluster():
     proc = subprocess.Popen(shlex.split("htcluster startup"),
-                            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                            stderr=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL)
     time.sleep(30)
     yield
     proc.terminate()
     proc.wait()
     proc1 = subprocess.Popen(shlex.split("htcluster shutdown"),
-                            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                             stderr=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL)
     proc1.terminate()
     proc1.wait()
     time.sleep(10)
-    
+
+
 @pytest.fixture()
 def hdfs(htcluster, tempdir, local_testdir):
-    
     pyarrow = pytest.importorskip('pyarrow')
     host, user, port = '0.0.0.0', 'hdfs', 9000
-    #hdfs = filesystem('hdfs', host=host, user=user, port=port, driver='libhdfs3')
     hdfs = pyarrow.hdfs.connect(host='0.0.0.0', port=9000, user=user)
     hdfs.mkdir(tempdir, create_parents=True)
     for x in Path(local_testdir).glob('**/*'):
@@ -96,10 +110,10 @@ def hdfs(htcluster, tempdir, local_testdir):
             with hdfs.open(str(x), 'wb') as f:
                 f.write(text)
         else:
-            hdfs.mkdir(str(x))    
+            hdfs.mkdir(str(x))
     hdfs.close()
     yield host, user, port
-    
+
 
 @pytest.fixture(scope='session')
 def s3_server():
@@ -131,8 +145,7 @@ def s3_server():
         time.sleep(0.1)  # pragma: no cover
     anon = False
     s3so = dict(client_kwargs={'endpoint_url': endpoint_uri},
-                use_listings_cache=False)
-    
+                use_listings_cache=False)    
     yield anon, s3so
     proc.terminate()
     proc.wait()
