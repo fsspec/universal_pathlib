@@ -20,4 +20,5 @@ def smoke(session):
 
 @nox.session(python=False)
 def build(session):
+    session.install("flit")
     session.run(*"flit build".split())
