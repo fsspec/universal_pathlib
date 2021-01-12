@@ -15,4 +15,4 @@ def install(session):
 @nox.session(python=False)
 def smoke(session):
     session.install(*"pytest".split())
-    session.run("pytest")
+    session.run(*"pytest --skiphdfs upath".split())

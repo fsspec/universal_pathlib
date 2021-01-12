@@ -194,7 +194,7 @@ class TestUpath:
         path.write_text(s)
         assert path.read_text() == s
 
-
+@pytest.mark.hdfs
 class TestUPathHDFS(TestUpath):
     
     @pytest.fixture(autouse=True)
@@ -254,6 +254,7 @@ class TestUPathS3(TestUpath):
         # file doesn't exists, but missing_ok is True
         path.unlink(missing_ok=True)
 
+@pytest.mark.hdfs
 def test_multiple_backend_paths(local_testdir, s3, hdfs):
     anon, s3so = s3
     path = f's3:{local_testdir}'
