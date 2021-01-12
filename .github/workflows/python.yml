@@ -29,3 +29,4 @@ jobs:
       with:
         user: andrewfulton9
         password: ${{ secrets.UPATH_GIT_REPO }}
+        verbose: true
