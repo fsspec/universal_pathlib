@@ -2,10 +2,6 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core>=2,<4"]
 
-[metadata]
-description = "Pathlib API extended to use fsspec backends"
-long_description = "file: README.rst"
-
 [tool]
 [tool.flit]
 [tool.flit.metadata]
@@ -21,6 +17,8 @@ maintainer-email = "andrewfulton9@gmail.com"
 module = "upath"
 requires = ["fsspec"]
 requires-python = ">=3.7"
+description_file=README.md
+long_description_content_type="text/markdown"
 
 [tool.flit.metadata.urls]
 
