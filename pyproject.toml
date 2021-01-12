@@ -2,6 +2,9 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core>=2,<4"]
 
+[metadata]
+description = """Pathlib API extended to use fsspec backends"""
+long_description = file: README.rst
 
 [tool]
 [tool.flit]
