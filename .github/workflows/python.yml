@@ -27,6 +27,6 @@ jobs:
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
-        user: andrewfulton9
+        user: __token__
         password: ${{ secrets.UPATH_GIT_REPO }}
         verbose: true
