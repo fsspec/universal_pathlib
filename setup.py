@@ -15,5 +15,5 @@ setuptools.setup(
     python_requires=">=3.7",
     description="pathlib api extended to use fsspec backends",
     long_description=long_description,
-    long_description_content_type='text/x-rst'
+    long_description_content_type='text/markdown'
 )

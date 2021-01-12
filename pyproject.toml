@@ -30,7 +30,7 @@ doc = []
 test = [
   "requests",
   "s3fs",
-  "jupyter   ",
+  "jupyter",
   "ipython",
   "pytest",
   "pylint",
