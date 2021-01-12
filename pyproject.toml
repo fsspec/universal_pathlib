@@ -17,8 +17,7 @@ maintainer-email = "andrewfulton9@gmail.com"
 module = "upath"
 requires = ["fsspec"]
 requires-python = ">=3.7"
-description_file=README.md
-long_description_content_type="text/markdown"
+description-file = "README.md"
 
 [tool.flit.metadata.urls]
 
