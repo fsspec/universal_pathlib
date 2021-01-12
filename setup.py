@@ -1,11 +1,13 @@
 import setuptools
 
+from upath import __version__
+
 with open("README.md") as f:
     long_description = f.read()
-
+    
 setuptools.setup(
     name="universal_pathlib",
-    version="0.0.1",
+    version=__version__,
     author="Andrew Fulton",
     author_email="andrewfulton9@gmail.com",
     url="https://github.com/Quansight/universal_pathlib",
