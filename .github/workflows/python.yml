@@ -20,7 +20,9 @@ jobs:
     - name: Test with pytest
       run: |
         nox -s smoke
-        
+    - name: build package
+      run: |
+        nox -s build
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
