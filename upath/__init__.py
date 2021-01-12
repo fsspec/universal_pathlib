@@ -1,4 +1,4 @@
-"""pathlib with fsspec"""
-__version__ = "0.0.3"
+"""pathlib api extended to use fsspec backends"""
+__version__ = "0.0.4"
 
 from upath.core import UPath
