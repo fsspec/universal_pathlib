@@ -30,3 +30,4 @@ jobs:
         user: __token__
         password: ${{ secrets.UPATH_GIT_REPO }}
         verbose: true
+        skip_existing: true
