@@ -18,7 +18,7 @@ def smoke(session):
     session.run(*"pytest --skiphdfs upath".split())
 
 
-@nox.session(python=['3.7', '3.8'])
+@nox.session(python=False)
 def build(session):
     session.install("flit")
     session.run(*"flit build".split())
