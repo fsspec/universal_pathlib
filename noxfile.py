@@ -8,6 +8,18 @@ def develop(session):
 
 
 @nox.session(python=False)
+def black(session):
+    session.install("black")
+    session.run(*"black upath".split())
+
+
+@nox.session(python=False)
+def lint(session):
+    session.install("flake8")
+    session.run(*"flake8 upath".split())
+
+
+@nox.session(python=False)
 def install(session):
     session.install(".")
 
