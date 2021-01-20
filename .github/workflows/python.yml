@@ -20,6 +20,9 @@ jobs:
     - name: Test with pytest
       run: |
         nox -s smoke
+    - name: Lint
+      run: |
+        nox -s lint
     - name: build package
       run: |
         nox -s build
