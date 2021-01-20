@@ -18,4 +18,5 @@ dependencies:
     - pip
     - pip:
       - hadoop-test-cluster
+      - nox
     

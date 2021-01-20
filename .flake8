@@ -1,0 +1,14 @@
+[flake8]
+max-line-length = 80
+per-file-ignores =
+    upath/__init__.py: F401
+exclude =
+    .noxfile,
+    .nox,
+    __pycache__,
+    .git,
+    .github,
+    .gitignore,
+    .pytest_cache,
+    
+    

@@ -226,13 +226,13 @@ class TestUPathS3(TestUpath):
         # new_dir.mkdir()
         # mkdir doesnt really do anything. A directory only exists in s3
         # if some file or something is written to it
-        f = new_dir.joinpath("test.txt").touch()
+        new_dir.joinpath("test.txt").touch()
         assert new_dir.exists()
 
     def test_rmdir(self, local_testdir):
         dirname = "rmdir_test"
         mock_dir = self.path.joinpath(dirname)
-        f = mock_dir.joinpath("test.txt").touch()
+        mock_dir.joinpath("test.txt").touch()
         mock_dir.rmdir()
         assert not mock_dir.exists()
         with pytest.raises(NotDirectoryError):
@@ -261,5 +261,5 @@ def test_multiple_backend_paths(local_testdir, s3, hdfs):
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"
     host, user, port = hdfs
     path = f"hdfs:{local_testdir}"
-    hdfs_path = UPath(path, host=host, user=user, port=port)
+    UPath(path, host=host, user=user, port=port)
     assert s3_path.joinpath("text1.txt")._url.scheme == "s3"

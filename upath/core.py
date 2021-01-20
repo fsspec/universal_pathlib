@@ -1,15 +1,9 @@
 import os
 import pathlib
-from pathlib import *
 import urllib
 import re
-import asyncio
-import inspect
 
-import fsspec
-from fsspec.asyn import AsyncFileSystem
-from fsspec.core import url_to_fs
-from fsspec.registry import filesystem, get_filesystem_class
+from fsspec.registry import get_filesystem_class
 
 from upath.errors import NotDirectoryError
 
@@ -81,21 +75,18 @@ class _FSSpecAccessor:
         if fs is not None:
             method = getattr(fs, item, None)
             if method:
-                awaitable = inspect.isawaitable(
-                    lambda args, kwargs: method(*args, **kwargs)
-                )
-                return lambda *args, **kwargs: self.argument_upath_self_to_filepath(
-                    method
-                )(
-                    *args, **kwargs
-                )
+                return lambda *args, **kwargs: (
+                    self.argument_upath_self_to_filepath(method)(
+                        *args, **kwargs
+                    )
+                )  # noqa: E501
             else:
                 raise NotImplementedError(
                     f"{fs.protocol} filesystem has not attribute {item}"
                 )
 
 
-class PureUniversalPath(PurePath):
+class PureUniversalPath(pathlib.PurePath):
     _flavour = pathlib._posix_flavour
     __slots__ = ()
 
@@ -111,7 +102,11 @@ class UPath(pathlib.Path):
                 if val:
                     parsed_url._replace(**{key: val})
             if not parsed_url.scheme:
-                cls = WindowsPath if os.name == "nt" else PosixPath
+                cls = (
+                    pathlib.WindowsPath
+                    if os.name == "nt"
+                    else pathlib.PosixPath
+                )
             else:
                 cls = UniversalPath
                 # cls._url = parsed_url
@@ -132,28 +127,6 @@ class UPath(pathlib.Path):
         else:
             self._init()
         return self
-
-
-def run_as_async(self, func, *args, **kwargs):
-    def wrapper(*args, **kwargs):
-        if isinstance(self.fs, AsyncFileSystem):
-            result = None
-
-            async def async_runner():
-                async def async_func():
-                    return await func(*args, **kwargs)
-
-                coro = async_func()
-                done, pending = await asyncio.wait({coro})
-                if coro is done:
-                    result = coro
-
-            asyncio.run(async_runner())
-            return result
-        else:
-            return func(*args, **kwargs)
-
-    return wrapper
 
 
 class UniversalPath(UPath, PureUniversalPath):
@@ -298,12 +271,7 @@ class UniversalPath(UPath, PureUniversalPath):
                 raise FileNotFoundError
             else:
                 return
-        try:
-            self._accessor.rm(self, recursive=False)
-        except:
-            self._accessor.rm_file(self)
-
-        # asyncio.run(async_unlink())
+        self._accessor.rm(self, recursive=False)
 
     def rmdir(self, recursive=True):
         """Add warning if directory not empty
@@ -311,7 +279,7 @@ class UniversalPath(UPath, PureUniversalPath):
         """
         try:
             assert self.is_dir()
-        except:
+        except AssertionError:
             raise NotDirectoryError
         self._accessor.rm(self, recursive=recursive)
 
