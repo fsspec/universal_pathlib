@@ -149,6 +149,7 @@ class UniversalPath(UPath, PureUniversalPath):
         "owner",
         "readlink",
     ]
+    _default_accessor = _FSSpecAccessor
 
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
@@ -168,7 +169,7 @@ class UniversalPath(UPath, PureUniversalPath):
         if template is not None:
             self._accessor = template._accessor
         else:
-            self._accessor = _FSSpecAccessor(self._url, *args, **kwargs)
+            self._accessor = self._default_accessor(self._url, *args, **kwargs)
         self.fs = self._accessor._fs
 
     def __getattribute__(self, item):
