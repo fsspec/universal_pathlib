@@ -1,6 +1,6 @@
 import urllib
 
-from upath.core import UniversalPath, _FSSpecAccessor
+from upath.universal_path import UniversalPath, _FSSpecAccessor
 
 
 class _HTTPAccessor(_FSSpecAccessor):
@@ -12,6 +12,7 @@ class _HTTPAccessor(_FSSpecAccessor):
         argument is a UniversalPath instance, that argument is replaced with
         the UniversalPath's path attribute
         """
+
         def wrapper(*args, **kwargs):
             if args:
                 args = list(args)
@@ -26,6 +27,7 @@ class _HTTPAccessor(_FSSpecAccessor):
                     unparsed = urllib.urlunparse(new_url)
                     kwargs["path"] = unparsed
             return func(*args, **kwargs)
+
         return wrapper
 
 
