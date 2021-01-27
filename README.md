@@ -34,7 +34,7 @@ True
 
 Some backends may require other dependencies. For example to work with S3 paths, [`s3fs`](https://s3fs.readthedocs.io/en/latest/) is required.
 
-For more examples, see the [example notebook here](notebooks/example.ipynb)
+For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 
 
