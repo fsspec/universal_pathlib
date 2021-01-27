@@ -1,28 +1,22 @@
-==================
-Universal Pathlib
-==================
+# Universal Pathlib
 
 Universal Pathlib is a python library that aims to extend Python's built-in [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html) api to use a variety of backend filesystems using [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/intro.html)
 
-Installation
-=============
+## Installation
 
-Pypi
------
+### Pypi
 
 ```bash
 pip install universal-pathlib
 ```
 
-conda
-------
+### conda
 
 ```bash
 conda install -c conda-forge universal_pathlib
 ```
 
-Basic Usage
-============
+## Basic Usage
 
 ```python
 >>> from upath import UPath
