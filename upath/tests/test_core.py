@@ -33,7 +33,6 @@ class TestUpath:
 
     def test_stat(self):
         stat = self.path.stat()
-        print(stat)
         assert stat
 
     def test_chmod(self):
