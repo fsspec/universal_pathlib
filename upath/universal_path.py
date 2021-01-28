@@ -16,8 +16,6 @@ class _FSSpecAccessor:
         )
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
-        if self._url.scheme in ["hdfs"]:
-            self._fs.root_marker = "/"
 
     def argument_upath_self_to_filepath(self, func):
         """if arguments are passed to the wrapped function, and if the first
@@ -26,32 +24,32 @@ class _FSSpecAccessor:
         """
 
         def wrapper(*args, **kwargs):
-            if args:
-                args = list(args)
-                first_arg = args.pop(0)
-                if not kwargs.get("path"):
-                    if isinstance(first_arg, UniversalPath):
-                        first_arg = first_arg.path
-                        if not self._fs.root_marker and first_arg.startswith(
-                            "/"
-                        ):
-                            first_arg = first_arg[1:]
-                        args.insert(0, first_arg)
-                    args = tuple(args)
-                else:
-                    if not self._fs.root_marker and kwargs["path"].startswith(
-                        "/"
-                    ):
-                        kwargs["path"] = kwargs["path"][1:]
-                if self._url.scheme == "hdfs":
-                    if "trunicate" in kwargs:
-                        kwargs.pop("trunicate")
-                    if func.__name__ == "mkdir":
-                        args = args[:1]
-
+            args, kwargs = self._format_path(args, kwargs)
             return func(*args, **kwargs)
 
         return wrapper
+
+    def _format_path(self, args, kwargs):
+        """formats the path properly for the filesystem backend."""
+        args = list(args)
+        first_arg = args.pop(0)
+        if not kwargs.get("path"):
+            if isinstance(first_arg, UniversalPath):
+                first_arg = self._remove_root_slash(first_arg.path)
+                args.insert(0, first_arg)
+            args = tuple(args)
+        else:
+            kwargs["path"] = self._remove_root_slash(kwargs["path"])
+        return args, kwargs
+
+    def _remove_root_slash(self, s):
+        """If the filesystem backend doesn't have a root_marker, strip the
+        leading slash of a path
+        """
+        if not self._fs.root_marker and s.startswith("/"):
+            return s[1:]
+        else:
+            return s
 
     def __getattribute__(self, item):
         class_attrs = ["_url", "_fs", "__class__"]
@@ -62,6 +60,8 @@ class _FSSpecAccessor:
             "__init__",
             "__getattribute__",
             "argument_upath_self_to_filepath",
+            "_format_path",
+            "_remove_root_slash",
         ]
         if item in class_methods:
             return lambda *args, **kwargs: getattr(self.__class__, item)(
@@ -134,8 +134,8 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
 
     def __getattribute__(self, item):
         if item == "__class__":
-            return UniversalPath
-        if item in getattr(UniversalPath, "not_implemented"):
+            return super().__getattribute__("__class__")
+        if item in getattr(self.__class__, "not_implemented"):
             raise NotImplementedError(f"UniversalPath has no attribute {item}")
         else:
             return super().__getattribute__(item)
@@ -254,7 +254,7 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
     def _from_parts(self, args, init=True):
         # We need to call _parse_args on the instance, so as to get the
         # right flavour.
-        obj = object.__new__(UniversalPath)
+        obj = object.__new__(self.__class__)
         drv, root, parts = self._parse_args(args)
         obj._drv = drv
         obj._root = root
@@ -264,7 +264,7 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
         return obj
 
     def _from_parsed_parts(self, drv, root, parts, init=True):
-        obj = object.__new__(UniversalPath)
+        obj = object.__new__(self.__class__)
         obj._drv = drv
         obj._root = root
         obj._parts = parts

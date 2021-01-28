@@ -1,29 +1,32 @@
 import pathlib
 from pathlib import Path
+import warnings
 
 import pytest
 
 from upath import UPath
-from upath.errors import NotDirectoryError
-
-
-@pytest.fixture()
-def pathlib_base(local_testdir):
-    return Path(local_testdir)
 
 
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
 
+def test_UPath_warning():
+    with warnings.catch_warnings(record=True) as w:
+        path = UPath("mock:/")  # noqa: F841
+        assert len(w) == 1
+        assert issubclass(w[-1].category, UserWarning)
+        assert "mock" in str(w[-1].message)
+
+
 class TestUpath:
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
-        self.path = UPath(f"mock:{local_testdir}")
-        print(self.path)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.path = UPath(f"mock:{local_testdir}")
 
     def test_cwd(self):
-        print("test_cwd")
         with pytest.raises(NotImplementedError):
             self.path.cwd()
 
@@ -118,7 +121,6 @@ class TestUpath:
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
         new_dir.mkdir()
-        print(new_dir._accessor.info(new_dir))
         assert new_dir.exists()
 
     def test_open(self):
@@ -194,62 +196,6 @@ class TestUpath:
         path = self.path.joinpath(fn)
         path.write_text(s)
         assert path.read_text() == s
-
-
-@pytest.mark.hdfs
-class TestUPathHDFS(TestUpath):
-    @pytest.fixture(autouse=True)
-    def path(self, local_testdir, hdfs):
-        host, user, port = hdfs
-        path = f"hdfs:{local_testdir}"
-        self.path = UPath(path, host=host, user=user, port=port)
-
-    def test_chmod(self):
-        # todo
-        pass
-
-
-class TestUPathS3(TestUpath):
-    @pytest.fixture(autouse=True)
-    def path(self, local_testdir, s3):
-        anon, s3so = s3
-        path = f"s3:{local_testdir}"
-        self.path = UPath(path, anon=anon, **s3so)
-
-    def test_chmod(self):
-        # todo
-        pass
-
-    def test_mkdir(self):
-        new_dir = self.path.joinpath("new_dir")
-        # new_dir.mkdir()
-        # mkdir doesnt really do anything. A directory only exists in s3
-        # if some file or something is written to it
-        new_dir.joinpath("test.txt").touch()
-        assert new_dir.exists()
-
-    def test_rmdir(self, local_testdir):
-        dirname = "rmdir_test"
-        mock_dir = self.path.joinpath(dirname)
-        mock_dir.joinpath("test.txt").touch()
-        mock_dir.rmdir()
-        assert not mock_dir.exists()
-        with pytest.raises(NotDirectoryError):
-            self.path.joinpath("file1.txt").rmdir()
-
-    def test_touch_unlink(self):
-        path = self.path.joinpath("test_touch.txt")
-        path.touch()
-        assert path.exists()
-        path.unlink()
-        assert not path.exists()
-
-        # should raise FileNotFoundError since file is missing
-        with pytest.raises(FileNotFoundError):
-            path.unlink()
-
-        # file doesn't exists, but missing_ok is True
-        path.unlink(missing_ok=True)
 
 
 @pytest.mark.hdfs

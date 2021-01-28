@@ -73,6 +73,11 @@ def local_testdir(tempdir, clear_registry):
     shutil.rmtree(tempdir)
 
 
+@pytest.fixture()
+def pathlib_base(local_testdir):
+    return Path(local_testdir)
+
+
 @pytest.fixture(scope="session")
 def htcluster():
     proc = subprocess.Popen(

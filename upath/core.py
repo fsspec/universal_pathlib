@@ -3,7 +3,6 @@ import pathlib
 import urllib
 
 from upath.registry import _registry
-from upath.universal_path import UniversalPath
 
 
 class UPath(pathlib.Path):
@@ -30,10 +29,7 @@ class UPath(pathlib.Path):
                     )
                 self._init()
             else:
-                if parsed_url.scheme in _registry:
-                    cls = _registry[parsed_url.scheme]
-                else:
-                    cls = UniversalPath
+                cls = _registry[parsed_url.scheme]
                 kwargs["_url"] = parsed_url
                 new_args.insert(0, parsed_url.path)
                 args = tuple(new_args)
