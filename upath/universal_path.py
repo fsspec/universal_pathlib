@@ -17,37 +17,40 @@ class _FSSpecAccessor:
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
 
-    def argument_upath_self_to_filepath(self, func):
-        """if arguments are passed to the wrapped function, and if the first
-        argument is a UniversalPath instance, that argument is replaced with
-        the UniversalPath's path attribute
+    def transform_args_wrapper(self, func):
+        """Modifies the arguments that get passed to the filesystem so that 
+        the UniversalPath instance gets stripped as the first argument. If a 
+        path keyword argument is not given, then `UniversalPath.path` is 
+        formatted for the filesystem and inserted as the first argument. 
+        If it is, then the path keyword argument is formatted properly for 
+        the filesystem.
         """
 
         def wrapper(*args, **kwargs):
-            args, kwargs = self._format_path(args, kwargs)
+            args, kwargs = self._transform_arg_paths(args, kwargs)
             return func(*args, **kwargs)
 
         return wrapper
 
-    def _format_path(self, args, kwargs):
+    def _transform_arg_paths(self, args, kwargs):
         """formats the path properly for the filesystem backend."""
         args = list(args)
         first_arg = args.pop(0)
         if not kwargs.get("path"):
             if isinstance(first_arg, UniversalPath):
-                first_arg = self._remove_root_slash(first_arg.path)
+                first_arg = self._format_path(first_arg.path)
                 args.insert(0, first_arg)
             args = tuple(args)
         else:
-            kwargs["path"] = self._remove_root_slash(kwargs["path"])
+            kwargs["path"] = self._format_path(kwargs["path"])
         return args, kwargs
 
-    def _remove_root_slash(self, s):
+    def _format_path(self, s):
         """If the filesystem backend doesn't have a root_marker, strip the
         leading slash of a path
         """
-        if not self._fs.root_marker and s.startswith("/"):
-            return s[1:]
+        if not self._fs.root_marker:
+            return s.lstrip('/')
         else:
             return s
 
@@ -59,9 +62,10 @@ class _FSSpecAccessor:
         class_methods = [
             "__init__",
             "__getattribute__",
-            "argument_upath_self_to_filepath",
+            "transform_args_wrapper",
+            "_transform_arg_paths",
             "_format_path",
-            "_remove_root_slash",
+            
         ]
         if item in class_methods:
             return lambda *args, **kwargs: getattr(self.__class__, item)(
@@ -74,13 +78,13 @@ class _FSSpecAccessor:
             method = getattr(fs, item, None)
             if method:
                 return lambda *args, **kwargs: (
-                    self.argument_upath_self_to_filepath(method)(
+                    self.transform_args_wrapper(method)(
                         *args, **kwargs
                     )
                 )  # noqa: E501
             else:
                 raise NotImplementedError(
-                    f"{fs.protocol} filesystem has not attribute {item}"
+                    f"{fs.protocol} filesystem has no attribute {item}"
                 )
 
 
@@ -183,11 +187,22 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            sp = self.path
-            name = re.sub(f"^({sp}|{sp[1:]})/", "", name)
+            name = self._sub_path(name)
             yield self._make_child_relpath(name)
             if self._closed:
                 self._raise_closed()
+
+    def glob(self, pattern):
+        path = self.joinpath(pattern)
+        for name in self._accessor.glob(self, path=path.path):
+            name = self._sub_path(name)
+            name = name.split(self._flavour.sep)
+            yield self._make_child(self._parts + name)
+
+    def _sub_path(self, name):
+        # only want the path name with iterdir
+        sp = self.path
+        return re.sub(f"^({sp}|{sp[1:]})/", "", name)
 
     def exists(self):
         """
@@ -214,13 +229,7 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
             return True
         return False
 
-    def glob(self, pattern):
-        path = self.joinpath(pattern)
-        for name in self._accessor.glob(self, path=path.path):
-            sp = self.path
-            name = re.sub(f"^({sp}|{sp[1:]})/", "", name)
-            name = name.split(self._flavour.sep)
-            yield self._make_child(self._parts + name)
+    
 
     def rename(self, target):
         # can be implimented, but may be tricky

@@ -12,7 +12,8 @@ class TestUPathS3(TestUpath):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, s3):
         anon, s3so = s3
-        path = f"s3:{local_testdir}"
+        path = f"s3:/{local_testdir}"
+        print(path)
         self.path = UPath(path, anon=anon, **s3so)
 
     def test_is_S3Path(self):
@@ -52,3 +53,12 @@ class TestUPathS3(TestUpath):
 
         # file doesn't exists, but missing_ok is True
         path.unlink(missing_ok=True)
+
+    def test_glob(self, pathlib_base):
+        mock_glob = list(self.path.glob("**.txt"))
+        path_glob = list(pathlib_base.glob("**/*.txt"))
+        
+        assert len(mock_glob) == len(path_glob)
+        assert all(
+            map(lambda m: m.path in [str(p)[4:] for p in path_glob], mock_glob)
+        )
