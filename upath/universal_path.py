@@ -18,11 +18,11 @@ class _FSSpecAccessor:
         self._fs = cls(**url_kwargs)
 
     def transform_args_wrapper(self, func):
-        """Modifies the arguments that get passed to the filesystem so that 
-        the UniversalPath instance gets stripped as the first argument. If a 
-        path keyword argument is not given, then `UniversalPath.path` is 
-        formatted for the filesystem and inserted as the first argument. 
-        If it is, then the path keyword argument is formatted properly for 
+        """Modifies the arguments that get passed to the filesystem so that
+        the UniversalPath instance gets stripped as the first argument. If a
+        path keyword argument is not given, then `UniversalPath.path` is
+        formatted for the filesystem and inserted as the first argument.
+        If it is, then the path keyword argument is formatted properly for
         the filesystem.
         """
 
@@ -50,7 +50,7 @@ class _FSSpecAccessor:
         leading slash of a path
         """
         if not self._fs.root_marker:
-            return s.lstrip('/')
+            return s.lstrip("/")
         else:
             return s
 
@@ -65,7 +65,6 @@ class _FSSpecAccessor:
             "transform_args_wrapper",
             "_transform_arg_paths",
             "_format_path",
-            
         ]
         if item in class_methods:
             return lambda *args, **kwargs: getattr(self.__class__, item)(
@@ -78,9 +77,7 @@ class _FSSpecAccessor:
             method = getattr(fs, item, None)
             if method:
                 return lambda *args, **kwargs: (
-                    self.transform_args_wrapper(method)(
-                        *args, **kwargs
-                    )
+                    self.transform_args_wrapper(method)(*args, **kwargs)
                 )  # noqa: E501
             else:
                 raise NotImplementedError(
@@ -228,8 +225,6 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
         if info["type"] == "file":
             return True
         return False
-
-    
 
     def rename(self, target):
         # can be implimented, but may be tricky
