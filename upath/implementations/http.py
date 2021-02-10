@@ -7,7 +7,7 @@ class _HTTPAccessor(_FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
 
-    def argument_upath_self_to_filepath(self, func):
+    def transform_args_wrapper(self, func):
         """if arguments are passed to the wrapped function, and if the first
         argument is a UniversalPath instance, that argument is replaced with
         the UniversalPath's path attribute
