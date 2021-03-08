@@ -203,10 +203,10 @@ class TestUpath:
         self.make_test_files()
 
     def make_top_folder(self):
-        self.path.mkdir(parents=True, exist_ok=True)    
+        self.path.mkdir(parents=True, exist_ok=True)
 
     def make_test_files(self):
-        folder1 = self.path.joinpath('folder1')
+        folder1 = self.path.joinpath("folder1")
         folder1.mkdir(exist_ok=True)
         folder1_files = ["file1.txt", "file2.txt"]
         for f in folder1_files:
@@ -219,7 +219,7 @@ class TestUpath:
         file1.write_text("hello world")
         file2 = self.path.joinpath("file2.txt")
         file2.touch()
-        file2.write_bytes(b"hello world")    
+        file2.write_bytes(b"hello world")
 
 
 @pytest.mark.hdfs
