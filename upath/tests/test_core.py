@@ -108,7 +108,8 @@ class TestUpath:
         pl_iter = list(pl_path.iterdir())
 
         assert len(up_iter) == len(pl_iter)
-        assert all(map(lambda x: x.name in [p.name for p in pl_iter], up_iter))
+        pnames = [p.name for p in pl_iter]
+        assert all(map(lambda x: x.name in pnames, up_iter))
 
     def test_lchmod(self):
         with pytest.raises(NotImplementedError):
@@ -196,6 +197,29 @@ class TestUpath:
         path = self.path.joinpath(fn)
         path.write_text(s)
         assert path.read_text() == s
+
+    def prepare_file_system(self):
+        self.make_top_folder()
+        self.make_test_files()
+
+    def make_top_folder(self):
+        self.path.mkdir(parents=True, exist_ok=True)
+
+    def make_test_files(self):
+        folder1 = self.path.joinpath("folder1")
+        folder1.mkdir(exist_ok=True)
+        folder1_files = ["file1.txt", "file2.txt"]
+        for f in folder1_files:
+            p = folder1.joinpath(f)
+            p.touch()
+            p.write_text(f)
+
+        file1 = self.path.joinpath("file1.txt")
+        file1.touch()
+        file1.write_text("hello world")
+        file2 = self.path.joinpath("file2.txt")
+        file2.touch()
+        file2.write_bytes(b"hello world")
 
 
 @pytest.mark.hdfs
