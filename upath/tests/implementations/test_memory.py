@@ -1,7 +1,6 @@
 import pytest
 
 from upath import UPath
-from upath.errors import NotDirectoryError
 from upath.implementations.memory import MemoryPath
 from upath.tests.test_core import TestUpath
 
