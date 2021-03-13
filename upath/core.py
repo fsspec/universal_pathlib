@@ -2,6 +2,8 @@ import os
 import pathlib
 import urllib
 
+from fsspec.registry import known_implementations, registry
+
 from upath.registry import _registry
 
 
@@ -15,8 +17,9 @@ class UPath(pathlib.Path):
                 val = kwargs.get(key)
                 if val:
                     parsed_url._replace(**{key: val})
-            # treat as local filesystem, return PosixPath or
-            if not parsed_url.scheme:
+            # treat as local filesystem, return PosixPath or WindowsPath
+            impls = list(registry) + list(known_implementations.keys())
+            if not parsed_url.scheme or parsed_url.scheme not in impls:
                 cls = (
                     pathlib.WindowsPath
                     if os.name == "nt"

@@ -28,7 +28,7 @@ def install(session):
 @nox.session(python=False)
 def smoke(session):
     session.install(*"pytest aiohttp requests".split())
-    session.run(*"pytest --skiphdfs upath".split())
+    session.run(*"pytest --skiphdfs upath -vvv".split())
 
 
 @nox.session(python=False)

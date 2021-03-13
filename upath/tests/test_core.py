@@ -1,3 +1,4 @@
+import sys
 import pathlib
 from pathlib import Path
 import warnings
@@ -7,8 +8,19 @@ import pytest
 from upath import UPath
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="only run test if Linux Machine"
+)
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith("win"),
+    reason="only run test if Windows Machine",
+)
+def test_windows_path(local_testdir):
+    assert isinstance(UPath(local_testdir), pathlib.WindowsPath)
 
 
 def test_UPath_warning():
@@ -58,6 +70,8 @@ class TestUpath:
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
         assert len(mock_glob) == len(path_glob)
+        print(mock_glob)
+        print(path_glob)
         assert all(
             map(lambda m: m.path in [str(p) for p in path_glob], mock_glob)
         )
