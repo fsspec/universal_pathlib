@@ -1,7 +1,7 @@
 import warnings
 
 from upath.universal_path import UniversalPath
-from upath.implementations import http, hdfs, s3, memory
+from upath.implementations import http, hdfs, s3, memory, gcs
 
 
 class _Registry:
@@ -9,6 +9,7 @@ class _Registry:
     hdfs = hdfs.HDFSPath
     s3 = s3.S3Path
     memory = memory.MemoryPath
+    gcs = gcs.GCSPath
 
     def __getitem__(self, item):
         implimented_path = getattr(self, item, None)

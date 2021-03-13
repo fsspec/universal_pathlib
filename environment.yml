@@ -8,6 +8,7 @@ dependencies:
     # optional
     - requests
     - s3fs
+    - gcsfs
     - jupyter   
     - ipython
     - pytest
