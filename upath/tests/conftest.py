@@ -71,7 +71,7 @@ def local_testdir(tempdir, clear_registry):
     file2.touch()
     file2.write_bytes(b"hello world")
     if sys.platform.startswith("win"):
-        yield str(Path(tempdir))
+        yield str(Path(tempdir)).replace("\\", "/")
     else:
         yield tempdir
     shutil.rmtree(tempdir)

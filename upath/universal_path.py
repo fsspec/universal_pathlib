@@ -1,5 +1,6 @@
 import pathlib
 import urllib
+import re
 
 from fsspec.registry import get_filesystem_class
 
@@ -193,10 +194,12 @@ class UniversalPath(pathlib.Path, PureUniversalPath):
         for name in self._accessor.glob(self, path=path.path):
             name = self._sub_path(name)
             name = name.split(self._flavour.sep)
-            yield self._make_child(self._parts + name)
+            yield self._make_child(name)
 
     def _sub_path(self, name):
-        return pathlib.PurePath(name).name
+        # only want the path name with iterdir
+        sp = self.path
+        return re.sub(f"^({sp}|{sp[1:]})/", "", name)
 
     def exists(self):
         """

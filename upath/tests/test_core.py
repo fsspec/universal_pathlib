@@ -70,10 +70,12 @@ class TestUpath:
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
         assert len(mock_glob) == len(path_glob)
-        print(mock_glob)
-        print(path_glob)
         assert all(
-            map(lambda m: m.path in [str(p) for p in path_glob], mock_glob)
+            map(
+                lambda m: m.path
+                in [str(p).replace("\\", "/") for p in path_glob],
+                mock_glob,
+            )
         )
 
     def test_group(self):
