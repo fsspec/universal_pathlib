@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import shlex
 import time
+import sys
 
 
 import pytest
@@ -69,7 +70,10 @@ def local_testdir(tempdir, clear_registry):
     file2 = tmp.joinpath("file2.txt")
     file2.touch()
     file2.write_bytes(b"hello world")
-    yield tempdir
+    if sys.platform.startswith("win"):
+        yield str(Path(tempdir)).replace("\\", "/")
+    else:
+        yield tempdir
     shutil.rmtree(tempdir)
 
 
