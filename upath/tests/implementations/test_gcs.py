@@ -13,7 +13,8 @@ TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
 TEST_BUCKET = os.environ.get("GCSFS_TEST_BUCKET", "gcsfs-testing")
 FAKE_GOOGLE_TOKEN = {
     "client_id": (
-        "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur." "apps.googleusercontent.com"
+        "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur."
+        "apps.googleusercontent.com"
     ),
     "client_secret": "d-FL95Q19q7MQmFpd7hHD0Ty",
     "refresh_token": "xxx",
@@ -21,7 +22,6 @@ FAKE_GOOGLE_TOKEN = {
 }
 GOOGLE_TOKEN = os.environ.get("GCSFS_GOOGLE_TOKEN", FAKE_GOOGLE_TOKEN)
 RECORD_MODE = os.environ.get("GCSFS_RECORD_MODE", "none")
-
 
 
 @contextmanager
@@ -36,7 +36,9 @@ def gcs_maker(populate=False, **kwargs):
             pass
         try:
             gcs.mkdir(
-                TEST_BUCKET, default_acl="authenticatedread", acl="publicReadWrite"
+                TEST_BUCKET,
+                default_acl="authenticatedread",
+                acl="publicReadWrite",
             )
         except Exception:
             pass
@@ -52,7 +54,7 @@ def gcs_maker(populate=False, **kwargs):
             pass
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def gcsfs():
     with gcs_maker() as gcs:
         yield gcs
