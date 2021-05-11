@@ -5,16 +5,17 @@ import pytest  # noqa: F401
 from upath import UPath
 from upath.errors import NotDirectoryError
 from upath.implementations.s3 import S3Path
-from upath.tests.test_core import TestUpath
+from upath.tests.cases import BaseTests
 
 
-class TestUPathS3(TestUpath):
+class TestUPathS3(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, s3):
         anon, s3so = s3
         path = f"s3:/{local_testdir}"
-        print(path)
         self.path = UPath(path, anon=anon, **s3so)
+        self.anon = anon
+        self.s3so = s3so
 
     def test_is_S3Path(self):
         assert isinstance(self.path, S3Path)
@@ -62,3 +63,23 @@ class TestUPathS3(TestUpath):
         assert all(
             map(lambda m: m.path in [str(p)[4:] for p in path_glob], mock_glob)
         )
+
+    def test_fsspec_compat(self):
+        fs = self.path.fs
+        scheme = self.path._url.scheme
+        content = b"a,b,c\n1,2,3\n4,5,6"
+
+        p1 = f"{scheme}:///tmp/output1.csv"
+        upath1 = UPath(p1, anon=self.anon, **self.s3so)
+        upath1.write_bytes(content)
+        with fs.open(p1) as f:
+            assert f.read() == content
+        upath1.unlink()
+
+        # write with fsspec, read with upath
+        p2 = f"{scheme}:///tmp/output2.csv"
+        with fs.open(p2, "wb") as f:
+            f.write(content)
+        upath2 = UPath(p2, anon=self.anon, **self.s3so)
+        assert upath2.read_bytes() == content
+        upath2.unlink()

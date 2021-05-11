@@ -46,13 +46,8 @@ class _FSSpecAccessor:
         return args, kwargs
 
     def _format_path(self, s):
-        """If the filesystem backend doesn't have a root_marker, strip the
-        leading slash of a path
-        """
-        if not self._fs.root_marker:
-            return s.lstrip("/")
-        else:
-            return s
+        """placeholder method for subclassed filesystems"""
+        return s
 
     def __getattribute__(self, item):
         class_attrs = ["_url", "_fs", "__class__"]

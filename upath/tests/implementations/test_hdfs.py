@@ -4,11 +4,11 @@ import pytest  # noqa: F401
 
 from upath import UPath
 from upath.implementations.hdfs import HDFSPath
-from upath.tests.test_core import TestUpath
+from upath.tests.cases import BaseTests
 
 
 @pytest.mark.hdfs
-class TestUPathHDFS(TestUpath):
+class TestUPathHDFS(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, hdfs):
         host, user, port = hdfs
@@ -20,4 +20,7 @@ class TestUPathHDFS(TestUpath):
 
     def test_chmod(self):
         # todo
+        pass
+
+    def test_fsspec_compat(self):
         pass

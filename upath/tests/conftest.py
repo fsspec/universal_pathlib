@@ -34,6 +34,7 @@ def pytest_collection_modifyitems(config, items):
 
 class DummyTestFS(LocalFileSystem):
     protocol = "mock"
+    root_marker = "/"
 
 
 @pytest.fixture(scope="session")
