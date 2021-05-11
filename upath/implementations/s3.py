@@ -22,4 +22,5 @@ class S3Path(UniversalPath):
         so it gets subbed out as well
         """
         sp = self.path
-        return re.sub(f"^{self._url.netloc}/({sp}|{sp[1:]})/", "", name)
+        subed = re.sub(f"^{self._url.netloc}/({sp}|{sp[1:]})/?", "", name)
+        return subed

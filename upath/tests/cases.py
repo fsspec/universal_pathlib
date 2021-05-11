@@ -26,7 +26,6 @@ class BaseTests:
         "url, expected", [("file1.txt", True), ("fakefile.txt", False)]
     )
     def test_exists(self, url, expected):
-        print(self.path)
         path = self.path.joinpath(url)
         assert path.exists() == expected
 
@@ -92,9 +91,13 @@ class BaseTests:
         up_iter = list(self.path.iterdir())
         pl_iter = list(pl_path.iterdir())
 
+        for x in up_iter:
+            assert x.exists()
+
         assert len(up_iter) == len(pl_iter)
         pnames = [p.name for p in pl_iter]
         assert all(map(lambda x: x.name in pnames, up_iter))
+        assert next(self.path.parent.iterdir()).exists()
 
     def test_lchmod(self):
         with pytest.raises(NotImplementedError):
