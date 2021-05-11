@@ -16,7 +16,7 @@ class UPath(pathlib.Path):
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
                 if val:
-                    parsed_url._replace(**{key: val})
+                    parsed_url = parsed_url._replace(**{key: val})
             # treat as local filesystem, return PosixPath or WindowsPath
             impls = list(registry) + list(known_implementations.keys())
             if not parsed_url.scheme or parsed_url.scheme not in impls:

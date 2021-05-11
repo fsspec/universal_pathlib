@@ -3,10 +3,11 @@ import pytest
 
 from upath import UPath
 from upath.implementations.memory import MemoryPath
-from upath.tests.test_core import TestUpath
+from upath.tests.cases import BaseTests
 
 
-class TestMemoryPath(TestUpath):
+class TestMemoryPath(BaseTests):
+
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
         path = f"memory:/{local_testdir}"

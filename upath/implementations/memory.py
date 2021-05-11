@@ -4,6 +4,13 @@ from upath.universal_path import _FSSpecAccessor, UniversalPath
 class _MemoryAccessor(_FSSpecAccessor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._fs.root_marker = ""
+
+    def _format_path(self, s):
+        """If the filesystem backend doesn't have a root_marker, strip the
+        leading slash of a path
+        """
+        return s
 
 
 class MemoryPath(UniversalPath):
