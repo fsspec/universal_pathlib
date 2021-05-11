@@ -7,9 +7,12 @@ from upath.implementations import http, hdfs, s3, memory, gcs
 class _Registry:
     http = http.HTTPPath
     hdfs = hdfs.HDFSPath
+    s3a = s3.S3Path
     s3 = s3.S3Path
     memory = memory.MemoryPath
+    gc = gcs.GCSPath
     gcs = gcs.GCSPath
+    
 
     def __getitem__(self, item):
         implimented_path = getattr(self, item, None)
