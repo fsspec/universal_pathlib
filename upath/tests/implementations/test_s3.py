@@ -2,8 +2,6 @@
 """
 import pytest  # noqa: F401
 
-from s3fs import S3FileSystem
-
 from upath import UPath
 from upath.errors import NotDirectoryError
 from upath.implementations.s3 import S3Path
@@ -11,7 +9,6 @@ from upath.tests.cases import BaseTests
 
 
 class TestUPathS3(BaseTests):
-    
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, s3):
         anon, s3so = s3
@@ -19,7 +16,6 @@ class TestUPathS3(BaseTests):
         self.path = UPath(path, anon=anon, **s3so)
         self.anon = anon
         self.s3so = s3so
-
 
     def test_is_S3Path(self):
         assert isinstance(self.path, S3Path)

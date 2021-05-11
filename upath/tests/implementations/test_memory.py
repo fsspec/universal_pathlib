@@ -7,7 +7,6 @@ from upath.tests.cases import BaseTests
 
 
 class TestMemoryPath(BaseTests):
-
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
         path = f"memory:/{local_testdir}"

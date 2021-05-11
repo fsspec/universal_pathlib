@@ -1,10 +1,8 @@
 import sys
 import pathlib
-from pathlib import Path
 import warnings
 
 import pytest
-from fsspec.registry import get_filesystem_class
 
 from upath import UPath
 from upath.tests.cases import BaseTests
@@ -33,9 +31,7 @@ def test_UPath_warning():
         assert "mock" in str(w[-1].message)
 
 
-
 class TestUpath(BaseTests):
-
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
         with warnings.catch_warnings():

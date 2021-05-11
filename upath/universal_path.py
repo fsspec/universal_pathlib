@@ -46,8 +46,7 @@ class _FSSpecAccessor:
         return args, kwargs
 
     def _format_path(self, s):
-        """placeholder method for subclassed filesystems
-        """
+        """placeholder method for subclassed filesystems"""
         return s
 
     def __getattribute__(self, item):

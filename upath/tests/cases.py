@@ -6,7 +6,6 @@ from upath import UPath
 
 
 class BaseTests:
-
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
             self.path.cwd()
@@ -206,7 +205,7 @@ class BaseTests:
         file2 = self.path.joinpath("file2.txt")
         file2.touch()
         file2.write_bytes(b"hello world")
-    
+
     def test_fsspec_compat(self):
         fs = self.path.fs
         scheme = self.path._url.scheme
