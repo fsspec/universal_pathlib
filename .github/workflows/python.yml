@@ -30,7 +30,7 @@ jobs:
       run: |
         nox -s build
     - name: Publish package
-      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && runner.os == 'ubuntu-latest'
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && runner.os == Linux
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
