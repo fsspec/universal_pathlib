@@ -24,3 +24,23 @@ class S3Path(UniversalPath):
         sp = self.path
         subed = re.sub(f"^{self._url.netloc}/({sp}|{sp[1:]})/?", "", name)
         return subed
+
+    def _init(self, *args, template=None, **kwargs):
+        if kwargs.get("bucket") and kwargs.get("_url"):
+            bucket = kwargs.pop("bucket")
+            kwargs["_url"] = kwargs["_url"]._replace(netloc=bucket)
+        super()._init(*args, template=template, **kwargs)
+
+    def joinpath(self, *args):
+        if self._url.netloc:
+            return super().joinpath(*args)
+        # handles a bucket in the path
+        else:
+            path = args[0]
+            if isinstance(path, list):
+                args_list = list(*args)
+            else:
+                args_list = path.split(self._flavour.sep)
+            bucket = args_list.pop(0)
+            self._kwargs["bucket"] = bucket
+            return super().joinpath(*tuple(args_list))

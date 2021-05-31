@@ -83,3 +83,15 @@ class TestUPathS3(BaseTests):
         upath2 = UPath(p2, anon=self.anon, **self.s3so)
         assert upath2.read_bytes() == content
         upath2.unlink()
+
+    @pytest.mark.parametrize(
+        "joiner", [["bucket", "path", "file"], "bucket/path/file"]
+    )
+    def test_no_bucket_joinpath(self, joiner):
+        path = UPath("s3://", anon=self.anon, **self.s3so)
+        path = path.joinpath(joiner)
+        assert str(path) == "s3://bucket/path/file"
+
+    def test_creating_s3path_with_bucket(self):
+        path = UPath("s3://", bucket="bucket", anon=self.anon, **self.s3so)
+        assert str(path) == "s3://bucket/"

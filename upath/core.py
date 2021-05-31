@@ -10,9 +10,9 @@ from upath.registry import _registry
 class UPath(pathlib.Path):
     def __new__(cls, *args, **kwargs):
         if cls is UPath:
-            new_args = list(args)
-            first_arg = new_args.pop(0)
-            parsed_url = urllib.parse.urlparse(first_arg)
+            args_list = list(args)
+            url = args_list.pop(0)
+            parsed_url = urllib.parse.urlparse(url)
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
                 if val:
@@ -34,8 +34,8 @@ class UPath(pathlib.Path):
             else:
                 cls = _registry[parsed_url.scheme]
                 kwargs["_url"] = parsed_url
-                new_args.insert(0, parsed_url.path)
-                args = tuple(new_args)
+                args_list.insert(0, parsed_url.path)
+                args = tuple(args_list)
                 self = cls._from_parts_init(args, init=False)
                 self._init(*args, **kwargs)
         return self
