@@ -8,6 +8,8 @@ from upath.tests.test_core import TestUpath
 
 from gcsfs import GCSFileSystem
 
+from gcsfs.tests.utils import gcs_maker
+
 
 TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
 TEST_BUCKET = os.environ.get("GCSFS_TEST_BUCKET", "gcsfs-testing")

@@ -12,6 +12,7 @@ dependencies:
     - jupyter   
     - ipython
     - pytest
+    - vcrpy
     - pylint
     - flake8
     - pyarrow
