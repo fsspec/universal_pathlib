@@ -48,15 +48,14 @@ def clear_registry():
 
 @pytest.fixture()
 def tempdir(clear_registry):
-    tempdir = tempfile.TemporaryDirectory()
-    tempdir = tempdir.name
-    return tempdir
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield tempdir
 
 
 @pytest.fixture()
 def local_testdir(tempdir, clear_registry):
     tmp = Path(tempdir)
-    tmp.mkdir()
+    tmp.mkdir(exist_ok=True)
     folder1 = tmp.joinpath("folder1")
     folder1.mkdir()
     folder1_files = ["file1.txt", "file2.txt"]

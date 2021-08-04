@@ -52,3 +52,34 @@ def test_multiple_backend_paths(local_testdir, s3, hdfs):
     path = f"hdfs:{local_testdir}"
     UPath(path, host=host, user=user, port=port)
     assert s3_path.joinpath("text1.txt")._url.scheme == "s3"
+
+
+def test_constructor_accept_path(local_testdir):
+    path = UPath(pathlib.Path(local_testdir))
+    assert str(path) == local_testdir
+
+
+def test_constructor_accept_upath(local_testdir):
+    path = UPath(UPath(local_testdir))
+    assert str(path) == local_testdir
+
+
+def test_subclass(local_testdir):
+    class MyPath(UPath):
+        pass
+
+    path = MyPath(local_testdir)
+    assert str(path) == local_testdir
+    assert issubclass(MyPath, UPath)
+    assert isinstance(path, pathlib.Path)
+
+
+def test_instance_check(local_testdir):
+    path = UPath(local_testdir)
+    assert isinstance(path, UPath)
+
+
+def test_new_method(local_testdir):
+    path = UPath.__new__(pathlib.Path, local_testdir)
+    assert str(path) == local_testdir
+    assert isinstance(path, pathlib.Path)
