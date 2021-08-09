@@ -1,6 +1,5 @@
 import os
 import tempfile
-import shutil
 from pathlib import Path
 import subprocess
 import shlex
@@ -74,7 +73,6 @@ def local_testdir(tempdir, clear_registry):
         yield str(Path(tempdir)).replace("\\", "/")
     else:
         yield tempdir
-    # shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @pytest.fixture()
