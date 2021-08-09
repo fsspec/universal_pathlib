@@ -1,6 +1,7 @@
 import sys
 import pathlib
 import warnings
+from pathlib import Path
 
 import pytest
 
@@ -56,12 +57,12 @@ def test_multiple_backend_paths(local_testdir, s3, hdfs):
 
 def test_constructor_accept_path(local_testdir):
     path = UPath(pathlib.Path(local_testdir))
-    assert str(path) == local_testdir
+    assert str(path) == str(Path(local_testdir))
 
 
 def test_constructor_accept_upath(local_testdir):
     path = UPath(UPath(local_testdir))
-    assert str(path) == local_testdir
+    assert str(path) == str(Path(local_testdir))
 
 
 def test_subclass(local_testdir):
@@ -69,7 +70,7 @@ def test_subclass(local_testdir):
         pass
 
     path = MyPath(local_testdir)
-    assert str(path) == local_testdir
+    assert str(path) == str(Path(local_testdir))
     assert issubclass(MyPath, UPath)
     assert isinstance(path, pathlib.Path)
 
@@ -81,5 +82,5 @@ def test_instance_check(local_testdir):
 
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
-    assert str(path) == local_testdir
+    assert str(path) == str(Path(local_testdir))
     assert isinstance(path, pathlib.Path)
