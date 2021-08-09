@@ -1,17 +1,28 @@
+from abc import ABCMeta
 import os
 import pathlib
 import urllib
 
 from fsspec.registry import known_implementations, registry
+from fsspec.utils import stringify_path
 
 from upath.registry import _registry
 
 
-class UPath(pathlib.Path):
+class UPathMeta(ABCMeta):
+    def __instancecheck__(cls, instance):
+        return isinstance(instance, pathlib.Path)
+
+    def __subclasscheck__(cls, subclass):
+        return issubclass(subclass, pathlib.Path)
+
+
+class UPath(pathlib.Path, metaclass=UPathMeta):
     def __new__(cls, *args, **kwargs):
-        if cls is UPath:
+        if issubclass(cls, UPath):
             args_list = list(args)
             url = args_list.pop(0)
+            url = stringify_path(url)
             parsed_url = urllib.parse.urlparse(url)
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
@@ -38,4 +49,6 @@ class UPath(pathlib.Path):
                 args = tuple(args_list)
                 self = cls._from_parts_init(args, init=False)
                 self._init(*args, **kwargs)
+        else:
+            self = super().__new__(*args, **kwargs)
         return self
