@@ -1,7 +1,6 @@
 import sys
 import pathlib
 import warnings
-from pathlib import Path
 
 import pytest
 
@@ -9,9 +8,8 @@ from upath import UPath
 from upath.tests.cases import BaseTests
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="only run test if Linux Machine"
-)
+@pytest.mark.skipif(sys.platform != "linux",
+                    reason="only run test if Linux Machine")
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
@@ -57,12 +55,12 @@ def test_multiple_backend_paths(local_testdir, s3, hdfs):
 
 def test_constructor_accept_path(local_testdir):
     path = UPath(pathlib.Path(local_testdir))
-    assert str(path) == str(Path(local_testdir))
+    assert str(path) == str(pathlib.Path(local_testdir))
 
 
 def test_constructor_accept_upath(local_testdir):
     path = UPath(UPath(local_testdir))
-    assert str(path) == str(Path(local_testdir))
+    assert str(path) == str(pathlib.Path(local_testdir))
 
 
 def test_subclass(local_testdir):
@@ -70,7 +68,7 @@ def test_subclass(local_testdir):
         pass
 
     path = MyPath(local_testdir)
-    assert str(path) == str(Path(local_testdir))
+    assert str(path) == str(pathlib.Path(local_testdir))
     assert issubclass(MyPath, UPath)
     assert isinstance(path, pathlib.Path)
 
@@ -78,9 +76,18 @@ def test_subclass(local_testdir):
 def test_instance_check(local_testdir):
     path = UPath(local_testdir)
     assert isinstance(path, UPath)
+    path = UPath(f"file://{local_testdir}")
+    assert type(path) == UPath
 
 
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
-    assert str(path) == str(Path(local_testdir))
+    assert str(path) == str(pathlib.Path(local_testdir))
     assert isinstance(path, pathlib.Path)
+
+
+class TestFSSpecLocal(BaseTests):
+    @pytest.fixture(autouse=True)
+    def path(self, local_testdir):
+        path = f"file://{local_testdir}"
+        self.path = UPath(path)
