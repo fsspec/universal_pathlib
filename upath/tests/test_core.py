@@ -8,8 +8,10 @@ from upath import UPath
 from upath.tests.cases import BaseTests
 
 
-@pytest.mark.skipif(sys.platform != "linux",
-                    reason="only run test if Linux Machine")
+@pytest.mark.skipif(
+    sys.platform.startswith("win"),
+    reason="don't run test on Windows",
+)
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
@@ -86,6 +88,10 @@ def test_new_method(local_testdir):
     assert isinstance(path, pathlib.Path)
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"),
+    reason="don't run test on Windows",
+)  # need to fix windows tests here
 class TestFSSpecLocal(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
