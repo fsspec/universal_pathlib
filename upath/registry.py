@@ -15,10 +15,9 @@ class _Registry:
         implemented_path = getattr(self, item, None)
         if not implemented_path:
             warning_str = (
-                f"{item} filesystem path not explicitely implimented. "
-                "falling back to default implimentation UniversalPath. "
-                "This filesystem may not be tested"
-            )
+                f"{item} filesystem path not explicitly implemented. "
+                "falling back to default implementation. "
+                "This filesystem may not be tested")
             warnings.warn(warning_str, UserWarning)
             return upath.UPath
         return implemented_path

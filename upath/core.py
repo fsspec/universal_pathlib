@@ -26,8 +26,8 @@ class _FSSpecAccessor:
 
     def transform_args_wrapper(self, func):
         """Modifies the arguments that get passed to the filesystem so that
-        the UniversalPath instance gets stripped as the first argument. If a
-        path keyword argument is not given, then `UniversalPath.path` is
+        the UPath instance gets stripped as the first argument. If a
+        path keyword argument is not given, then `UPath.path` is
         formatted for the filesystem and inserted as the first argument.
         If it is, then the path keyword argument is formatted properly for
         the filesystem.
@@ -184,7 +184,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         if item == "__class__":
             return super().__getattribute__("__class__")
         if item in getattr(self.__class__, "not_implemented"):
-            raise NotImplementedError(f"UniversalPath has no attribute {item}")
+            raise NotImplementedError(f"UPath has no attribute {item}")
         else:
             return super().__getattribute__(item)
 
@@ -274,7 +274,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return False
 
     def rename(self, target):
-        # can be implimented, but may be tricky
+        # can be implemented, but may be tricky
         raise NotImplementedError
 
     def touch(self, trunicate=True, **kwargs):

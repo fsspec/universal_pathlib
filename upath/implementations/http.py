@@ -9,8 +9,8 @@ class _HTTPAccessor(upath.core._FSSpecAccessor):
 
     def transform_args_wrapper(self, func):
         """if arguments are passed to the wrapped function, and if the first
-        argument is a UniversalPath instance, that argument is replaced with
-        the UniversalPath's path attribute
+        argument is a UPath instance, that argument is replaced with
+        the UPath's path attribute
         """
 
         def wrapper(*args, **kwargs):
