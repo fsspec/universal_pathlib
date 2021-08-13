@@ -97,3 +97,14 @@ class TestFSSpecLocal(BaseTests):
     def path(self, local_testdir):
         path = f"file://{local_testdir}"
         self.path = UPath(path)
+
+
+def test_create_from_type(local_testdir):
+    paths = [local_testdir, "s3://bucket/folder", "gs://bucket/folder"]
+    for path in paths:
+        parts = path.split("/")
+        parent = "/".join(parts[:-1])
+        upath = UPath(path)
+        cast = type(upath)
+        new = cast(parent)
+        assert isinstance(new, cast)
