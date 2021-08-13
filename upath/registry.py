@@ -17,7 +17,8 @@ class _Registry:
             warning_str = (
                 f"{item} filesystem path not explicitely implimented. "
                 "falling back to default implimentation UniversalPath. "
-                "This filesystem may not be tested")
+                "This filesystem may not be tested"
+            )
             warnings.warn(warning_str, UserWarning)
             return upath.UPath
         return implemented_path

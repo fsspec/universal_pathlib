@@ -11,6 +11,7 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
         argument is a UniversalPath instance, that argument is replaced with
         the UniversalPath's path attribute
         """
+
         def wrapper(*args, **kwargs):
             args, kwargs = self._transform_arg_paths(args, kwargs)
             if "trunicate" in kwargs:

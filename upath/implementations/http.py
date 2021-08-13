@@ -12,6 +12,7 @@ class _HTTPAccessor(upath.core._FSSpecAccessor):
         argument is a UniversalPath instance, that argument is replaced with
         the UniversalPath's path attribute
         """
+
         def wrapper(*args, **kwargs):
             if args:
                 args = list(args)

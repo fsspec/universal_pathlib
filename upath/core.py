@@ -19,7 +19,8 @@ class _FSSpecAccessor:
         self._url = parsed_url
         cls = get_filesystem_class(self._url.scheme)
         url_kwargs = cls._get_kwargs_from_urls(
-            urllib.parse.urlunparse(self._url))
+            urllib.parse.urlunparse(self._url)
+        )
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
 
@@ -31,6 +32,7 @@ class _FSSpecAccessor:
         If it is, then the path keyword argument is formatted properly for
         the filesystem.
         """
+
         def wrapper(*args, **kwargs):
             args, kwargs = self._transform_arg_paths(args, kwargs)
             return func(*args, **kwargs)
@@ -68,18 +70,21 @@ class _FSSpecAccessor:
         ]
         if item in class_methods:
             return lambda *args, **kwargs: getattr(self.__class__, item)(
-                self, *args, **kwargs)
+                self, *args, **kwargs
+            )
 
         d = object.__getattribute__(self, "__dict__")
         fs = d.get("_fs", None)
         if fs is not None:
             method = getattr(fs, item, None)
             if method:
-                return lambda *args, **kwargs: (self.transform_args_wrapper(
-                    method)(*args, **kwargs))  # noqa: E501
+                return lambda *args, **kwargs: (
+                    self.transform_args_wrapper(method)(*args, **kwargs)
+                )  # noqa: E501
             else:
                 raise NotImplementedError(
-                    f"{fs.protocol} filesystem has no attribute {item}")
+                    f"{fs.protocol} filesystem has no attribute {item}"
+                )
 
 
 class PureUPath(pathlib.PurePath):
@@ -130,13 +135,16 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
             # treat as local filesystem, return PosixPath or WindowsPath
             impls = list(registry) + list(known_implementations.keys())
             if not parsed_url.scheme or parsed_url.scheme not in impls:
-                cls = (pathlib.WindowsPath
-                       if os.name == "nt" else pathlib.PosixPath)
+                cls = (
+                    pathlib.WindowsPath
+                    if os.name == "nt"
+                    else pathlib.PosixPath
+                )
                 self = cls._from_parts(args, init=False)
                 if not self._flavour.is_supported:
                     raise NotImplementedError(
-                        "cannot instantiate %r on your system" %
-                        (cls.__name__, ))
+                        "cannot instantiate %r on your system" % (cls.__name__,)
+                    )
                 self._init()
             else:
                 import upath.registry
@@ -198,8 +206,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     @property
     def path(self):
         if self._parts:
-            join_parts = (self._parts[1:]
-                          if self._parts[0] == "/" else self._parts)
+            join_parts = (
+                self._parts[1:] if self._parts[0] == "/" else self._parts
+            )
             path = self._flavour.join(join_parts)
             return self._root + path
         else:
