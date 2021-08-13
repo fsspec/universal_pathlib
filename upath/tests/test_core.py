@@ -9,8 +9,7 @@ from upath.tests.cases import BaseTests
 
 
 @pytest.mark.skipif(
-    sys.platform.startswith("win"),
-    reason="don't run test on Windows",
+    sys.platform.startswith("win"), reason="don't run test on Windows",
 )
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
@@ -89,8 +88,7 @@ def test_new_method(local_testdir):
 
 
 @pytest.mark.skipif(
-    sys.platform.startswith("win"),
-    reason="don't run test on Windows",
+    sys.platform.startswith("win"), reason="don't run test on Windows",
 )  # need to fix windows tests here
 class TestFSSpecLocal(BaseTests):
     @pytest.fixture(autouse=True)
@@ -99,14 +97,23 @@ class TestFSSpecLocal(BaseTests):
         self.path = UPath(path)
 
 
-PATHS = ["/tmp/abc", "s3://bucket/folder", "gs://bucket/folder"]
+PATHS = {
+    "/tmp/abc": None,
+    "s3://bucket/folder": "s3fs",
+    "gs://bucket/folder": "gcsfs",
+}
 
 
-@pytest.mark.parametrize("path", PATHS)
-def test_create_from_type(path):
+@pytest.mark.parametrize(("path", "module"), PATHS.items())
+def test_create_from_type(path, module):
+    if module:
+        pytest.importorskip(module)
     parts = path.split("/")
     parent = "/".join(parts[:-1])
-    upath = UPath(path)
-    cast = type(upath)
-    new = cast(parent)
-    assert isinstance(new, cast)
+    try:
+        upath = UPath(path)
+        cast = type(upath)
+        new = cast(parent)
+        assert isinstance(new, cast)
+    except (ImportError, ModuleNotFoundError):
+        pass

@@ -25,16 +25,18 @@ description-file = "README.md"
 dev = []
 doc = []
 test = [
+  "aiohttp",
+  "flake8",
+  "gcsfs",
+  "hadoop-test-cluster",
+  "ipython",
+  "jupyter",
+  "moto",
+  "pyarrow",
+  "pylint",
+  "pytest",
   "requests",
   "s3fs",
-  "jupyter",
-  "ipython",
-  "pytest",
-  "pylint",
-  "flake8",
-  "pyarrow",
-  "moto",
-  "hadoop-test-cluster",
 ]
 
 [tool.flit.scripts]
