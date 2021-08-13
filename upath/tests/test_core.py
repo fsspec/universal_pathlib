@@ -99,12 +99,14 @@ class TestFSSpecLocal(BaseTests):
         self.path = UPath(path)
 
 
-def test_create_from_type(local_testdir):
-    paths = [local_testdir, "s3://bucket/folder", "gs://bucket/folder"]
-    for path in paths:
-        parts = path.split("/")
-        parent = "/".join(parts[:-1])
-        upath = UPath(path)
-        cast = type(upath)
-        new = cast(parent)
-        assert isinstance(new, cast)
+PATHS = ["/tmp/abc", "s3://bucket/folder", "gs://bucket/folder"]
+
+
+@pytest.mark.parametrize("path", PATHS)
+def test_create_from_type(path):
+    parts = path.split("/")
+    parent = "/".join(parts[:-1])
+    upath = UPath(path)
+    cast = type(upath)
+    new = cast(parent)
+    assert isinstance(new, cast)
