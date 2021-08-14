@@ -5,11 +5,13 @@ import warnings
 import pytest
 
 from upath import UPath
+from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
 
 
 @pytest.mark.skipif(
-    sys.platform.startswith("win"), reason="don't run test on Windows",
+    sys.platform.startswith("win"),
+    reason="don't run test on Windows",
 )
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
@@ -75,10 +77,15 @@ def test_subclass(local_testdir):
 
 
 def test_instance_check(local_testdir):
-    path = UPath(local_testdir)
-    assert isinstance(path, UPath)
-    path = UPath(f"file://{local_testdir}")
-    assert type(path) == UPath
+    path = pathlib.Path(local_testdir)
+    upath = UPath(local_testdir)
+    # test instance check passes
+    assert isinstance(upath, UPath)
+    # test type is same as pathlib
+    assert type(upath) is type(path)
+    upath = UPath(f"file://{local_testdir}")
+    # test default implementation is used
+    assert type(upath) is UPath
 
 
 def test_new_method(local_testdir):
@@ -88,7 +95,8 @@ def test_new_method(local_testdir):
 
 
 @pytest.mark.skipif(
-    sys.platform.startswith("win"), reason="don't run test on Windows",
+    sys.platform.startswith("win"),
+    reason="don't run test on Windows",
 )  # need to fix windows tests here
 class TestFSSpecLocal(BaseTests):
     @pytest.fixture(autouse=True)
@@ -97,23 +105,35 @@ class TestFSSpecLocal(BaseTests):
         self.path = UPath(path)
 
 
-PATHS = {
-    "/tmp/abc": None,
-    "s3://bucket/folder": "s3fs",
-    "gs://bucket/folder": "gcsfs",
-}
+PATHS = (
+    ("path", "storage_options", "module", "object_type"),
+    (
+        ("/tmp/abc", (), None, pathlib.Path),
+        ("s3://bucket/folder", ({"anon": True}), "s3fs", S3Path),
+        ("gs://bucket/folder", ({"token": "anon"}), "gcsfs", UPath),
+    ),
+)
 
 
-@pytest.mark.parametrize(("path", "module"), PATHS.items())
-def test_create_from_type(path, module):
+@pytest.mark.parametrize(*PATHS)
+def test_create_from_type(path, storage_options, module, object_type):
+    """Test that derived paths use same fs instance."""
     if module:
+        # skip if module cannot be imported
         pytest.importorskip(module)
-    parts = path.split("/")
-    parent = "/".join(parts[:-1])
     try:
-        upath = UPath(path)
+        upath = UPath(path, storage_options=storage_options)
+        # test expected object type
+        assert isinstance(upath, object_type)
         cast = type(upath)
-        new = cast(parent)
+        parent = upath.parent
+        # test derived object is same type
+        assert isinstance(parent, cast)
+        # test that created fs uses fsspec instance cache
+        assert not hasattr(upath, "fs") or upath.fs is parent.fs
+        new = cast(str(parent))
+        # test that object cast is same type
         assert isinstance(new, cast)
     except (ImportError, ModuleNotFoundError):
+        # fs failed to import
         pass
