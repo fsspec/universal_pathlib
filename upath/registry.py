@@ -1,6 +1,7 @@
 import warnings
 
 import upath
+import upath.errors
 
 
 class _Registry:
@@ -19,7 +20,10 @@ class _Registry:
                 "falling back to default implementation. "
                 "This filesystem may not be tested"
             )
-            warnings.warn(warning_str, UserWarning)
+            warnings.warn(
+                warning_str,
+                upath.errors.DefaultImplementationWarning,
+            )
             return upath.UPath
         return implemented_path
 

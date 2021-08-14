@@ -5,6 +5,7 @@ import warnings
 import pytest
 
 from upath import UPath
+from upath.errors import DefaultImplementationWarning
 from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
 
@@ -30,6 +31,7 @@ def test_UPath_warning():
         path = UPath("mock:/")  # noqa: F841
         assert len(w) == 1
         assert issubclass(w[-1].category, UserWarning)
+        assert issubclass(w[-1].category, DefaultImplementationWarning)
         assert "mock" in str(w[-1].message)
 
 

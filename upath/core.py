@@ -238,7 +238,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
 
     def glob(self, pattern):
         path = self.joinpath(pattern)
-        for name in self._accessor.glob(self, path=path.path):
+        for name in self._accessor.glob(path):
             name = self._sub_path(name)
             name = name.split(self._flavour.sep)
             yield self._make_child(name)
@@ -252,7 +252,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         """
         Whether this path exists.
         """
-        if not getattr(self._accessor, "exists"):
+        if not hasattr(self._accessor, "exists"):
             try:
                 self._accessor.stat(self)
             except (FileNotFoundError):
@@ -283,19 +283,16 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     def unlink(self, missing_ok=False):
         if not self.exists():
             if not missing_ok:
-                raise FileNotFoundError
+                raise FileNotFoundError(str(self))
             else:
                 return
         self._accessor.rm(self, recursive=False)
 
     def rmdir(self, recursive=True):
-        """Add warning if directory not empty
-        assert is_dir?
-        """
-        try:
-            assert self.is_dir()
-        except AssertionError:
-            raise NotDirectoryError
+        if not self.is_dir():
+            raise NotDirectoryError(str(self))
+        if not recursive and next(self.iterdir()):
+            raise OSError(f"Not recursive and directory not empty: {str(self)}")
         self._accessor.rm(self, recursive=recursive)
 
     @classmethod
