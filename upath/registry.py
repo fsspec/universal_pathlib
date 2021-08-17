@@ -1,26 +1,27 @@
 import warnings
 
-from upath.universal_path import UniversalPath
-from upath.implementations import http, hdfs, s3, memory
+import upath
 
 
 class _Registry:
+    from upath.implementations import hdfs, http, memory, s3
+
     http = http.HTTPPath
     hdfs = hdfs.HDFSPath
     s3 = s3.S3Path
     memory = memory.MemoryPath
 
     def __getitem__(self, item):
-        implimented_path = getattr(self, item, None)
-        if not implimented_path:
+        implemented_path = getattr(self, item, None)
+        if not implemented_path:
             warning_str = (
-                f"{item} filesystem path not explicitely implimented. "
-                "falling back to default implimentation UniversalPath. "
+                f"{item} filesystem path not explicitly implemented. "
+                "falling back to default implementation. "
                 "This filesystem may not be tested"
             )
             warnings.warn(warning_str, UserWarning)
-            return UniversalPath
-        return implimented_path
+            return upath.UPath
+        return implemented_path
 
 
 _registry = _Registry()

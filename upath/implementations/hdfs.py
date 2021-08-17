@@ -1,15 +1,15 @@
-from upath.universal_path import _FSSpecAccessor, UniversalPath
+import upath.core
 
 
-class _HDFSAccessor(_FSSpecAccessor):
+class _HDFSAccessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
         self._fs.root_marker = "/"
 
     def transform_args_wrapper(self, func):
-        """if arguments are passed to the wrapped function, and if the first
-        argument is a UniversalPath instance, that argument is replaced with
-        the UniversalPath's path attribute
+        """If arguments are passed to the wrapped function, and if the first
+        argument is a UPath instance, that argument is replaced with
+        the UPath's path attribute
         """
 
         def wrapper(*args, **kwargs):
@@ -23,5 +23,5 @@ class _HDFSAccessor(_FSSpecAccessor):
         return wrapper
 
 
-class HDFSPath(UniversalPath):
+class HDFSPath(upath.core.UPath):
     _default_accessor = _HDFSAccessor

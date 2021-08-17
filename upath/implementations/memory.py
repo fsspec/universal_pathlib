@@ -1,7 +1,7 @@
-from upath.universal_path import _FSSpecAccessor, UniversalPath
+import upath.core
 
 
-class _MemoryAccessor(_FSSpecAccessor):
+class _MemoryAccessor(upath.core._FSSpecAccessor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._fs.root_marker = ""
@@ -13,7 +13,7 @@ class _MemoryAccessor(_FSSpecAccessor):
         return s
 
 
-class MemoryPath(UniversalPath):
+class MemoryPath(upath.core.UPath):
     _default_accessor = _MemoryAccessor
 
     def iterdir(self):

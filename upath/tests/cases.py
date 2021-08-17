@@ -137,7 +137,7 @@ class BaseTests:
 
     @pytest.mark.xfail
     def test_rename(self):
-        # need to impliment
+        # need to implement
         raise False
 
     def test_replace(self):
