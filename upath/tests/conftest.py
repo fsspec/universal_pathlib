@@ -46,9 +46,9 @@ def clear_registry():
 
 
 @pytest.fixture()
-def tempdir(clear_registry):
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield tempdir
+def tempdir(tmp_path_factory):
+    with tmp_path_factory.mktemp("upath_tmp") as tempdir:
+        yield str(tempdir)
 
 
 @pytest.fixture()
