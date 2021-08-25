@@ -10,8 +10,7 @@ class _Registry:
     s3a = s3.S3Path
     s3 = s3.S3Path
     memory = memory.MemoryPath
-    gc = gcs.GCSPath
-    gcs = gcs.GCSPath
+    gs = gcs.GCSPath
     
 
     def __getitem__(self, item):

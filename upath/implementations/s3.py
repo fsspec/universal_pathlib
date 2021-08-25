@@ -9,6 +9,9 @@ class _S3Accessor(_FSSpecAccessor):
         super().__init__(parsed_url, *args, **kwargs)
 
     def _format_path(self, s):
+        """If the filesystem backend doesn't have a root_marker, strip the
+        leading slash of a path and add the bucket
+        """
         s = os.path.join(self._url.netloc, s.lstrip("/"))
         return s
 
@@ -26,6 +29,7 @@ class S3Path(UniversalPath):
         return subed
 
     def _init(self, *args, template=None, **kwargs):
+        # ensure that the bucket is part of the netloc path
         if kwargs.get("bucket") and kwargs.get("_url"):
             bucket = kwargs.pop("bucket")
             kwargs["_url"] = kwargs["_url"]._replace(netloc=bucket)

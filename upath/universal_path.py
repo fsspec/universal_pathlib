@@ -11,6 +11,9 @@ class _FSSpecAccessor:
     def __init__(self, parsed_url, *args, **kwargs):
         self._url = parsed_url
         cls = get_filesystem_class(self._url.scheme)
+        # print(cls)
+        # print(args)
+        # print(kwargs)
         url_kwargs = cls._get_kwargs_from_urls(
             urllib.parse.urlunparse(self._url)
         )
