@@ -1,10 +1,10 @@
 import os
 import re
 
-from upath.universal_path import _FSSpecAccessor, UniversalPath
+import upath.core
 
 
-class _S3Accessor(_FSSpecAccessor):
+class _S3Accessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
 
@@ -16,7 +16,7 @@ class _S3Accessor(_FSSpecAccessor):
         return s
 
 
-class S3Path(UniversalPath):
+class S3Path(upath.core.UPath):
     _default_accessor = _S3Accessor
 
     def _sub_path(self, name):

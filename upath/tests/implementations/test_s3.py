@@ -27,7 +27,7 @@ class TestUPathS3(BaseTests):
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
         # new_dir.mkdir()
-        # mkdir doesnt really do anything. A directory only exists in s3
+        # mkdir doesn't really do anything. A directory only exists in s3
         # if some file or something is written to it
         new_dir.joinpath("test.txt").touch()
         assert new_dir.exists()
