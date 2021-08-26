@@ -180,17 +180,17 @@ def s3(s3_server, tempdir, local_testdir):
             s3.mkdir(str(x))
     yield anon, s3so
 
-# @pytest.fixture(scope="session")
-# def gcs():
-#     with gcs_maker() as gcs:  # TODO: should I add record mode here?
-#         yield gcs
+@pytest.fixture(scope="session")
+def gcs():
+    with gcs_maker() as gcs:  # TODO: should I add record mode here?
+        yield gcs
 
-#         # # teardown after testing 
-#         # # remove all files in the bucket
-#         # file_list = gcs.find(TEST_BUCKET)
-#         # gcs.rm(file_list)
-#         # # remove the empty bucket
-#         # gcs.rmdir(TEST_BUCKET)
+        # # teardown after testing 
+        # # remove all files in the bucket
+        # file_list = gcs.find(TEST_BUCKET)
+        # gcs.rm(file_list)
+        # # remove the empty bucket
+        # gcs.rmdir(TEST_BUCKET)
 
 # patch; for some reason, original wants vcr_response["url"], which is empty
 def build_response(vcr_request, vcr_response, history):

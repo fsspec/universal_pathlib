@@ -222,13 +222,11 @@ d = TEST_BUCKET + "/tmp/test/d"
 
 @contextmanager
 def gcs_maker( **kwargs):
-    # import pdb; pdb.set_trace()
     gcs = GCSFileSystem(TEST_PROJECT, token=GOOGLE_TOKEN, **kwargs)
     # invalidate cached state of gcs files
     gcs.invalidate_cache()
     try:
         try:
-            import pdb; pdb.set_trace()
             # remove all the files that are in the bucket
             gcs.rm(TEST_BUCKET, recursive=True)
         except FileNotFoundError:
