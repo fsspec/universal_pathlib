@@ -48,13 +48,13 @@ def clear_registry():
         _registry.clear()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def tempdir(clear_registry):
     with tempfile.TemporaryDirectory() as tempdir:
         yield tempdir
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def local_testdir(tempdir, clear_registry):
     tmp = Path(tempdir)
     tmp.mkdir(exist_ok=True)

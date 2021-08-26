@@ -1,8 +1,8 @@
-from upath.universal_path import _FSSpecAccessor, UniversalPath
+import upath.core
 import os
 import re
 
-class _GCSAccessor(_FSSpecAccessor):
+class _GCSAccessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
 
@@ -15,7 +15,7 @@ class _GCSAccessor(_FSSpecAccessor):
 
 
 # project is not part of the path, but is part of the credentials
-class GCSPath(UniversalPath):
+class GCSPath(upath.core.UPath):
     _default_accessor = _GCSAccessor
 
     def _init(self, *args, template=None, **kwargs):
@@ -27,7 +27,7 @@ class GCSPath(UniversalPath):
         super()._init(*args, template=template, **kwargs)
 
     def _sub_path(self, name):
-        """s3fs returns path as `{bucket}/<path>` with listdir
+        """gcsfs returns path as `{bucket}/<path>` with listdir
         and glob, so here we can add the netloc to the sub string
         so it gets subbed out as well
         """
