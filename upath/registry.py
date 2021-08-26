@@ -12,6 +12,7 @@ class _Registry:
     s3 = s3.S3Path
     memory = memory.MemoryPath
     gs = gcs.GCSPath
+    gcs = gcs.GCSPath
     
 
     def __getitem__(self, item):
