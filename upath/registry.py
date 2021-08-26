@@ -4,7 +4,7 @@ import upath
 
 
 class _Registry:
-    from upath.implementations import hdfs, http, memory, s3
+    from upath.implementations import hdfs, http, memory, s3, gcs
 
     http = http.HTTPPath
     hdfs = hdfs.HDFSPath
