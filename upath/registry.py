@@ -13,7 +13,6 @@ class _Registry:
     memory = memory.MemoryPath
     gs = gcs.GCSPath
     gcs = gcs.GCSPath
-    
 
     def __getitem__(self, item):
         implemented_path = getattr(self, item, None)

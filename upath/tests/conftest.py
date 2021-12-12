@@ -12,7 +12,14 @@ import vcr.stubs.aiohttp_stubs as aios
 import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
-from upath.tests.utils import TEST_BUCKET, TEST_PROJECT, GOOGLE_TOKEN, RECORD_MODE, allfiles, gcs_maker
+from upath.tests.utils import (
+    TEST_BUCKET,
+    TEST_PROJECT,
+    GOOGLE_TOKEN,
+    RECORD_MODE,
+    allfiles,
+    gcs_maker,
+)
 
 
 def pytest_addoption(parser):
@@ -180,17 +187,19 @@ def s3(s3_server, tempdir, local_testdir):
             s3.mkdir(str(x))
     yield anon, s3so
 
-@pytest.fixture(scope="session")
+
+@pytest.fixture(scope="function")
 def gcs():
     with gcs_maker() as gcs:  # TODO: should I add record mode here?
         yield gcs
 
-        # # teardown after testing 
-        # # remove all files in the bucket
-        # file_list = gcs.find(TEST_BUCKET)
-        # gcs.rm(file_list)
-        # # remove the empty bucket
-        # gcs.rmdir(TEST_BUCKET)
+# teardown after testing
+# remove all files in the bucket
+# file_list = gcs.find(TEST_BUCKET)
+# gcs.rm(file_list)
+# remove the empty bucket
+# gcs.rmdir(TEST_BUCKET)
+
 
 # patch; for some reason, original wants vcr_response["url"], which is empty
 def build_response(vcr_request, vcr_response, history):
@@ -268,7 +277,9 @@ def play_responses(cassette, vcr_request):
         if "Location" not in response.headers:
             # Not a redirect, an instruction not to call again
             break
-        next_url = aios.URL(response.url).with_path(response.headers["location"])
+        next_url = aios.URL(response.url).with_path(
+            response.headers["location"]
+        )
 
         # Make a stub VCR request that we can then use to look up the recorded
         # VCR request saved to the cassette. This feels a little hacky and
@@ -280,7 +291,9 @@ def play_responses(cassette, vcr_request):
             None,
             aios._serialize_headers(response.request_info.headers),
         )
-        vcr_request = cassette.find_requests_with_most_matches(vcr_request)[0][0]
+        vcr_request = cassette.find_requests_with_most_matches(vcr_request)[0][
+            0
+        ]
 
         # Tack on the response we saw from the redirect into the history
         # list that is added on to the final response.

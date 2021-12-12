@@ -2,6 +2,7 @@ import upath.core
 import os
 import re
 
+
 class _GCSAccessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
@@ -47,10 +48,10 @@ class GCSPath(upath.core.UPath):
                 args_list = path.split(self._flavour.sep)
             bucket = args_list.pop(0)
             self._kwargs["bucket"] = bucket
-            return super().joinpath(*tuple(args_list)) 
+            return super().joinpath(*tuple(args_list))
 
     def mkdir(self, *args, **kwargs):
-        # unless this is a bucket, we cannot create an empty 
+        # unless this is a bucket, we cannot create an empty
         # directory in gcs since its not an actual file system
         bucket = self._url.netloc
         # if the path only includes the bucket, the parts will be empty
