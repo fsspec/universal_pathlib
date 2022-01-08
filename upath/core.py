@@ -273,6 +273,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
             return True
         return False
 
+    def chmod(self, mod):
+        raise NotImplementedError
+
     def rename(self, target):
         # can be implemented, but may be tricky
         raise NotImplementedError
