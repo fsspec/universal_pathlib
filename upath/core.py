@@ -40,7 +40,7 @@ class _FSSpecAccessor:
         return wrapper
 
     def _transform_arg_paths(self, args, kwargs):
-        """formats the path properly for the filesystem backend."""
+        """Formats the path properly for the filesystem backend."""
         args = list(args)
         first_arg = args.pop(0)
         if not kwargs.get("path"):
@@ -53,7 +53,7 @@ class _FSSpecAccessor:
         return args, kwargs
 
     def _format_path(self, s):
-        """placeholder method for subclassed filesystems"""
+        """Placeholder method for subclassed filesystems"""
         return s
 
     def __getattribute__(self, item):
@@ -272,6 +272,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         if info["type"] == "file":
             return True
         return False
+
+    def chmod(self, mod):
+        raise NotImplementedError
 
     def rename(self, target):
         # can be implemented, but may be tricky

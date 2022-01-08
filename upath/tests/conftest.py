@@ -5,11 +5,14 @@ import subprocess
 import shlex
 import time
 import sys
-
+from gcsfs.core import GCSFileSystem
 
 import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
+
+import fsspec
+import requests
 
 
 def pytest_addoption(parser):
@@ -45,13 +48,13 @@ def clear_registry():
         _registry.clear()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def tempdir(clear_registry):
     with tempfile.TemporaryDirectory() as tempdir:
         yield tempdir
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def local_testdir(tempdir, clear_registry):
     tmp = Path(tempdir)
     tmp.mkdir(exist_ok=True)
@@ -153,7 +156,7 @@ def s3_server():
         time.sleep(0.1)  # pragma: no cover
     anon = False
     s3so = dict(
-        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=False
+        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=True
     )
     yield anon, s3so
     proc.terminate()
@@ -176,3 +179,74 @@ def s3(s3_server, tempdir, local_testdir):
         else:
             s3.mkdir(str(x))
     yield anon, s3so
+
+
+def stop_docker(container):
+    cmd = shlex.split('docker ps -a -q --filter "name=%s"' % container)
+    cid = subprocess.check_output(cmd).strip().decode()
+    if cid:
+        subprocess.call(["docker", "rm", "-f", "-v", cid])
+
+
+TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
+
+
+@pytest.fixture(scope="module")
+def docker_gcs():
+    if "STORAGE_EMULATOR_HOST" in os.environ:
+        # assume using real API or otherwise have a server already set up
+        yield os.environ["STORAGE_EMULATOR_HOST"]
+        return
+    container = "gcsfs_test"
+    cmd = (
+        "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
+        "http -public-host http://localhost:4443 -external-url http://localhost:4443"  # noqa: E501
+    )
+    stop_docker(container)
+    subprocess.check_output(shlex.split(cmd))
+    url = "http://0.0.0.0:4443"
+    timeout = 10
+    while True:
+        try:
+            r = requests.get(url + "/storage/v1/b")
+            if r.ok:
+                print("url: ", url)
+                yield url
+                break
+        except Exception as e:  # noqa: E722
+            timeout -= 1
+            if timeout < 0:
+                raise SystemError from e
+            time.sleep(1)
+    stop_docker(container)
+
+
+@pytest.fixture
+def gcs(docker_gcs, tempdir, local_testdir, populate=True):
+    # from gcsfs.credentials import GoogleCredentials
+    GCSFileSystem.clear_instance_cache()
+    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
+    try:
+        # ensure we're empty.
+        try:
+            gcs.rm("tmp", recursive=True)
+        except FileNotFoundError:
+            pass
+        try:
+            gcs.mkdir("tmp")
+            print("made tmp dir")
+        except Exception:
+            pass
+        if populate:
+            for x in Path(local_testdir).glob("**/*"):
+                if x.is_file():
+                    gcs.upload(str(x), str(x))
+                else:
+                    gcs.mkdir(str(x))
+        gcs.invalidate_cache()
+        yield docker_gcs
+    finally:
+        try:
+            gcs.rm(gcs.find("tmp"))
+        except:  # noqa: E722
+            pass
