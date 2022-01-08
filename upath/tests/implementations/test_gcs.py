@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from upath import UPath
 from upath.implementations.gcs import GCSPath
@@ -6,6 +7,7 @@ from upath.errors import NotDirectoryError
 from upath.tests.cases import BaseTests
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Windows bad")
 @pytest.mark.usefixtures("path")
 class TestGCSPath(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
