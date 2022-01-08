@@ -5,21 +5,14 @@ import subprocess
 import shlex
 import time
 import sys
-from contextlib import contextmanager
 from gcsfs.core import GCSFileSystem
 
-import vcr.stubs.aiohttp_stubs as aios
 import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
-from upath.tests.utils import (
-    TEST_BUCKET,
-    TEST_PROJECT,
-    GOOGLE_TOKEN,
-    RECORD_MODE,
-    allfiles,
-    gcs_maker,
-)
+
+import fsspec
+import requests
 
 
 def pytest_addoption(parser):
@@ -163,7 +156,7 @@ def s3_server():
         time.sleep(0.1)  # pragma: no cover
     anon = False
     s3so = dict(
-        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=False
+        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=True
     )
     yield anon, s3so
     proc.terminate()
@@ -188,120 +181,72 @@ def s3(s3_server, tempdir, local_testdir):
     yield anon, s3so
 
 
-@pytest.fixture(scope="function")
-def gcs():
-    with gcs_maker() as gcs:  # TODO: should I add record mode here?
-        yield gcs
-
-# teardown after testing
-# remove all files in the bucket
-# file_list = gcs.find(TEST_BUCKET)
-# gcs.rm(file_list)
-# remove the empty bucket
-# gcs.rmdir(TEST_BUCKET)
+def stop_docker(container):
+    cmd = shlex.split('docker ps -a -q --filter "name=%s"' % container)
+    cid = subprocess.check_output(cmd).strip().decode()
+    if cid:
+        subprocess.call(["docker", "rm", "-f", "-v", cid])
 
 
-# patch; for some reason, original wants vcr_response["url"], which is empty
-def build_response(vcr_request, vcr_response, history):
-    request_info = aios.RequestInfo(
-        url=aios.URL(vcr_request.url),
-        method=vcr_request.method,
-        headers=aios.CIMultiDictProxy(aios.CIMultiDict(vcr_request.headers)),
-        real_url=aios.URL(vcr_request.url),
+TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
+
+
+@pytest.fixture(scope="module")
+def docker_gcs():
+    if "STORAGE_EMULATOR_HOST" in os.environ:
+        # assume using real API or otherwise have a server already set up
+        yield os.environ["STORAGE_EMULATOR_HOST"]
+        return
+    container = "gcsfs_test"
+    cmd = (
+        "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
+        "http -public-host http://localhost:4443 -external-url http://localhost:4443"  # noqa: E501
     )
-    response = aios.MockClientResponse(
-        vcr_request.method, aios.URL(vcr_request.url), request_info=request_info
-    )
-    response.status = vcr_response["status"]["code"]
-    response._body = vcr_response["body"].get("string", b"")
-    response.reason = vcr_response["status"]["message"]
-    head = {
-        k: v[0] if isinstance(v, list) else v
-        for k, v in vcr_response["headers"].items()
-    }
-    response._headers = aios.CIMultiDictProxy(aios.CIMultiDict(head))
-    response._history = tuple(history)
+    stop_docker(container)
+    subprocess.check_output(shlex.split(cmd))
+    url = "http://0.0.0.0:4443"
+    timeout = 10
+    while True:
+        try:
+            r = requests.get(url + "/storage/v1/b")
+            if r.ok:
+                print("url: ", url)
+                yield url
+                break
+        except Exception as e:  # noqa: E722
+            timeout -= 1
+            if timeout < 0:
+                raise SystemError from e
+            time.sleep(1)
+    stop_docker(container)
 
-    response.close()
-    return response
 
-
-aios.build_response = build_response
-
-
-# patch: but the value of body back in the stream, to enable streaming reads
-# https://github.com/kevin1024/vcrpy/pull/509
-async def record_response(cassette, vcr_request, response):
-    """Record a VCR request-response chain to the cassette."""
-
+@pytest.fixture
+def gcs(docker_gcs, tempdir, local_testdir, populate=True):
+    # from gcsfs.credentials import GoogleCredentials
+    GCSFileSystem.clear_instance_cache()
+    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
     try:
-        byts = await response.read()
-        body = {"string": byts}
-        if byts:
-            if response.content._buffer_offset:
-                response.content._buffer[0] = response.content._buffer[0][
-                    response.content._buffer_offset :
-                ]
-                response.content._buffer_offset = 0
-            response.content._size += len(byts)
-            response.content._cursor -= len(byts)
-            response.content._buffer.appendleft(byts)
-            response.content._eof_counter = 0
-
-    except aios.ClientConnectionError:
-        body = {}
-
-    vcr_response = {
-        "status": {"code": response.status, "message": response.reason},
-        "headers": aios._serialize_headers(response.headers),
-        "body": body,  # NOQA: E999
-        "url": str(response.url)
-        .replace(TEST_BUCKET, "upath-testing")
-        .replace(TEST_PROJECT, "test_project"),
-    }
-
-    cassette.append(vcr_request, vcr_response)
-
-
-aios.record_response = record_response
-
-
-def play_responses(cassette, vcr_request):
-    history = []
-    vcr_response = cassette.play_response(vcr_request)
-    response = build_response(vcr_request, vcr_response, history)
-
-    # If we're following redirects, continue playing until we reach
-    # our final destination.
-    while 300 <= response.status <= 399:
-        if "Location" not in response.headers:
-            # Not a redirect, an instruction not to call again
-            break
-        next_url = aios.URL(response.url).with_path(
-            response.headers["location"]
-        )
-
-        # Make a stub VCR request that we can then use to look up the recorded
-        # VCR request saved to the cassette. This feels a little hacky and
-        # may have edge cases based on the headers we're providing (e.g. if
-        # there's a matcher that is used to filter by headers).
-        vcr_request = aios.Request(
-            "GET",
-            str(next_url),
-            None,
-            aios._serialize_headers(response.request_info.headers),
-        )
-        vcr_request = cassette.find_requests_with_most_matches(vcr_request)[0][
-            0
-        ]
-
-        # Tack on the response we saw from the redirect into the history
-        # list that is added on to the final response.
-        history.append(response)
-        vcr_response = aios.cassette.play_response(vcr_request)
-        response = aios.build_response(vcr_request, vcr_response, history)
-
-    return response
-
-
-aios.play_responses = play_responses
+        # ensure we're empty.
+        try:
+            gcs.rm("tmp", recursive=True)
+        except FileNotFoundError:
+            pass
+        try:
+            gcs.mkdir("tmp")
+            print("made tmp dir")
+        except Exception:
+            pass
+        if populate:
+            for x in Path(local_testdir).glob("**/*"):
+                if x.is_file():
+                    gcs.upload(str(x), str(x))
+                else:
+                    gcs.mkdir(str(x))
+        gcs.invalidate_cache()
+        yield docker_gcs
+    finally:
+        try:
+            gcs.rm(gcs.find("tmp"))
+        except:  # noqa: E722
+            pass

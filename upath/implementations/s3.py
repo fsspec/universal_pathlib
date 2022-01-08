@@ -19,21 +19,22 @@ class _S3Accessor(upath.core._FSSpecAccessor):
 class S3Path(upath.core.UPath):
     _default_accessor = _S3Accessor
 
+    def _init(self, *args, template=None, **kwargs):
+        # ensure that the bucket is part of the netloc path
+        if kwargs.get("bucket") and kwargs.get("_url"):
+            bucket = kwargs.pop("bucket")
+            kwargs["_url"] = kwargs["_url"]._replace(netloc=bucket)
+
+        super()._init(*args, template=template, **kwargs)
+
     def _sub_path(self, name):
         """s3fs returns path as `{bucket}/<path>` with listdir
         and glob, so here we can add the netloc to the sub string
         so it gets subbed out as well
         """
         sp = self.path
-        subed = re.sub(f"^{self._url.netloc}/({sp}|{sp[1:]})/?", "", name)
+        subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)
         return subed
-
-    def _init(self, *args, template=None, **kwargs):
-        # ensure that the bucket is part of the netloc path
-        if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = kwargs.pop("bucket")
-            kwargs["_url"] = kwargs["_url"]._replace(netloc=bucket)
-        super()._init(*args, template=template, **kwargs)
 
     def joinpath(self, *args):
         if self._url.netloc:

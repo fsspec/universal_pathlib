@@ -4,11 +4,10 @@ channels:
     - conda-forge
 dependencies:
     - python==3.8
-    - fsspec==0.8.4
+    - fsspec==2021.11.1
     # optional
     - requests
     - s3fs
-    - gcsfs
     - jupyter   
     - ipython
     - pytest
@@ -20,5 +19,6 @@ dependencies:
     - pip
     - pip:
       - hadoop-test-cluster
+      - gcsfs
       - nox
     
