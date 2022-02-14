@@ -5,7 +5,6 @@ import subprocess
 import shlex
 import time
 import sys
-from gcsfs.core import GCSFileSystem
 
 import pytest
 from fsspec.implementations.local import LocalFileSystem
@@ -85,11 +84,18 @@ def pathlib_base(local_testdir):
 
 @pytest.fixture(scope="session")
 def htcluster():
-    proc = subprocess.Popen(
-        shlex.split("htcluster startup"),
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-    )
+    try:
+        proc = subprocess.Popen(
+            shlex.split("htcluster startup"),
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+        )
+    except FileNotFoundError as err:
+        if err.errno == 2 and 'htcluster' == err.filename:
+            pytest.skip("htcluster not installed")
+        else:
+            raise
+
     time.sleep(30)
     yield
     proc.terminate()
@@ -223,6 +229,11 @@ def docker_gcs():
 
 @pytest.fixture
 def gcs(docker_gcs, tempdir, local_testdir, populate=True):
+    try:
+        from gcsfs.core import GCSFileSystem
+    except ImportError:
+        pytest.skip("gcsfs not installed")
+
     # from gcsfs.credentials import GoogleCredentials
     GCSFileSystem.clear_instance_cache()
     gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
