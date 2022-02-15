@@ -175,7 +175,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         # This is an optimization used for dir walking.  `part` must be
         # a single part relative to this path.
         parts = self._parts + [part]
-        return self._from_parsed_parts(self._drv, self._root, parts, **self._kwargs)
+        return self._from_parsed_parts(
+            self._drv, self._root, parts, **self._kwargs
+        )
 
     def _format_parsed_parts(self, drv, root, parts):
         if parts:
