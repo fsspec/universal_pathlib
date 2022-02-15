@@ -11,7 +11,6 @@ from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
 
 import fsspec
-import requests
 
 
 def pytest_addoption(parser):
@@ -203,6 +202,9 @@ def docker_gcs():
         # assume using real API or otherwise have a server already set up
         yield os.environ["STORAGE_EMULATOR_HOST"]
         return
+
+    requests = pytest.importorskip("requests")
+
     container = "gcsfs_test"
     cmd = (
         "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
