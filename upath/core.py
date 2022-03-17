@@ -337,4 +337,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     def __reduce__(self):
         kwargs = self._kwargs.copy()
         kwargs.pop("_url", None)
-        return (self.__class__, (self._url.geturl(),), {"_kwargs": kwargs})
+        return (
+            self.__class__,
+            (self._url.geturl(),) + tuple(self._parts),
+            {"_kwargs": kwargs},
+        )
