@@ -333,6 +333,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         kwargs = state["_kwargs"].copy()
         kwargs["_url"] = self._url
         self._kwargs = kwargs
+        # _init needs to be called again, because when __new__ called _init,
+        # the _kwargs were not yet set
         self._init()
 
     def __reduce__(self):
