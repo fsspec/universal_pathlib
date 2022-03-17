@@ -1,9 +1,9 @@
-import sys
 import pathlib
+import pickle
+import sys
 import warnings
 
 import pytest
-
 from upath import UPath
 from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
@@ -137,3 +137,12 @@ def test_create_from_type(path, storage_options, module, object_type):
     except (ImportError, ModuleNotFoundError):
         # fs failed to import
         pass
+
+
+def test_pickling():
+    path = UPath("s3://bucket/folder", storage_options={"anon": True})
+    pickled_path = pickle.dumps(path)
+    recovered_path = pickle.loads(pickled_path)
+    assert type(path) == type(recovered_path)
+    assert str(path) == str(recovered_path)
+    assert path.fs.storage_options == recovered_path.fs.storage_options

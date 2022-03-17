@@ -1,7 +1,7 @@
+import pickle
 from pathlib import Path
 
 import pytest
-
 from upath import UPath
 
 
@@ -228,3 +228,11 @@ class BaseTests:
         upath2 = UPath(p2)
         assert upath2.read_bytes() == content
         upath2.unlink()
+
+    def test_pickling(self):
+        path = self.path
+        pickled_path = pickle.dumps(path)
+        recovered_path = pickle.loads(pickled_path)
+        assert type(path) == type(recovered_path)
+        assert str(path) == str(recovered_path)
+        assert path.fs.storage_options == recovered_path.fs.storage_options

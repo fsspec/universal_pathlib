@@ -123,6 +123,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     _default_accessor = _FSSpecAccessor
 
     def __new__(cls, *args, **kwargs):
+        print("NEW", cls, args, kwargs)
         if issubclass(cls, UPath):
             args_list = list(args)
             url = args_list.pop(0)
@@ -165,6 +166,7 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
             kwargs = dict(**self._kwargs)
         else:
             self._kwargs = dict(**kwargs)
+        print("INIT", kwargs)
         self._url = kwargs.pop("_url") if kwargs.get("_url") else None
 
         if not self._root:
@@ -325,3 +327,16 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         if init:
             obj._init(**self._kwargs)
         return obj
+
+    def __setstate__(self, state):
+        print("SETSTATE", self.__class__.__name__, state)
+        kwargs = state["_kwargs"].copy()
+        kwargs["_url"] = self._url
+        self._kwargs = kwargs
+        self._init()
+
+    def __reduce__(self):
+        print("REDUCE", self.__class__)
+        kwargs = self._kwargs.copy()
+        kwargs.pop("_url", None)
+        return (self.__class__, (self._url.geturl(),), {"_kwargs": kwargs})
