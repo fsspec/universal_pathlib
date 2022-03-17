@@ -330,6 +330,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         kwargs = state["_kwargs"].copy()
         kwargs["_url"] = self._url
         self._kwargs = kwargs
+        self._root = state["_root"]
+        self._drv = state["_drv"]
         # _init needs to be called again, because when __new__ called _init,
         # the _kwargs were not yet set
         self._init()
@@ -340,5 +342,5 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return (
             self.__class__,
             (self._url.geturl(),) + tuple(self._parts),
-            {"_kwargs": kwargs},
+            {"_kwargs": kwargs, "_drv": self._drv, "_root": self._root},
         )

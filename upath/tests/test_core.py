@@ -149,9 +149,12 @@ def test_pickling():
 
 
 def test_pickling_child_path():
-    path = UPath("s3://bucket/", storage_options={"anon": True}) / "folder"
+    path = UPath("s3://bucket", anon=True) / "subfolder" / "subsubfolder"
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
     assert type(path) == type(recovered_path)
     assert str(path) == str(recovered_path)
+    assert path._drv == recovered_path._drv
+    assert path._root == recovered_path._root
+    assert path._parts == recovered_path._parts
     assert path.fs.storage_options == recovered_path.fs.storage_options
