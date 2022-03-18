@@ -3,15 +3,14 @@ channels:
     - defaults
     - conda-forge
 dependencies:
-    - python==3.8
-    - fsspec==2021.11.1
+    - python==3.10
+    - fsspec
     # optional
     - requests
     - s3fs
-    - jupyter   
+    - jupyter
     - ipython
     - pytest
-    - vcrpy
     - pylint
     - flake8
     - pyarrow
