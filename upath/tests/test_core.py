@@ -38,7 +38,8 @@ class TestUpath(BaseTests):
     def path(self, local_testdir):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self.path = UPath(f"mock:{local_testdir}")
+            root = "/" if sys.platform.startswith("win") else ""
+            self.path = UPath(f"mock:{root}{local_testdir}")
 
     def test_fsspec_compat(self):
         pass
