@@ -38,6 +38,10 @@ class TestUpath(BaseTests):
     def path(self, local_testdir):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+
+            # On Windows the path needs to be prefixed with `/`, becaue
+            # `UPath` implements `_posix_flavour`, which requires a `/` root
+            # in order to correctly deserialize pickled objects
             root = "/" if sys.platform.startswith("win") else ""
             self.path = UPath(f"mock:{root}{local_testdir}")
 
@@ -138,6 +142,17 @@ def test_create_from_type(path, storage_options, module, object_type):
     except (ImportError, ModuleNotFoundError):
         # fs failed to import
         pass
+
+
+def test_child_path():
+    path_a = UPath("gcs://bucket/folder")
+    path_b = UPath("gcs://bucket") / "folder"
+
+    assert str(path_a) == str(path_b)
+    assert path_a._root == path_b._root
+    assert path_a._drv == path_b._drv
+    assert path_a._parts == path_b._parts
+    assert path_a._url == path_b._url
 
 
 def test_pickling():

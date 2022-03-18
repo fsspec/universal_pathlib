@@ -326,32 +326,35 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
             obj._init(**self._kwargs)
         return obj
 
+    def __truediv__(self, key):
+        try:
+            if len(self._parts) == 0:
+                key = f"/{key}"
+            out = self._make_child((key,))
+            kwargs = out._kwargs.copy()
+            kwargs.pop("_url")
+            out = out.__class__(
+                out._format_parsed_parts(out._drv, out._root, out._parts),
+                **kwargs,
+            )
+            return out
+        except TypeError:
+            return NotImplemented
+
     def __setstate__(self, state):
-        print("")
-        print("SETSTATE1", self._kwargs, self._root, self._parts)
         kwargs = state["_kwargs"].copy()
         kwargs["_url"] = self._url
         self._kwargs = kwargs
-        self._root = state["_root"]
-        self._drv = state["_drv"]
-        print("SETSTATE2", self._kwargs, self._root, self._parts)
         # _init needs to be called again, because when __new__ called _init,
         # the _kwargs were not yet set
         self._init()
-        print("SETSTATE3", self._kwargs, self._root, self._parts)
 
     def __reduce__(self):
-        print("")
         kwargs = self._kwargs.copy()
         kwargs.pop("_url", None)
-        print(
-            "REDUCE   ",
-            self._kwargs,
-            self._root,
-            (self._url.geturl(),) + tuple(self._parts),
-        )
+
         return (
             self.__class__,
-            (self._url.geturl(),) + tuple(self._parts),
-            {"_kwargs": kwargs, "_drv": self._drv, "_root": self._root},
+            (self._format_parsed_parts(self._drv, self._root, self._parts),),
+            {"_kwargs": kwargs},
         )
