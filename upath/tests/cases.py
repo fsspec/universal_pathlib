@@ -1,7 +1,8 @@
+import pickle
+import sys
 from pathlib import Path
 
 import pytest
-
 from upath import UPath
 
 
@@ -37,14 +38,13 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
-        assert len(mock_glob) == len(path_glob)
-        assert all(
-            map(
-                lambda m: m.path
-                in [str(p).replace("\\", "/") for p in path_glob],
-                mock_glob,
-            )
+        root = "/" if sys.platform.startswith("win") else ""
+        mock_glob_normalized = sorted([a.path for a in mock_glob])
+        path_glob_normalized = sorted(
+            [f"{root}{a}".replace("\\", "/") for a in path_glob]
         )
+
+        assert mock_glob_normalized == path_glob_normalized
 
     def test_group(self):
         with pytest.raises(NotImplementedError):
@@ -228,3 +228,34 @@ class BaseTests:
         upath2 = UPath(p2)
         assert upath2.read_bytes() == content
         upath2.unlink()
+
+    def test_pickling(self):
+        path = self.path
+        pickled_path = pickle.dumps(path)
+        recovered_path = pickle.loads(pickled_path)
+
+        assert type(path) == type(recovered_path)
+        assert str(path) == str(recovered_path)
+        assert path.fs.storage_options == recovered_path.fs.storage_options
+
+    def test_pickling_child_path(self):
+        path = (self.path) / "subfolder" / "subsubfolder"
+        pickled_path = pickle.dumps(path)
+        recovered_path = pickle.loads(pickled_path)
+
+        assert type(path) == type(recovered_path)
+        assert str(path) == str(recovered_path)
+        assert path._drv == recovered_path._drv
+        assert path._root == recovered_path._root
+        assert path._parts == recovered_path._parts
+        assert path.fs.storage_options == recovered_path.fs.storage_options
+
+    def test_child_path(self):
+        path_a = UPath(f"{self.path}/folder")
+        path_b = self.path / "folder"
+
+        assert str(path_a) == str(path_b)
+        assert path_a._root == path_b._root
+        assert path_a._drv == path_b._drv
+        assert path_a._parts == path_b._parts
+        assert path_a._url == path_b._url
