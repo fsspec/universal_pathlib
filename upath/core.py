@@ -218,6 +218,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
             return self
         return self._from_parsed_parts(drv, root, parts[:-1], **self._kwargs)
 
+    def stat(self):
+        return self._accessor.stat(self)
+
     def iterdir(self):
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
