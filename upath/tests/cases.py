@@ -233,6 +233,38 @@ class BaseTests:
         path = self.path
         pickled_path = pickle.dumps(path)
         recovered_path = pickle.loads(pickled_path)
+
+        print(
+            path,
+            type(path),
+            str(path),
+            path._drv,
+            path._root,
+            path._parts,
+            path.fs.storage_options,
+        )
+        print(
+            recovered_path,
+            type(recovered_path),
+            str(recovered_path),
+            recovered_path._drv,
+            recovered_path._root,
+            recovered_path._parts,
+            recovered_path.fs.storage_options,
+        )
+
         assert type(path) == type(recovered_path)
         assert str(path) == str(recovered_path)
+        assert path.fs.storage_options == recovered_path.fs.storage_options
+
+    def test_pickling_child_path(self):
+        path = (self.path) / "subfolder" / "subsubfolder"
+        pickled_path = pickle.dumps(path)
+        recovered_path = pickle.loads(pickled_path)
+
+        assert type(path) == type(recovered_path)
+        assert str(path) == str(recovered_path)
+        assert path._drv == recovered_path._drv
+        assert path._root == recovered_path._root
+        assert path._parts == recovered_path._parts
         assert path.fs.storage_options == recovered_path.fs.storage_options
