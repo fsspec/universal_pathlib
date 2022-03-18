@@ -280,8 +280,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         # can be implemented, but may be tricky
         raise NotImplementedError
 
-    def touch(self, truncate=True, **kwargs):
-        self._accessor.touch(self, truncate=truncate, **kwargs)
+    def touch(self, trunicate=True, **kwargs):
+        self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
     def unlink(self, missing_ok=False):
         if not self.exists():
@@ -327,18 +327,24 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return obj
 
     def __setstate__(self, state):
+        print("")
+        print("SETSTATE1", self._kwargs, self._root, self._parts)
         kwargs = state["_kwargs"].copy()
         kwargs["_url"] = self._url
         self._kwargs = kwargs
         self._root = state["_root"]
         self._drv = state["_drv"]
+        print("SETSTATE2", self._kwargs, self._root, self._parts)
         # _init needs to be called again, because when __new__ called _init,
         # the _kwargs were not yet set
         self._init()
+        print("SETSTATE3", self._kwargs, self._root, self._parts)
 
     def __reduce__(self):
+        print("")
         kwargs = self._kwargs.copy()
         kwargs.pop("_url", None)
+        print("REDUCE   ", self._kwargs, self._root, self._parts)
         return (
             self.__class__,
             (self._url.geturl(),) + tuple(self._parts),

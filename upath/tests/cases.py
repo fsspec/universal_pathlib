@@ -235,18 +235,18 @@ class BaseTests:
         recovered_path = pickle.loads(pickled_path)
 
         print(
+            "ORIGINAL",
             path,
             type(path),
-            str(path),
             path._drv,
             path._root,
             path._parts,
             path.fs.storage_options,
         )
         print(
+            "RECOVERD",
             recovered_path,
             type(recovered_path),
-            str(recovered_path),
             recovered_path._drv,
             recovered_path._root,
             recovered_path._parts,
