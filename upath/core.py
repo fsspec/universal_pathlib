@@ -327,13 +327,22 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return obj
 
     def __truediv__(self, key):
+        # Add `/` root if not present
         if len(self._parts) == 0:
             key = f"{self._root}{key}"
-        out = self._make_child((key,))
-        kwargs = out._kwargs.copy()
+
+        # Adapted from `PurePath._make_child`
+        drv, root, parts = self._parse_args((key,))
+        drv, root, parts = self._flavour.join_parsed_parts(
+            self._drv, self._root, self._parts, drv, root, parts
+        )
+
+        kwargs = self._kwargs.copy()
         kwargs.pop("_url")
-        out = out.__class__(
-            out._format_parsed_parts(out._drv, out._root, out._parts),
+
+        # Create a new object
+        out = self.__class__(
+            self._format_parsed_parts(drv, root, parts),
             **kwargs,
         )
         return out
