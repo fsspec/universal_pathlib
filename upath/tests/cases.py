@@ -249,3 +249,13 @@ class BaseTests:
         assert path._root == recovered_path._root
         assert path._parts == recovered_path._parts
         assert path.fs.storage_options == recovered_path.fs.storage_options
+
+    def test_child_path(self):
+        path_a = UPath(f"{self.path}/folder")
+        path_b = self.path / "folder"
+
+        assert str(path_a) == str(path_b)
+        assert path_a._root == path_b._root
+        assert path_a._drv == path_b._drv
+        assert path_a._parts == path_b._parts
+        assert path_a._url == path_b._url

@@ -1,6 +1,5 @@
-from pathlib import Path
-
 import nox
+from pathlib import Path
 
 
 @nox.session(python=False)
@@ -29,7 +28,7 @@ def install(session):
 @nox.session(python=False)
 def smoke(session):
     session.install(*"pytest aiohttp requests gcsfs".split())
-    session.run(*"pytest --skiphdfs -vv -s upath".split())
+    session.run(*"pytest --skiphdfs -vv upath".split())
 
 
 @nox.session(python=False)

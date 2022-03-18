@@ -327,19 +327,16 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return obj
 
     def __truediv__(self, key):
-        try:
-            if len(self._parts) == 0:
-                key = f"/{key}"
-            out = self._make_child((key,))
-            kwargs = out._kwargs.copy()
-            kwargs.pop("_url")
-            out = out.__class__(
-                out._format_parsed_parts(out._drv, out._root, out._parts),
-                **kwargs,
-            )
-            return out
-        except TypeError:
-            return NotImplemented
+        if len(self._parts) == 0:
+            key = f"{self._root}{key}"
+        out = self._make_child((key,))
+        kwargs = out._kwargs.copy()
+        kwargs.pop("_url")
+        out = out.__class__(
+            out._format_parsed_parts(out._drv, out._root, out._parts),
+            **kwargs,
+        )
+        return out
 
     def __setstate__(self, state):
         kwargs = state["_kwargs"].copy()
