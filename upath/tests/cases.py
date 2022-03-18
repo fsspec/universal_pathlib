@@ -37,14 +37,12 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
-        assert len(mock_glob) == len(path_glob)
-        assert all(
-            map(
-                lambda m: m.path
-                in [str(p).replace("\\", "/") for p in path_glob],
-                mock_glob,
-            )
+        mock_glob_normalized = sorted([a.path[1:] for a in mock_glob])
+        path_glob_normalized = sorted(
+            [str(a).replace("\\", "/") for a in path_glob]
         )
+
+        assert mock_glob_normalized == path_glob_normalized
 
     def test_group(self):
         with pytest.raises(NotImplementedError):
