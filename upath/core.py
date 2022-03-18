@@ -280,8 +280,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         # can be implemented, but may be tricky
         raise NotImplementedError
 
-    def touch(self, trunicate=True, **kwargs):
-        self._accessor.touch(self, trunicate=trunicate, **kwargs)
+    def touch(self, truncate=True, **kwargs):
+        self._accessor.touch(self, truncate=truncate, **kwargs)
 
     def unlink(self, missing_ok=False):
         if not self.exists():

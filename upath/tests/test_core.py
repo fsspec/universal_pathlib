@@ -140,7 +140,7 @@ def test_create_from_type(path, storage_options, module, object_type):
 
 
 def test_pickling():
-    path = UPath("s3://bucket/folder", storage_options={"anon": True})
+    path = UPath("gcs://bucket/folder", storage_options={"anon": True})
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
     assert type(path) == type(recovered_path)
@@ -149,7 +149,7 @@ def test_pickling():
 
 
 def test_pickling_child_path():
-    path = UPath("s3://bucket", anon=True) / "subfolder" / "subsubfolder"
+    path = UPath("gcs://bucket", anon=True) / "subfolder" / "subsubfolder"
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
     assert type(path) == type(recovered_path)
