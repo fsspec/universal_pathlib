@@ -188,3 +188,14 @@ def test_copy_path():
     assert path._root == copy_path._root
     assert path._parts == copy_path._parts
     assert path.fs.storage_options == copy_path.fs.storage_options
+
+
+def test_copy_path_posix():
+    path = UPath("/tmp/folder", anon=True)
+    copy_path = UPath(path)
+
+    assert type(path) == type(copy_path)
+    assert str(path) == str(copy_path)
+    assert path._drv == copy_path._drv
+    assert path._root == copy_path._root
+    assert path._parts == copy_path._parts
