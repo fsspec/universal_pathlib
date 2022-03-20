@@ -62,22 +62,22 @@ class BaseTests:
         assert not self.path.is_file()
 
     def test_is_mount(self):
-        assert self.path.is_mount() == False
+        assert self.path.is_mount() is False
 
     def test_is_symlink(self):
-        assert self.path.is_symlink() == False
+        assert self.path.is_symlink() is False
 
     def test_is_socket(self):
-        assert self.path.is_socket() == False
+        assert self.path.is_socket() is False
 
     def test_is_fifo(self):
-        assert self.path.is_fifo() == False
+        assert self.path.is_fifo() is False
 
     def test_is_block_device(self):
-        assert self.path.is_block_device() == False
+        assert self.path.is_block_device() is False
 
     def test_is_char_device(self):
-        assert self.path.is_char_device() == False
+        assert self.path.is_char_device() is False
 
     def test_iterdir(self, local_testdir):
         pl_path = Path(local_testdir)
