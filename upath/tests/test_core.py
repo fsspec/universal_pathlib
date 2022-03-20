@@ -191,10 +191,10 @@ def test_copy_path():
 
 
 def test_copy_path_posix():
-    path = UPath("/tmp/folder", anon=True)
+    path = UPath("/tmp/folder")
     copy_path = UPath(path)
 
-    assert type(path) == type(copy_path)
+    assert type(path) == type(copy_path) == pathlib.PosixPath
     assert str(path) == str(copy_path)
     assert path._drv == copy_path._drv
     assert path._root == copy_path._root
