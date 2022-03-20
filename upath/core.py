@@ -123,6 +123,24 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     _default_accessor = _FSSpecAccessor
 
     def __new__(cls, *args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], cls):
+            other = args[0]
+            new_args = (
+                other._format_parsed_parts(
+                    other._drv, other._root, other._parts
+                ),
+            )
+            new_kwargs = {}
+            if hasattr(other, "_kwargs"):
+                new_kwargs = other._kwargs.copy()
+                new_kwargs.pop("_url", None)
+
+            return cls.__new__(
+                cls,
+                *new_args,
+                **new_kwargs,
+            )
+
         if issubclass(cls, UPath):
             args_list = list(args)
             url = args_list.pop(0)
