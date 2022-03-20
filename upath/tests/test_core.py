@@ -190,12 +190,11 @@ def test_copy_path():
     assert path.fs.storage_options == copy_path.fs.storage_options
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"))
 def test_copy_path_posix():
     path = UPath("/tmp/folder")
     copy_path = UPath(path)
 
-    assert type(path) == type(copy_path) == pathlib.PosixPath
+    assert type(path) == type(copy_path) == type(pathlib.Path(""))
     assert str(path) == str(copy_path)
     assert path._drv == copy_path._drv
     assert path._root == copy_path._root
