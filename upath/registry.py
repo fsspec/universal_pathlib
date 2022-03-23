@@ -4,7 +4,7 @@ import upath
 
 
 class _Registry:
-    from upath.implementations import hdfs, http, memory, s3, gcs
+    from upath.implementations import hdfs, http, memory, s3, gcs, azure
 
     http = http.HTTPPath
     hdfs = hdfs.HDFSPath
@@ -13,6 +13,9 @@ class _Registry:
     memory = memory.MemoryPath
     gs = gcs.GCSPath
     gcs = gcs.GCSPath
+    adl = azure.AzurePath
+    az = azure.AzurePath
+    abfs = azure.AzurePath
 
     def __getitem__(self, item):
         implemented_path = getattr(self, item, None)
