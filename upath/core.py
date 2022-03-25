@@ -168,7 +168,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     def _make_child(self, args):
         drv, root, parts = self._parse_args(args, **self._kwargs)
         drv, root, parts = self._flavour.join_parsed_parts(
-            self._drv, self._root, self._parts, drv, root, parts)
+            self._drv, self._root, self._parts, drv, root, parts
+        )
         return self._from_parsed_parts(drv, root, parts, **self._kwargs)
 
     def _make_child_relpath(self, part):
@@ -355,7 +356,6 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     @property
     def fs(self):
         return self._accessor._fs
-
 
     def __truediv__(self, key):
         # Add `/` root if not present

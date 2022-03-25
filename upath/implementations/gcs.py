@@ -35,7 +35,6 @@ class GCSPath(upath.core.UPath):
             obj._url = obj._url._replace(netloc=bucket)
         return obj
 
-
     def _sub_path(self, name):
         """gcs returns path as `{bucket}/<path>` with listdir
         and glob, so here we can add the netloc to the sub string
