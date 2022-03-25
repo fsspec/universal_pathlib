@@ -9,7 +9,7 @@ class _GCSAccessor(upath.core._FSSpecAccessor):
 
     def _format_path(self, s):
         """
-        netloc has already been set to project via `GCSPath._init`
+        netloc has already been set to project via `GCSPath._from_parts`
         """
         s = os.path.join(self._url.netloc, s.lstrip("/"))
         return s
@@ -19,12 +19,22 @@ class _GCSAccessor(upath.core._FSSpecAccessor):
 class GCSPath(upath.core.UPath):
     _default_accessor = _GCSAccessor
 
-    def _init(self, *args, template=None, **kwargs):
-        # ensure that the bucket is part of the netloc path
+    @classmethod
+    def _from_parts(cls, args, **kwargs):
+        obj = super()._from_parts(args, **kwargs)
         if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = kwargs.pop("bucket")
-            kwargs["_url"] = kwargs["_url"]._replace(netloc=bucket)
-        super()._init(*args, template=template, **kwargs)
+            bucket = obj._kwargs.pop("bucket")
+            obj._url = obj._url._replace(netloc=bucket)
+        return obj
+
+    @classmethod
+    def _from_parsed_parts(cls, drv, root, parts, **kwargs):
+        obj = super()._from_parsed_parts(drv, root, parts, **kwargs)
+        if kwargs.get("bucket") and kwargs.get("_url"):
+            bucket = obj._kwargs.pop("bucket")
+            obj._url = obj._url._replace(netloc=bucket)
+        return obj
+
 
     def _sub_path(self, name):
         """gcs returns path as `{bucket}/<path>` with listdir
