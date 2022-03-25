@@ -1,9 +1,9 @@
-import sys
 import pathlib
+import pickle
+import sys
 import warnings
 
 import pytest
-
 from upath import UPath
 from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
@@ -38,7 +38,12 @@ class TestUpath(BaseTests):
     def path(self, local_testdir):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self.path = UPath(f"mock:{local_testdir}")
+
+            # On Windows the path needs to be prefixed with `/`, becaue
+            # `UPath` implements `_posix_flavour`, which requires a `/` root
+            # in order to correctly deserialize pickled objects
+            root = "/" if sys.platform.startswith("win") else ""
+            self.path = UPath(f"mock:{root}{local_testdir}")
 
     def test_fsspec_compat(self):
         pass
@@ -137,3 +142,37 @@ def test_create_from_type(path, storage_options, module, object_type):
     except (ImportError, ModuleNotFoundError):
         # fs failed to import
         pass
+
+
+def test_child_path():
+    path_a = UPath("gcs://bucket/folder")
+    path_b = UPath("gcs://bucket") / "folder"
+
+    assert str(path_a) == str(path_b)
+    assert path_a._root == path_b._root
+    assert path_a._drv == path_b._drv
+    assert path_a._parts == path_b._parts
+    assert path_a._url == path_b._url
+
+
+def test_pickling():
+    path = UPath("gcs://bucket/folder", storage_options={"anon": True})
+    pickled_path = pickle.dumps(path)
+    recovered_path = pickle.loads(pickled_path)
+
+    assert type(path) == type(recovered_path)
+    assert str(path) == str(recovered_path)
+    assert path.fs.storage_options == recovered_path.fs.storage_options
+
+
+def test_pickling_child_path():
+    path = UPath("gcs://bucket", anon=True) / "subfolder" / "subsubfolder"
+    pickled_path = pickle.dumps(path)
+    recovered_path = pickle.loads(pickled_path)
+
+    assert type(path) == type(recovered_path)
+    assert str(path) == str(recovered_path)
+    assert path._drv == recovered_path._drv
+    assert path._root == recovered_path._root
+    assert path._parts == recovered_path._parts
+    assert path.fs.storage_options == recovered_path.fs.storage_options
