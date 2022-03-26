@@ -21,7 +21,7 @@ conda install -c conda-forge universal_pathlib
 ```python
 >>> from upath import UPath
 
->>> path = UPath(file:/some/filepath.py)
+>>> path = UPath("file:/some/filepath.py")
 >>> path.name
 filepath.py
 >>> path.stem
