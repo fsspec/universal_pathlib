@@ -271,6 +271,9 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         return False
 
     def is_symlink(self):
+        info = self._accessor.info(self)
+        if "islink" in info:
+            return info["islink"]
         return False
 
     def is_socket(self):
