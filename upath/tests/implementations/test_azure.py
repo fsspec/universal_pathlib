@@ -101,6 +101,3 @@ class TestAzurePath(BaseTests):
 
     def test_iterdir(self):
         assert next(self.path.parent.iterdir()).exists()
-
-    def test_pickling(self):
-        ...

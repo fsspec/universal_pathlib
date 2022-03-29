@@ -18,8 +18,6 @@ class AzurePath(core.UPath):
     _default_accessor = _AzureAccessor
 
     def _init(self, *args, template=None, **kwargs):
-        if kwargs.get("storage_options"):
-            kwargs.update(kwargs["storage_options"])
         super()._init(*args, template=template, **kwargs)
 
     def _sub_path(self, name):
