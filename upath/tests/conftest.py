@@ -5,7 +5,10 @@ import subprocess
 import shlex
 import time
 import sys
+import datetime
 from gcsfs.core import GCSFileSystem
+import docker
+from azure.storage.blob import BlobServiceClient
 
 import pytest
 from fsspec.implementations.local import LocalFileSystem
@@ -14,10 +17,24 @@ from fsspec.registry import register_implementation, _registry
 import fsspec
 import requests
 
+AZURITE_URL = "http://127.0.0.1:10000"
+ACCOUNT_NAME = "devstoreaccount1"
+KEY = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="  # NOQA
+CONNECTION_STRING = f"DefaultEndpointsProtocol=http;AccountName={ACCOUNT_NAME};AccountKey={KEY};BlobEndpoint={AZURITE_URL}/{ACCOUNT_NAME};"  # NOQA
+data = b"0123456789"
+metadata = {"meta": "data"}
+
 
 def pytest_addoption(parser):
     parser.addoption(
         "--skiphdfs", action="store_true", default=False, help="skip hdfs tests"
+    )
+
+    parser.addoption(
+        "--azurite",
+        action="store_true",
+        default=AZURITE_URL,
+        help="azure blob storage host",
     )
 
 
@@ -250,3 +267,52 @@ def gcs(docker_gcs, tempdir, local_testdir, populate=True):
             gcs.rm(gcs.find("tmp"))
         except:  # noqa: E722
             pass
+
+
+@pytest.fixture(scope="session")
+def azurite(request):
+    print(f'azurite host: {request.config.getoption("--azurite")}')
+    return request.config.getoption("--azurite")
+
+
+@pytest.fixture(scope="session")
+def azurite_storage(azurite):
+
+    conn_str = f"DefaultEndpointsProtocol=http;AccountName={ACCOUNT_NAME};AccountKey={KEY};BlobEndpoint={AZURITE_URL}/{ACCOUNT_NAME};"  # NOQA
+
+    bbs = BlobServiceClient.from_connection_string(conn_str=conn_str)
+    bbs.create_container("data")
+    container_client = bbs.get_container_client(container="data")
+    bbs.insert_time = datetime.datetime.now(datetime.timezone.utc).replace(
+        microsecond=0, tzinfo=datetime.timezone.utc
+    )
+    container_client.upload_blob("root/file1.txt", data)
+    container_client.upload_blob("root/file2.txt", data)
+    container_client.upload_blob("root/rfile.txt", data)
+    container_client.upload_blob("root/a/file.txt", data)
+    container_client.upload_blob("root/a1/file1.txt", data)
+    container_client.upload_blob("root/b/file.txt", data)
+    container_client.upload_blob("root/c/file1.txt", data)
+    container_client.upload_blob("root/c/file2.txt", data)
+    container_client.upload_blob(
+        "root/d/file_with_metadata.txt", data, metadata=metadata
+    )
+    container_client.upload_blob("root/e+f/file1.txt", data)
+    container_client.upload_blob("root/e+f/file2.txt", data)
+    yield bbs
+
+
+@pytest.fixture(scope="session", autouse=True)
+def spawn_azurite():
+    print("Starting azurite docker container")
+    client = docker.from_env()
+    azurite = client.containers.run(
+        "mcr.microsoft.com/azure-storage/azurite",
+        "azurite-blob --loose --blobHost 0.0.0.0",
+        detach=True,
+        ports={"10000": "10000"},
+    )
+    print("Successfully created azurite container...")
+    yield azurite
+    print("Teardown azurite docker container")
+    azurite.stop()

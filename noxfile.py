@@ -27,8 +27,8 @@ def install(session):
 
 @nox.session(python=False)
 def smoke(session):
-    session.install(*"pytest aiohttp requests gcsfs adlfs".split())
-    session.run(*"pytest --skiphdfs -vv upath".split())
+    session.install(*"pytest aiohttp requests gcsfs adlfs docker".split())
+    session.run(*"pytest --skiphdfs --azurite -vv upath".split())
 
 
 @nox.session(python=False)
