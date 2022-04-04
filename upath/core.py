@@ -1,8 +1,6 @@
-import os
 import pathlib
 import re
 import urllib
-from abc import ABCMeta
 
 from fsspec.registry import (
     get_filesystem_class,
@@ -87,21 +85,9 @@ class _FSSpecAccessor:
                 )
 
 
-class PureUPath(pathlib.PurePath):
+class UPath(pathlib.Path):
+
     _flavour = pathlib._posix_flavour
-    __slots__ = ()
-
-
-class UPathMeta(ABCMeta):
-    def __instancecheck__(cls, instance):
-        return isinstance(instance, pathlib.Path)
-
-    def __subclasscheck__(cls, subclass):
-        return issubclass(subclass, pathlib.Path)
-
-
-class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
-
     __slots__ = ("_url", "_kwargs", "_closed", "fs")
 
     not_implemented = [
@@ -132,21 +118,8 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
                 val = kwargs.get(key)
                 if val:
                     parsed_url = parsed_url._replace(**{key: val})
-            # treat as local filesystem, return PosixPath or WindowsPath
             impls = list(registry) + list(known_implementations.keys())
-            if not parsed_url.scheme or parsed_url.scheme not in impls:
-                cls = (
-                    pathlib.WindowsPath
-                    if os.name == "nt"
-                    else pathlib.PosixPath
-                )
-                self = cls._from_parts(args, init=False)
-                if not self._flavour.is_supported:
-                    raise NotImplementedError(
-                        "cannot instantiate %r on your system" % (cls.__name__,)
-                    )
-                self._init()
-            else:
+            if parsed_url.scheme and parsed_url.scheme in impls:
                 import upath.registry
 
                 cls = upath.registry._registry[parsed_url.scheme]
@@ -155,9 +128,10 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
                 args = tuple(args_list)
                 self = cls._from_parts_init(args, init=False)
                 self._init(*args, **kwargs)
-        else:
-            self = super().__new__(*args, **kwargs)
-        return self
+                return self
+
+        # treat as local filesystem, return PosixPath or WindowsPath
+        return pathlib.Path(*args, **kwargs)
 
     def _init(self, *args, template=None, **kwargs):
         self._closed = False
