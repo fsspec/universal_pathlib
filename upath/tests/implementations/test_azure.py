@@ -40,14 +40,14 @@ class TestAzurePath(BaseTests):
             ("b/*", 1),
             ("*/file.txt", 2),
             ("*/file[0-9].txt", 5),
-            ("**/*.txt", 8),
+            ("**/*.txt", 9),
             ("**/*.jpg", 0),
         ],
     )
     def test_glob(self, pattern, expected):
 
         paths = list(self.path.glob(pattern))
-        assert len(paths) >= expected
+        assert len(paths) == expected
 
     def test_rmdir(self):
         new_dir = self.path / "new_dir"
