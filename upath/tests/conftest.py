@@ -278,6 +278,8 @@ def azurite(request):
 @pytest.fixture(scope="session")
 def azurite_storage(azurite):
 
+    """Copied from https://github.com/fsspec/adlfs/blob/master/adlfs/tests/conftest.py"""
+
     conn_str = f"DefaultEndpointsProtocol=http;AccountName={ACCOUNT_NAME};AccountKey={KEY};BlobEndpoint={AZURITE_URL}/{ACCOUNT_NAME};"  # NOQA
 
     bbs = BlobServiceClient.from_connection_string(conn_str=conn_str)
@@ -304,6 +306,7 @@ def azurite_storage(azurite):
 
 @pytest.fixture(scope="session", autouse=True)
 def spawn_azurite():
+    """Copied from https://github.com/fsspec/adlfs/blob/master/adlfs/tests/conftest.py"""
     print("Starting azurite docker container")
     client = docker.from_env()
     azurite = client.containers.run(
