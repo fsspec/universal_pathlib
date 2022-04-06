@@ -109,12 +109,6 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         "home",
         "expanduser",
         "group",
-        "is_mount",
-        "is_symlink",
-        "is_socket",
-        "is_fifo",
-        "is_block_device",
-        "is_char_device",
         "lchmod",
         "lstat",
         "owner",
@@ -286,6 +280,27 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         info = self._accessor.info(self)
         if info["type"] == "file":
             return True
+        return False
+
+    def is_mount(self):
+        return False
+
+    def is_symlink(self):
+        info = self._accessor.info(self)
+        if "islink" in info:
+            return info["islink"]
+        return False
+
+    def is_socket(self):
+        return False
+
+    def is_fifo(self):
+        return False
+
+    def is_block_device(self):
+        return False
+
+    def is_char_device(self):
         return False
 
     def chmod(self, mod):
