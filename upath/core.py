@@ -119,7 +119,7 @@ class UPath(pathlib.Path):
                 val = kwargs.get(key)
                 if val:
                     parsed_url = parsed_url._replace(**{key: val})
-            
+
             fsspec_impls = list(registry) + list(known_implementations.keys())
             if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
                 import upath.registry
