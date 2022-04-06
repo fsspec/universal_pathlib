@@ -119,9 +119,9 @@ class UPath(pathlib.Path):
                 val = kwargs.get(key)
                 if val:
                     parsed_url = parsed_url._replace(**{key: val})
-            # treat as local filesystem, return PosixPath or WindowsPath
-            impls = list(registry) + list(known_implementations.keys())
-            if parsed_url.scheme and parsed_url.scheme in impls:
+            
+            fsspec_impls = list(registry) + list(known_implementations.keys())
+            if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
                 import upath.registry
 
                 cls = upath.registry._registry[parsed_url.scheme]
@@ -129,6 +129,7 @@ class UPath(pathlib.Path):
                 args_list.insert(0, parsed_url.path)
                 args = tuple(args_list)
                 return cls._from_parts(args, **kwargs)
+        # treat as local filesystem, return PosixPath or WindowsPath
         return pathlib.Path(*args, **kwargs)
 
     def __getattr__(self, item):
