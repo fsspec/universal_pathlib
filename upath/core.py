@@ -102,7 +102,7 @@ class UPathMeta(ABCMeta):
 
 class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
 
-    __slots__ = ("_url", "_kwargs", "_closed")
+    __slots__ = ("_url", "_kwargs", "_closed", "_accessor")
 
     not_implemented = [
         "cwd",
@@ -156,6 +156,16 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         else:
             self = super().__new__(*args, **kwargs)
         return self
+
+    def __getattr__(self, item):
+        if item == "_accessor":
+            # cache the _accessor attribute on first access
+            kw = self._kwargs.copy()
+            kw.pop("_url", None)
+            self._accessor = _accessor = self._default_accessor(self._url, **kw)
+            return _accessor
+        else:
+            raise AttributeError(item)
 
     def __getattribute__(self, item):
         if item == "__class__":
@@ -346,12 +356,6 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         obj._root = root
 
         return obj
-
-    @property
-    def _accessor(self):
-        kw = self._kwargs.copy()
-        kw.pop("_url", None)
-        return self._default_accessor(self._url, **kw)
 
     @property
     def fs(self):
