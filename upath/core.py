@@ -1,5 +1,6 @@
 import pathlib
 import re
+from typing import Union
 import urllib
 
 from fsspec.registry import (
@@ -87,8 +88,9 @@ class _FSSpecAccessor:
 
 class UPath(pathlib.Path):
 
+    __slots__ = ("_url", "_kwargs", "_closed", "_accessor")
     _flavour = pathlib._posix_flavour
-    __slots__ = ("_url", "_kwargs", "_closed", "fs")
+    _default_accessor = _FSSpecAccessor
 
     not_implemented = [
         "cwd",
@@ -106,9 +108,8 @@ class UPath(pathlib.Path):
         "owner",
         "readlink",
     ]
-    _default_accessor = _FSSpecAccessor
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
         if issubclass(cls, UPath):
             args_list = list(args)
             url = args_list.pop(0)
@@ -118,6 +119,7 @@ class UPath(pathlib.Path):
                 val = kwargs.get(key)
                 if val:
                     parsed_url = parsed_url._replace(**{key: val})
+            # treat as local filesystem, return PosixPath or WindowsPath
             impls = list(registry) + list(known_implementations.keys())
             if parsed_url.scheme and parsed_url.scheme in impls:
                 import upath.registry
@@ -126,33 +128,18 @@ class UPath(pathlib.Path):
                 kwargs["_url"] = parsed_url
                 args_list.insert(0, parsed_url.path)
                 args = tuple(args_list)
-                self = cls._from_parts_init(args, init=False)
-                self._init(*args, **kwargs)
-                return self
-
-        # treat as local filesystem, return PosixPath or WindowsPath
+                return cls._from_parts(args, **kwargs)
         return pathlib.Path(*args, **kwargs)
 
-    def _init(self, *args, template=None, **kwargs):
-        self._closed = False
-        if not kwargs:
-            kwargs = dict(**self._kwargs)
+    def __getattr__(self, item):
+        if item == "_accessor":
+            # cache the _accessor attribute on first access
+            kw = self._kwargs.copy()
+            kw.pop("_url", None)
+            self._accessor = _accessor = self._default_accessor(self._url, **kw)
+            return _accessor
         else:
-            self._kwargs = dict(**kwargs)
-        self._url = kwargs.pop("_url") if kwargs.get("_url") else None
-
-        if not self._root:
-            if not self._parts:
-                self._root = "/"
-            elif self._parts[0] == "/":
-                self._root = self._parts.pop(0)
-        if getattr(self, "_str", None):
-            delattr(self, "_str")
-        if template is not None:
-            self._accessor = template._accessor
-        else:
-            self._accessor = self._default_accessor(self._url, *args, **kwargs)
-        self.fs = self._accessor._fs
+            raise AttributeError(item)
 
     def __getattribute__(self, item):
         if item == "__class__":
@@ -161,6 +148,21 @@ class UPath(pathlib.Path):
             raise NotImplementedError(f"UPath has no attribute {item}")
         else:
             return super().__getattribute__(item)
+
+    def _make_child(self, args):
+        drv, root, parts = self._parse_args(args, **self._kwargs)
+        drv, root, parts = self._flavour.join_parsed_parts(
+            self._drv, self._root, self._parts, drv, root, parts
+        )
+        return self._from_parsed_parts(drv, root, parts, **self._kwargs)
+
+    def _make_child_relpath(self, part):
+        # This is an optimization used for dir walking.  `part` must be
+        # a single part relative to this path.
+        parts = self._parts + [part]
+        return self._from_parsed_parts(
+            self._drv, self._root, parts, **self._kwargs
+        )
 
     def _format_parsed_parts(self, drv, root, parts):
         if parts:
@@ -190,6 +192,19 @@ class UPath(pathlib.Path):
 
     def open(self, *args, **kwargs):
         return self._accessor.open(self, *args, **kwargs)
+
+    @property
+    def parent(self):
+        """The logical parent of the path."""
+        drv = self._drv
+        root = self._root
+        parts = self._parts
+        if len(parts) == 1 and (drv or root):
+            return self
+        return self._from_parsed_parts(drv, root, parts[:-1], **self._kwargs)
+
+    def stat(self):
+        return self._accessor.stat(self)
 
     def iterdir(self):
         """Iterate over the files in this directory.  Does not yield any
@@ -276,29 +291,49 @@ class UPath(pathlib.Path):
         self._accessor.rm(self, recursive=recursive)
 
     @classmethod
-    def _from_parts_init(cls, args, init=False):
-        return super()._from_parts(args, init=init)
+    def _parse_args(cls, args, **kwargs):
+        return super(UPath, cls)._parse_args(args)
 
-    def _from_parts(self, args, init=True):
-        # We need to call _parse_args on the instance, so as to get the
-        # right flavour.
-        obj = object.__new__(self.__class__)
-        drv, root, parts = self._parse_args(args)
+    @classmethod
+    def _from_parts(cls, args, **kwargs):
+        obj = object.__new__(cls)
+        drv, root, parts = obj._parse_args(args, **kwargs)
         obj._drv = drv
-        obj._root = root
         obj._parts = parts
-        if init:
-            obj._init(**self._kwargs)
+        obj._closed = False
+        obj._kwargs = kwargs.copy()
+        obj._url = kwargs.pop("_url", None) or None
+
+        if not root:
+            if not parts:
+                root = "/"
+            elif parts[0] == "/":
+                root = parts.pop(0)
+        obj._root = root
+
         return obj
 
-    def _from_parsed_parts(self, drv, root, parts, init=True):
-        obj = object.__new__(self.__class__)
+    @classmethod
+    def _from_parsed_parts(cls, drv, root, parts, **kwargs):
+        obj = object.__new__(cls)
         obj._drv = drv
-        obj._root = root
         obj._parts = parts
-        if init:
-            obj._init(**self._kwargs)
+        obj._closed = False
+        obj._kwargs = kwargs.copy()
+        obj._url = kwargs.pop("_url", None) or None
+
+        if not root:
+            if not parts:
+                root = "/"
+            elif parts[0] == "/":
+                root = parts.pop(0)
+        obj._root = root
+
         return obj
+
+    @property
+    def fs(self):
+        return self._accessor._fs
 
     def __truediv__(self, key):
         # Add `/` root if not present
@@ -325,9 +360,6 @@ class UPath(pathlib.Path):
         kwargs = state["_kwargs"].copy()
         kwargs["_url"] = self._url
         self._kwargs = kwargs
-        # _init needs to be called again, because when __new__ called _init,
-        # the _kwargs were not yet set
-        self._init()
 
     def __reduce__(self):
         kwargs = self._kwargs.copy()
