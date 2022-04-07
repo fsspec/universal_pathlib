@@ -97,12 +97,6 @@ class UPath(pathlib.Path):
         "home",
         "expanduser",
         "group",
-        "is_mount",
-        "is_symlink",
-        "is_socket",
-        "is_fifo",
-        "is_block_device",
-        "is_char_device",
         "lchmod",
         "lstat",
         "owner",
@@ -112,8 +106,26 @@ class UPath(pathlib.Path):
     def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
         if issubclass(cls, UPath):
             args_list = list(args)
-            url = args_list.pop(0)
-            url = stringify_path(url)
+            first = args_list.pop(0)
+            if isinstance(first, pathlib.PurePath):
+                # Create a (modified) copy, if first arg is a Path object
+                other = first
+                parts = args_list
+                drv, root, parts = other._parse_args(parts)
+                drv, root, parts = other._flavour.join_parsed_parts(
+                    other._drv, other._root, other._parts, drv, root, parts
+                )
+
+                new_kwargs = getattr(other, "_kwargs", {}).copy()
+                new_kwargs.pop("_url", None)
+                new_kwargs.update(kwargs)
+
+                return other.__class__(
+                    other._format_parsed_parts(drv, root, parts),
+                    **new_kwargs,
+                )
+
+            url = stringify_path(first)
             parsed_url = urllib.parse.urlparse(url)
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
@@ -261,6 +273,27 @@ class UPath(pathlib.Path):
         info = self._accessor.info(self)
         if info["type"] == "file":
             return True
+        return False
+
+    def is_mount(self):
+        return False
+
+    def is_symlink(self):
+        info = self._accessor.info(self)
+        if "islink" in info:
+            return info["islink"]
+        return False
+
+    def is_socket(self):
+        return False
+
+    def is_fifo(self):
+        return False
+
+    def is_block_device(self):
+        return False
+
+    def is_char_device(self):
         return False
 
     def chmod(self, mod):
