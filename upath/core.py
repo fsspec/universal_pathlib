@@ -104,43 +104,42 @@ class UPath(pathlib.Path):
     ]
 
     def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
-        if issubclass(cls, UPath):
-            args_list = list(args)
-            first = args_list.pop(0)
-            if isinstance(first, pathlib.PurePath):
-                # Create a (modified) copy, if first arg is a Path object
-                other = first
-                parts = args_list
-                drv, root, parts = other._parse_args(parts)
-                drv, root, parts = other._flavour.join_parsed_parts(
-                    other._drv, other._root, other._parts, drv, root, parts
-                )
+        args_list = list(args)
+        first = args_list.pop(0)
+        if isinstance(first, pathlib.PurePath):
+            # Create a (modified) copy, if first arg is a Path object
+            other = first
+            parts = args_list
+            drv, root, parts = other._parse_args(parts)
+            drv, root, parts = other._flavour.join_parsed_parts(
+                other._drv, other._root, other._parts, drv, root, parts
+            )
 
-                new_kwargs = getattr(other, "_kwargs", {}).copy()
-                new_kwargs.pop("_url", None)
-                new_kwargs.update(kwargs)
+            new_kwargs = getattr(other, "_kwargs", {}).copy()
+            new_kwargs.pop("_url", None)
+            new_kwargs.update(kwargs)
 
-                return other.__class__(
-                    other._format_parsed_parts(drv, root, parts),
-                    **new_kwargs,
-                )
+            return other.__class__(
+                other._format_parsed_parts(drv, root, parts),
+                **new_kwargs,
+            )
 
-            url = stringify_path(first)
-            parsed_url = urllib.parse.urlparse(url)
-            for key in ["scheme", "netloc"]:
-                val = kwargs.get(key)
-                if val:
-                    parsed_url = parsed_url._replace(**{key: val})
+        url = stringify_path(first)
+        parsed_url = urllib.parse.urlparse(url)
+        for key in ["scheme", "netloc"]:
+            val = kwargs.get(key)
+            if val:
+                parsed_url = parsed_url._replace(**{key: val})
 
-            fsspec_impls = list(registry) + list(known_implementations.keys())
-            if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
-                import upath.registry
+        fsspec_impls = list(registry) + list(known_implementations.keys())
+        if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
+            import upath.registry
 
-                cls = upath.registry._registry[parsed_url.scheme]
-                kwargs["_url"] = parsed_url
-                args_list.insert(0, parsed_url.path)
-                args = tuple(args_list)
-                return cls._from_parts(args, **kwargs)
+            cls = upath.registry._registry[parsed_url.scheme]
+            kwargs["_url"] = parsed_url
+            args_list.insert(0, parsed_url.path)
+            return cls._from_parts(tuple(args_list), **kwargs)
+
         # treat as local filesystem, return PosixPath or WindowsPath
         return pathlib.Path(*args, **kwargs)
 
