@@ -224,6 +224,11 @@ def test_copy_path_append():
 
     assert str(path / "folder2" / "folder3") == str(copy_path)
 
+    path = UPath("/tmp/folder")
+    copy_path = UPath(path, "folder2", "folder3")
+
+    assert str(path / "folder2" / "folder3") == str(copy_path)
+
 
 def test_copy_path_append_kwargs():
     path = UPath("gcs://bucket/folder", anon=True)
