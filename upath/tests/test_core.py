@@ -208,12 +208,12 @@ def test_copy_path_append():
     copy_path = UPath(path, "folder2")
 
     assert type(path) == type(copy_path) == type(pathlib.Path(""))
-    assert f"{path}/folder2" == str(copy_path)
+    assert str(path / "folder2") == str(copy_path)
 
     path = UPath("/tmp/folder")
     copy_path = UPath(path, "folder2/folder3")
 
-    assert f"{path}/folder2/folder3" == str(copy_path)
+    assert str(path / "folder2" / "folder3") == str(copy_path)
 
 
 def test_copy_path_append_kwargs():
