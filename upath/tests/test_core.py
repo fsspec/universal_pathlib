@@ -176,3 +176,51 @@ def test_pickling_child_path():
     assert path._root == recovered_path._root
     assert path._parts == recovered_path._parts
     assert path.fs.storage_options == recovered_path.fs.storage_options
+
+
+def test_copy_path():
+    path = UPath("gcs://bucket/folder", anon=True)
+    copy_path = UPath(path)
+
+    print(type(path), type(copy_path))
+
+    assert type(path) == type(copy_path)
+    assert str(path) == str(copy_path)
+    assert path._drv == copy_path._drv
+    assert path._root == copy_path._root
+    assert path._parts == copy_path._parts
+    assert path.fs.storage_options == copy_path.fs.storage_options
+
+
+def test_copy_path_posix():
+    path = UPath("/tmp/folder")
+    copy_path = UPath(path)
+
+    assert type(path) == type(copy_path) == type(pathlib.Path(""))
+    assert str(path) == str(copy_path)
+    assert path._drv == copy_path._drv
+    assert path._root == copy_path._root
+    assert path._parts == copy_path._parts
+
+
+def test_copy_path_append():
+    path = UPath("/tmp/folder")
+    copy_path = UPath(path, "folder2")
+
+    assert type(path) == type(copy_path) == type(pathlib.Path(""))
+    assert str(path / "folder2") == str(copy_path)
+
+    path = UPath("/tmp/folder")
+    copy_path = UPath(path, "folder2/folder3")
+
+    assert str(path / "folder2" / "folder3") == str(copy_path)
+
+
+def test_copy_path_append_kwargs():
+    path = UPath("gcs://bucket/folder", anon=True)
+    copy_path = UPath(path, anon=False)
+
+    assert type(path) == type(copy_path)
+    assert str(path) == str(copy_path)
+    assert not copy_path._kwargs["anon"]
+    assert path._kwargs["anon"]

@@ -253,3 +253,14 @@ class BaseTests:
         assert path_a._drv == path_b._drv
         assert path_a._parts == path_b._parts
         assert path_a._url == path_b._url
+
+    def test_copy_path(self):
+        path = self.path
+        copy_path = UPath(path)
+
+        assert type(path) == type(copy_path)
+        assert str(path) == str(copy_path)
+        assert path._drv == copy_path._drv
+        assert path._root == copy_path._root
+        assert path._parts == copy_path._parts
+        assert path.fs.storage_options == copy_path.fs.storage_options

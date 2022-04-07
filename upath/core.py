@@ -119,8 +119,26 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
     def __new__(cls, *args, **kwargs):
         if issubclass(cls, UPath):
             args_list = list(args)
-            url = args_list.pop(0)
-            url = stringify_path(url)
+            first = args_list.pop(0)
+            if isinstance(first, pathlib.PurePath):
+                # Create a (modified) copy, if first arg is a Path object
+                other = first
+                parts = args_list
+                drv, root, parts = other._parse_args(parts)
+                drv, root, parts = other._flavour.join_parsed_parts(
+                    other._drv, other._root, other._parts, drv, root, parts
+                )
+
+                new_kwargs = getattr(other, "_kwargs", {}).copy()
+                new_kwargs.pop("_url", None)
+                new_kwargs.update(kwargs)
+
+                return other.__class__(
+                    other._format_parsed_parts(drv, root, parts),
+                    **new_kwargs,
+                )
+
+            url = stringify_path(first)
             parsed_url = urllib.parse.urlparse(url)
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
