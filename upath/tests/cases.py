@@ -62,28 +62,22 @@ class BaseTests:
         assert not self.path.is_file()
 
     def test_is_mount(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_mount()
+        assert self.path.is_mount() is False
 
     def test_is_symlink(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_symlink()
+        assert self.path.is_symlink() is False
 
     def test_is_socket(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_socket()
+        assert self.path.is_socket() is False
 
     def test_is_fifo(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_fifo()
+        assert self.path.is_fifo() is False
 
     def test_is_block_device(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_block_device()
+        assert self.path.is_block_device() is False
 
     def test_is_char_device(self):
-        with pytest.raises(NotImplementedError):
-            self.path.is_char_device()
+        assert self.path.is_char_device() is False
 
     def test_iterdir(self, local_testdir):
         pl_path = Path(local_testdir)
@@ -259,3 +253,14 @@ class BaseTests:
         assert path_a._drv == path_b._drv
         assert path_a._parts == path_b._parts
         assert path_a._url == path_b._url
+
+    def test_copy_path(self):
+        path = self.path
+        copy_path = UPath(path)
+
+        assert type(path) == type(copy_path)
+        assert str(path) == str(copy_path)
+        assert path._drv == copy_path._drv
+        assert path._root == copy_path._root
+        assert path._parts == copy_path._parts
+        assert path.fs.storage_options == copy_path.fs.storage_options
