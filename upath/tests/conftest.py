@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from pathlib import Path
 import subprocess
@@ -204,6 +205,8 @@ def docker_gcs():
         return
 
     requests = pytest.importorskip("requests")
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
 
     container = "gcsfs_test"
     cmd = (
