@@ -1,8 +1,7 @@
-import os
 import pathlib
 import re
+from typing import Union
 import urllib
-from abc import ABCMeta
 
 from fsspec.registry import (
     get_filesystem_class,
@@ -87,22 +86,11 @@ class _FSSpecAccessor:
                 )
 
 
-class PureUPath(pathlib.PurePath):
-    _flavour = pathlib._posix_flavour
-    __slots__ = ()
-
-
-class UPathMeta(ABCMeta):
-    def __instancecheck__(cls, instance):
-        return isinstance(instance, pathlib.Path)
-
-    def __subclasscheck__(cls, subclass):
-        return issubclass(subclass, pathlib.Path)
-
-
-class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
+class UPath(pathlib.Path):
 
     __slots__ = ("_url", "_kwargs", "_closed", "_accessor")
+    _flavour = pathlib._posix_flavour
+    _default_accessor = _FSSpecAccessor
 
     not_implemented = [
         "cwd",
@@ -114,60 +102,46 @@ class UPath(pathlib.Path, PureUPath, metaclass=UPathMeta):
         "owner",
         "readlink",
     ]
-    _default_accessor = _FSSpecAccessor
 
-    def __new__(cls, *args, **kwargs):
-        if issubclass(cls, UPath):
-            args_list = list(args)
-            first = args_list.pop(0)
-            if isinstance(first, pathlib.PurePath):
-                # Create a (modified) copy, if first arg is a Path object
-                other = first
-                parts = args_list
-                drv, root, parts = other._parse_args(parts)
-                drv, root, parts = other._flavour.join_parsed_parts(
-                    other._drv, other._root, other._parts, drv, root, parts
-                )
+    def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
+        args_list = list(args)
+        first = args_list.pop(0)
+        if isinstance(first, pathlib.PurePath):
+            # Create a (modified) copy, if first arg is a Path object
+            other = first
+            parts = args_list
+            drv, root, parts = other._parse_args(parts)
+            drv, root, parts = other._flavour.join_parsed_parts(
+                other._drv, other._root, other._parts, drv, root, parts
+            )
 
-                new_kwargs = getattr(other, "_kwargs", {}).copy()
-                new_kwargs.pop("_url", None)
-                new_kwargs.update(kwargs)
+            new_kwargs = getattr(other, "_kwargs", {}).copy()
+            new_kwargs.pop("_url", None)
+            new_kwargs.update(kwargs)
 
-                return other.__class__(
-                    other._format_parsed_parts(drv, root, parts),
-                    **new_kwargs,
-                )
+            return other.__class__(
+                other._format_parsed_parts(drv, root, parts),
+                **new_kwargs,
+            )
 
-            url = stringify_path(first)
-            parsed_url = urllib.parse.urlparse(url)
-            for key in ["scheme", "netloc"]:
-                val = kwargs.get(key)
-                if val:
-                    parsed_url = parsed_url._replace(**{key: val})
-            # treat as local filesystem, return PosixPath or WindowsPath
-            impls = list(registry) + list(known_implementations.keys())
-            if not parsed_url.scheme or parsed_url.scheme not in impls:
-                cls = (
-                    pathlib.WindowsPath
-                    if os.name == "nt"
-                    else pathlib.PosixPath
-                )
-                self = cls._from_parts(args)
-                if not self._flavour.is_supported:
-                    raise NotImplementedError(
-                        "cannot instantiate %r on your system" % (cls.__name__,)
-                    )
-            else:
-                import upath.registry
+        url = stringify_path(first)
+        parsed_url = urllib.parse.urlparse(url)
+        for key in ["scheme", "netloc"]:
+            val = kwargs.get(key)
+            if val:
+                parsed_url = parsed_url._replace(**{key: val})
 
-                cls = upath.registry._registry[parsed_url.scheme]
-                kwargs["_url"] = parsed_url
-                args_list.insert(0, parsed_url.path)
-                args = tuple(args_list)
-                self = cls._from_parts(args, **kwargs)
-        else:
-            self = super().__new__(*args, **kwargs)
-        return self
+        fsspec_impls = list(registry) + list(known_implementations.keys())
+        if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
+            import upath.registry
+
+            cls = upath.registry._registry[parsed_url.scheme]
+            kwargs["_url"] = parsed_url
+            args_list.insert(0, parsed_url.path)
+            return cls._from_parts(tuple(args_list), **kwargs)
+
+        # treat as local filesystem, return PosixPath or WindowsPath
+        return pathlib.Path(*args, **kwargs)
 
     def __getattr__(self, item):
         if item == "_accessor":

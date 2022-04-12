@@ -81,11 +81,18 @@ def test_subclass(local_testdir):
     assert isinstance(path, pathlib.Path)
 
 
+def test_subclass_with_gcs():
+    path = UPath("gcs://bucket", anon=True)
+    assert isinstance(path, UPath)
+    assert isinstance(path, pathlib.Path)
+
+
 def test_instance_check(local_testdir):
     path = pathlib.Path(local_testdir)
     upath = UPath(local_testdir)
     # test instance check passes
-    assert isinstance(upath, UPath)
+    assert isinstance(upath, pathlib.Path)
+    assert not isinstance(upath, UPath)
     # test type is same as pathlib
     assert type(upath) is type(path)
     upath = UPath(f"file://{local_testdir}")
@@ -97,6 +104,7 @@ def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))
     assert isinstance(path, pathlib.Path)
+    assert not isinstance(path, UPath)
 
 
 @pytest.mark.skipif(
@@ -182,8 +190,6 @@ def test_copy_path():
     path = UPath("gcs://bucket/folder", anon=True)
     copy_path = UPath(path)
 
-    print(type(path), type(copy_path))
-
     assert type(path) == type(copy_path)
     assert str(path) == str(copy_path)
     assert path._drv == copy_path._drv
@@ -212,6 +218,11 @@ def test_copy_path_append():
 
     path = UPath("/tmp/folder")
     copy_path = UPath(path, "folder2/folder3")
+
+    assert str(path / "folder2" / "folder3") == str(copy_path)
+
+    path = UPath("/tmp/folder")
+    copy_path = UPath(path, "folder2", "folder3")
 
     assert str(path / "folder2" / "folder3") == str(copy_path)
 
