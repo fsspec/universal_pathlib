@@ -14,7 +14,6 @@ from upath.tests.cases import BaseTests
     reason="don't run test on Windows",
 )
 def test_posix_path(local_testdir):
-    print(type(UPath(local_testdir)))
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
 
@@ -190,8 +189,6 @@ def test_pickling_child_path():
 def test_copy_path():
     path = UPath("gcs://bucket/folder", anon=True)
     copy_path = UPath(path)
-
-    print(type(path), type(copy_path))
 
     assert type(path) == type(copy_path)
     assert str(path) == str(copy_path)
