@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from upath import UPath
-from upath.errors import DirectoryNotEmptyError
+from upath.errors import DirectoryNotEmptyError, NotDirectoryError
 
 
 class BaseTests:
@@ -129,6 +129,9 @@ class BaseTests:
         print(new_dir.stat())
         new_dir.rmdir()
         assert not new_dir.exists()
+
+        with pytest.raises(NotDirectoryError):
+            (self.path / "file1.txt").rmdir()
 
     def test_open(self):
         pass
