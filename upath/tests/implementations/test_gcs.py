@@ -3,7 +3,6 @@ import sys
 
 from upath import UPath
 from upath.implementations.gcs import GCSPath
-from upath.errors import NotDirectoryError
 from upath.tests.cases import BaseTests
 
 
