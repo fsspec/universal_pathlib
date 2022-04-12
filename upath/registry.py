@@ -1,3 +1,4 @@
+from typing import Dict, Type
 import warnings
 
 import upath
@@ -6,16 +7,19 @@ import upath
 class _Registry:
     from upath.implementations import hdfs, http, memory, s3, gcs
 
-    http = http.HTTPPath
-    hdfs = hdfs.HDFSPath
-    s3a = s3.S3Path
-    s3 = s3.S3Path
-    memory = memory.MemoryPath
-    gs = gcs.GCSPath
-    gcs = gcs.GCSPath
+    known_implementations: Dict[str, Type[upath.UPath]] = {
+        "http": http.HTTPPath,
+        "https": http.HTTPPath,
+        "hdfs": hdfs.HDFSPath,
+        "s3a": s3.S3Path,
+        "s3": s3.S3Path,
+        "memory": memory.MemoryPath,
+        "gs": gcs.GCSPath,
+        "gcs": gcs.GCSPath,
+    }
 
-    def __getitem__(self, item):
-        implemented_path = getattr(self, item, None)
+    def __getitem__(self, item: str) -> Type[upath.UPath]:
+        implemented_path = self.known_implementations.get(item, None)
         if not implemented_path:
             warning_str = (
                 f"{item} filesystem path not explicitly implemented. "
