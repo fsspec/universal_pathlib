@@ -18,6 +18,13 @@ class TestGCSPath(BaseTests):
     def test_is_GCSPath(self):
         assert isinstance(self.path, GCSPath)
 
+    def test_mkdir(self):
+        new_dir = self.path / "new_dir"
+        # mkdir doesn't really do anything. A directory only exists in GCS
+        # if some file or something is written to it
+        (new_dir / "test.txt").touch()
+        assert new_dir.exists()
+
     def test_glob(self, pathlib_base):
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))

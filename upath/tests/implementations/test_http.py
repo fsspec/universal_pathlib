@@ -15,3 +15,9 @@ def test_httppath():
     path = UPath("http://example.com")
     assert isinstance(path, HTTPPath)
     assert path.exists()
+
+
+def test_httpspath():
+    path = UPath("https://example.com")
+    assert isinstance(path, HTTPPath)
+    assert path.exists()

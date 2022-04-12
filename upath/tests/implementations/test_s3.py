@@ -3,7 +3,6 @@
 import pytest  # noqa: F401
 
 from upath import UPath
-from upath.errors import NotDirectoryError
 from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
 
@@ -25,24 +24,15 @@ class TestUPathS3(BaseTests):
         pass
 
     def test_mkdir(self):
-        new_dir = self.path.joinpath("new_dir")
-        # new_dir.mkdir()
+        new_dir = self.path / "new_dir"
+        new_dir.mkdir()
         # mkdir doesn't really do anything. A directory only exists in s3
         # if some file or something is written to it
-        new_dir.joinpath("test.txt").touch()
+        (new_dir / "test.txt").touch()
         assert new_dir.exists()
 
-    def test_rmdir(self, local_testdir):
-        dirname = "rmdir_test"
-        mock_dir = self.path.joinpath(dirname)
-        mock_dir.joinpath("test.txt").touch()
-        mock_dir.rmdir()
-        assert not mock_dir.exists()
-        with pytest.raises(NotDirectoryError):
-            self.path.joinpath("file1.txt").rmdir()
-
     def test_touch_unlink(self):
-        path = self.path.joinpath("test_touch.txt")
+        path = self.path / "test_touch.txt"
         path.touch()
         assert path.exists()
         path.unlink()

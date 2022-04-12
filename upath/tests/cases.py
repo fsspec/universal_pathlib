@@ -118,15 +118,14 @@ class BaseTests:
     def test_rmdir(self):
         new_dir = self.path / "new_dir"
         new_dir.mkdir()
+        (new_dir / "file.txt").touch()
         assert new_dir.exists()
 
-        (new_dir / "file.txt").touch()
         with pytest.raises(DirectoryNotEmptyError):
             new_dir.rmdir()
 
         (new_dir / "file.txt").unlink()
 
-        print(new_dir.stat())
         new_dir.rmdir()
         assert not new_dir.exists()
 
