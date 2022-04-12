@@ -10,7 +10,7 @@ from fsspec.registry import (
 )
 from fsspec.utils import stringify_path
 
-from upath.errors import NotDirectoryError
+from upath.errors import DirectoryNotEmptyError, NotDirectoryError
 
 
 class _FSSpecAccessor:
@@ -256,31 +256,40 @@ class UPath(pathlib.Path):
         if not getattr(self._accessor, "exists"):
             try:
                 self._accessor.stat(self)
-            except (FileNotFoundError):
+            except FileNotFoundError:
                 return False
             return True
         else:
             return self._accessor.exists(self)
 
     def is_dir(self):
-        info = self._accessor.info(self)
-        if info["type"] == "directory":
-            return True
+        try:
+            info = self._accessor.info(self)
+            if info["type"] == "directory":
+                return True
+        except FileNotFoundError:
+            pass
         return False
 
     def is_file(self):
-        info = self._accessor.info(self)
-        if info["type"] == "file":
-            return True
+        try:
+            info = self._accessor.info(self)
+            if info["type"] == "file":
+                return True
+        except FileNotFoundError:
+            pass
         return False
 
     def is_mount(self):
         return False
 
     def is_symlink(self):
-        info = self._accessor.info(self)
-        if "islink" in info:
-            return info["islink"]
+        try:
+            info = self._accessor.info(self)
+            if "islink" in info:
+                return info["islink"]
+        except FileNotFoundError:
+            pass
         return False
 
     def is_socket(self):
@@ -313,15 +322,17 @@ class UPath(pathlib.Path):
                 return
         self._accessor.rm(self, recursive=False)
 
-    def rmdir(self, recursive=True):
-        """Add warning if directory not empty
-        assert is_dir?
-        """
-        try:
-            assert self.is_dir()
-        except AssertionError:
+    def rmdir(self, recursive=False):
+        if not self.exists():
+            raise FileNotFoundError
+        if not self.is_dir():
             raise NotDirectoryError
-        self._accessor.rm(self, recursive=recursive)
+        if not recursive and next(self.iterdir(), None) is not None:
+            raise DirectoryNotEmptyError
+        if recursive:
+            self._accessor.rm(self, recursive=True)
+        else:
+            self._accessor.rmdir(self)
 
     @classmethod
     def _parse_args(cls, args, **kwargs):

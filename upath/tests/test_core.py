@@ -54,11 +54,11 @@ def test_multiple_backend_paths(local_testdir, s3, hdfs):
     anon, s3so = s3
     path = f"s3:{local_testdir}"
     s3_path = UPath(path, anon=anon, **s3so)
-    assert s3_path.joinpath("text.txt")._url.scheme == "s3"
+    assert (s3_path / "text.txt")._url.scheme == "s3"
     host, user, port = hdfs
     path = f"hdfs:{local_testdir}"
     UPath(path, host=host, user=user, port=port)
-    assert s3_path.joinpath("text1.txt")._url.scheme == "s3"
+    assert (s3_path / "text1.txt")._url.scheme == "s3"
 
 
 def test_constructor_accept_path(local_testdir):

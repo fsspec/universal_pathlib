@@ -57,18 +57,18 @@ def tempdir(clear_registry):
 def local_testdir(tempdir, clear_registry):
     tmp = Path(tempdir)
     tmp.mkdir(exist_ok=True)
-    folder1 = tmp.joinpath("folder1")
+    folder1 = tmp / "folder1"
     folder1.mkdir()
     folder1_files = ["file1.txt", "file2.txt"]
     for f in folder1_files:
-        p = folder1.joinpath(f)
+        p = folder1 / f
         p.touch()
         p.write_text(f)
 
-    file1 = tmp.joinpath("file1.txt")
+    file1 = tmp / "file1.txt"
     file1.touch()
     file1.write_text("hello world")
-    file2 = tmp.joinpath("file2.txt")
+    file2 = tmp / "file2.txt"
     file2.touch()
     file2.write_bytes(b"hello world")
     if sys.platform.startswith("win"):
@@ -91,7 +91,7 @@ def htcluster():
             stdout=subprocess.DEVNULL,
         )
     except FileNotFoundError as err:
-        if err.errno == 2 and 'htcluster' == err.filename:
+        if err.errno == 2 and "htcluster" == err.filename:
             pytest.skip("htcluster not installed")
         else:
             raise

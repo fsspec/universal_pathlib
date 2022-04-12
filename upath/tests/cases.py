@@ -4,9 +4,12 @@ from pathlib import Path
 
 import pytest
 from upath import UPath
+from upath.errors import DirectoryNotEmptyError
 
 
 class BaseTests:
+    path: UPath
+
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
             self.path.cwd()
@@ -21,13 +24,13 @@ class BaseTests:
 
     def test_chmod(self):
         with pytest.raises(NotImplementedError):
-            self.path.joinpath("file1.txt").chmod(777)
+            (self.path / "file1.txt").chmod(777)
 
     @pytest.mark.parametrize(
         "url, expected", [("file1.txt", True), ("fakefile.txt", False)]
     )
     def test_exists(self, url, expected):
-        path = self.path.joinpath(url)
+        path = self.path / url
         assert path.exists() == expected
 
     def test_expanduser(self):
@@ -53,13 +56,19 @@ class BaseTests:
     def test_is_dir(self):
         assert self.path.is_dir()
 
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert not path.is_dir()
 
+        not_existing_path = self.path / "nodir"
+        assert not not_existing_path.is_dir()  # should not raise
+
     def test_is_file(self):
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert path.is_file()
         assert not self.path.is_file()
+
+        not_existing_path = self.path / "nofile.txt"
+        assert not not_existing_path.is_file()  # should not raise
 
     def test_is_mount(self):
         assert self.path.is_mount() is False
@@ -102,9 +111,24 @@ class BaseTests:
             self.path.lstat()
 
     def test_mkdir(self):
-        new_dir = self.path.joinpath("new_dir")
+        new_dir = self.path / "new_dir"
         new_dir.mkdir()
         assert new_dir.exists()
+
+    def test_rmdir(self):
+        new_dir = self.path / "new_dir"
+        new_dir.mkdir()
+        assert new_dir.exists()
+
+        (new_dir / "file.txt").touch()
+        with pytest.raises(DirectoryNotEmptyError):
+            new_dir.rmdir()
+
+        (new_dir / "file.txt").unlink()
+
+        print(new_dir.stat())
+        new_dir.rmdir()
+        assert not new_dir.exists()
 
     def test_open(self):
         pass
@@ -114,15 +138,14 @@ class BaseTests:
             self.path.owner()
 
     def test_read_bytes(self, pathlib_base):
-        mock = self.path.joinpath("file2.txt")
-        pl = pathlib_base.joinpath("file2.txt")
+        mock = self.path / "file2.txt"
+        pl = pathlib_base / "file2.txt"
         assert mock.read_bytes() == pl.read_bytes()
 
     def test_read_text(self, local_testdir):
-        upath = self.path.joinpath("file1.txt")
+        upath = self.path / "file1.txt"
         assert (
-            upath.read_text()
-            == Path(local_testdir).joinpath("file1.txt").read_text()
+            upath.read_text() == (Path(local_testdir) / "file1.txt").read_text()
         )
 
     def test_readlink(self):
@@ -150,7 +173,7 @@ class BaseTests:
         pass
 
     def test_touch_unlink(self):
-        path = self.path.joinpath("test_touch.txt")
+        path = self.path / "test_touch.txt"
         path.touch()
         assert path.exists()
         path.unlink()
@@ -169,14 +192,14 @@ class BaseTests:
     def test_write_bytes(self, pathlib_base):
         fn = "test_write_bytes.txt"
         s = b"hello_world"
-        path = self.path.joinpath(fn)
+        path = self.path / fn
         path.write_bytes(s)
         assert path.read_bytes() == s
 
     def test_write_text(self, pathlib_base):
         fn = "test_write_text.txt"
         s = "hello_world"
-        path = self.path.joinpath(fn)
+        path = self.path / fn
         path.write_text(s)
         assert path.read_text() == s
 
@@ -188,18 +211,18 @@ class BaseTests:
         self.path.mkdir(parents=True, exist_ok=True)
 
     def make_test_files(self):
-        folder1 = self.path.joinpath("folder1")
+        folder1 = self.path / "folder1"
         folder1.mkdir(exist_ok=True)
         folder1_files = ["file1.txt", "file2.txt"]
         for f in folder1_files:
-            p = folder1.joinpath(f)
+            p = folder1 / f
             p.touch()
             p.write_text(f)
 
-        file1 = self.path.joinpath("file1.txt")
+        file1 = self.path / "file1.txt"
         file1.touch()
         file1.write_text("hello world")
-        file2 = self.path.joinpath("file2.txt")
+        file2 = self.path / "file2.txt"
         file2.touch()
         file2.write_bytes(b"hello world")
 
