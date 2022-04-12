@@ -44,6 +44,12 @@ class S3Path(upath.core.UPath):
         subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)
         return subed
 
+    def rmdir(self, recursive=False):
+        if recursive:
+            return super().rmdir(recursive)
+        else:
+            pass
+
     def joinpath(self, *args):
         if self._url.netloc:
             return super().joinpath(*args)
