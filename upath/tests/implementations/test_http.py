@@ -15,3 +15,17 @@ def test_httppath():
     path = UPath("http://example.com")
     assert isinstance(path, HTTPPath)
     assert path.exists()
+
+
+def test_httpspath():
+    path = UPath("https://example.com")
+    assert isinstance(path, HTTPPath)
+    assert path.exists()
+
+
+def test_httpiterdir(docker_http):
+    path = UPath(docker_http)
+
+    print(list(path.iterdir()))
+    assert path.exists()
+    assert path.is_dir()

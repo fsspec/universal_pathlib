@@ -266,3 +266,29 @@ def gcs(docker_gcs, tempdir, local_testdir, populate=True):
             gcs.rm(gcs.find("tmp"))
         except:  # noqa: E722
             pass
+
+
+@pytest.fixture(scope="module")
+def docker_http(local_testdir):
+    requests = pytest.importorskip("requests")
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
+
+    container = "nginx_test"
+    cmd = f"docker run -d -p 8080:80 -v{local_testdir.absolute}:/usr/share/nginx/html --name nginx_test nginx:alpine"
+    stop_docker(container)
+    subprocess.check_output(shlex.split(cmd))
+    url = "http://0.0.0.0:8080"
+    timeout = 10
+    while True:
+        try:
+            r = requests.get(url)
+            if r.ok:
+                yield url
+                break
+        except Exception as e:  # noqa: E722
+            timeout -= 1
+            if timeout < 0:
+                raise SystemError from e
+            time.sleep(1)
+    stop_docker(container)
