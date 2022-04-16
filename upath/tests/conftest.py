@@ -53,9 +53,8 @@ def tempdir(clear_registry):
         yield tempdir
 
 
-@pytest.fixture(scope="function")
-def local_testdir(tempdir, clear_registry):
-    tmp = Path(tempdir)
+def create_testdir(path):
+    tmp = Path(path)
     tmp.mkdir(exist_ok=True)
     folder1 = tmp.joinpath("folder1")
     folder1.mkdir()
@@ -71,6 +70,11 @@ def local_testdir(tempdir, clear_registry):
     file2 = tmp.joinpath("file2.txt")
     file2.touch()
     file2.write_bytes(b"hello world")
+
+
+@pytest.fixture(scope="function")
+def local_testdir(tempdir, clear_registry):
+    create_testdir(tempdir)
     if sys.platform.startswith("win"):
         yield str(Path(tempdir)).replace("\\", "/")
     else:
@@ -91,7 +95,7 @@ def htcluster():
             stdout=subprocess.DEVNULL,
         )
     except FileNotFoundError as err:
-        if err.errno == 2 and 'htcluster' == err.filename:
+        if err.errno == 2 and "htcluster" == err.filename:
             pytest.skip("htcluster not installed")
         else:
             raise
@@ -268,14 +272,14 @@ def gcs(docker_gcs, tempdir, local_testdir, populate=True):
             pass
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def docker_http(local_testdir):
     requests = pytest.importorskip("requests")
     if shutil.which("docker") is None:
         pytest.skip("docker not installed")
 
     container = "nginx_test"
-    cmd = f"docker run -d -p 8080:80 -v{local_testdir.absolute}:/usr/share/nginx/html --name nginx_test nginx:alpine"
+    cmd = f"docker run --rm -d -p 8080:80 -v{local_testdir.absolute}:/usr/share/nginx/html --name nginx_test nginx:alpine"
     stop_docker(container)
     subprocess.check_output(shlex.split(cmd))
     url = "http://0.0.0.0:8080"
