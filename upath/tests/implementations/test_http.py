@@ -26,6 +26,6 @@ def test_httpspath():
 def test_httpiterdir(docker_http):
     path = UPath(docker_http)
 
-    print(list(path.iterdir()))
+    print(list(str(p) for p in path.iterdir()))
     assert path.exists()
     assert path.is_dir()

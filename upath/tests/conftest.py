@@ -136,41 +136,48 @@ def hdfs(htcluster, tempdir, local_testdir):
 @pytest.fixture(scope="session")
 def s3_server():
     # writable local S3 system
-    if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
-        os.environ["BOTO_CONFIG"] = "/dev/null"
-    if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
-        os.environ["AWS_ACCESS_KEY_ID"] = "foo"
-    if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
-        os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
+    # if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
+    #     os.environ["BOTO_CONFIG"] = "/dev/null"
+    # if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
+    #     os.environ["AWS_ACCESS_KEY_ID"] = "foo"
+    # if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
+    #     os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
     requests = pytest.importorskip("requests")
 
     pytest.importorskip("moto")
 
     port = 5555
-    endpoint_uri = "http://127.0.0.1:%s/" % port
+    endpoint_uri = f"http://127.0.0.1:{port}/"
     proc = subprocess.Popen(
-        shlex.split("moto_server s3 -p %s" % port),
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
+        shlex.split(f"moto_server s3 -p {port}"),
+        # stderr=subprocess.DEVNULL,
+        # stdout=subprocess.DEVNULL,
     )
-
-    timeout = 5
-    while timeout > 0:
-        try:
-            r = requests.get(endpoint_uri)
-            if r.ok:
-                break
-        except Exception:  # pragma: no cover
-            pass
-        timeout -= 0.1  # pragma: no cover
-        time.sleep(0.1)  # pragma: no cover
-    anon = False
-    s3so = dict(
-        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=True
-    )
-    yield anon, s3so
-    proc.terminate()
-    proc.wait()
+    try:
+        timeout = 5
+        while timeout > 0:
+            try:
+                r = requests.get(endpoint_uri)
+                if r.ok:
+                    break
+            except Exception:  # pragma: no cover
+                pass
+            timeout -= 0.1  # pragma: no cover
+            time.sleep(0.1)  # pragma: no cover
+        anon = False
+        s3so = dict(
+            client_kwargs={"endpoint_url": endpoint_uri},
+            use_listings_cache=True,
+        )
+        yield anon, s3so
+    finally:
+        proc.terminate()
+        proc.wait()
 
 
 @pytest.fixture
@@ -201,7 +208,7 @@ def stop_docker(container):
 TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def docker_gcs():
     if "STORAGE_EMULATOR_HOST" in os.environ:
         # assume using real API or otherwise have a server already set up
@@ -275,24 +282,24 @@ def gcs(docker_gcs, tempdir, local_testdir, populate=True):
 @pytest.fixture
 def docker_http(local_testdir):
     requests = pytest.importorskip("requests")
-    if shutil.which("docker") is None:
-        pytest.skip("docker not installed")
-
-    container = "nginx_test"
-    cmd = f"docker run --rm -d -p 8080:80 -v{local_testdir}:/usr/share/nginx/html --name nginx_test nginx:alpine"
-    stop_docker(container)
-    subprocess.check_output(shlex.split(cmd))
-    url = "http://0.0.0.0:8080"
-    timeout = 10
-    while True:
-        try:
-            r = requests.get(url)
-            if r.ok:
-                yield url
-                break
-        except Exception as e:  # noqa: E722
-            timeout -= 1
-            if timeout < 0:
-                raise SystemError from e
-            time.sleep(1)
-    stop_docker(container)
+    pytest.importorskip("http.server")
+    proc = subprocess.Popen(
+        shlex.split(f"python -m http.server --directory {local_testdir} 8080")
+    )
+    try:
+        url = "http://0.0.0.0:8080"
+        timeout = 10
+        while True:
+            try:
+                r = requests.get(url)
+                if r.ok:
+                    yield url
+                    break
+            except Exception as e:  # noqa: E722
+                timeout -= 1
+                if timeout < 0:
+                    raise SystemError from e
+                time.sleep(1)
+    finally:
+        proc.terminate()
+        proc.wait()

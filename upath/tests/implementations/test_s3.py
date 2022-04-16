@@ -69,7 +69,9 @@ class TestUPathS3(BaseTests):
         scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        p1 = f"{scheme}:///tmp/output1.csv"
+        fs.mkdir(f"{scheme}://tmp", exist_ok=True)
+
+        p1 = f"{scheme}://tmp/output1.csv"
         upath1 = UPath(p1, anon=self.anon, **self.s3so)
         upath1.write_bytes(content)
         with fs.open(p1) as f:
@@ -77,7 +79,7 @@ class TestUPathS3(BaseTests):
         upath1.unlink()
 
         # write with fsspec, read with upath
-        p2 = f"{scheme}:///tmp/output2.csv"
+        p2 = f"{scheme}://tmp/output2.csv"
         with fs.open(p2, "wb") as f:
             f.write(content)
         upath2 = UPath(p2, anon=self.anon, **self.s3so)
