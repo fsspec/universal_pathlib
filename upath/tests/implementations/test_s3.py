@@ -69,7 +69,8 @@ class TestUPathS3(BaseTests):
         scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        fs.mkdir(f"{scheme}://tmp", exist_ok=True)
+        if not fs.exists(f"{scheme}://tmp"):
+            fs.mkdir(f"{scheme}://tmp")
 
         p1 = f"{scheme}://tmp/output1.csv"
         upath1 = UPath(p1, anon=self.anon, **self.s3so)
