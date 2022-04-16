@@ -279,7 +279,7 @@ def docker_http(local_testdir):
         pytest.skip("docker not installed")
 
     container = "nginx_test"
-    cmd = f"docker run --rm -d -p 8080:80 -v{local_testdir.absolute}:/usr/share/nginx/html --name nginx_test nginx:alpine"
+    cmd = f"docker run --rm -d -p 8080:80 -v{local_testdir}:/usr/share/nginx/html --name nginx_test nginx:alpine"
     stop_docker(container)
     subprocess.check_output(shlex.split(cmd))
     url = "http://0.0.0.0:8080"
