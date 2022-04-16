@@ -53,8 +53,9 @@ def tempdir(clear_registry):
         yield tempdir
 
 
-def create_testdir(path):
-    tmp = Path(path)
+@pytest.fixture(scope="function")
+def local_testdir(tempdir, clear_registry):
+    tmp = Path(tempdir)
     tmp.mkdir(exist_ok=True)
     folder1 = tmp.joinpath("folder1")
     folder1.mkdir()
@@ -70,11 +71,6 @@ def create_testdir(path):
     file2 = tmp.joinpath("file2.txt")
     file2.touch()
     file2.write_bytes(b"hello world")
-
-
-@pytest.fixture(scope="function")
-def local_testdir(tempdir, clear_registry):
-    create_testdir(tempdir)
     if sys.platform.startswith("win"):
         yield str(Path(tempdir)).replace("\\", "/")
     else:
@@ -136,17 +132,18 @@ def hdfs(htcluster, tempdir, local_testdir):
 @pytest.fixture(scope="session")
 def s3_server():
     # writable local S3 system
-    # if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
-    #     os.environ["BOTO_CONFIG"] = "/dev/null"
-    # if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
-    #     os.environ["AWS_ACCESS_KEY_ID"] = "foo"
-    # if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
-    #     os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
-    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_SECURITY_TOKEN"] = "testing"
-    os.environ["AWS_SESSION_TOKEN"] = "testing"
-    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+    if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
+        os.environ["BOTO_CONFIG"] = "/dev/null"
+    if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
+        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    if "AWS_SECURITY_TOKEN" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    if "AWS_SESSION_TOKEN" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SESSION_TOKEN"] = "testing"
+    if "AWS_DEFAULT_REGION" not in os.environ:  # pragma: no cover
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
     requests = pytest.importorskip("requests")
 
     pytest.importorskip("moto")
