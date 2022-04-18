@@ -51,6 +51,7 @@ class BaseTests:
             self.path.group()
 
     def test_is_dir(self):
+        print(self.path.stat())
         assert self.path.is_dir()
 
         path = self.path.joinpath("file1.txt")
@@ -58,6 +59,7 @@ class BaseTests:
 
     def test_is_file(self):
         path = self.path.joinpath("file1.txt")
+        print(path.stat())
         assert path.is_file()
         assert not self.path.is_file()
 
@@ -89,8 +91,22 @@ class BaseTests:
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        pnames = [p.name for p in pl_iter]
-        assert all(map(lambda x: x.name in pnames, up_iter))
+        print(set(p.name for p in pl_iter), set(u.name for u in up_iter))
+        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
+        assert next(self.path.parent.iterdir()).exists()
+
+    def test_iterdir2(self, local_testdir):
+        pl_path = Path(local_testdir) / "folder1"
+
+        up_iter = list((self.path / "folder1").iterdir())
+        pl_iter = list(pl_path.iterdir())
+
+        for x in up_iter:
+            assert x.exists()
+
+        assert len(up_iter) == len(pl_iter)
+        print(set(p.name for p in pl_iter), set(u.name for u in up_iter))
+        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
 
     def test_lchmod(self):
@@ -248,6 +264,7 @@ class BaseTests:
         path_a = UPath(f"{self.path}/folder")
         path_b = self.path / "folder"
 
+        print(str(path_a), str(path_b))
         assert str(path_a) == str(path_b)
         assert path_a._root == path_b._root
         assert path_a._drv == path_b._drv
@@ -262,5 +279,6 @@ class BaseTests:
         assert str(path) == str(copy_path)
         assert path._drv == copy_path._drv
         assert path._root == copy_path._root
+        print(path._parts, copy_path._parts)
         assert path._parts == copy_path._parts
         assert path.fs.storage_options == copy_path.fs.storage_options
