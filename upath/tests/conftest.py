@@ -178,7 +178,7 @@ def s3_server():
 
 
 @pytest.fixture
-def s3(s3_server, tempdir, local_testdir):
+def s3_fixture(s3_server, tempdir, local_testdir):
     s3fs = pytest.importorskip("s3fs")
     anon, s3so = s3_server
     s3 = s3fs.S3FileSystem(anon=False, **s3so)
@@ -241,7 +241,7 @@ def docker_gcs():
 
 
 @pytest.fixture
-def gcs(docker_gcs, tempdir, local_testdir, populate=True):
+def gcs_fixture(docker_gcs, tempdir, local_testdir, populate=True):
     try:
         from gcsfs.core import GCSFileSystem
     except ImportError:
@@ -276,27 +276,40 @@ def gcs(docker_gcs, tempdir, local_testdir, populate=True):
             pass
 
 
+@pytest.fixture(scope="session")
+def docker_http():
+    with tempfile.TemporaryDirectory() as tempdir:
+        requests = pytest.importorskip("requests")
+        pytest.importorskip("http.server")
+        proc = subprocess.Popen(
+            shlex.split(f"python -m http.server --directory {tempdir} 8080")
+        )
+        try:
+            url = "http://0.0.0.0:8080"
+            timeout = 10
+            while True:
+                try:
+                    r = requests.get(url)
+                    if r.ok:
+                        yield Path(tempdir), url
+                        break
+                except Exception as e:  # noqa: E722
+                    timeout -= 1
+                    if timeout < 0:
+                        raise SystemError from e
+                    time.sleep(1)
+        finally:
+            proc.terminate()
+            proc.wait()
+
+
 @pytest.fixture
-def docker_http(local_testdir):
-    requests = pytest.importorskip("requests")
-    pytest.importorskip("http.server")
-    proc = subprocess.Popen(
-        shlex.split(f"python -m http.server --directory {local_testdir} 8080")
-    )
-    try:
-        url = "http://0.0.0.0:8080"
-        timeout = 10
-        while True:
-            try:
-                r = requests.get(url)
-                if r.ok:
-                    yield url
-                    break
-            except Exception as e:  # noqa: E722
-                timeout -= 1
-                if timeout < 0:
-                    raise SystemError from e
-                time.sleep(1)
-    finally:
-        proc.terminate()
-        proc.wait()
+def http_fixture(local_testdir, docker_http):
+    docker_http_path, docker_http_url = docker_http
+    for f in docker_http_path.iterdir():
+        if f.is_dir():
+            shutil.rmtree(f)
+        else:
+            f.unlink()
+    shutil.copytree(local_testdir, docker_http_path, dirs_exist_ok=True)
+    yield docker_http_url

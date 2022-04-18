@@ -26,8 +26,8 @@ def test_httpspath():
 
 class TestUPathHttp(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
-    def path(self, docker_http):
-        self.path = UPath(docker_http)
+    def path(self, http_fixture):
+        self.path = UPath(http_fixture)
 
     def test_mkdir(self):
         pass

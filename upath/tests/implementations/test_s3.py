@@ -10,8 +10,8 @@ from upath.tests.cases import BaseTests
 
 class TestUPathS3(BaseTests):
     @pytest.fixture(autouse=True)
-    def path(self, local_testdir, s3):
-        anon, s3so = s3
+    def path(self, local_testdir, s3_fixture):
+        anon, s3so = s3_fixture
         path = f"s3:/{local_testdir}"
         self.path = UPath(path, anon=anon, **s3so)
         self.anon = anon

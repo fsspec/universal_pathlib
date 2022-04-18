@@ -35,6 +35,8 @@ class _HTTPAccessor(upath.core._FSSpecAccessor):
 class HTTPPath(upath.core.UPath):
     _default_accessor = _HTTPAccessor
 
+    def is_dir(self):
+        return super().is_dir() or next(self.iterdir(), None) is not None
 
     def _sub_path(self, name):
         """fsspec returns path as `scheme://netloc/<path>` with listdir

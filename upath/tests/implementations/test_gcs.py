@@ -11,10 +11,10 @@ from upath.tests.cases import BaseTests
 @pytest.mark.usefixtures("path")
 class TestGCSPath(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
-    def path(self, local_testdir, gcs):
+    def path(self, local_testdir, gcs_fixture):
         scheme = "gs:/"
-        self.path = UPath(f"{scheme}{local_testdir}", endpoint_url=gcs)
-        self.endpoint_url = gcs
+        self.path = UPath(f"{scheme}{local_testdir}", endpoint_url=gcs_fixture)
+        self.endpoint_url = gcs_fixture
 
     def test_is_GCSPath(self):
         assert isinstance(self.path, GCSPath)
