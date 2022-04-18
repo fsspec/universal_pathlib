@@ -4,6 +4,7 @@ from fsspec import get_filesystem_class
 
 from upath import UPath
 from upath.implementations.http import HTTPPath
+from upath.tests.cases import BaseTests
 
 try:
     get_filesystem_class("http")
@@ -23,12 +24,22 @@ def test_httpspath():
     assert path.exists()
 
 
-def test_httpiterdir(docker_http, local_testdir):
-    path = UPath(docker_http)
+class TestUPathHttp(BaseTests):
+    @pytest.fixture(autouse=True, scope="function")
+    def path(self, docker_http):
+        self.path = UPath(docker_http)
 
-    for p in UPath(local_testdir).iterdir():
-        assert f"{docker_http}/{p.name}" in list(
-            str(pp) for pp in path.iterdir()
-        )
-    assert path.exists()
-    assert path.is_dir()
+    def test_mkdir(self):
+        pass
+
+    def test_touch_unlink(self):
+        pass
+
+    def test_write_bytes(self, pathlib_base):
+        pass
+
+    def test_write_text(self, pathlib_base):
+        pass
+
+    def test_fsspec_compat(self):
+        pass
