@@ -88,10 +88,10 @@ class BaseTests:
         pl_iter = list(pl_path.iterdir())
 
         for x in up_iter:
+            assert x.name != ""
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        print(set(p.name for p in pl_iter), set(u.name for u in up_iter))
         assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
 
@@ -105,7 +105,6 @@ class BaseTests:
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        print(set(p.name for p in pl_iter), set(u.name for u in up_iter))
         assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
 

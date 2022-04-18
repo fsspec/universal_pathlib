@@ -41,6 +41,25 @@ class TestUPathS3(BaseTests):
         with pytest.raises(NotDirectoryError):
             self.path.joinpath("file1.txt").rmdir()
 
+    def test_iterdir_root(self):
+        client_kwargs = self.path._kwargs["client_kwargs"]
+        bucket_path = UPath("s3://test_bucket", client_kwargs=client_kwargs)
+        bucket_path.mkdir(mode="private")
+
+        (bucket_path / "test1.txt").touch()
+        (bucket_path / "test2.txt").touch()
+
+        for x in bucket_path.iterdir():
+            print(
+                "ITER3",
+                repr(x.name),
+                repr(x._drv),
+                repr(x._root),
+                repr(x._parts),
+            )
+            assert x.name != ""
+            assert x.exists()
+
     def test_touch_unlink(self):
         path = self.path.joinpath("test_touch.txt")
         path.touch()

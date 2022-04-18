@@ -1,4 +1,3 @@
-import re
 import urllib
 
 import upath.core
@@ -45,4 +44,11 @@ class HTTPPath(upath.core.UPath):
         sp = self.path
         complete_address = self._format_parsed_parts(None, None, [sp])
 
-        return re.sub(f"^({complete_address}|{sp[1:]}|{sp})/", "", name)
+        if name.startswith(complete_address):
+            name = name[len(complete_address):]
+        if name.startswith("/"):
+            name = name[1:]
+        if name.endswith("/"):
+            name = name[:-1]
+
+        return name
