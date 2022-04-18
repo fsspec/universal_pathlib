@@ -311,5 +311,10 @@ def http_fixture(local_testdir, docker_http):
             shutil.rmtree(f)
         else:
             f.unlink()
-    shutil.copytree(local_testdir, docker_http_path, dirs_exist_ok=True)
+    # shutil.copytree(.., .., dirs_exist_ok=True) only exists fpr Python 3.8+
+    for f in Path(local_testdir).iterdir():
+        if f.is_dir():
+            shutil.copytree(f, docker_http_path / f.name)
+        else:
+            shutil.copy(f, docker_http_path / f.name)
     yield docker_http_url
