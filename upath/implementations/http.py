@@ -1,3 +1,4 @@
+import re
 import urllib
 
 import upath.core

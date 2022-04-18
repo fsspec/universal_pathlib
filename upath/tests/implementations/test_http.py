@@ -28,7 +28,7 @@ def test_httpiterdir(docker_http, local_testdir):
 
     for p in UPath(local_testdir).iterdir():
         assert f"{docker_http}/{p.name}" in list(
-            str(pp) for pp in path.iterdir()
+            str(pp).rstrip("/") for pp in path.iterdir()
         )
     assert path.exists()
     assert path.is_dir()
