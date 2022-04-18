@@ -33,3 +33,13 @@ class _HTTPAccessor(upath.core._FSSpecAccessor):
 
 class HTTPPath(upath.core.UPath):
     _default_accessor = _HTTPAccessor
+
+
+    def _sub_path(self, name):
+        """fsspec returns path as `scheme://netloc/<path>` with listdir
+        and glob, so we potentially need to sub the whole string
+        """
+        sp = self.path
+        complete_address = self._format_parsed_parts(None, None, [sp])
+
+        return re.sub(f"^({complete_address}|{sp[1:]}|{sp})/", "", name)
