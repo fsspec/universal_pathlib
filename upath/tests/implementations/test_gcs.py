@@ -24,15 +24,6 @@ class TestGCSPath(BaseTests):
         new_dir.joinpath("test.txt").touch()
         assert new_dir.exists()
 
-    def test_glob(self, pathlib_base):
-        mock_glob = list(self.path.glob("**.txt"))
-        path_glob = list(pathlib_base.glob("**/*.txt"))
-
-        assert len(mock_glob) == len(path_glob)
-        assert all(
-            map(lambda m: m.path in [str(p)[4:] for p in path_glob], mock_glob)
-        )
-
     def test_rmdir(self, local_testdir):
         dirname = "rmdir_test"
         mock_dir = self.path.joinpath(dirname)

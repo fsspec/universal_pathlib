@@ -192,10 +192,8 @@ def s3_fixture(s3_server, local_testdir):
     for x in Path(local_testdir).glob("**/*"):
         target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
         if x.is_file():
-            with s3.open(target_path, "wb") as f:
-                f.write(x.read_text().encode("utf8"))
-        else:
-            s3.mkdir(target_path)
+            s3.upload(str(x), target_path)
+    s3.invalidate_cache()
     yield f"s3://{bucket_name}", anon, s3so
 
 
@@ -251,30 +249,19 @@ def gcs_fixture(docker_gcs, local_testdir):
     # from gcsfs.credentials import GoogleCredentials
     GCSFileSystem.clear_instance_cache()
     gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
-    try:
-        # ensure we're empty.
-        try:
-            gcs.rm("tmp", recursive=True)
-        except FileNotFoundError:
-            pass
-        try:
-            gcs.mkdir("tmp")
-            print("made tmp dir")
-        except Exception:
-            pass
-        for x in Path(local_testdir).glob("**/*"):
-            target_path = f"test_bucket/{x.relative_to(local_testdir)}"
-            if x.is_file():
-                gcs.upload(str(x), target_path)
-            else:
-                gcs.mkdir(target_path)
-        gcs.invalidate_cache()
-        yield "gs://test_bucket", docker_gcs
-    finally:
-        try:
-            gcs.rm(gcs.find("tmp"))
-        except:  # noqa: E722
-            pass
+    bucket_name = "test_bucket"
+    if gcs.exists(bucket_name):
+        for dir, _, keys in gcs.walk(bucket_name):
+            for key in keys:
+                gcs.rm(f"{dir}/{key}")
+    else:
+        gcs.mkdir(bucket_name, create_parents=True)
+    for x in Path(local_testdir).glob("**/*"):
+        target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
+        if x.is_file():
+            gcs.upload(str(x), target_path)
+    gcs.invalidate_cache()
+    yield f"gs://{bucket_name}", docker_gcs
 
 
 @pytest.fixture(scope="session")
