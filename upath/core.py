@@ -177,6 +177,7 @@ class UPath(pathlib.Path):
         )
 
     def _format_parsed_parts(self, drv, root, parts):
+        # breakpoint()
         if parts:
             join_parts = parts[1:] if parts[0] == "/" else parts
         else:
@@ -238,6 +239,7 @@ class UPath(pathlib.Path):
                 self._raise_closed()
 
     def glob(self, pattern):
+        # breakpoint()
         path = self.joinpath(pattern)
         for name in self._accessor.glob(self, path=path.path):
             name = self._sub_path(name)
@@ -329,6 +331,7 @@ class UPath(pathlib.Path):
 
     @classmethod
     def _from_parts(cls, args, **kwargs):
+        # breakpoint()
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args, **kwargs)
         obj._drv = drv

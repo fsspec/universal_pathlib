@@ -277,7 +277,7 @@ def gcs_fixture(docker_gcs, tempdir, local_testdir, populate=True):
 
 
 @pytest.fixture(scope="session")
-def docker_http():
+def http_server():
     with tempfile.TemporaryDirectory() as tempdir:
         requests = pytest.importorskip("requests")
         pytest.importorskip("http.server")
@@ -285,13 +285,15 @@ def docker_http():
             shlex.split(f"python -m http.server --directory {tempdir} 8080")
         )
         try:
-            url = "http://0.0.0.0:8080"
+            url = "http://0.0.0.0:8080/folder"
+            path = Path(tempdir) / "folder"
+            path.mkdir()
             timeout = 10
             while True:
                 try:
                     r = requests.get(url)
                     if r.ok:
-                        yield Path(tempdir), url
+                        yield path, url
                         break
                 except Exception as e:  # noqa: E722
                     timeout -= 1
@@ -304,17 +306,8 @@ def docker_http():
 
 
 @pytest.fixture
-def http_fixture(local_testdir, docker_http):
-    docker_http_path, docker_http_url = docker_http
-    for f in docker_http_path.iterdir():
-        if f.is_dir():
-            shutil.rmtree(f)
-        else:
-            f.unlink()
-    # shutil.copytree(.., .., dirs_exist_ok=True) only exists fpr Python 3.8+
-    for f in Path(local_testdir).iterdir():
-        if f.is_dir():
-            shutil.copytree(f, docker_http_path / f.name)
-        else:
-            shutil.copy(f, docker_http_path / f.name)
-    yield docker_http_url
+def http_fixture(local_testdir, http_server):
+    http_path, http_url = http_server
+    shutil.rmtree(http_path)
+    shutil.copytree(local_testdir, http_path)
+    yield http_url

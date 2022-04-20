@@ -29,6 +29,9 @@ class TestUPathHttp(BaseTests):
     def path(self, http_fixture):
         self.path = UPath(http_fixture)
 
+    def test_work_at_root(self):
+        assert "folder" in (f.name for f in self.path.parent.iterdir())
+
     def test_mkdir(self):
         pass
 

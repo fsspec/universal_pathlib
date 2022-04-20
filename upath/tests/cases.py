@@ -1,5 +1,4 @@
 import pickle
-import sys
 from pathlib import Path
 
 import pytest
@@ -38,10 +37,14 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
-        root = "/" if sys.platform.startswith("win") else ""
-        mock_glob_normalized = sorted([a.path for a in mock_glob])
+        mock_glob_normalized = sorted(
+            [a.relative_to(self.path).path for a in mock_glob]
+        )
         path_glob_normalized = sorted(
-            [f"{root}{a}".replace("\\", "/") for a in path_glob]
+            [
+                f"/{a.relative_to(pathlib_base)}".replace("\\", "/")
+                for a in path_glob
+            ]
         )
 
         assert mock_glob_normalized == path_glob_normalized
@@ -278,6 +281,7 @@ class BaseTests:
         assert str(path) == str(copy_path)
         assert path._drv == copy_path._drv
         assert path._root == copy_path._root
+        print(str(path), str(copy_path))
         print(path._parts, copy_path._parts)
         assert path._parts == copy_path._parts
         assert path.fs.storage_options == copy_path.fs.storage_options
