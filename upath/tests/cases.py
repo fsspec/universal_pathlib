@@ -1,6 +1,7 @@
 import pickle
 from pathlib import Path
 import re
+import sys
 
 import pytest
 from upath import UPath
@@ -223,7 +224,8 @@ class BaseTests:
         content = b"a,b,c\n1,2,3\n4,5,6"
 
         def strip_scheme(path):
-            return "/" + re.sub("^[a-z0-9]+:/+", "", str(path))
+            root = "" if sys.platform.startswith("win") else "/"
+            return root + re.sub("^[a-z0-9]+:/+", "", str(path))
 
         upath1 = self.path / "output1.csv"
         p1 = strip_scheme(upath1)
