@@ -60,13 +60,6 @@ class TestUPathS3(BaseTests):
         (bucket_path / "test2.txt").touch()
 
         for x in bucket_path.iterdir():
-            print(
-                "ITER3",
-                repr(x.name),
-                repr(x._drv),
-                repr(x._root),
-                repr(x._parts),
-            )
             assert x.name != ""
             assert x.exists()
 

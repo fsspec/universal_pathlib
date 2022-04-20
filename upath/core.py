@@ -249,7 +249,6 @@ class UPath(pathlib.Path):
         return output
 
     def glob(self, pattern):
-        # breakpoint()
         path = self.joinpath(pattern)
         for name in self._accessor.glob(self, path=path.path):
             name = self._sub_path(name)
@@ -341,7 +340,6 @@ class UPath(pathlib.Path):
 
     @classmethod
     def _from_parts(cls, args, **kwargs):
-        # breakpoint()
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args, **kwargs)
         obj._drv = drv

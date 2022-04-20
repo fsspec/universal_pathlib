@@ -179,9 +179,9 @@ def s3_server():
 
 @pytest.fixture
 def s3_fixture(s3_server, local_testdir):
-    s3fs = pytest.importorskip("s3fs")
+    pytest.importorskip("s3fs")
     anon, s3so = s3_server
-    s3 = s3fs.S3FileSystem(anon=False, **s3so)
+    s3 = fsspec.filesystem("s3", anon=False, **s3so)
     bucket_name = "test_bucket"
     if s3.exists(bucket_name):
         for dir, _, keys in s3.walk(bucket_name):
@@ -228,7 +228,6 @@ def docker_gcs():
         try:
             r = requests.get(url + "/storage/v1/b")
             if r.ok:
-                print("url: ", url)
                 yield url
                 break
         except Exception as e:  # noqa: E722
@@ -241,13 +240,7 @@ def docker_gcs():
 
 @pytest.fixture
 def gcs_fixture(docker_gcs, local_testdir):
-    try:
-        from gcsfs.core import GCSFileSystem
-    except ImportError:
-        pytest.skip("gcsfs not installed")
-
-    # from gcsfs.credentials import GoogleCredentials
-    GCSFileSystem.clear_instance_cache()
+    pytest.importorskip("gcsfs")
     gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
     bucket_name = "test_bucket"
     if gcs.exists(bucket_name):

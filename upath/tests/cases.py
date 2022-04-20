@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+import re
 
 import pytest
 from upath import UPath
@@ -52,7 +53,6 @@ class BaseTests:
             self.path.group()
 
     def test_is_dir(self):
-        print(self.path.stat())
         assert self.path.is_dir()
 
         path = self.path.joinpath("file1.txt")
@@ -60,7 +60,6 @@ class BaseTests:
 
     def test_is_file(self):
         path = self.path.joinpath("file1.txt")
-        print(path.stat())
         assert path.is_file()
         assert not self.path.is_file()
 
@@ -221,24 +220,25 @@ class BaseTests:
 
     def test_fsspec_compat(self):
         fs = self.path.fs
-        scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        if not fs.exists(f"{scheme}://tmp"):
-            fs.mkdir(f"{scheme}://tmp")
+        def strip_scheme(path):
+            return "/" + re.sub("^[a-z0-9]+:/+", "", str(path))
 
-        p1 = f"{scheme}:///tmp/output1.csv"
-        upath1 = UPath(p1, **self.path._kwargs)
+        upath1 = self.path / "output1.csv"
+        p1 = strip_scheme(upath1)
         upath1.write_bytes(content)
+        assert fs is upath1.fs
         with fs.open(p1) as f:
             assert f.read() == content
         upath1.unlink()
 
         # write with fsspec, read with upath
-        p2 = f"{scheme}:///tmp/output2.csv"
+        upath2 = self.path / "output2.csv"
+        p2 = strip_scheme(upath2)
+        assert fs is upath2.fs
         with fs.open(p2, "wb") as f:
             f.write(content)
-        upath2 = UPath(p2, **self.path._kwargs)
         assert upath2.read_bytes() == content
         upath2.unlink()
 
