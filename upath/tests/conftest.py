@@ -242,7 +242,7 @@ def docker_gcs():
 
 
 @pytest.fixture
-def gcs_fixture(docker_gcs, tempdir, local_testdir):
+def gcs_fixture(docker_gcs, local_testdir):
     try:
         from gcsfs.core import GCSFileSystem
     except ImportError:
@@ -269,7 +269,7 @@ def gcs_fixture(docker_gcs, tempdir, local_testdir):
             else:
                 gcs.mkdir(target_path)
         gcs.invalidate_cache()
-        yield docker_gcs
+        yield "gs://test_bucket", docker_gcs
     finally:
         try:
             gcs.rm(gcs.find("tmp"))

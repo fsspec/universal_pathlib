@@ -11,10 +11,10 @@ from ..utils import skip_on_windows
 @pytest.mark.usefixtures("path")
 class TestGCSPath(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
-    def path(self, local_testdir, gcs_fixture):
-        scheme = "gs:/"
-        self.path = UPath(f"{scheme}{local_testdir}", endpoint_url=gcs_fixture)
-        self.endpoint_url = gcs_fixture
+    def path(self, gcs_fixture):
+        path, endpoint_url = gcs_fixture
+        self.path = UPath(path, endpoint_url=endpoint_url)
+        self.endpoint_url = endpoint_url
 
     def test_is_GCSPath(self):
         assert isinstance(self.path, GCSPath)
