@@ -224,8 +224,11 @@ class BaseTests:
         scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
+        if not fs.exists(f"{scheme}://tmp"):
+            fs.mkdir(f"{scheme}://tmp")
+
         p1 = f"{scheme}:///tmp/output1.csv"
-        upath1 = UPath(p1)
+        upath1 = UPath(p1, **self.path._kwargs)
         upath1.write_bytes(content)
         with fs.open(p1) as f:
             assert f.read() == content
@@ -235,7 +238,7 @@ class BaseTests:
         p2 = f"{scheme}:///tmp/output2.csv"
         with fs.open(p2, "wb") as f:
             f.write(content)
-        upath2 = UPath(p2)
+        upath2 = UPath(p2, **self.path._kwargs)
         assert upath2.read_bytes() == content
         upath2.unlink()
 

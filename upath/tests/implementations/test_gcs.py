@@ -33,25 +33,3 @@ class TestGCSPath(BaseTests):
         assert not mock_dir.exists()
         with pytest.raises(NotDirectoryError):
             self.path.joinpath("file1.txt").rmdir()
-
-    def test_fsspec_compat(self):
-        fs = self.path.fs
-        content = b"a,b,c\n1,2,3\n4,5,6"
-
-        if not fs.exists("gs://tmp"):
-            fs.mkdir("gs://tmp")
-
-        p1 = "gs://tmp/output1.csv"
-        upath1 = UPath(p1, endpoint_url=self.endpoint_url)
-        upath1.write_bytes(content)
-        with fs.open(p1) as f:
-            assert f.read() == content
-        upath1.unlink()
-
-        # write with fsspec, read with upath
-        p2 = "gs://tmp/output2.csv"
-        with fs.open(p2, "wb") as f:
-            f.write(content)
-        upath2 = UPath(p2, endpoint_url=self.endpoint_url)
-        assert upath2.read_bytes() == content
-        upath2.unlink()
