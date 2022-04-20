@@ -285,7 +285,7 @@ def http_server():
             shlex.split(f"python -m http.server --directory {tempdir} 8080")
         )
         try:
-            url = "http://0.0.0.0:8080/folder"
+            url = "http://127.0.0.1:8080/folder"
             path = Path(tempdir) / "folder"
             path.mkdir()
             timeout = 10
