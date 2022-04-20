@@ -47,6 +47,7 @@ class BaseTests:
             [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
         )
 
+        print(mock_glob_normalized, path_glob_normalized)
         assert mock_glob_normalized == path_glob_normalized
 
     def test_group(self):
@@ -92,6 +93,7 @@ class BaseTests:
             assert x.name != ""
             assert x.exists()
 
+        print(up_iter, pl_iter)
         assert len(up_iter) == len(pl_iter)
         assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
@@ -105,6 +107,7 @@ class BaseTests:
         for x in up_iter:
             assert x.exists()
 
+        print(up_iter, pl_iter)
         assert len(up_iter) == len(pl_iter)
         assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
