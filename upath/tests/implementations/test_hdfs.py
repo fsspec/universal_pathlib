@@ -4,7 +4,7 @@ import pytest  # noqa: F401
 
 from upath import UPath
 from upath.implementations.hdfs import HDFSPath
-from upath.tests.cases import BaseTests
+from ..cases import BaseTests
 
 
 @pytest.mark.hdfs

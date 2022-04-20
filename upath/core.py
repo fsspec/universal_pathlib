@@ -92,16 +92,29 @@ class UPath(pathlib.Path):
     _flavour = pathlib._posix_flavour
     _default_accessor = _FSSpecAccessor
 
-    not_implemented = [
-        "cwd",
-        "home",
-        "expanduser",
-        "group",
-        "lchmod",
-        "lstat",
-        "owner",
-        "readlink",
-    ]
+    def cwd(self):
+        raise NotImplementedError
+
+    def home(self):
+        raise NotImplementedError
+
+    def expanduser(self):
+        raise NotImplementedError
+
+    def group(self):
+        raise NotImplementedError
+
+    def lchmod(self, mode):
+        raise NotImplementedError
+
+    def lstat(self):
+        raise NotImplementedError
+
+    def owner(self):
+        raise NotImplementedError
+
+    def readlink(self):
+        raise NotImplementedError
 
     def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
         args_list = list(args)
@@ -153,14 +166,6 @@ class UPath(pathlib.Path):
         else:
             raise AttributeError(item)
 
-    def __getattribute__(self, item):
-        if item == "__class__":
-            return super().__getattribute__("__class__")
-        if item in getattr(self.__class__, "not_implemented"):
-            raise NotImplementedError(f"UPath has no attribute {item}")
-        else:
-            return super().__getattribute__(item)
-
     def _make_child(self, args):
         drv, root, parts = self._parse_args(args, **self._kwargs)
         drv, root, parts = self._flavour.join_parsed_parts(
@@ -177,7 +182,6 @@ class UPath(pathlib.Path):
         )
 
     def _format_parsed_parts(self, drv, root, parts):
-        # breakpoint()
         if parts:
             join_parts = parts[1:] if parts[0] == "/" else parts
         else:
@@ -237,6 +241,12 @@ class UPath(pathlib.Path):
             yield self._make_child_relpath(name)
             if self._closed:
                 self._raise_closed()
+
+    def relative_to(self, *other):
+        output = super().relative_to(*other)
+        output._url = self._url
+        output._kwargs = self._kwargs
+        return output
 
     def glob(self, pattern):
         # breakpoint()
@@ -335,7 +345,6 @@ class UPath(pathlib.Path):
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args, **kwargs)
         obj._drv = drv
-        obj._parts = parts
         obj._closed = False
         obj._kwargs = kwargs.copy()
         obj._url = kwargs.pop("_url", None) or None
@@ -343,9 +352,11 @@ class UPath(pathlib.Path):
         if not root:
             if not parts:
                 root = "/"
+                parts = ["/"]
             elif parts[0] == "/":
-                root = parts.pop(0)
+                root = parts[1:]
         obj._root = root
+        obj._parts = parts
 
         return obj
 

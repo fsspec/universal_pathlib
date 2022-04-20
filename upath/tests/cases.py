@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from upath import UPath
+from .utils import posixify
 
 
 class BaseTests:
@@ -41,10 +42,7 @@ class BaseTests:
             [a.relative_to(self.path).path for a in mock_glob]
         )
         path_glob_normalized = sorted(
-            [
-                f"/{a.relative_to(pathlib_base)}".replace("\\", "/")
-                for a in path_glob
-            ]
+            [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
         )
 
         assert mock_glob_normalized == path_glob_normalized
@@ -263,7 +261,10 @@ class BaseTests:
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
     def test_child_path(self):
-        path_a = UPath(f"{self.path}/folder")
+        path_str = str(self.path)
+        if path_str.endswith("/"):
+            path_str = path_str[:-1]
+        path_a = UPath(f"{path_str}/folder")
         path_b = self.path / "folder"
 
         print(str(path_a), str(path_b))

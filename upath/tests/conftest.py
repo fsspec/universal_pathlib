@@ -152,8 +152,8 @@ def s3_server():
     endpoint_uri = f"http://127.0.0.1:{port}/"
     proc = subprocess.Popen(
         shlex.split(f"moto_server s3 -p {port}"),
-        # stderr=subprocess.DEVNULL,
-        # stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
     )
     try:
         timeout = 5
@@ -178,21 +178,25 @@ def s3_server():
 
 
 @pytest.fixture
-def s3_fixture(s3_server, tempdir, local_testdir):
+def s3_fixture(s3_server, local_testdir):
     s3fs = pytest.importorskip("s3fs")
     anon, s3so = s3_server
     s3 = s3fs.S3FileSystem(anon=False, **s3so)
-    s3.mkdir(tempdir, create_parents=True)
+    bucket_name = "test_bucket"
+    if s3.exists(bucket_name):
+        for dir, _, keys in s3.walk(bucket_name):
+            for key in keys:
+                s3.rm(f"{dir}/{key}")
+    else:
+        s3.mkdir(bucket_name, create_parents=True)
     for x in Path(local_testdir).glob("**/*"):
+        target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
         if x.is_file():
-            text = x.read_text().encode("utf8")
-            if not s3.exists(str(x.parent)):
-                s3.mkdir(str(x.parent), create_parents=True)
-            with s3.open(str(x), "wb") as f:
-                f.write(text)
+            with s3.open(target_path, "wb") as f:
+                f.write(x.read_text().encode("utf8"))
         else:
-            s3.mkdir(str(x))
-    yield anon, s3so
+            s3.mkdir(target_path)
+    yield f"s3://{bucket_name}", anon, s3so
 
 
 def stop_docker(container):
@@ -200,9 +204,6 @@ def stop_docker(container):
     cid = subprocess.check_output(cmd).strip().decode()
     if cid:
         subprocess.call(["docker", "rm", "-f", "-v", cid])
-
-
-TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
 
 
 @pytest.fixture(scope="session")
@@ -241,7 +242,7 @@ def docker_gcs():
 
 
 @pytest.fixture
-def gcs_fixture(docker_gcs, tempdir, local_testdir, populate=True):
+def gcs_fixture(docker_gcs, tempdir, local_testdir):
     try:
         from gcsfs.core import GCSFileSystem
     except ImportError:
@@ -261,12 +262,12 @@ def gcs_fixture(docker_gcs, tempdir, local_testdir, populate=True):
             print("made tmp dir")
         except Exception:
             pass
-        if populate:
-            for x in Path(local_testdir).glob("**/*"):
-                if x.is_file():
-                    gcs.upload(str(x), str(x))
-                else:
-                    gcs.mkdir(str(x))
+        for x in Path(local_testdir).glob("**/*"):
+            target_path = f"test_bucket/{x.relative_to(local_testdir)}"
+            if x.is_file():
+                gcs.upload(str(x), target_path)
+            else:
+                gcs.mkdir(target_path)
         gcs.invalidate_cache()
         yield docker_gcs
     finally:

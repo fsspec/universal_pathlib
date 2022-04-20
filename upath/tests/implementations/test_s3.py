@@ -1,20 +1,19 @@
 """see upath/tests/conftest.py for fixtures
 """
-import sys
 import pytest  # noqa: F401
 
 from upath import UPath
 from upath.errors import NotDirectoryError
 from upath.implementations.s3 import S3Path
-from upath.tests.cases import BaseTests
+from ..cases import BaseTests
+from ..utils import skip_on_windows
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Windows bad")
+@skip_on_windows
 class TestUPathS3(BaseTests):
     @pytest.fixture(autouse=True)
-    def path(self, local_testdir, s3_fixture):
-        anon, s3so = s3_fixture
-        path = f"s3:/{local_testdir}"
+    def path(self, s3_fixture):
+        path, anon, s3so = s3_fixture
         self.path = UPath(path, anon=anon, **s3so)
         self.anon = anon
         self.s3so = s3so
@@ -43,9 +42,18 @@ class TestUPathS3(BaseTests):
         with pytest.raises(NotDirectoryError):
             self.path.joinpath("file1.txt").rmdir()
 
+    def test_relative_to(self):
+        assert "s3://test_bucket/file.txt" == str(
+            UPath("s3://test_bucket/file.txt").relative_to(
+                UPath("s3://test_bucket")
+            )
+        )
+
     def test_iterdir_root(self):
         client_kwargs = self.path._kwargs["client_kwargs"]
-        bucket_path = UPath("s3://test_bucket", client_kwargs=client_kwargs)
+        bucket_path = UPath(
+            "s3://other_test_bucket", client_kwargs=client_kwargs
+        )
         bucket_path.mkdir(mode="private")
 
         (bucket_path / "test1.txt").touch()
@@ -75,15 +83,6 @@ class TestUPathS3(BaseTests):
 
         # file doesn't exists, but missing_ok is True
         path.unlink(missing_ok=True)
-
-    def test_glob(self, pathlib_base):
-        mock_glob = list(self.path.glob("**.txt"))
-        path_glob = list(pathlib_base.glob("**/*.txt"))
-
-        assert len(mock_glob) == len(path_glob)
-        assert all(
-            map(lambda m: m.path in [str(p)[4:] for p in path_glob], mock_glob)
-        )
 
     def test_fsspec_compat(self):
         fs = self.path.fs

@@ -1,11 +1,11 @@
-import sys
 import pytest  # noqa: F401
 
 from fsspec import get_filesystem_class
 
 from upath import UPath
 from upath.implementations.http import HTTPPath
-from upath.tests.cases import BaseTests
+from ..cases import BaseTests
+from ..utils import skip_on_windows
 
 try:
     get_filesystem_class("http")
@@ -25,7 +25,7 @@ def test_httpspath():
     assert path.exists()
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Windows bad")
+@skip_on_windows
 class TestUPathHttp(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, http_fixture):

@@ -3,7 +3,7 @@ import pytest
 
 from upath import UPath
 from upath.implementations.memory import MemoryPath
-from upath.tests.cases import BaseTests
+from ..cases import BaseTests
 
 
 class TestMemoryPath(BaseTests):
