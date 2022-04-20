@@ -1,3 +1,4 @@
+import sys
 import pytest  # noqa: F401
 
 from fsspec import get_filesystem_class
@@ -24,6 +25,7 @@ def test_httpspath():
     assert path.exists()
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Windows bad")
 class TestUPathHttp(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, http_fixture):
