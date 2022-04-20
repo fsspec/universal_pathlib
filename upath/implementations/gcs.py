@@ -1,5 +1,4 @@
 import upath.core
-import os
 import re
 
 
@@ -11,7 +10,7 @@ class _GCSAccessor(upath.core._FSSpecAccessor):
         """
         netloc has already been set to project via `GCSPath._from_parts`
         """
-        s = os.path.join(self._url.netloc, s.lstrip("/"))
+        s = f"{self._url.netloc}/{s.lstrip('/')}"
         return s
 
 

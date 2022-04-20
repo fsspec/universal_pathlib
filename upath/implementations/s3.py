@@ -1,4 +1,3 @@
-import os
 import re
 
 import upath.core
@@ -12,7 +11,7 @@ class _S3Accessor(upath.core._FSSpecAccessor):
         """If the filesystem backend doesn't have a root_marker, strip the
         leading slash of a path and add the bucket
         """
-        s = os.path.join(self._url.netloc, s.lstrip("/"))
+        s = f"{self._url.netloc}/{s.lstrip('/')}"
         return s
 
 
