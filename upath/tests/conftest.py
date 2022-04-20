@@ -188,7 +188,7 @@ def s3_fixture(s3_server, local_testdir):
             for key in keys:
                 s3.rm(f"{dir}/{key}")
     else:
-        s3.mkdir(bucket_name, create_parents=True)
+        s3.makedirs(bucket_name)
     for x in Path(local_testdir).glob("**/*"):
         target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
         if x.is_file():
@@ -255,7 +255,7 @@ def gcs_fixture(docker_gcs, local_testdir):
             for key in keys:
                 gcs.rm(f"{dir}/{key}")
     else:
-        gcs.mkdir(bucket_name, create_parents=True)
+        gcs.makedirs(bucket_name)
     for x in Path(local_testdir).glob("**/*"):
         target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
         if x.is_file():
