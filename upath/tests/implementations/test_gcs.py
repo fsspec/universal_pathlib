@@ -39,7 +39,10 @@ class TestGCSPath(BaseTests):
         scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        p1 = f"{scheme}:///tmp/output1.csv"
+        if not fs.exists(f"{scheme}://tmp"):
+            fs.mkdir(f"{scheme}://tmp")
+
+        p1 = f"{scheme}://tmp/output1.csv"
         upath1 = UPath(p1, endpoint_url=self.endpoint_url)
         upath1.write_bytes(content)
         with fs.open(p1) as f:
@@ -47,7 +50,7 @@ class TestGCSPath(BaseTests):
         upath1.unlink()
 
         # write with fsspec, read with upath
-        p2 = f"{scheme}:///tmp/output2.csv"
+        p2 = f"{scheme}://tmp/output2.csv"
         with fs.open(p2, "wb") as f:
             f.write(content)
         upath2 = UPath(p2, endpoint_url=self.endpoint_url)
