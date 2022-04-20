@@ -6,12 +6,6 @@ class _MemoryAccessor(upath.core._FSSpecAccessor):
         super().__init__(*args, **kwargs)
         self._fs.root_marker = ""
 
-    def _format_path(self, s):
-        """If the filesystem backend doesn't have a root_marker, strip the
-        leading slash of a path
-        """
-        return s
-
 
 class MemoryPath(upath.core.UPath):
     _default_accessor = _MemoryAccessor
