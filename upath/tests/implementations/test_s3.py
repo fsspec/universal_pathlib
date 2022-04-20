@@ -1,5 +1,6 @@
 """see upath/tests/conftest.py for fixtures
 """
+import sys
 import pytest  # noqa: F401
 
 from upath import UPath
@@ -8,6 +9,7 @@ from upath.implementations.s3 import S3Path
 from upath.tests.cases import BaseTests
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Windows bad")
 class TestUPathS3(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir, s3_fixture):
