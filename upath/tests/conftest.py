@@ -159,7 +159,7 @@ def s3_server():
         timeout = 5
         while timeout > 0:
             try:
-                r = requests.get(endpoint_uri)
+                r = requests.get(endpoint_uri, timeout=10)
                 if r.ok:
                     break
             except Exception:  # pragma: no cover
@@ -226,7 +226,7 @@ def docker_gcs():
     timeout = 10
     while True:
         try:
-            r = requests.get(url + "/storage/v1/b")
+            r = requests.get(url + "/storage/v1/b", timeout=10)
             if r.ok:
                 yield url
                 break
@@ -272,7 +272,7 @@ def http_server():
             timeout = 10
             while True:
                 try:
-                    r = requests.get(url)
+                    r = requests.get(url, timeout=10)
                     if r.ok:
                         yield path, url
                         break
