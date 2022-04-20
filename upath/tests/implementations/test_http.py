@@ -5,7 +5,6 @@ from fsspec import get_filesystem_class
 from upath import UPath
 from upath.implementations.http import HTTPPath
 from ..cases import BaseTests
-from ..utils import skip_on_windows
 
 try:
     get_filesystem_class("http")
@@ -25,7 +24,6 @@ def test_httpspath():
     assert path.exists()
 
 
-@skip_on_windows
 class TestUPathHttp(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, http_fixture):

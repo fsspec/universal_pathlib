@@ -6,10 +6,8 @@ from upath import UPath
 from upath.errors import NotDirectoryError
 from upath.implementations.s3 import S3Path
 from ..cases import BaseTests
-from ..utils import skip_on_windows
 
 
-@skip_on_windows
 class TestUPathS3(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, s3_fixture):
