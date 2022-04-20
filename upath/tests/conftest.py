@@ -260,8 +260,6 @@ def gcs_fixture(docker_gcs, local_testdir):
         target_path = f"{bucket_name}/{x.relative_to(local_testdir)}"
         if x.is_file():
             gcs.upload(str(x), target_path)
-        else:
-            gcs.mkdir(target_path)
     gcs.invalidate_cache()
     yield f"gs://{bucket_name}", docker_gcs
 
