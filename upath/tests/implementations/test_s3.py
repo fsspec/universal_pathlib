@@ -75,29 +75,6 @@ class TestUPathS3(BaseTests):
         # file doesn't exists, but missing_ok is True
         path.unlink(missing_ok=True)
 
-    # def test_fsspec_compat(self):
-    #     fs = self.path.fs
-    #     scheme = self.path._url.scheme
-    #     content = b"a,b,c\n1,2,3\n4,5,6"
-
-    #     if not fs.exists(f"{scheme}://tmp"):
-    #         fs.mkdir(f"{scheme}://tmp")
-
-    #     p1 = f"{scheme}://tmp/output1.csv"
-    #     upath1 = UPath(p1, anon=self.anon, **self.s3so)
-    #     upath1.write_bytes(content)
-    #     with fs.open(p1) as f:
-    #         assert f.read() == content
-    #     upath1.unlink()
-
-    #     # write with fsspec, read with upath
-    #     p2 = f"{scheme}://tmp/output2.csv"
-    #     with fs.open(p2, "wb") as f:
-    #         f.write(content)
-    #     upath2 = UPath(p2, anon=self.anon, **self.s3so)
-    #     assert upath2.read_bytes() == content
-    #     upath2.unlink()
-
     @pytest.mark.parametrize(
         "joiner", [["bucket", "path", "file"], "bucket/path/file"]
     )
