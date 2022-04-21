@@ -266,9 +266,7 @@ class BaseTests:
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
     def test_child_path(self):
-        path_str = str(self.path)
-        if path_str.endswith("/"):
-            path_str = path_str[:-1]
+        path_str = str(self.path).rstrip("/")
         path_a = UPath(f"{path_str}/folder")
         path_b = self.path / "folder"
 

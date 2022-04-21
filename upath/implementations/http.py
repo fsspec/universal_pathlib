@@ -58,9 +58,6 @@ class HTTPPath(upath.core.UPath):
 
         if name.startswith(complete_address):
             name = name[len(complete_address) :]  # noqa: E203
-        if name.startswith("/"):
-            name = name[1:]
-        if name.endswith("/"):
-            name = name[:-1]
+        name = name.strip("/")
 
         return name
