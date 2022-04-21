@@ -31,7 +31,7 @@ class TestUPathS3(BaseTests):
         new_dir.joinpath("test.txt").touch()
         assert new_dir.exists()
 
-    def test_rmdir(self, local_testdir):
+    def test_rmdir(self):
         dirname = "rmdir_test"
         mock_dir = self.path.joinpath(dirname)
         mock_dir.joinpath("test.txt").touch()
