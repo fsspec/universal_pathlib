@@ -225,7 +225,7 @@ class BaseTests:
 
         def strip_scheme(path):
             root = "" if sys.platform.startswith("win") else "/"
-            return root + re.sub("^[a-z0-9]+:/+", "", str(path))
+            return root + re.sub("^[a-z0-9]+:/*", "", str(path))
 
         upath1 = self.path / "output1.csv"
         p1 = strip_scheme(upath1)
