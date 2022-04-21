@@ -34,7 +34,6 @@ class _FSSpecAccessor:
 
         def wrapper(*args, **kwargs):
             args, kwargs = self._transform_arg_paths(args, kwargs)
-            print(func, args, kwargs)
             return func(*args, **kwargs)
 
         return wrapper

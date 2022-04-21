@@ -230,7 +230,6 @@ class BaseTests:
         upath1 = self.path / "output1.csv"
         p1 = strip_scheme(upath1)
         upath1.write_bytes(content)
-        print(p1, upath1)
         assert fs is upath1.fs
         with fs.open(p1) as f:
             assert f.read() == content
