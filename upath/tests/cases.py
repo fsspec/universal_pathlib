@@ -1,9 +1,11 @@
 import pickle
-import sys
 from pathlib import Path
+import re
+import sys
 
 import pytest
 from upath import UPath
+from .utils import posixify
 
 
 class BaseTests:
@@ -38,10 +40,11 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
-        root = "/" if sys.platform.startswith("win") else ""
-        mock_glob_normalized = sorted([a.path for a in mock_glob])
+        mock_glob_normalized = sorted(
+            [a.relative_to(self.path).path for a in mock_glob]
+        )
         path_glob_normalized = sorted(
-            [f"{root}{a}".replace("\\", "/") for a in path_glob]
+            [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
         )
 
         assert mock_glob_normalized == path_glob_normalized
@@ -53,13 +56,16 @@ class BaseTests:
     def test_is_dir(self):
         assert self.path.is_dir()
 
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert not path.is_dir()
+        assert not (self.path / "not-existing-dir").is_dir()
 
     def test_is_file(self):
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert path.is_file()
         assert not self.path.is_file()
+
+        assert not (self.path / "not-existing-file.txt").is_file()
 
     def test_is_mount(self):
         assert self.path.is_mount() is False
@@ -86,11 +92,24 @@ class BaseTests:
         pl_iter = list(pl_path.iterdir())
 
         for x in up_iter:
+            assert x.name != ""
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        pnames = [p.name for p in pl_iter]
-        assert all(map(lambda x: x.name in pnames, up_iter))
+        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
+        assert next(self.path.parent.iterdir()).exists()
+
+    def test_iterdir2(self, local_testdir):
+        pl_path = Path(local_testdir) / "folder1"
+
+        up_iter = list((self.path / "folder1").iterdir())
+        pl_iter = list(pl_path.iterdir())
+
+        for x in up_iter:
+            assert x.exists()
+
+        assert len(up_iter) == len(pl_iter)
+        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
 
     def test_lchmod(self):
@@ -205,21 +224,26 @@ class BaseTests:
 
     def test_fsspec_compat(self):
         fs = self.path.fs
-        scheme = self.path._url.scheme
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        p1 = f"{scheme}:///tmp/output1.csv"
-        upath1 = UPath(p1)
+        def strip_scheme(path):
+            root = "" if sys.platform.startswith("win") else "/"
+            return root + re.sub("^[a-z0-9]+:/*", "", str(path))
+
+        upath1 = self.path / "output1.csv"
+        p1 = strip_scheme(upath1)
         upath1.write_bytes(content)
+        assert fs is upath1.fs
         with fs.open(p1) as f:
             assert f.read() == content
         upath1.unlink()
 
         # write with fsspec, read with upath
-        p2 = f"{scheme}:///tmp/output2.csv"
+        upath2 = self.path / "output2.csv"
+        p2 = strip_scheme(upath2)
+        assert fs is upath2.fs
         with fs.open(p2, "wb") as f:
             f.write(content)
-        upath2 = UPath(p2)
         assert upath2.read_bytes() == content
         upath2.unlink()
 
@@ -245,7 +269,8 @@ class BaseTests:
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
     def test_child_path(self):
-        path_a = UPath(f"{self.path}/folder")
+        path_str = str(self.path).rstrip("/")
+        path_a = UPath(f"{path_str}/folder")
         path_b = self.path / "folder"
 
         assert str(path_a) == str(path_b)

@@ -1,4 +1,3 @@
-import os
 import re
 
 import upath.core
@@ -12,7 +11,7 @@ class _S3Accessor(upath.core._FSSpecAccessor):
         """If the filesystem backend doesn't have a root_marker, strip the
         leading slash of a path and add the bucket
         """
-        s = os.path.join(self._url.netloc, s.lstrip("/"))
+        s = f"{self._url.netloc}/{s.lstrip('/')}"
         return s
 
 
@@ -20,25 +19,27 @@ class S3Path(upath.core.UPath):
     _default_accessor = _S3Accessor
 
     @classmethod
-    def _from_parts(cls, args, **kwargs):
-        obj = super()._from_parts(args, **kwargs)
-        if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = obj._kwargs.pop("bucket")
-            obj._url = obj._url._replace(netloc=bucket)
+    def _from_parts(cls, args, url=None, **kwargs):
+        if kwargs.get("bucket") and url is not None:
+            bucket = kwargs.pop("bucket")
+            url = url._replace(netloc=bucket)
+        obj = super()._from_parts(args, url, **kwargs)
         return obj
 
     @classmethod
-    def _from_parsed_parts(cls, drv, root, parts, **kwargs):
-        obj = super()._from_parsed_parts(drv, root, parts, **kwargs)
-        if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = obj._kwargs.pop("bucket")
-            obj._url = obj._url._replace(netloc=bucket)
+    def _from_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
+        if kwargs.get("bucket") and url is not None:
+            bucket = kwargs.pop("bucket")
+            url = url._replace(netloc=bucket)
+
+        obj = super()._from_parsed_parts(drv, root, parts, url, **kwargs)
         return obj
 
     def _sub_path(self, name):
-        """s3fs returns path as `{bucket}/<path>` with listdir
-        and glob, so here we can add the netloc to the sub string
-        so it gets subbed out as well
+        """
+        `s3fs` returns the full path as `<bucket>/<path>` with `listdir` and
+        `glob`. However, in `iterdir` and `glob` we only want the relative path
+        to `self`.
         """
         sp = self.path
         subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)

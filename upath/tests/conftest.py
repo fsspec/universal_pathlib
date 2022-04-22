@@ -13,6 +13,8 @@ from fsspec.registry import register_implementation, _registry
 
 import fsspec
 
+from .utils import posixify
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -91,7 +93,7 @@ def htcluster():
             stdout=subprocess.DEVNULL,
         )
     except FileNotFoundError as err:
-        if err.errno == 2 and 'htcluster' == err.filename:
+        if err.errno == 2 and "htcluster" == err.filename:
             pytest.skip("htcluster not installed")
         else:
             raise
@@ -135,56 +137,66 @@ def s3_server():
     if "BOTO_CONFIG" not in os.environ:  # pragma: no cover
         os.environ["BOTO_CONFIG"] = "/dev/null"
     if "AWS_ACCESS_KEY_ID" not in os.environ:  # pragma: no cover
-        os.environ["AWS_ACCESS_KEY_ID"] = "foo"
+        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     if "AWS_SECRET_ACCESS_KEY" not in os.environ:  # pragma: no cover
-        os.environ["AWS_SECRET_ACCESS_KEY"] = "bar"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    if "AWS_SECURITY_TOKEN" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    if "AWS_SESSION_TOKEN" not in os.environ:  # pragma: no cover
+        os.environ["AWS_SESSION_TOKEN"] = "testing"
+    if "AWS_DEFAULT_REGION" not in os.environ:  # pragma: no cover
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
     requests = pytest.importorskip("requests")
 
     pytest.importorskip("moto")
 
     port = 5555
-    endpoint_uri = "http://127.0.0.1:%s/" % port
+    endpoint_uri = f"http://127.0.0.1:{port}/"
     proc = subprocess.Popen(
-        shlex.split("moto_server s3 -p %s" % port),
+        shlex.split(f"moto_server s3 -p {port}"),
         stderr=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
     )
-
-    timeout = 5
-    while timeout > 0:
-        try:
-            r = requests.get(endpoint_uri)
-            if r.ok:
-                break
-        except Exception:  # pragma: no cover
-            pass
-        timeout -= 0.1  # pragma: no cover
-        time.sleep(0.1)  # pragma: no cover
-    anon = False
-    s3so = dict(
-        client_kwargs={"endpoint_url": endpoint_uri}, use_listings_cache=True
-    )
-    yield anon, s3so
-    proc.terminate()
-    proc.wait()
+    try:
+        timeout = 5
+        while timeout > 0:
+            try:
+                r = requests.get(endpoint_uri, timeout=10)
+                if r.ok:
+                    break
+            except Exception:  # pragma: no cover
+                pass
+            timeout -= 0.1  # pragma: no cover
+            time.sleep(0.1)  # pragma: no cover
+        anon = False
+        s3so = dict(
+            client_kwargs={"endpoint_url": endpoint_uri},
+            use_listings_cache=True,
+        )
+        yield anon, s3so
+    finally:
+        proc.terminate()
+        proc.wait()
 
 
 @pytest.fixture
-def s3(s3_server, tempdir, local_testdir):
-    s3fs = pytest.importorskip("s3fs")
+def s3_fixture(s3_server, local_testdir):
+    pytest.importorskip("s3fs")
     anon, s3so = s3_server
-    s3 = s3fs.S3FileSystem(anon=False, **s3so)
-    s3.mkdir(tempdir, create_parents=True)
+    s3 = fsspec.filesystem("s3", anon=False, **s3so)
+    bucket_name = "test_bucket"
+    if s3.exists(bucket_name):
+        for dir, _, keys in s3.walk(bucket_name):
+            for key in keys:
+                s3.rm(f"{dir}/{key}")
+    else:
+        s3.mkdir(bucket_name)
     for x in Path(local_testdir).glob("**/*"):
+        target_path = f"{bucket_name}/{posixify(x.relative_to(local_testdir))}"
         if x.is_file():
-            text = x.read_text().encode("utf8")
-            if not s3.exists(str(x.parent)):
-                s3.mkdir(str(x.parent), create_parents=True)
-            with s3.open(str(x), "wb") as f:
-                f.write(text)
-        else:
-            s3.mkdir(str(x))
-    yield anon, s3so
+            s3.upload(str(x), target_path)
+    s3.invalidate_cache()
+    yield f"s3://{bucket_name}", anon, s3so
 
 
 def stop_docker(container):
@@ -194,10 +206,7 @@ def stop_docker(container):
         subprocess.call(["docker", "rm", "-f", "-v", cid])
 
 
-TEST_PROJECT = os.environ.get("GCSFS_TEST_PROJECT", "test_project")
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def docker_gcs():
     if "STORAGE_EMULATOR_HOST" in os.environ:
         # assume using real API or otherwise have a server already set up
@@ -219,9 +228,8 @@ def docker_gcs():
     timeout = 10
     while True:
         try:
-            r = requests.get(url + "/storage/v1/b")
+            r = requests.get(url + "/storage/v1/b", timeout=10)
             if r.ok:
-                print("url: ", url)
                 yield url
                 break
         except Exception as e:  # noqa: E722
@@ -233,36 +241,56 @@ def docker_gcs():
 
 
 @pytest.fixture
-def gcs(docker_gcs, tempdir, local_testdir, populate=True):
-    try:
-        from gcsfs.core import GCSFileSystem
-    except ImportError:
-        pytest.skip("gcsfs not installed")
-
-    # from gcsfs.credentials import GoogleCredentials
-    GCSFileSystem.clear_instance_cache()
+def gcs_fixture(docker_gcs, local_testdir):
+    pytest.importorskip("gcsfs")
     gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
-    try:
-        # ensure we're empty.
+    bucket_name = "test_bucket"
+    if gcs.exists(bucket_name):
+        for dir, _, keys in gcs.walk(bucket_name):
+            for key in keys:
+                gcs.rm(f"{dir}/{key}")
+    else:
+        gcs.mkdir(bucket_name)
+    for x in Path(local_testdir).glob("**/*"):
+        target_path = f"{bucket_name}/{posixify(x.relative_to(local_testdir))}"
+        if x.is_file():
+            gcs.upload(str(x), target_path)
+    gcs.invalidate_cache()
+    yield f"gs://{bucket_name}", docker_gcs
+
+
+@pytest.fixture(scope="session")
+def http_server():
+    with tempfile.TemporaryDirectory() as tempdir:
+        requests = pytest.importorskip("requests")
+        pytest.importorskip("http.server")
+        proc = subprocess.Popen(
+            shlex.split(f"python -m http.server --directory {tempdir} 8080")
+        )
         try:
-            gcs.rm("tmp", recursive=True)
-        except FileNotFoundError:
-            pass
-        try:
-            gcs.mkdir("tmp")
-            print("made tmp dir")
-        except Exception:
-            pass
-        if populate:
-            for x in Path(local_testdir).glob("**/*"):
-                if x.is_file():
-                    gcs.upload(str(x), str(x))
-                else:
-                    gcs.mkdir(str(x))
-        gcs.invalidate_cache()
-        yield docker_gcs
-    finally:
-        try:
-            gcs.rm(gcs.find("tmp"))
-        except:  # noqa: E722
-            pass
+            url = "http://127.0.0.1:8080/folder"
+            path = Path(tempdir) / "folder"
+            path.mkdir()
+            timeout = 10
+            while True:
+                try:
+                    r = requests.get(url, timeout=10)
+                    if r.ok:
+                        yield path, url
+                        break
+                except Exception as e:  # noqa: E722
+                    timeout -= 1
+                    if timeout < 0:
+                        raise SystemError from e
+                    time.sleep(1)
+        finally:
+            proc.terminate()
+            proc.wait()
+
+
+@pytest.fixture
+def http_fixture(local_testdir, http_server):
+    http_path, http_url = http_server
+    shutil.rmtree(http_path)
+    shutil.copytree(local_testdir, http_path)
+    yield http_url

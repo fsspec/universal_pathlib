@@ -6,21 +6,16 @@ import warnings
 import pytest
 from upath import UPath
 from upath.implementations.s3 import S3Path
-from upath.tests.cases import BaseTests
+from .cases import BaseTests
+from .utils import only_on_windows, skip_on_windows
 
 
-@pytest.mark.skipif(
-    sys.platform.startswith("win"),
-    reason="don't run test on Windows",
-)
+@skip_on_windows
 def test_posix_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.PosixPath)
 
 
-@pytest.mark.skipif(
-    not sys.platform.startswith("win"),
-    reason="only run test if Windows Machine",
-)
+@only_on_windows
 def test_windows_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.WindowsPath)
 
@@ -107,10 +102,7 @@ def test_new_method(local_testdir):
     assert not isinstance(path, UPath)
 
 
-@pytest.mark.skipif(
-    sys.platform.startswith("win"),
-    reason="don't run test on Windows",
-)  # need to fix windows tests here
+@skip_on_windows
 class TestFSSpecLocal(BaseTests):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
@@ -235,3 +227,21 @@ def test_copy_path_append_kwargs():
     assert str(path) == str(copy_path)
     assert not copy_path._kwargs["anon"]
     assert path._kwargs["anon"]
+
+
+def test_relative_to():
+    assert "s3://test_bucket/file.txt" == str(
+        UPath("s3://test_bucket/file.txt").relative_to(
+            UPath("s3://test_bucket")
+        )
+    )
+
+    with pytest.raises(ValueError):
+        UPath("s3://test_bucket/file.txt").relative_to(
+            UPath("gcs://test_bucket")
+        )
+
+    with pytest.raises(ValueError):
+        UPath("s3://test_bucket/file.txt", anon=True).relative_to(
+            UPath("s3://test_bucket", anon=False)
+        )
