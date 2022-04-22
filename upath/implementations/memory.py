@@ -14,8 +14,6 @@ class MemoryPath(upath.core.UPath):
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
         """
-        if self._closed:
-            self._raise_closed()
         for name in self._accessor.listdir(self):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -27,5 +25,3 @@ class MemoryPath(upath.core.UPath):
             name = name.rstrip("/")
             name = self._sub_path(name)
             yield self._make_child_relpath(name)
-            if self._closed:
-                self._raise_closed()

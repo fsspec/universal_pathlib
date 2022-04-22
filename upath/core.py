@@ -1,5 +1,6 @@
 import pathlib
 import re
+import sys
 from typing import Union
 import urllib
 
@@ -88,33 +89,12 @@ class _FSSpecAccessor:
 
 class UPath(pathlib.Path):
 
-    __slots__ = ("_url", "_kwargs", "_closed", "_accessor")
+    __slots__ = (
+        "_url",
+        "_kwargs",
+    )  # `_accessor` is inherited from `pathlib.Path`
     _flavour = pathlib._posix_flavour
     _default_accessor = _FSSpecAccessor
-
-    def cwd(self):
-        raise NotImplementedError
-
-    def home(self):
-        raise NotImplementedError
-
-    def expanduser(self):
-        raise NotImplementedError
-
-    def group(self):
-        raise NotImplementedError
-
-    def lchmod(self, mode):
-        raise NotImplementedError
-
-    def lstat(self):
-        raise NotImplementedError
-
-    def owner(self):
-        raise NotImplementedError
-
-    def readlink(self):
-        raise NotImplementedError
 
     def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
         args_list = list(args)
@@ -129,7 +109,6 @@ class UPath(pathlib.Path):
             )
 
             new_kwargs = getattr(other, "_kwargs", {}).copy()
-            new_kwargs.pop("_url", None)
             new_kwargs.update(kwargs)
 
             return other.__class__(
@@ -149,9 +128,8 @@ class UPath(pathlib.Path):
             import upath.registry
 
             cls = upath.registry._registry[parsed_url.scheme]
-            kwargs["_url"] = parsed_url
             args_list.insert(0, parsed_url.path)
-            return cls._from_parts(tuple(args_list), **kwargs)
+            return cls._from_parts(tuple(args_list), url=parsed_url, **kwargs)
 
         # treat as local filesystem, return PosixPath or WindowsPath
         return pathlib.Path(*args, **kwargs)
@@ -160,25 +138,26 @@ class UPath(pathlib.Path):
         if item == "_accessor":
             # cache the _accessor attribute on first access
             kw = self._kwargs.copy()
-            kw.pop("_url", None)
             self._accessor = _accessor = self._default_accessor(self._url, **kw)
             return _accessor
         else:
             raise AttributeError(item)
 
     def _make_child(self, args):
-        drv, root, parts = self._parse_args(args, **self._kwargs)
+        drv, root, parts = self._parse_args(args)
         drv, root, parts = self._flavour.join_parsed_parts(
             self._drv, self._root, self._parts, drv, root, parts
         )
-        return self._from_parsed_parts(drv, root, parts, **self._kwargs)
+        return self._from_parsed_parts(
+            drv, root, parts, url=self._url, **self._kwargs
+        )
 
     def _make_child_relpath(self, part):
         # This is an optimization used for dir walking.  `part` must be
         # a single part relative to this path.
         parts = self._parts + [part]
         return self._from_parsed_parts(
-            self._drv, self._root, parts, **self._kwargs
+            self._drv, self._root, parts, url=self._url, **self._kwargs
         )
 
     def _format_parsed_parts(self, drv, root, parts):
@@ -218,7 +197,9 @@ class UPath(pathlib.Path):
         parts = self._parts
         if len(parts) == 1 and (drv or root):
             return self
-        return self._from_parsed_parts(drv, root, parts[:-1], **self._kwargs)
+        return self._from_parsed_parts(
+            drv, root, parts[:-1], url=self._url, **self._kwargs
+        )
 
     def stat(self):
         return self._accessor.stat(self)
@@ -227,8 +208,6 @@ class UPath(pathlib.Path):
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
         """
-        if self._closed:
-            self._raise_closed()
         for name in self._accessor.listdir(self):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -239,10 +218,25 @@ class UPath(pathlib.Path):
             # only want the path name with iterdir
             name = self._sub_path(name)
             yield self._make_child_relpath(name)
-            if self._closed:
-                self._raise_closed()
 
     def relative_to(self, *other):
+        for other_item in other:
+            if not isinstance(other_item, self.__class__) and not isinstance(
+                other_item, str
+            ):
+                raise ValueError(
+                    f"{repr(self)} and {repr(other_item)} are "
+                    "not of compatible classes."
+                )
+            if not isinstance(other_item, str) and (
+                other_item._url.scheme != self._url.scheme
+                or other_item._url.netloc != self._url.netloc
+                or other_item._kwargs != self._kwargs
+            ):
+                raise ValueError(
+                    f"{self} and {other_item} do not share the same "
+                    "base URL and storage options."
+                )
         output = super().relative_to(*other)
         output._url = self._url
         output._kwargs = self._kwargs
@@ -315,16 +309,6 @@ class UPath(pathlib.Path):
     def is_char_device(self):
         return False
 
-    def chmod(self, mod):
-        raise NotImplementedError
-
-    def rename(self, target):
-        # can be implemented, but may be tricky
-        raise NotImplementedError
-
-    def touch(self, trunicate=True, **kwargs):
-        self._accessor.touch(self, trunicate=trunicate, **kwargs)
-
     def unlink(self, missing_ok=False):
         if not self.exists():
             if not missing_ok:
@@ -343,18 +327,50 @@ class UPath(pathlib.Path):
             raise NotDirectoryError
         self._accessor.rm(self, recursive=recursive)
 
-    @classmethod
-    def _parse_args(cls, args, **kwargs):
-        return super(UPath, cls)._parse_args(args)
+    def chmod(self, mod):
+        raise NotImplementedError
+
+    def rename(self, target):
+        # can be implemented, but may be tricky
+        raise NotImplementedError
+
+    def cwd(self):
+        raise NotImplementedError
+
+    def home(self):
+        raise NotImplementedError
+
+    def expanduser(self):
+        raise NotImplementedError
+
+    def group(self):
+        raise NotImplementedError
+
+    def lchmod(self, mode):
+        raise NotImplementedError
+
+    def lstat(self):
+        raise NotImplementedError
+
+    def owner(self):
+        raise NotImplementedError
+
+    def readlink(self):
+        raise NotImplementedError
+
+    def touch(self, trunicate=True, **kwargs):
+        self._accessor.touch(self, trunicate=trunicate, **kwargs)
 
     @classmethod
-    def _from_parts(cls, args, **kwargs):
+    def _from_parts(cls, args, url=None, **kwargs):
         obj = object.__new__(cls)
-        drv, root, parts = obj._parse_args(args, **kwargs)
+        drv, root, parts = obj._parse_args(args)
+        kwargs = kwargs.copy()
         obj._drv = drv
-        obj._closed = False
+        if sys.version_info < (3, 9):
+            obj._closed = False
+        obj._url = url
         obj._kwargs = kwargs.copy()
-        obj._url = kwargs.pop("_url", None) or None
 
         if not root:
             if not parts:
@@ -368,13 +384,14 @@ class UPath(pathlib.Path):
         return obj
 
     @classmethod
-    def _from_parsed_parts(cls, drv, root, parts, **kwargs):
+    def _from_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
         obj = object.__new__(cls)
         obj._drv = drv
         obj._parts = parts
-        obj._closed = False
+        if sys.version_info < (3, 9):
+            obj._closed = False
+        obj._url = url
         obj._kwargs = kwargs.copy()
-        obj._url = kwargs.pop("_url", None) or None
 
         if not root:
             if not parts:
@@ -403,7 +420,6 @@ class UPath(pathlib.Path):
         )
 
         kwargs = self._kwargs.copy()
-        kwargs.pop("_url")
 
         # Create a new object
         out = self.__class__(
@@ -414,15 +430,14 @@ class UPath(pathlib.Path):
 
     def __setstate__(self, state):
         kwargs = state["_kwargs"].copy()
-        kwargs["_url"] = self._url
         self._kwargs = kwargs
+        self._url = state["_url"]
 
     def __reduce__(self):
         kwargs = self._kwargs.copy()
-        kwargs.pop("_url", None)
 
         return (
             self.__class__,
             (self._format_parsed_parts(self._drv, self._root, self._parts),),
-            {"_kwargs": kwargs},
+            {"_kwargs": kwargs, "_url": self._url},
         )

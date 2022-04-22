@@ -19,19 +19,19 @@ class GCSPath(upath.core.UPath):
     _default_accessor = _GCSAccessor
 
     @classmethod
-    def _from_parts(cls, args, **kwargs):
-        obj = super()._from_parts(args, **kwargs)
-        if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = obj._kwargs.pop("bucket")
-            obj._url = obj._url._replace(netloc=bucket)
+    def _from_parts(cls, args, url=None, **kwargs):
+        if kwargs.get("bucket") and url is not None:
+            bucket = kwargs.pop("bucket")
+            url = url._replace(netloc=bucket)
+        obj = super()._from_parts(args, url, **kwargs)
         return obj
 
     @classmethod
-    def _from_parsed_parts(cls, drv, root, parts, **kwargs):
-        obj = super()._from_parsed_parts(drv, root, parts, **kwargs)
-        if kwargs.get("bucket") and kwargs.get("_url"):
-            bucket = obj._kwargs.pop("bucket")
-            obj._url = obj._url._replace(netloc=bucket)
+    def _from_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
+        if kwargs.get("bucket") and url is not None:
+            bucket = kwargs.pop("bucket")
+            url = url._replace(netloc=bucket)
+        obj = super()._from_parsed_parts(drv, root, parts, url, **kwargs)
         return obj
 
     def _sub_path(self, name):

@@ -227,3 +227,21 @@ def test_copy_path_append_kwargs():
     assert str(path) == str(copy_path)
     assert not copy_path._kwargs["anon"]
     assert path._kwargs["anon"]
+
+
+def test_relative_to():
+    assert "s3://test_bucket/file.txt" == str(
+        UPath("s3://test_bucket/file.txt").relative_to(
+            UPath("s3://test_bucket")
+        )
+    )
+
+    with pytest.raises(ValueError):
+        UPath("s3://test_bucket/file.txt").relative_to(
+            UPath("gcs://test_bucket")
+        )
+
+    with pytest.raises(ValueError):
+        UPath("s3://test_bucket/file.txt", anon=True).relative_to(
+            UPath("s3://test_bucket", anon=False)
+        )
