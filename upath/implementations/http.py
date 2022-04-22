@@ -35,10 +35,16 @@ class HTTPPath(upath.core.UPath):
     _default_accessor = _HTTPAccessor
 
     def is_dir(self):
-        return self._path_type() == "directory"
+        try:
+            return self._path_type() == "directory"
+        except FileNotFoundError:
+            return False
 
     def is_file(self):
-        return self._path_type() == "file"
+        try:
+            return self._path_type() == "file"
+        except FileNotFoundError:
+            return False
 
     def _path_type(self):
         info = self._accessor.info(self)

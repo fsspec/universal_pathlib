@@ -274,24 +274,33 @@ class UPath(pathlib.Path):
             return self._accessor.exists(self)
 
     def is_dir(self):
-        info = self._accessor.info(self)
-        if info["type"] == "directory":
-            return True
+        try:
+            info = self._accessor.info(self)
+            if info["type"] == "directory":
+                return True
+        except FileNotFoundError:
+            return False
         return False
 
     def is_file(self):
-        info = self._accessor.info(self)
-        if info["type"] == "file":
-            return True
+        try:
+            info = self._accessor.info(self)
+            if info["type"] == "file":
+                return True
+        except FileNotFoundError:
+            return False
         return False
 
     def is_mount(self):
         return False
 
     def is_symlink(self):
-        info = self._accessor.info(self)
-        if "islink" in info:
-            return info["islink"]
+        try:
+            info = self._accessor.info(self)
+            if "islink" in info:
+                return info["islink"]
+        except FileNotFoundError:
+            return False
         return False
 
     def is_socket(self):

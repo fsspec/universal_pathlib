@@ -56,13 +56,16 @@ class BaseTests:
     def test_is_dir(self):
         assert self.path.is_dir()
 
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert not path.is_dir()
+        assert not (self.path / "not-existing-dir").is_dir()
 
     def test_is_file(self):
-        path = self.path.joinpath("file1.txt")
+        path = self.path / "file1.txt"
         assert path.is_file()
         assert not self.path.is_file()
+
+        assert not (self.path / "not-existing-file.txt").is_file()
 
     def test_is_mount(self):
         assert self.path.is_mount() is False
