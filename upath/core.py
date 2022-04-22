@@ -431,15 +431,11 @@ class UPath(pathlib.Path):
         return out
 
     def __setstate__(self, state):
-        kwargs = state["_kwargs"].copy()
-        self._kwargs = kwargs
-        self._url = state["_url"]
+        self._kwargs = state["_kwargs"].copy()
 
     def __reduce__(self):
-        kwargs = self._kwargs.copy()
-
         return (
             self.__class__,
             (self._format_parsed_parts(self._drv, self._root, self._parts),),
-            {"_kwargs": kwargs, "_url": self._url},
+            {"_kwargs": self._kwargs.copy()},
         )
