@@ -3,6 +3,7 @@ import re
 import sys
 from typing import Union
 import urllib
+from urllib.parse import ParseResult
 
 from fsspec.registry import (
     get_filesystem_class,
@@ -15,76 +16,49 @@ from upath.errors import NotDirectoryError
 
 
 class _FSSpecAccessor:
-    def __init__(self, parsed_url, *args, **kwargs):
-        self._url = parsed_url
-        cls = get_filesystem_class(self._url.scheme)
+    __slots__ = ("_fs",)
+
+    def __init__(self, parsed_url: ParseResult, **kwargs):
+        cls = get_filesystem_class(parsed_url.scheme)
         url_kwargs = cls._get_kwargs_from_urls(
-            urllib.parse.urlunparse(self._url)
+            urllib.parse.urlunparse(parsed_url)
         )
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
 
-    def transform_args_wrapper(self, func):
-        """Modifies the arguments that get passed to the filesystem so that
-        the UPath instance gets stripped as the first argument. If a
-        path keyword argument is not given, then `UPath.path` is
-        formatted for the filesystem and inserted as the first argument.
-        If it is, then the path keyword argument is formatted properly for
-        the filesystem.
-        """
+    def _format_path(self, path: "UPath") -> str:
+        return path.path
 
-        def wrapper(*args, **kwargs):
-            args, kwargs = self._transform_arg_paths(args, kwargs)
-            return func(*args, **kwargs)
+    def open(self, path, *args, **kwargs):
+        return self._fs.open(self._format_path(path), *args, **kwargs)
 
-        return wrapper
+    def stat(self, path, **kwargs):
+        return self._fs.stat(self._format_path(path), **kwargs)
 
-    def _transform_arg_paths(self, args, kwargs):
-        """Formats the path properly for the filesystem backend."""
-        args = list(args)
-        first_arg = args.pop(0)
-        if not kwargs.get("path"):
-            if isinstance(first_arg, UPath):
-                first_arg = self._format_path(first_arg.path)
-                args.insert(0, first_arg)
-            args = tuple(args)
-        else:
-            kwargs["path"] = self._format_path(kwargs["path"])
-        return args, kwargs
+    def listdir(self, path, **kwargs):
+        return self._fs.listdir(self._format_path(path), **kwargs)
 
-    def _format_path(self, s):
-        """Placeholder method for subclassed filesystems"""
-        return s
+    def glob(self, _path, path_pattern, **kwargs):
+        return self._fs.glob(self._format_path(path_pattern), **kwargs)
 
-    def __getattribute__(self, item):
-        class_attrs = ["_url", "_fs", "__class__"]
-        if item in class_attrs:
-            return super().__getattribute__(item)
+    def exists(self, path, **kwargs):
+        return self._fs.exists(self._format_path(path), **kwargs)
 
-        class_methods = [
-            "__init__",
-            "__getattribute__",
-            "transform_args_wrapper",
-            "_transform_arg_paths",
-            "_format_path",
-        ]
-        if item in class_methods:
-            return lambda *args, **kwargs: getattr(self.__class__, item)(
-                self, *args, **kwargs
-            )
+    def info(self, path, **kwargs):
+        return self._fs.info(self._format_path(path), **kwargs)
 
-        d = object.__getattribute__(self, "__dict__")
-        fs = d.get("_fs", None)
-        if fs is not None:
-            method = getattr(fs, item, None)
-            if method:
-                return lambda *args, **kwargs: (
-                    self.transform_args_wrapper(method)(*args, **kwargs)
-                )  # noqa: E501
-            else:
-                raise NotImplementedError(
-                    f"{fs.protocol} filesystem has no attribute {item}"
-                )
+    def rm(self, path, recursive, **kwargs):
+        return self._fs.rm(
+            self._format_path(path), recursive=recursive, **kwargs
+        )
+
+    def mkdir(self, path, create_parents=True, **kwargs):
+        return self._fs.mkdir(
+            self._format_path(path), create_parents=create_parents, **kwargs
+        )
+
+    def touch(self, path, **kwargs):
+        return self._fs.touch(self._format_path(path), **kwargs)
 
 
 class UPath(pathlib.Path):
@@ -246,8 +220,8 @@ class UPath(pathlib.Path):
         return output
 
     def glob(self, pattern):
-        path = self.joinpath(pattern)
-        for name in self._accessor.glob(self, path=path.path):
+        path_pattern = self.joinpath(pattern)
+        for name in self._accessor.glob(self, path_pattern):
             name = self._sub_path(name)
             name = name.split(self._flavour.sep)
             yield self._make_child(name)

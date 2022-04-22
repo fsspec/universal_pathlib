@@ -6,12 +6,11 @@ class _GCSAccessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
 
-    def _format_path(self, s):
+    def _format_path(self, path):
         """
         netloc has already been set to project via `GCSPath._from_parts`
         """
-        s = f"{self._url.netloc}/{s.lstrip('/')}"
-        return s
+        return f"{path._url.netloc}/{path.path.lstrip('/')}"
 
 
 # project is not part of the path, but is part of the credentials

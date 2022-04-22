@@ -7,12 +7,11 @@ class _S3Accessor(upath.core._FSSpecAccessor):
     def __init__(self, parsed_url, *args, **kwargs):
         super().__init__(parsed_url, *args, **kwargs)
 
-    def _format_path(self, s):
+    def _format_path(self, path):
         """If the filesystem backend doesn't have a root_marker, strip the
         leading slash of a path and add the bucket
         """
-        s = f"{self._url.netloc}/{s.lstrip('/')}"
-        return s
+        return f"{path._url.netloc}/{path.path.lstrip('/')}"
 
 
 class S3Path(upath.core.UPath):
