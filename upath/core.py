@@ -368,7 +368,6 @@ class UPath(pathlib.Path):
     def _from_parts(cls, args, url=None, **kwargs):
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args)
-        kwargs = kwargs.copy()
         obj._drv = drv
         if sys.version_info < (3, 9):
             obj._closed = False
