@@ -36,9 +36,10 @@ class S3Path(upath.core.UPath):
         return obj
 
     def _sub_path(self, name):
-        """s3fs returns path as `{bucket}/<path>` with listdir
-        and glob, so here we can add the netloc to the sub string
-        so it gets subbed out as well
+        """
+        `s3fs` returns the full path as `<bucket>/<path>` with `listdir` and
+        `glob`. However, in `iterdir` and `glob` we only want the relative path
+        to `self`.
         """
         sp = self.path
         subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)

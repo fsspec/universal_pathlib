@@ -92,7 +92,8 @@ class UPath(pathlib.Path):
     __slots__ = (
         "_url",
         "_kwargs",
-    )  # `_accessor` is inherited from `pathlib.Path`
+        "_accessor",  # overwritten because of default in Python 3.10
+    )
     _flavour = pathlib._posix_flavour
     _default_accessor = _FSSpecAccessor
 
@@ -137,8 +138,10 @@ class UPath(pathlib.Path):
     def __getattr__(self, item):
         if item == "_accessor":
             # cache the _accessor attribute on first access
-            kw = self._kwargs.copy()
-            self._accessor = _accessor = self._default_accessor(self._url, **kw)
+            kwargs = self._kwargs.copy()
+            self._accessor = _accessor = self._default_accessor(
+                self._url, **kwargs
+            )
             return _accessor
         else:
             raise AttributeError(item)

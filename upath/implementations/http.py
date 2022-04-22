@@ -56,11 +56,12 @@ class HTTPPath(upath.core.UPath):
         return "file"
 
     def _sub_path(self, name):
-        """fsspec returns path as `scheme://netloc/<path>` with listdir
-        and glob, so we potentially need to sub the whole string
         """
-        sp = self.path
-        complete_address = self._format_parsed_parts(None, None, [sp])
+        `fsspec` returns the full path as `scheme://netloc/<path>` with
+        `listdir` and `glob`. However, in `iterdir` and `glob` we only want the
+        relative path to `self`.
+        """
+        complete_address = self._format_parsed_parts(None, None, [self.path])
 
         if name.startswith(complete_address):
             name = name[len(complete_address) :]  # noqa: E203
