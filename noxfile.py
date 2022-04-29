@@ -34,6 +34,7 @@ def smoke(session):
         "gcsfs",
         "s3fs",
         "moto[s3,server]",
+        "webdav4[fsspec]",
         "wsgidav",
         "cheroot",
     )
