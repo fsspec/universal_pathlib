@@ -98,10 +98,14 @@ class UPath(pathlib.Path):
             if val:
                 parsed_url = parsed_url._replace(**{key: val})
 
-        fsspec_impls = list(registry) + list(known_implementations.keys())
-        if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
-            import upath.registry
+        import upath.registry
 
+        fsspec_impls = (
+            set(registry)
+            | set(known_implementations.keys())
+            | set(upath.registry._registry.known_implementations.keys())
+        )
+        if parsed_url.scheme and parsed_url.scheme in fsspec_impls:
             cls = upath.registry._registry[parsed_url.scheme]
             args_list.insert(0, parsed_url.path)
             return cls._from_parts(tuple(args_list), url=parsed_url, **kwargs)

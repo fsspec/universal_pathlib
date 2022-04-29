@@ -28,7 +28,14 @@ def install(session):
 @nox.session(python=False)
 def smoke(session):
     session.install(
-        *"pytest aiohttp requests gcsfs s3fs moto[s3,server]".split()
+        "pytest",
+        "aiohttp",
+        "requests",
+        "gcsfs",
+        "s3fs",
+        "moto[s3,server]",
+        "wsgidav",
+        "cheroot",
     )
     session.run(*"pytest --skiphdfs -vv upath".split())
 
