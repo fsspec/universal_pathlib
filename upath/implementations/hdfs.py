@@ -8,7 +8,7 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
 
     def touch(self, **kwargs):
         kwargs.pop("trunicate", None)
-        self._accessor.touch(self, **kwargs)
+        super().touch(self, **kwargs)
 
 
 class HDFSPath(upath.core.UPath):
