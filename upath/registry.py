@@ -6,17 +6,17 @@ from upath.core import UPath
 
 
 class _Registry:
-    from upath.implementations import hdfs, http, memory, s3, gcs
+    from upath.implementations import hdfs, http, memory, cloud
 
     known_implementations: Dict[str, Type[UPath]] = {
         "https": http.HTTPPath,
         "http": http.HTTPPath,
         "hdfs": hdfs.HDFSPath,
-        "s3a": s3.S3Path,
-        "s3": s3.S3Path,
+        "s3a": cloud.S3Path,
+        "s3": cloud.S3Path,
         "memory": memory.MemoryPath,
-        "gs": gcs.GCSPath,
-        "gcs": gcs.GCSPath,
+        "gs": cloud.GCSPath,
+        "gcs": cloud.GCSPath,
     }
 
     def __getitem__(self, item):

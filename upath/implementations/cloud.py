@@ -2,21 +2,17 @@ import upath.core
 import re
 
 
-class _GCSAccessor(upath.core._FSSpecAccessor):
-    def __init__(self, parsed_url, *args, **kwargs):
-        super().__init__(parsed_url, *args, **kwargs)
-
-    def _format_path(self, s):
+class _CloudAccessor(upath.core._FSSpecAccessor):
+    def _format_path(self, path):
         """
-        netloc has already been set to project via `GCSPath._from_parts`
+        netloc has already been set to project via `CloudPath._from_parts`
         """
-        s = f"{self._url.netloc}/{s.lstrip('/')}"
-        return s
+        return f"{path._url.netloc}/{path.path.lstrip('/')}"
 
 
 # project is not part of the path, but is part of the credentials
-class GCSPath(upath.core.UPath):
-    _default_accessor = _GCSAccessor
+class CloudPath(upath.core.UPath):
+    _default_accessor = _CloudAccessor
 
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
@@ -36,9 +32,9 @@ class GCSPath(upath.core.UPath):
 
     def _sub_path(self, name):
         """
-        `gcsfs` returns the full path as `<bucket>/<path>` with `listdir` and
-        `glob`. However, in `iterdir` and `glob` we only want the relative path
-        to `self`.
+        `gcsfs` and `s3fs` return the full path as `<bucket>/<path>` with
+        `listdir` and `glob`. However, in `iterdir` and `glob` we only want the
+        relative path to `self`.
         """
         sp = self.path
         subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)
@@ -57,3 +53,11 @@ class GCSPath(upath.core.UPath):
             bucket = args_list.pop(0)
             self._kwargs["bucket"] = bucket
             return super().joinpath(*tuple(args_list))
+
+
+class GCSPath(CloudPath):
+    pass
+
+
+class S3Path(CloudPath):
+    pass

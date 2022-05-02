@@ -4,7 +4,7 @@ import pytest  # noqa: F401
 
 from upath import UPath
 from upath.errors import NotDirectoryError
-from upath.implementations.s3 import S3Path
+from upath.implementations.cloud import S3Path
 from ..cases import BaseTests
 
 

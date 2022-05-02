@@ -5,7 +5,7 @@ import warnings
 
 import pytest
 from upath import UPath
-from upath.implementations.s3 import S3Path
+from upath.implementations.cloud import S3Path
 from .cases import BaseTests
 from .utils import only_on_windows, skip_on_windows
 

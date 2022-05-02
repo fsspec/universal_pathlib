@@ -1,7 +1,7 @@
 import pytest
 
 from upath import UPath
-from upath.implementations.gcs import GCSPath
+from upath.implementations.cloud import GCSPath
 from upath.errors import NotDirectoryError
 from ..cases import BaseTests
 from ..utils import skip_on_windows
