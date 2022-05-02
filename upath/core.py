@@ -29,8 +29,8 @@ class _FSSpecAccessor:
     def _format_path(self, path: "UPath") -> str:
         return path.path
 
-    def open(self, path, *args, **kwargs):
-        return self._fs.open(self._format_path(path), *args, **kwargs)
+    def open(self, path, mode='r', *args, **kwargs):
+        return self._fs.open(self._format_path(path), mode, *args, **kwargs)
 
     def stat(self, path, **kwargs):
         return self._fs.stat(self._format_path(path), **kwargs)
