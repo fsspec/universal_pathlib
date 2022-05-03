@@ -7,7 +7,7 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
         self._fs.root_marker = "/"
 
     def touch(self, **kwargs):
-        kwargs.pop("trunicate", None)
+        kwargs.pop("truncate", None)
         super().touch(self, **kwargs)
 
 
