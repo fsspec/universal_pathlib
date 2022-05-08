@@ -1,6 +1,3 @@
-import urllib
-from urllib.parse import ParseResult
-
 import upath.core
 
 
