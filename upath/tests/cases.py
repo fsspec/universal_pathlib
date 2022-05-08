@@ -47,6 +47,7 @@ class BaseTests:
             [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
         )
 
+        print(mock_glob_normalized, path_glob_normalized)
         assert mock_glob_normalized == path_glob_normalized
 
     def test_group(self):

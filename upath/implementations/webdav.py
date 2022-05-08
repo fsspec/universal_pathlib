@@ -1,0 +1,47 @@
+import urllib
+from urllib.parse import ParseResult
+
+import upath.core
+
+
+class _WebdavAccessor(upath.core._FSSpecAccessor):
+    def __init__(self, parsed_url: ParseResult, **kwargs):
+        from webdav4.fsspec import WebdavFileSystem
+
+        parsed_url = parsed_url._replace(scheme=parsed_url.scheme[7:], path="")
+        base_url = urllib.parse.urlunparse(parsed_url)
+        self._fs = WebdavFileSystem(base_url, **kwargs)
+
+    def listdir(self, path, **kwargs):
+        base_url = urllib.parse.urlunparse(path._url._replace(path=""))
+        for file_info in self._fs.listdir(
+            self._format_path(path).lstrip("/"), **kwargs
+        ):
+            yield {
+                **file_info,
+                "name": f"{base_url}/{file_info['name']}",
+            }
+
+    def glob(self, path, path_pattern, **kwargs):
+        base_url = urllib.parse.urlunparse(path._url._replace(path=""))
+        for file_path in self._fs.glob(
+            self._format_path(path_pattern).lstrip("/"), **kwargs
+        ):
+            yield f"{base_url}/{file_path}"
+
+
+class WebdavPath(upath.core.UPath):
+    _default_accessor = _WebdavAccessor
+
+    def _sub_path(self, name):
+        """fsspec returns path as `scheme://netloc/<path>` with listdir
+        and glob, so we potentially need to sub the whole string
+        """
+        sp = self.path
+        complete_address = self._format_parsed_parts(None, None, [sp])
+
+        if name.startswith(complete_address):
+            name = name[len(complete_address) :]  # noqa: E203
+        name = name.strip("/")
+
+        return name

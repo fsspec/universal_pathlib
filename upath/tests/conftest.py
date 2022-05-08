@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 import subprocess
 import shlex
+import threading
 import time
 import sys
 
@@ -294,3 +295,42 @@ def http_fixture(local_testdir, http_server):
     shutil.rmtree(http_path)
     shutil.copytree(local_testdir, http_path)
     yield http_url
+
+
+@pytest.fixture(scope="session")
+def webdav_server():
+    from wsgidav.wsgidav_app import WsgiDAVApp
+    from cheroot import wsgi
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        host = "127.0.0.1"
+        port = 8090
+        app = WsgiDAVApp(
+            {
+                "host": host,
+                "port": port,
+                "provider_mapping": {"/": tempdir},
+                "simple_dc": {
+                    "user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}
+                },
+            }
+        )
+        srvr = wsgi.Server(bind_addr=(host, port), wsgi_app=app)
+        srvr.prepare()
+        thread = threading.Thread(target=srvr.serve)
+        thread.daemon = True
+        thread.start()
+
+        try:
+            yield tempdir, f"webdav+http://{host}:{port}"
+        finally:
+            srvr.stop()
+            thread.join()
+
+
+@pytest.fixture
+def webdav_fixture(local_testdir, webdav_server):
+    webdav_path, webdav_url = webdav_server
+    shutil.rmtree(webdav_path)
+    shutil.copytree(local_testdir, webdav_path)
+    yield webdav_url

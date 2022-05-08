@@ -36,7 +36,8 @@ test = [
   "pylint",
   "pytest",
   "requests",
-  "s3fs"
+  "s3fs",
+  "webdav4[fsspec]"
 ]
 
 [tool.flit.scripts]
