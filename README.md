@@ -42,7 +42,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 - `file:` Local filessystem
 - `memory:` Ephemeral filesystem in RAM
 - `http:` and `https:` HTTP(S)-based filesystem
-- `hdfs:` Hadoop Distributed filesystem
+- `hdfs:` Hadoop distributed filesystem
 - `gs:` and `gcs:` Google Cloud Storage (requires `gcsfs` to be installed)
 - `s3:` and `s3a:` AWS S3 (requires `s3fs` to be installed)
 - `webdav+http:` and `webdav+https:` WebDAV-based filesystem on top of HTTP(S) (requires `webdav4[fsspec]` to be installed)
