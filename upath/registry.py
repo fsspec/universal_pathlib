@@ -6,7 +6,7 @@ from upath.core import UPath
 
 
 class _Registry:
-    from upath.implementations import hdfs, http, memory, cloud, webdav
+    from upath.implementations import hdfs, http, memory, cloud, webdav, github
 
     known_implementations: Dict[str, Type[UPath]] = {
         "https": http.HTTPPath,
@@ -17,6 +17,7 @@ class _Registry:
         "memory": memory.MemoryPath,
         "gs": cloud.GCSPath,
         "gcs": cloud.GCSPath,
+        "github": github.GithubPath,
         "webdav+http": webdav.WebdavPath,
         "webdav+https": webdav.WebdavPath,
     }
