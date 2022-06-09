@@ -16,4 +16,5 @@ setuptools.setup(
     description="pathlib api extended to use fsspec backends",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="MIT License"
 )
