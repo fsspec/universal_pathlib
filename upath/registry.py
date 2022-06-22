@@ -6,17 +6,20 @@ from upath.core import UPath
 
 
 class _Registry:
-    from upath.implementations import hdfs, http, memory, cloud, webdav
+    from upath.implementations import cloud, hdfs, http, memory, webdav
 
     known_implementations: Dict[str, Type[UPath]] = {
-        "https": http.HTTPPath,
-        "http": http.HTTPPath,
-        "hdfs": hdfs.HDFSPath,
-        "s3a": cloud.S3Path,
-        "s3": cloud.S3Path,
-        "memory": memory.MemoryPath,
-        "gs": cloud.GCSPath,
+        "abfs": cloud.AzurePath,
+        "adl": cloud.AzurePath,
+        "az": cloud.AzurePath,
         "gcs": cloud.GCSPath,
+        "gs": cloud.GCSPath,
+        "hdfs": hdfs.HDFSPath,
+        "http": http.HTTPPath,
+        "https": http.HTTPPath,
+        "memory": memory.MemoryPath,
+        "s3": cloud.S3Path,
+        "s3a": cloud.S3Path,
         "webdav+http": webdav.WebdavPath,
         "webdav+https": webdav.WebdavPath,
     }

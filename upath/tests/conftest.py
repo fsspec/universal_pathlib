@@ -12,6 +12,8 @@ import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
 
+from azure.storage.blob import BlobServiceClient
+
 import fsspec
 
 from .utils import posixify
@@ -334,3 +336,62 @@ def webdav_fixture(local_testdir, webdav_server):
     shutil.rmtree(webdav_path)
     shutil.copytree(local_testdir, webdav_path)
     yield webdav_url
+
+
+@pytest.fixture(scope="session")
+def azurite_credentials():
+    url = "http://localhost:10000"
+    account_name = "devstoreaccount1"
+    key = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="  # noqa: E501
+    endpoint = f"{url}/{account_name}"
+    connection_string = f"DefaultEndpointsProtocol=http;AccountName={account_name};AccountKey={key};BlobEndpoint={endpoint};"  # noqa
+
+    yield account_name, connection_string
+
+
+@pytest.fixture(scope="session")
+def docker_azurite(azurite_credentials):
+    requests = pytest.importorskip("requests")
+
+    image = "mcr.microsoft.com/azure-storage/azurite"
+    container_name = "azure_test"
+    cmd = (
+        f"docker run --rm -d -p 10000:10000 --name {container_name} {image}"  # noqa: E501
+        " azurite-blob --loose --blobHost 0.0.0.0"  # noqa: E501
+    )
+    url = "http://localhost:10000"
+
+    stop_docker(container_name)
+    subprocess.run(shlex.split(cmd), check=True)
+
+    retries = 10
+    while True:
+        try:
+            # wait until the container is up, even a 400 status code is ok
+            r = requests.get(url, timeout=10)
+            if (
+                r.status_code == 400
+                and "Server" in r.headers
+                and "Azurite" in r.headers["Server"]
+            ):
+                yield url
+                break
+        except Exception as e:  # noqa: E722
+            retries -= 1
+            if retries < 0:
+                raise SystemError from e
+            time.sleep(1)
+
+    stop_docker(container_name)
+
+
+@pytest.fixture(scope="session")
+def azure_fixture(azurite_credentials, docker_azurite):
+    account_name, connection_string = azurite_credentials
+    client = BlobServiceClient.from_connection_string(
+        conn_str=connection_string
+    )
+    container_name = "data"
+    client.create_container(container_name)
+
+    yield f"az://{container_name}"
