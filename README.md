@@ -41,6 +41,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 - `file:` Local filessystem
 - `memory:` Ephemeral filesystem in RAM
+- `az:`, `adl:` and `abfs:` Azure Storage (requires `adlfs` to be installed)
 - `http:` and `https:` HTTP(S)-based filesystem
 - `hdfs:` Hadoop distributed filesystem
 - `gs:` and `gcs:` Google Cloud Storage (requires `gcsfs` to be installed)

@@ -29,6 +29,7 @@ def install(session):
 def smoke(session):
     session.install(
         "pytest",
+        "adlfs",
         "aiohttp",
         "requests",
         "gcsfs",

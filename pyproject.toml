@@ -26,6 +26,7 @@ dev = []
 doc = []
 test = [
   "aiohttp",
+  "adlfs",
   "flake8",
   "gcsfs",
   "hadoop-test-cluster",

@@ -61,3 +61,7 @@ class GCSPath(CloudPath):
 
 class S3Path(CloudPath):
     pass
+
+
+class AzurePath(CloudPath):
+    pass
