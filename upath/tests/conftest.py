@@ -395,3 +395,9 @@ def azure_fixture(azurite_credentials, docker_azurite):
     client.create_container(container_name)
 
     yield f"az://{container_name}"
+
+
+@pytest.fixture
+def zip_fixture(local_testdir):
+    Path(f"{local_testdir}.zip").unlink(missing_ok=True)
+    yield shutil.make_archive(local_testdir, format="zip", root_dir=local_testdir)

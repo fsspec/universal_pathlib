@@ -1,12 +1,12 @@
-from typing import Dict, Type
 import warnings
+from typing import Dict, Type
 
 import upath
 from upath.core import UPath
 
 
 class _Registry:
-    from upath.implementations import cloud, hdfs, http, memory, webdav
+    from upath.implementations import cloud, hdfs, http, memory, webdav, zip
 
     known_implementations: Dict[str, Type[UPath]] = {
         "abfs": cloud.AzurePath,
@@ -22,6 +22,7 @@ class _Registry:
         "s3a": cloud.S3Path,
         "webdav+http": webdav.WebdavPath,
         "webdav+https": webdav.WebdavPath,
+        "zip": zip.ZipPath,
     }
 
     def __getitem__(self, item):
