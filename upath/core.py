@@ -339,8 +339,8 @@ class UPath(pathlib.Path):
     def readlink(self):
         raise NotImplementedError
 
-    def touch(self, trunicate=True, **kwargs):
-        self._accessor.touch(self, trunicate=trunicate, **kwargs)
+    def touch(self, truncate=True, **kwargs):
+        self._accessor.touch(self, truncate=truncate, **kwargs)
 
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
