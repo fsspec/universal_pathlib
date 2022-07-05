@@ -1,15 +1,12 @@
+import os
 import pathlib
 import re
 import sys
-from typing import Union
 import urllib
+from typing import Union
 from urllib.parse import ParseResult
 
-from fsspec.registry import (
-    get_filesystem_class,
-    known_implementations,
-    registry,
-)
+from fsspec.registry import get_filesystem_class, known_implementations, registry
 from fsspec.utils import stringify_path
 
 from upath.errors import NotDirectoryError
@@ -70,6 +67,8 @@ class UPath(pathlib.Path):
     )
     _flavour = pathlib._posix_flavour
     _default_accessor = _FSSpecAccessor
+    
+    _WIN_URL_PARSE_PATTERN = re.compile(r"(?P<scheme>\S+://)(?P<path>.*)")
 
     def __new__(cls, *args, **kwargs) -> Union["UPath", pathlib.Path]:
         args_list = list(args)
@@ -91,7 +90,7 @@ class UPath(pathlib.Path):
                 **new_kwargs,
             )
 
-        url = stringify_path(first)
+        url = cls._sanitize_path(stringify_path(first))
         parsed_url = urllib.parse.urlparse(url)
         for key in ["scheme", "netloc"]:
             val = kwargs.get(key)
@@ -123,6 +122,17 @@ class UPath(pathlib.Path):
             return _accessor
         else:
             raise AttributeError(item)
+
+    @classmethod
+    def _sanitize_path(cls, str_path: str) -> str: 
+        if os.name == "nt":
+            match = cls._WIN_URL_PARSE_PATTERN.search(str_path)
+            if match:
+                scheme = match.group("scheme")
+                path = pathlib.PurePath(match.group("path")).as_posix()
+                return f"{scheme}{path}"
+
+        return str_path
 
     def _make_child(self, args):
         drv, root, parts = self._parse_args(args)
