@@ -342,6 +342,19 @@ class UPath(pathlib.Path):
     def touch(self, truncate=True, **kwargs):
         self._accessor.touch(self, truncate=truncate, **kwargs)
 
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        if parents:
+            self._accessor.mkdir(self, create_parents=parents, exist_ok=exist_ok, permissions=mode)
+        else:
+            try:
+                self._accessor.mkdir(self, create_parents=False)
+            except OSError:
+                if not exist_ok or not self.is_dir():
+                    raise
+
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
         obj = object.__new__(cls)
