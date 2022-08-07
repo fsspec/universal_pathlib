@@ -98,21 +98,22 @@ def htcluster():
     except FileNotFoundError as err:
         if err.errno == 2 and "htcluster" == err.filename:
             pytest.skip("htcluster not installed")
-        else:
-            raise
+        raise
 
     time.sleep(30)
-    yield
-    proc.terminate()
-    proc.wait()
-    proc1 = subprocess.Popen(
-        shlex.split("htcluster shutdown"),
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-    )
-    proc1.terminate()
-    proc1.wait()
-    time.sleep(10)
+    try:
+        yield
+    finally:
+        proc.terminate()
+        proc.wait()
+        proc1 = subprocess.Popen(
+            shlex.split("htcluster shutdown"),
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+        )
+        proc1.terminate()
+        proc1.wait()
+        time.sleep(10)
 
 
 @pytest.fixture()
