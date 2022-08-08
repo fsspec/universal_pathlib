@@ -45,8 +45,8 @@ class TestUpath(BaseTests):
 
 
 @pytest.mark.hdfs
-def test_multiple_backend_paths(local_testdir, s3, hdfs):
-    anon, s3so = s3
+def test_multiple_backend_paths(local_testdir, s3_fixture, hdfs):
+    _, anon, s3so = s3_fixture
     path = f"s3:{local_testdir}"
     s3_path = UPath(path, anon=anon, **s3so)
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"

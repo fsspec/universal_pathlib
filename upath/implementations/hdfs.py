@@ -6,9 +6,9 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
         super().__init__(parsed_url, *args, **kwargs)
         self._fs.root_marker = "/"
 
-    def touch(self, **kwargs):
+    def touch(self, path, **kwargs):
         kwargs.pop("truncate", None)
-        super().touch(self, **kwargs)
+        super().touch(path, **kwargs)
 
 
 class HDFSPath(upath.core.UPath):
