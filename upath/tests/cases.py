@@ -126,6 +126,17 @@ class BaseTests:
         new_dir.mkdir()
         assert new_dir.exists()
 
+    def test_mkdir_exists_ok_true(self):
+        new_dir = self.path.joinpath("new_dir_may_exists")
+        new_dir.mkdir()
+        new_dir.mkdir(exist_ok=True)
+
+    def test_mkdir_exists_ok_false(self):
+        new_dir = self.path.joinpath("new_dir_may_not_exists")
+        new_dir.mkdir()
+        with pytest.raises(FileExistsError):
+            new_dir.mkdir(exist_ok=False)
+
     def test_open(self):
         pass
 
