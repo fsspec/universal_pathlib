@@ -385,14 +385,18 @@ class UPath(pathlib.Path):
         if parents:
             self._accessor.mkdir(
                 self,
-                create_parents=parents,
+                create_parents=True,
                 exist_ok=exist_ok,
-                permissions=mode,
+                mode=mode,
             )
         else:
             try:
-                self._accessor.mkdir(self, create_parents=False)
-            except OSError:
+                self._accessor.mkdir(
+                    self,
+                    create_parents=False,
+                    mode=mode,
+                )
+            except FileExistsError:
                 if not exist_ok or not self.is_dir():
                     raise
 
