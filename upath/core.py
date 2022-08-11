@@ -417,3 +417,35 @@ class UPath(pathlib.Path):
             (self._format_parsed_parts(self._drv, self._root, self._parts),),
             {"_kwargs": self._kwargs.copy()},
         )
+
+    def with_suffix(self, suffix):
+        """Return a new path with the file suffix changed.  If the path
+        has no suffix, add given suffix.  If the given suffix is an empty
+        string, remove the suffix from the path.
+        """
+        f = self._flavour
+        if f.sep in suffix or f.altsep and f.altsep in suffix:
+            raise ValueError("Invalid suffix %r" % (suffix,))
+        if suffix and not suffix.startswith('.') or suffix == '.':
+            raise ValueError("Invalid suffix %r" % (suffix))
+        name = self.name
+        if not name:
+            raise ValueError("%r has an empty name" % (self,))
+        old_suffix = self.suffix
+        if not old_suffix:
+            name = name + suffix
+        else:
+            name = name[:-len(old_suffix)] + suffix
+        return self._from_parsed_parts(self._drv, self._root,
+                                       self._parts[:-1] + [name], url=self._url)
+
+    def with_name(self, name):
+        """Return a new path with the file name changed."""
+        if not self.name:
+            raise ValueError("%r has an empty name" % (self,))
+        drv, root, parts = self._flavour.parse_parts((name,))
+        if (not name or name[-1] in [self._flavour.sep, self._flavour.altsep]
+            or drv or root or len(parts) != 1):
+            raise ValueError("Invalid name %r" % (name))
+        return self._from_parsed_parts(self._drv, self._root,
+                                       self._parts[:-1] + [name], url=self._url)
