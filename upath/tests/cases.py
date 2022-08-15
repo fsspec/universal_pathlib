@@ -290,3 +290,28 @@ class BaseTests:
         assert path._root == copy_path._root
         assert path._parts == copy_path._parts
         assert path.fs.storage_options == copy_path.fs.storage_options
+
+    def test_with_name(self):
+        path = self.path / "file.txt"
+        path = path.with_name("file.zip")
+        assert path.name == "file.zip"
+
+    def test_with_suffix(self):
+        path = self.path / "file.txt"
+        path = path.with_suffix(".zip")
+        assert path.suffix == ".zip"
+
+    def test_with_stem(self):
+        if sys.version_info < (3, 9):
+            pytest.skip("with_stem only available on py3.9+")
+        path = self.path / "file.txt"
+        path = path.with_stem("document")
+        assert path.stem == "document"
+
+    def test_repr_after_with_name(self):
+        p = self.path.joinpath("file.txt").with_name("file.zip")
+        assert "file.zip" in repr(p)
+
+    def test_repr_after_with_suffix(self):
+        p = self.path.joinpath("file.txt").with_suffix(".zip")
+        assert "file.zip" in repr(p)
