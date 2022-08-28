@@ -1,6 +1,5 @@
 import pytest
 from upath import UPath
-from upath.errors import NotDirectoryError
 from upath.implementations.cloud import AzurePath
 
 from ..cases import BaseTests
@@ -40,5 +39,5 @@ class TestAzurePath(BaseTests):
         new_dir.rmdir()
         assert not new_dir.exists()
 
-        with pytest.raises(NotDirectoryError):
+        with pytest.raises(NotADirectoryError):
             (self.path / "a" / "file.txt").rmdir()

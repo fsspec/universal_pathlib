@@ -2,7 +2,6 @@ import pytest
 
 from upath import UPath
 from upath.implementations.cloud import GCSPath
-from upath.errors import NotDirectoryError
 from ..cases import BaseTests
 from ..utils import skip_on_windows
 
@@ -31,5 +30,5 @@ class TestGCSPath(BaseTests):
         mock_dir.fs.invalidate_cache()
         mock_dir.rmdir()
         assert not mock_dir.exists()
-        with pytest.raises(NotDirectoryError):
+        with pytest.raises(NotADirectoryError):
             self.path.joinpath("file1.txt").rmdir()

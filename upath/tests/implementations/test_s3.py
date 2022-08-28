@@ -3,7 +3,6 @@
 import pytest  # noqa: F401
 
 from upath import UPath
-from upath.errors import NotDirectoryError
 from upath.implementations.cloud import S3Path
 from ..cases import BaseTests
 
@@ -37,7 +36,7 @@ class TestUPathS3(BaseTests):
         mock_dir.joinpath("test.txt").touch()
         mock_dir.rmdir()
         assert not mock_dir.exists()
-        with pytest.raises(NotDirectoryError):
+        with pytest.raises(NotADirectoryError):
             self.path.joinpath("file1.txt").rmdir()
 
     def test_relative_to(self):

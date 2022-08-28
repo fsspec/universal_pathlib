@@ -12,8 +12,6 @@ from fsspec.registry import (
 )
 from fsspec.utils import stringify_path
 
-from upath.errors import NotDirectoryError
-
 
 class _FSSpecAccessor:
     __slots__ = ("_fs",)
@@ -302,10 +300,8 @@ class UPath(pathlib.Path):
         """Add warning if directory not empty
         assert is_dir?
         """
-        try:
-            assert self.is_dir()
-        except AssertionError:
-            raise NotDirectoryError
+        if not self.is_dir():
+            raise NotADirectoryError
         self._accessor.rm(self, recursive=recursive)
 
     def chmod(self, mod):
