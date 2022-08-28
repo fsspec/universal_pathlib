@@ -3,7 +3,6 @@ import re
 
 
 class _CloudAccessor(upath.core._FSSpecAccessor):
-
     def _format_path(self, path):
         """
         netloc has already been set to project via `CloudPath._from_parts`
