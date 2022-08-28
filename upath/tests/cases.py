@@ -9,7 +9,7 @@ from .utils import posixify
 
 
 class BaseTests:
-    MKDIR_REQUIRES_FILE = False
+    SUPPORTS_EMPTY_DIRS = True
 
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
@@ -126,21 +126,21 @@ class BaseTests:
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
         new_dir.mkdir()
-        if self.MKDIR_REQUIRES_FILE:
+        if not self.SUPPORTS_EMPTY_DIRS:
             new_dir.joinpath(".file").touch()
         assert new_dir.exists()
 
     def test_mkdir_exists_ok_true(self):
         new_dir = self.path.joinpath("new_dir_may_exists")
         new_dir.mkdir()
-        if self.MKDIR_REQUIRES_FILE:
+        if not self.SUPPORTS_EMPTY_DIRS:
             new_dir.joinpath(".file").touch()
         new_dir.mkdir(exist_ok=True)
 
     def test_mkdir_exists_ok_false(self):
         new_dir = self.path.joinpath("new_dir_may_not_exists")
         new_dir.mkdir()
-        if self.MKDIR_REQUIRES_FILE:
+        if not self.SUPPORTS_EMPTY_DIRS:
             new_dir.joinpath(".file").touch()
         with pytest.raises(FileExistsError):
             new_dir.mkdir(exist_ok=False)

@@ -9,7 +9,7 @@ from ..cases import BaseTests
 
 
 class TestUPathS3(BaseTests):
-    MKDIR_REQUIRES_FILE = True
+    SUPPORTS_EMPTY_DIRS = False
 
     @pytest.fixture(autouse=True)
     def path(self, s3_fixture):

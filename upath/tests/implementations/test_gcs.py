@@ -10,7 +10,7 @@ from ..utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.usefixtures("path")
 class TestGCSPath(BaseTests):
-    MKDIR_REQUIRES_FILE = True
+    SUPPORTS_EMPTY_DIRS = False
 
     @pytest.fixture(autouse=True, scope="function")
     def path(self, gcs_fixture):
