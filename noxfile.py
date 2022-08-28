@@ -1,4 +1,3 @@
-import os
 import sys
 
 import nox
@@ -20,7 +19,7 @@ def black(session):
 @nox.session()
 def lint(session):
     session.install("flake8")
-    session.run(*"flake8".split())
+    session.run("flake8", "upath")
 
 
 @nox.session()
