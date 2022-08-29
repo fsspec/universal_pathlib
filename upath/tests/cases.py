@@ -43,11 +43,13 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
+        _mock_start = len(self.path.parts)
         mock_glob_normalized = sorted(
-            [a.relative_to(self.path).path for a in mock_glob]
+            [a.parts[_mock_start:] for a in mock_glob]
         )
+        _path_start = len(pathlib_base.parts)
         path_glob_normalized = sorted(
-            [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
+            [a.parts[_path_start:] for a in path_glob]
         )
 
         print(mock_glob_normalized, path_glob_normalized)

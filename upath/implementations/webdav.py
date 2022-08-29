@@ -38,7 +38,7 @@ class WebdavPath(upath.core.UPath):
         and glob, so we potentially need to sub the whole string
         """
         sp = self.path
-        complete_address = self._format_parsed_parts(None, None, [sp])
+        complete_address = self._format_parsed_parts(None, None, [sp], url=self._url, **self._kwargs)
 
         if name.startswith(complete_address):
             name = name[len(complete_address) :]  # noqa: E203

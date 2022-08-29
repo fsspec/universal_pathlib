@@ -38,7 +38,9 @@ class HTTPPath(upath.core.UPath):
         `listdir` and `glob`. However, in `iterdir` and `glob` we only want the
         relative path to `self`.
         """
-        complete_address = self._format_parsed_parts(None, None, [self.path])
+        complete_address = self._format_parsed_parts(
+            None, None, [self.path], url=self._url, **self._kwargs
+        )
 
         if name.startswith(complete_address):
             name = name[len(complete_address) :]  # noqa: E203
