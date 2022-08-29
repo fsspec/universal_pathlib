@@ -25,13 +25,12 @@ class HTTPPath(upath.core.UPath):
             return False
 
     def _path_type(self):
-        info = self._accessor.info(self)
-        if (
-            info["type"] == "directory"
-            or next(self.iterdir(), None) is not None
-        ):
+        try:
+            next(self.iterdir())
+        except (StopIteration, NotADirectoryError):
+            return "file"
+        else:
             return "directory"
-        return "file"
 
     def _sub_path(self, name):
         """

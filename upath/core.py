@@ -34,7 +34,17 @@ class _FSSpecAccessor:
         return self._fs.stat(self._format_path(path), **kwargs)
 
     def listdir(self, path, **kwargs):
-        return self._fs.listdir(self._format_path(path), **kwargs)
+        p_fmt = self._format_path(path)
+        contents = self._fs.listdir(p_fmt, **kwargs)
+        if len(contents) == 0 and not self._fs.isdir(p_fmt):
+            raise NotADirectoryError
+        elif (
+            len(contents) == 1
+            and contents[0]["name"] == p_fmt
+            and contents[0]["type"] == "file"
+        ):
+            raise NotADirectoryError
+        return contents
 
     def glob(self, _path, path_pattern, **kwargs):
         return self._fs.glob(self._format_path(path_pattern), **kwargs)
