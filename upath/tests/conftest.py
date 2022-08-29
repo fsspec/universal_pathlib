@@ -12,8 +12,6 @@ import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
 
-from azure.storage.blob import BlobServiceClient
-
 import fsspec
 
 from .utils import posixify
@@ -302,8 +300,11 @@ def http_fixture(local_testdir, http_server):
 
 @pytest.fixture(scope="session")
 def webdav_server():
-    from wsgidav.wsgidav_app import WsgiDAVApp
-    from cheroot import wsgi
+    try:
+        from wsgidav.wsgidav_app import WsgiDAVApp
+        from cheroot import wsgi
+    except ImportError as err:
+        pytest.skip(str(err))
 
     with tempfile.TemporaryDirectory() as tempdir:
         host = "127.0.0.1"
@@ -388,8 +389,9 @@ def docker_azurite(azurite_credentials):
 
 @pytest.fixture(scope="session")
 def azure_fixture(azurite_credentials, docker_azurite):
+    azure_storage = pytest.importorskip("azure.storage.blob")
     account_name, connection_string = azurite_credentials
-    client = BlobServiceClient.from_connection_string(
+    client = azure_storage.BlobServiceClient.from_connection_string(
         conn_str=connection_string
     )
     container_name = "data"

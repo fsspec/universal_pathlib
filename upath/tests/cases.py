@@ -5,11 +5,12 @@ import sys
 
 import pytest
 from upath import UPath
-from .utils import posixify
 
 
 class BaseTests:
     SUPPORTS_EMPTY_DIRS = True
+
+    path: UPath
 
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
@@ -285,7 +286,7 @@ class BaseTests:
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
     def test_pickling_child_path(self):
-        path = (self.path) / "subfolder" / "subsubfolder"
+        path = self.path / "subfolder" / "subsubfolder"
         pickled_path = pickle.dumps(path)
         recovered_path = pickle.loads(pickled_path)
 
