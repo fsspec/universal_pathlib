@@ -113,6 +113,12 @@ class BaseTests:
         assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
         assert next(self.path.parent.iterdir()).exists()
 
+    def test_parents(self):
+        p = self.path.joinpath("folder1", "file1.txt")
+        assert p.is_file()
+        assert p.parents[0] == p.parent
+        assert p.parents[1] == p.parent.parent
+
     def test_lchmod(self):
         with pytest.raises(NotImplementedError):
             self.path.lchmod(mode=77)
