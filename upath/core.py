@@ -436,20 +436,34 @@ class UPath(pathlib.Path):
         if not old_suffix:
             name = name + suffix
         else:
-            name = name[:-len(old_suffix)] + suffix
-        return self._from_parsed_parts(self._drv, self._root,
-                                       self._parts[:-1] + [name], url=self._url)
+            name = name[: -len(old_suffix)] + suffix
+        return self._from_parsed_parts(
+            self._drv,
+            self._root,
+            self._parts[:-1] + [name],
+            url=self._url,
+            **self._kwargs,
+        )
 
     def with_name(self, name):
         """Return a new path with the file name changed."""
         if not self.name:
             raise ValueError("%r has an empty name" % (self,))
         drv, root, parts = self._flavour.parse_parts((name,))
-        if (not name or name[-1] in [self._flavour.sep, self._flavour.altsep]
-                or drv or root or len(parts) != 1):
+        if (
+            not name
+            or name[-1] in [self._flavour.sep, self._flavour.altsep]
+            or drv
+            or root
+            or len(parts) != 1
+        ):
             raise ValueError("Invalid name %r" % (name))
         return self._from_parsed_parts(
-            self._drv, self._root, self._parts[:-1] + [name], url=self._url
+            self._drv,
+            self._root,
+            self._parts[:-1] + [name],
+            url=self._url,
+            **self._kwargs,
         )
 
     @property
@@ -495,9 +509,12 @@ class _UPathParents(Sequence):
         if idx < 0:
             idx += len(self)
         return self._pathcls._from_parsed_parts(
-            self._drv, self._root, self._parts[:-idx - 1], url=self._url, **self._kwargs,
+            self._drv,
+            self._root,
+            self._parts[: -idx - 1],
+            url=self._url,
+            **self._kwargs,
         )
 
     def __repr__(self):
         return "<{}.parents>".format(self._pathcls.__name__)
-
