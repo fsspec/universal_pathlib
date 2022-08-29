@@ -315,3 +315,14 @@ class BaseTests:
     def test_repr_after_with_suffix(self):
         p = self.path.joinpath("file.txt").with_suffix(".zip")
         assert "file.zip" in repr(p)
+
+    def test_rmdir_no_dir(self):
+        p = self.path.joinpath("file1.txt")
+        with pytest.raises(NotADirectoryError):
+            p.rmdir()
+
+    def test_iterdir_no_dir(self):
+        p = self.path.joinpath("file1.txt")
+        assert p.is_file()
+        with pytest.raises(NotADirectoryError):
+            _ = list(p.iterdir())
