@@ -505,7 +505,11 @@ class UPath(pathlib.Path):
         cls = type(self)
         return (
             cls,
-            (cls._format_parsed_parts(self._drv, self._root, self._parts, url=self._url),),
+            (
+                cls._format_parsed_parts(
+                    self._drv, self._root, self._parts, url=self._url
+                ),
+            ),
             {"_kwargs": self._kwargs.copy()},
         )
 
