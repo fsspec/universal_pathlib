@@ -10,6 +10,8 @@ from ..utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.usefixtures("path")
 class TestGCSPath(BaseTests):
+    SUPPORTS_EMPTY_DIRS = False
+
     @pytest.fixture(autouse=True, scope="function")
     def path(self, gcs_fixture):
         path, endpoint_url = gcs_fixture
@@ -18,11 +20,6 @@ class TestGCSPath(BaseTests):
 
     def test_is_GCSPath(self):
         assert isinstance(self.path, GCSPath)
-
-    def test_mkdir(self):
-        new_dir = self.path.joinpath("new_dir")
-        new_dir.joinpath("test.txt").touch()
-        assert new_dir.exists()
 
     def test_rmdir(self):
         dirname = "rmdir_test"

@@ -34,15 +34,27 @@ class TestUPathHttp(BaseTests):
     def test_work_at_root(self):
         assert "folder" in (f.name for f in self.path.parent.iterdir())
 
+    @pytest.mark.skip
     def test_mkdir(self):
         pass
 
+    @pytest.mark.skip
+    def test_mkdir_exists_ok_false(self):
+        pass
+
+    @pytest.mark.skip
+    def test_mkdir_exists_ok_true(self):
+        pass
+
+    @pytest.mark.skip
     def test_touch_unlink(self):
         pass
 
+    @pytest.mark.skip
     def test_write_bytes(self, pathlib_base):
         pass
 
+    @pytest.mark.skip
     def test_write_text(self, pathlib_base):
         pass
 

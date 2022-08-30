@@ -10,6 +10,8 @@ from ..utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.usefixtures("path")
 class TestAzurePath(BaseTests):
+    SUPPORTS_EMPTY_DIRS = False
+
     @pytest.fixture(autouse=True, scope="function")
     def path(self, azurite_credentials, azure_fixture):
         account_name, connection_string = azurite_credentials
@@ -24,14 +26,8 @@ class TestAzurePath(BaseTests):
     def test_is_AzurePath(self):
         assert isinstance(self.path, AzurePath)
 
-    def test_mkdir(self):
-        new_dir = self.path / "new_dir"
-        new_dir.mkdir()
-        (new_dir / "test.txt").touch()
-        assert new_dir.exists()
-
     def test_rmdir(self):
-        new_dir = self.path / "new_dir"
+        new_dir = self.path / "new_dir_rmdir"
         new_dir.mkdir()
         path = new_dir / "test.txt"
         path.write_text("hello")
