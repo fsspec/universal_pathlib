@@ -118,6 +118,8 @@ class BaseTests:
         assert p.is_file()
         assert p.parents[0] == p.parent
         assert p.parents[1] == p.parent.parent
+        assert p.parents[0].name == "folder1"
+        assert p.parents[1].name == self.path.name
 
     def test_lchmod(self):
         with pytest.raises(NotImplementedError):
