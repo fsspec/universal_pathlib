@@ -1,6 +1,7 @@
 import pathlib
 import re
 import sys
+from typing import Sequence
 from typing import Union
 import urllib
 from urllib.parse import ParseResult
@@ -501,7 +502,11 @@ class UPath(pathlib.Path):
         else:
             name = name[: -len(old_suffix)] + suffix
         return self._from_parsed_parts(
-            self._drv, self._root, self._parts[:-1] + [name], url=self._url
+            self._drv,
+            self._root,
+            self._parts[:-1] + [name],
+            url=self._url,
+            **self._kwargs,
         )
 
     def with_name(self, name):
@@ -518,5 +523,62 @@ class UPath(pathlib.Path):
         ):
             raise ValueError("Invalid name %r" % (name))
         return self._from_parsed_parts(
-            self._drv, self._root, self._parts[:-1] + [name], url=self._url
+            self._drv,
+            self._root,
+            self._parts[:-1] + [name],
+            url=self._url,
+            **self._kwargs,
         )
+
+    @property
+    def parents(self):
+        """A sequence of this upath's logical parents."""
+        return _UPathParents(self)
+
+
+class _UPathParents(Sequence):
+    """This object provides sequence-like access to the logical ancestors
+    of a path.  Don't try to construct it yourself."""
+
+    __slots__ = (
+        "_pathcls",
+        "_drv",
+        "_root",
+        "_parts",
+        "_url",
+        "_kwargs",
+    )
+
+    def __init__(self, path):
+        # We don't store the instance to avoid reference cycles
+        self._pathcls = type(path)
+        self._drv = path._drv
+        self._root = path._root
+        self._parts = path._parts
+        self._url = path._url
+        self._kwargs = path._kwargs
+
+    def __len__(self):
+        if self._drv or self._root:
+            return len(self._parts) - 1
+        else:
+            return len(self._parts)
+
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            return tuple(self[i] for i in range(*idx.indices(len(self))))
+
+        if idx >= len(self) or idx < -len(self):
+            raise IndexError(idx)
+        if idx < 0:
+            idx += len(self)
+        return self._pathcls._from_parsed_parts(
+            self._drv,
+            self._root,
+            self._parts[: -idx - 1],
+            url=self._url,
+            **self._kwargs,
+        )
+
+    def __repr__(self):
+        return "<{}.parents>".format(self._pathcls.__name__)
