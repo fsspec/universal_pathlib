@@ -10,6 +10,15 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
         kwargs.pop("truncate", None)
         super().touch(path, **kwargs)
 
+    def mkdir(self, path, create_parents=True, **kwargs):
+        pth = self._format_path(path)
+        if create_parents:
+            return self._fs.makedirs(pth, **kwargs)
+        else:
+            if not kwargs.get("exist_ok", False) and self._fs.exists(pth):
+                raise FileExistsError
+            return self._fs.mkdir(pth, create_parents=create_parents, **kwargs)
+
 
 class HDFSPath(upath.core.UPath):
     _default_accessor = _HDFSAccessor

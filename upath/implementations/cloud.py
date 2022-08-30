@@ -9,6 +9,15 @@ class _CloudAccessor(upath.core._FSSpecAccessor):
         """
         return f"{path._url.netloc}/{path.path.lstrip('/')}"
 
+    def mkdir(self, path, create_parents=True, **kwargs):
+        if (
+            not create_parents
+            and not kwargs.get("exist_ok", False)
+            and self._fs.exists(self._format_path(path))
+        ):
+            raise FileExistsError
+        return super().mkdir(path, create_parents=create_parents, **kwargs)
+
 
 # project is not part of the path, but is part of the credentials
 class CloudPath(upath.core.UPath):

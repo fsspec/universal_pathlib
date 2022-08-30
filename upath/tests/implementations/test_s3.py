@@ -3,12 +3,13 @@
 import pytest  # noqa: F401
 
 from upath import UPath
-from upath.errors import NotDirectoryError
 from upath.implementations.cloud import S3Path
 from ..cases import BaseTests
 
 
 class TestUPathS3(BaseTests):
+    SUPPORTS_EMPTY_DIRS = False
+
     @pytest.fixture(autouse=True)
     def path(self, s3_fixture):
         path, anon, s3so = s3_fixture
@@ -23,21 +24,13 @@ class TestUPathS3(BaseTests):
         # todo
         pass
 
-    def test_mkdir(self):
-        new_dir = self.path.joinpath("new_dir")
-        # new_dir.mkdir()
-        # mkdir doesn't really do anything. A directory only exists in s3
-        # if some file or something is written to it
-        new_dir.joinpath("test.txt").touch()
-        assert new_dir.exists()
-
     def test_rmdir(self):
         dirname = "rmdir_test"
         mock_dir = self.path.joinpath(dirname)
         mock_dir.joinpath("test.txt").touch()
         mock_dir.rmdir()
         assert not mock_dir.exists()
-        with pytest.raises(NotDirectoryError):
+        with pytest.raises(NotADirectoryError):
             self.path.joinpath("file1.txt").rmdir()
 
     def test_relative_to(self):

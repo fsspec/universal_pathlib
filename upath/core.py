@@ -13,8 +13,6 @@ from fsspec.registry import (
 )
 from fsspec.utils import stringify_path
 
-from upath.errors import NotDirectoryError
-
 
 class _FSSpecAccessor:
     __slots__ = ("_fs",)
@@ -30,14 +28,24 @@ class _FSSpecAccessor:
     def _format_path(self, path: "UPath") -> str:
         return path.path
 
-    def open(self, path, mode='r', *args, **kwargs):
+    def open(self, path, mode="r", *args, **kwargs):
         return self._fs.open(self._format_path(path), mode, *args, **kwargs)
 
     def stat(self, path, **kwargs):
         return self._fs.stat(self._format_path(path), **kwargs)
 
     def listdir(self, path, **kwargs):
-        return self._fs.listdir(self._format_path(path), **kwargs)
+        p_fmt = self._format_path(path)
+        contents = self._fs.listdir(p_fmt, **kwargs)
+        if len(contents) == 0 and not self._fs.isdir(p_fmt):
+            raise NotADirectoryError
+        elif (
+            len(contents) == 1
+            and contents[0]["name"] == p_fmt
+            and contents[0]["type"] == "file"
+        ):
+            raise NotADirectoryError
+        return contents
 
     def glob(self, _path, path_pattern, **kwargs):
         return self._fs.glob(self._format_path(path_pattern), **kwargs)
@@ -186,6 +194,9 @@ class UPath(pathlib.Path):
     def stat(self):
         return self._accessor.stat(self)
 
+    def samefile(self, other_path):
+        raise NotImplementedError
+
     def iterdir(self):
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
@@ -224,8 +235,19 @@ class UPath(pathlib.Path):
         output._kwargs = self._kwargs
         return output
 
+    def _scandir(self):
+        # provided in Python3.11 but not required in fsspec glob implementation
+        raise NotImplementedError
+
     def glob(self, pattern):
         path_pattern = self.joinpath(pattern)
+        for name in self._accessor.glob(self, path_pattern):
+            name = self._sub_path(name)
+            name = name.split(self._flavour.sep)
+            yield self._make_child(name)
+
+    def rglob(self, pattern):
+        path_pattern = self.joinpath("**", pattern)
         for name in self._accessor.glob(self, path_pattern):
             name = self._sub_path(name)
             name = name.split(self._flavour.sep)
@@ -235,6 +257,13 @@ class UPath(pathlib.Path):
         # only want the path name with iterdir
         sp = self.path
         return re.sub(f"^({sp}|{sp[1:]})/", "", name)
+
+    def absolute(self):
+        # fsspec paths are always absolute
+        return self
+
+    def resolve(self, strict=False):
+        raise NotImplementedError
 
     def exists(self):
         """
@@ -291,6 +320,9 @@ class UPath(pathlib.Path):
     def is_char_device(self):
         return False
 
+    def is_absolute(self):
+        return True
+
     def unlink(self, missing_ok=False):
         if not self.exists():
             if not missing_ok:
@@ -303,17 +335,27 @@ class UPath(pathlib.Path):
         """Add warning if directory not empty
         assert is_dir?
         """
-        try:
-            assert self.is_dir()
-        except AssertionError:
-            raise NotDirectoryError
+        if not self.is_dir():
+            raise NotADirectoryError
         self._accessor.rm(self, recursive=recursive)
 
-    def chmod(self, mod):
+    def chmod(self, mode, *, follow_symlinks=True):
         raise NotImplementedError
 
     def rename(self, target):
         # can be implemented, but may be tricky
+        raise NotImplementedError
+
+    def replace(self, target):
+        raise NotImplementedError
+
+    def symlink_to(self, target, target_is_directory=False):
+        raise NotImplementedError
+
+    def hardlink_to(self, target):
+        raise NotImplementedError
+
+    def link_to(self, target):
         raise NotImplementedError
 
     def cwd(self):
@@ -342,6 +384,28 @@ class UPath(pathlib.Path):
 
     def touch(self, truncate=True, **kwargs):
         self._accessor.touch(self, truncate=truncate, **kwargs)
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        if parents:
+            self._accessor.mkdir(
+                self,
+                create_parents=True,
+                exist_ok=exist_ok,
+                mode=mode,
+            )
+        else:
+            try:
+                self._accessor.mkdir(
+                    self,
+                    create_parents=False,
+                    mode=mode,
+                )
+            except FileExistsError:
+                if not exist_ok or not self.is_dir():
+                    raise
 
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
@@ -427,7 +491,7 @@ class UPath(pathlib.Path):
         f = self._flavour
         if f.sep in suffix or f.altsep and f.altsep in suffix:
             raise ValueError("Invalid suffix %r" % (suffix,))
-        if suffix and not suffix.startswith('.') or suffix == '.':
+        if suffix and not suffix.startswith(".") or suffix == ".":
             raise ValueError("Invalid suffix %r" % (suffix))
         name = self.name
         if not name:

@@ -9,6 +9,8 @@ from .utils import posixify
 
 
 class BaseTests:
+    SUPPORTS_EMPTY_DIRS = True
+
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
             self.path.cwd()
@@ -132,7 +134,24 @@ class BaseTests:
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
         new_dir.mkdir()
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
         assert new_dir.exists()
+
+    def test_mkdir_exists_ok_true(self):
+        new_dir = self.path.joinpath("new_dir_may_exists")
+        new_dir.mkdir()
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
+        new_dir.mkdir(exist_ok=True)
+
+    def test_mkdir_exists_ok_false(self):
+        new_dir = self.path.joinpath("new_dir_may_not_exists")
+        new_dir.mkdir()
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
+        with pytest.raises(FileExistsError):
+            new_dir.mkdir(exist_ok=False)
 
     def test_open(self):
         pass
@@ -323,3 +342,14 @@ class BaseTests:
     def test_repr_after_with_suffix(self):
         p = self.path.joinpath("file.txt").with_suffix(".zip")
         assert "file.zip" in repr(p)
+
+    def test_rmdir_no_dir(self):
+        p = self.path.joinpath("file1.txt")
+        with pytest.raises(NotADirectoryError):
+            p.rmdir()
+
+    def test_iterdir_no_dir(self):
+        p = self.path.joinpath("file1.txt")
+        assert p.is_file()
+        with pytest.raises(NotADirectoryError):
+            _ = list(p.iterdir())

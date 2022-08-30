@@ -1,3 +1,5 @@
+import sys
+
 import nox
 from pathlib import Path
 
@@ -17,7 +19,7 @@ def black(session):
 @nox.session()
 def lint(session):
     session.install("flake8")
-    session.run(*"flake8".split())
+    session.run("flake8", "upath")
 
 
 @nox.session()
@@ -27,6 +29,12 @@ def install(session):
 
 @nox.session()
 def smoke(session):
+    if (3, 10) < sys.version_info <= (3, 11, 0, "final"):
+        # workaround for missing aiohttp wheels for py3.11
+        session.install("aiohttp", "--no-binary", "aiohttp", env={
+            "AIOHTTP_NO_EXTENSIONS": "1"
+        })
+
     session.install(
         "pytest",
         "adlfs",
