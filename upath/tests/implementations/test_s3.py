@@ -2,6 +2,7 @@
 """
 import pytest  # noqa: F401
 
+import fsspec
 from upath import UPath
 from upath.implementations.cloud import S3Path
 from ..cases import BaseTests
@@ -79,3 +80,34 @@ class TestUPathS3(BaseTests):
     def test_creating_s3path_with_bucket(self):
         path = UPath("s3://", bucket="bucket", anon=self.anon, **self.s3so)
         assert str(path) == "s3://bucket/"
+
+    def test_iterdir_with_plus_in_name(self, s3_with_plus_chr_name):
+        bucket, anon, s3so = s3_with_plus_chr_name
+        p = UPath(
+            f"s3://{bucket}/manual__2022-02-19T14:31:25.891270+00:00",
+            anon=True,
+            **s3so,
+        )
+
+        files = list(p.iterdir())
+        assert len(files) == 1
+        (file,) = files
+        assert file == p.joinpath("file.txt")
+
+
+@pytest.fixture
+def s3_with_plus_chr_name(s3_server):
+    anon, s3so = s3_server
+    s3 = fsspec.filesystem("s3", anon=False, **s3so)
+    bucket = "plus_chr_bucket"
+    path = f"{bucket}/manual__2022-02-19T14:31:25.891270+00:00"
+    s3.mkdir(path)
+    s3.touch(f"{path}/file.txt")
+    s3.invalidate_cache()
+    try:
+        yield bucket, anon, s3so
+    finally:
+        if s3.exists(bucket):
+            for dir, _, keys in s3.walk(bucket):
+                for key in keys:
+                    s3.rm(f"{dir}/{key}")
