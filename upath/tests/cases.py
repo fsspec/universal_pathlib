@@ -5,11 +5,12 @@ import sys
 
 import pytest
 from upath import UPath
-from .utils import posixify
 
 
 class BaseTests:
     SUPPORTS_EMPTY_DIRS = True
+
+    path: UPath
 
     def test_cwd(self):
         with pytest.raises(NotImplementedError):
@@ -42,11 +43,13 @@ class BaseTests:
         mock_glob = list(self.path.glob("**.txt"))
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
+        _mock_start = len(self.path.parts)
         mock_glob_normalized = sorted(
-            [a.relative_to(self.path).path for a in mock_glob]
+            [a.parts[_mock_start:] for a in mock_glob]
         )
+        _path_start = len(pathlib_base.parts)
         path_glob_normalized = sorted(
-            [f"/{posixify(a.relative_to(pathlib_base))}" for a in path_glob]
+            [a.parts[_path_start:] for a in path_glob]
         )
 
         print(mock_glob_normalized, path_glob_normalized)
@@ -285,7 +288,7 @@ class BaseTests:
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
     def test_pickling_child_path(self):
-        path = (self.path) / "subfolder" / "subsubfolder"
+        path = self.path / "subfolder" / "subsubfolder"
         pickled_path = pickle.dumps(path)
         recovered_path = pickle.loads(pickled_path)
 

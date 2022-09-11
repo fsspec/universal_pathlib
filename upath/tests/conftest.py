@@ -12,8 +12,6 @@ import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.registry import register_implementation, _registry
 
-from azure.storage.blob import BlobServiceClient
-
 import fsspec
 
 from .utils import posixify
@@ -301,42 +299,49 @@ def http_fixture(local_testdir, http_server):
 
 
 @pytest.fixture(scope="session")
-def webdav_server():
-    from wsgidav.wsgidav_app import WsgiDAVApp
-    from cheroot import wsgi
+def webdav_server(tmp_path_factory):
+    try:
+        from wsgidav.wsgidav_app import WsgiDAVApp
+        from cheroot import wsgi
+    except ImportError as err:
+        pytest.skip(str(err))
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        host = "127.0.0.1"
-        port = 8090
-        app = WsgiDAVApp(
-            {
-                "host": host,
-                "port": port,
-                "provider_mapping": {"/": tempdir},
-                "simple_dc": {
-                    "user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}
-                },
-            }
-        )
-        srvr = wsgi.Server(bind_addr=(host, port), wsgi_app=app)
-        srvr.prepare()
-        thread = threading.Thread(target=srvr.serve)
-        thread.daemon = True
-        thread.start()
+    tempdir = str(tmp_path_factory.mktemp("webdav"))
 
-        try:
-            yield tempdir, f"webdav+http://{host}:{port}"
-        finally:
-            srvr.stop()
-            thread.join()
+    host = "127.0.0.1"
+    port = 8090
+    app = WsgiDAVApp(
+        {
+            "host": host,
+            "port": port,
+            "provider_mapping": {"/": tempdir},
+            "simple_dc": {
+                "user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}
+            },
+        }
+    )
+    srvr = wsgi.Server(bind_addr=(host, port), wsgi_app=app)
+    srvr.prepare()
+    thread = threading.Thread(target=srvr.serve, daemon=True)
+    thread.start()
+
+    try:
+        yield tempdir, f"webdav+http://{host}:{port}"
+    finally:
+        srvr.stop()
+        thread.join()
 
 
 @pytest.fixture
 def webdav_fixture(local_testdir, webdav_server):
     webdav_path, webdav_url = webdav_server
-    shutil.rmtree(webdav_path)
-    shutil.copytree(local_testdir, webdav_path)
-    yield webdav_url
+    if os.path.isdir(webdav_path):
+        os.rmdir(webdav_path)
+    try:
+        shutil.copytree(local_testdir, webdav_path)
+        yield webdav_url
+    finally:
+        shutil.rmtree(webdav_path, ignore_errors=True)
 
 
 @pytest.fixture(scope="session")
@@ -388,8 +393,9 @@ def docker_azurite(azurite_credentials):
 
 @pytest.fixture(scope="session")
 def azure_fixture(azurite_credentials, docker_azurite):
+    azure_storage = pytest.importorskip("azure.storage.blob")
     account_name, connection_string = azurite_credentials
-    client = BlobServiceClient.from_connection_string(
+    client = azure_storage.BlobServiceClient.from_connection_string(
         conn_str=connection_string
     )
     container_name = "data"

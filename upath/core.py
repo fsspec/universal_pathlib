@@ -92,11 +92,16 @@ class UPath(pathlib.Path):
                 other._drv, other._root, other._parts, drv, root, parts
             )
 
-            new_kwargs = getattr(other, "_kwargs", {}).copy()
+            _kwargs = getattr(other, "_kwargs", {})
+            _url = getattr(other, "_url", None)
+            other_kwargs = _kwargs.copy()
+            if _url:
+                other_kwargs["url"] = _url
+            new_kwargs = _kwargs.copy()
             new_kwargs.update(kwargs)
 
             return other.__class__(
-                other._format_parsed_parts(drv, root, parts),
+                other._format_parsed_parts(drv, root, parts, **other_kwargs),
                 **new_kwargs,
             )
 
@@ -150,16 +155,21 @@ class UPath(pathlib.Path):
             self._drv, self._root, parts, url=self._url, **self._kwargs
         )
 
-    def _format_parsed_parts(self, drv, root, parts):
+    @classmethod
+    def _format_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
         if parts:
             join_parts = parts[1:] if parts[0] == "/" else parts
         else:
             join_parts = []
         if drv or root:
-            path = drv + root + self._flavour.join(join_parts)
+            path = drv + root + cls._flavour.join(join_parts)
         else:
-            path = self._flavour.join(join_parts)
-        scheme, netloc = self._url.scheme, self._url.netloc
+            path = cls._flavour.join(join_parts)
+        if not url:
+            scheme = kwargs.get("scheme", "file")
+            netloc = kwargs.get("netloc")
+        else:
+            scheme, netloc = url.scheme, url.netloc
         scheme = scheme + ":"
         netloc = "//" + netloc if netloc else ""
         formatted = scheme + netloc + path
@@ -449,6 +459,21 @@ class UPath(pathlib.Path):
         obj._root = root
         return obj
 
+    def __str__(self):
+        """Return the string representation of the path, suitable for
+        passing to system calls."""
+        try:
+            return self._str
+        except AttributeError:
+            self._str = self._format_parsed_parts(
+                self._drv,
+                self._root,
+                self._parts,
+                url=self._url,
+                **self._kwargs,
+            )
+            return self._str
+
     @property
     def fs(self):
         return self._accessor._fs
@@ -468,7 +493,7 @@ class UPath(pathlib.Path):
 
         # Create a new object
         out = self.__class__(
-            self._format_parsed_parts(drv, root, parts),
+            self._format_parsed_parts(drv, root, parts, url=self._url),
             **kwargs,
         )
         return out
@@ -477,9 +502,14 @@ class UPath(pathlib.Path):
         self._kwargs = state["_kwargs"].copy()
 
     def __reduce__(self):
+        cls = type(self)
         return (
-            self.__class__,
-            (self._format_parsed_parts(self._drv, self._root, self._parts),),
+            cls,
+            (
+                cls._format_parsed_parts(
+                    self._drv, self._root, self._parts, url=self._url
+                ),
+            ),
             {"_kwargs": self._kwargs.copy()},
         )
 

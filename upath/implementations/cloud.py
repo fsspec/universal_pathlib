@@ -36,7 +36,7 @@ class CloudPath(upath.core.UPath):
         if kwargs.get("bucket") and url is not None:
             bucket = kwargs.pop("bucket")
             url = url._replace(netloc=bucket)
-        obj = super()._from_parsed_parts(drv, root, parts, url, **kwargs)
+        obj = super()._from_parsed_parts(drv, root, parts, url=url, **kwargs)
         return obj
 
     def _sub_path(self, name):
