@@ -20,12 +20,18 @@ def test_windows_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.WindowsPath)
 
 
-def test_UPath_warning():
+def test_UPath_untested_protocol_warning():
     with warnings.catch_warnings(record=True) as w:
-        path = UPath("mock:/")  # noqa: F841
+        _ = UPath("mock:/")
         assert len(w) == 1
         assert issubclass(w[-1].category, UserWarning)
         assert "mock" in str(w[-1].message)
+
+
+def test_UPath_file_protocol_no_warning():
+    with warnings.catch_warnings(record=True) as w:
+        _ = UPath("file:/")
+        assert len(w) == 0
 
 
 class TestUpath(BaseTests):
