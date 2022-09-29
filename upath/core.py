@@ -258,7 +258,9 @@ class UPath(pathlib.Path):
                     "not of compatible classes."
                 )
             if not isinstance(other_item, str) and (
-                other_item._url.scheme != self._url.scheme
+                self._url is None
+                or other_item._url is None
+                or other_item._url.scheme != self._url.scheme
                 or other_item._url.netloc != self._url.netloc
                 or other_item._kwargs != self._kwargs
             ):
