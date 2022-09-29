@@ -45,7 +45,6 @@ class _Registry:
 _registry = _Registry()
 
 
-
 @lru_cache()
 def get_upath_class(protocol: str) -> type[PT] | None:
     """return the upath cls for the given protocol"""

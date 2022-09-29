@@ -1,4 +1,3 @@
-import urllib
 from urllib.parse import ParseResult
 from urllib.parse import urlunsplit
 

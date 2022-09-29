@@ -32,9 +32,7 @@ class _FSSpecAccessor:
     def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
         if parsed_url:
             cls = get_filesystem_class(parsed_url.scheme)
-            url_kwargs = cls._get_kwargs_from_urls(
-                urlunsplit(parsed_url)
-            )
+            url_kwargs = cls._get_kwargs_from_urls(urlunsplit(parsed_url))
         else:
             cls = get_filesystem_class(None)
             url_kwargs = {}
@@ -117,7 +115,7 @@ class UPath(pathlib.Path):
             _cls: type[Any] = type(other)
             drv, root, parts = _cls._parse_args(args_list)
             drv, root, parts = _cls._flavour.join_parsed_parts(
-                other._drv, other._root, other._parts, drv, root, parts  # type: ignore
+                other._drv, other._root, other._parts, drv, root, parts  # type: ignore # noqa: E501
             )
 
             _kwargs = getattr(other, "_kwargs", {})
@@ -182,7 +180,14 @@ class UPath(pathlib.Path):
         )
 
     @classmethod
-    def _format_parsed_parts(cls: type[PT], drv: str, root: str, parts: list[str], url: SplitResult | None = None, **kwargs: Any) -> str:
+    def _format_parsed_parts(
+        cls: type[PT],
+        drv: str,
+        root: str,
+        parts: list[str],
+        url: SplitResult | None = None,
+        **kwargs: Any,
+    ) -> str:
         if parts:
             join_parts = parts[1:] if parts[0] == "/" else parts
         else:
@@ -430,7 +435,9 @@ class UPath(pathlib.Path):
                 kwargs[key] = val
         self._accessor.touch(self, truncate=truncate, **kwargs)
 
-    def mkdir(self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False) -> None:
+    def mkdir(
+        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
         """
         Create a new directory at this given path.
         """
@@ -453,7 +460,12 @@ class UPath(pathlib.Path):
                     raise
 
     @classmethod
-    def _from_parts(cls: type[PT], args: list[str | PathLike], url: SplitResult | None = None, **kwargs: Any) -> PT:
+    def _from_parts(
+        cls: type[PT],
+        args: list[str | PathLike],
+        url: SplitResult | None = None,
+        **kwargs: Any,
+    ) -> PT:
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args)
         obj._drv = drv
@@ -480,7 +492,7 @@ class UPath(pathlib.Path):
         root: str,
         parts: list[str],
         url: SplitResult | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> PT:
         obj = object.__new__(cls)
         obj._drv = drv
