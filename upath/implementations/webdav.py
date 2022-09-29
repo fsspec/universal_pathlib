@@ -1,5 +1,6 @@
 import urllib
 from urllib.parse import ParseResult
+from urllib.parse import urlunsplit
 
 import upath.core
 
@@ -9,11 +10,11 @@ class _WebdavAccessor(upath.core._FSSpecAccessor):
         from webdav4.fsspec import WebdavFileSystem
 
         parsed_url = parsed_url._replace(scheme=parsed_url.scheme[7:], path="")
-        base_url = urllib.parse.urlunparse(parsed_url)
+        base_url = urlunsplit(parsed_url)
         self._fs = WebdavFileSystem(base_url, **kwargs)
 
     def listdir(self, path, **kwargs):
-        base_url = urllib.parse.urlunparse(path._url._replace(path=""))
+        base_url = urlunsplit(path._url._replace(path=""))
         for file_info in self._fs.listdir(
             self._format_path(path).lstrip("/"), **kwargs
         ):
@@ -23,7 +24,7 @@ class _WebdavAccessor(upath.core._FSSpecAccessor):
             }
 
     def glob(self, path, path_pattern, **kwargs):
-        base_url = urllib.parse.urlunparse(path._url._replace(path=""))
+        base_url = urlunsplit(path._url._replace(path=""))
         for file_path in self._fs.glob(
             self._format_path(path_pattern).lstrip("/"), **kwargs
         ):

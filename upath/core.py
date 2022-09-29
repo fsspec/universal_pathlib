@@ -1,15 +1,25 @@
+from __future__ import annotations
+
 import pathlib
 import re
 import sys
+from os import PathLike
 from typing import Sequence
-from typing import Union
-import urllib
-from urllib.parse import ParseResult
+from typing import TypeVar
+from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
+from urllib.parse import urlunsplit
 
 from fsspec.registry import get_filesystem_class
 from fsspec.utils import stringify_path
 
 from upath.registry import get_upath_class
+
+if TYPE_CHECKING:
+    from typing import Any
+    from typing import Generator
+    from urllib.parse import SplitResult
+    from fsspec.spec import AbstractFileSystem
 
 __all__ = [
     "UPath",
@@ -19,15 +29,19 @@ __all__ = [
 class _FSSpecAccessor:
     __slots__ = ("_fs",)
 
-    def __init__(self, parsed_url: ParseResult, **kwargs):
-        cls = get_filesystem_class(parsed_url.scheme)
-        url_kwargs = cls._get_kwargs_from_urls(
-            urllib.parse.urlunparse(parsed_url)
-        )
+    def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
+        if parsed_url:
+            cls = get_filesystem_class(parsed_url.scheme)
+            url_kwargs = cls._get_kwargs_from_urls(
+                urlunsplit(parsed_url)
+            )
+        else:
+            cls = get_filesystem_class(None)
+            url_kwargs = {}
         url_kwargs.update(kwargs)
         self._fs = cls(**url_kwargs)
 
-    def _format_path(self, path: "UPath") -> str:
+    def _format_path(self, path: UPath) -> str:
         return path.path
 
     def open(self, path, mode="r", *args, **kwargs):
@@ -72,6 +86,9 @@ class _FSSpecAccessor:
         return self._fs.touch(self._format_path(path), **kwargs)
 
 
+PT = TypeVar("PT", bound="UPath")
+
+
 class UPath(pathlib.Path):
 
     __slots__ = (
@@ -79,19 +96,28 @@ class UPath(pathlib.Path):
         "_kwargs",
         "_accessor",  # overwritten because of default in Python 3.10
     )
-    _flavour = pathlib._posix_flavour
+    _flavour = pathlib._posix_flavour  # type: ignore
     _default_accessor = _FSSpecAccessor
 
-    def __new__(cls, *args, **kwargs) -> "Union[UPath, pathlib.Path]":
+    # typing
+    _drv: str
+    _root: str
+    _str: str
+    _url: SplitResult | None
+    _parts: list[str]
+    _closed: bool
+    _accessor: _FSSpecAccessor
+
+    def __new__(cls: type[PT], *args: str | PathLike, **kwargs: Any) -> PT:
         args_list = list(args)
         other = args_list.pop(0)
 
         if isinstance(other, pathlib.Path):
             # Create a (modified) copy, if first arg is a Path object
-            _cls = type(other)
+            _cls: type[Any] = type(other)
             drv, root, parts = _cls._parse_args(args_list)
             drv, root, parts = _cls._flavour.join_parsed_parts(
-                other._drv, other._root, other._parts, drv, root, parts
+                other._drv, other._root, other._parts, drv, root, parts  # type: ignore
             )
 
             _kwargs = getattr(other, "_kwargs", {})
@@ -102,14 +128,14 @@ class UPath(pathlib.Path):
             new_kwargs = _kwargs.copy()
             new_kwargs.update(kwargs)
 
-            return _cls(
+            return _cls(  # type: ignore
                 _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
                 **new_kwargs,
             )
 
         else:
             url = stringify_path(other)
-            parsed_url = urllib.parse.urlparse(url)
+            parsed_url = urlsplit(url)
             for key in ["scheme", "netloc"]:
                 val = kwargs.get(key)
                 if val:
@@ -118,7 +144,7 @@ class UPath(pathlib.Path):
             upath_cls = get_upath_class(protocol=parsed_url.scheme)
             if upath_cls is None:
                 # treat as local filesystem, return PosixPath or WindowsPath
-                return pathlib.Path(*args, **kwargs)
+                return pathlib.Path(*args, **kwargs)  # type: ignore
 
             else:
                 # return upath instance
@@ -127,7 +153,7 @@ class UPath(pathlib.Path):
                     args_list, url=parsed_url, **kwargs
                 )
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
             # cache the _accessor attribute on first access
             kwargs = self._kwargs.copy()
@@ -138,7 +164,7 @@ class UPath(pathlib.Path):
         else:
             raise AttributeError(item)
 
-    def _make_child(self, args):
+    def _make_child(self: PT, args: list[str]) -> PT:
         drv, root, parts = self._parse_args(args)
         drv, root, parts = self._flavour.join_parsed_parts(
             self._drv, self._root, self._parts, drv, root, parts
@@ -147,7 +173,7 @@ class UPath(pathlib.Path):
             drv, root, parts, url=self._url, **self._kwargs
         )
 
-    def _make_child_relpath(self, part):
+    def _make_child_relpath(self: PT, part: str) -> PT:
         # This is an optimization used for dir walking.  `part` must be
         # a single part relative to this path.
         parts = self._parts + [part]
@@ -156,18 +182,18 @@ class UPath(pathlib.Path):
         )
 
     @classmethod
-    def _format_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
+    def _format_parsed_parts(cls: type[PT], drv: str, root: str, parts: list[str], url: SplitResult | None = None, **kwargs: Any) -> str:
         if parts:
             join_parts = parts[1:] if parts[0] == "/" else parts
         else:
             join_parts = []
         if drv or root:
-            path = drv + root + cls._flavour.join(join_parts)
+            path: str = drv + root + cls._flavour.join(join_parts)
         else:
             path = cls._flavour.join(join_parts)
         if not url:
-            scheme = kwargs.get("scheme", "file")
-            netloc = kwargs.get("netloc")
+            scheme: str = kwargs.get("scheme", "file")
+            netloc: str = kwargs.get("netloc", "")
         else:
             scheme, netloc = url.scheme, url.netloc
         scheme = scheme + ":"
@@ -176,12 +202,12 @@ class UPath(pathlib.Path):
         return formatted
 
     @property
-    def path(self):
+    def path(self) -> str:
         if self._parts:
             join_parts = (
                 self._parts[1:] if self._parts[0] == "/" else self._parts
             )
-            path = self._flavour.join(join_parts)
+            path: str = self._flavour.join(join_parts)
             return self._root + path
         else:
             return "/"
@@ -190,7 +216,7 @@ class UPath(pathlib.Path):
         return self._accessor.open(self, *args, **kwargs)
 
     @property
-    def parent(self):
+    def parent(self: PT) -> PT:
         """The logical parent of the path."""
         drv = self._drv
         root = self._root
@@ -204,10 +230,10 @@ class UPath(pathlib.Path):
     def stat(self):
         return self._accessor.stat(self)
 
-    def samefile(self, other_path):
+    def samefile(self, other_path) -> bool:
         raise NotImplementedError
 
-    def iterdir(self):
+    def iterdir(self: PT) -> Generator[PT, None, None]:
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
         """
@@ -222,7 +248,7 @@ class UPath(pathlib.Path):
             name = self._sub_path(name)
             yield self._make_child_relpath(name)
 
-    def relative_to(self, *other):
+    def relative_to(self: PT, *other: str | PathLike) -> PT:
         for other_item in other:
             if not isinstance(other_item, self.__class__) and not isinstance(
                 other_item, str
@@ -240,7 +266,7 @@ class UPath(pathlib.Path):
                     f"{self} and {other_item} do not share the same "
                     "base URL and storage options."
                 )
-        output = super().relative_to(*other)
+        output: PT = super().relative_to(*other)  # type: ignore
         output._url = self._url
         output._kwargs = self._kwargs
         return output
@@ -249,14 +275,14 @@ class UPath(pathlib.Path):
         # provided in Python3.11 but not required in fsspec glob implementation
         raise NotImplementedError
 
-    def glob(self, pattern):
+    def glob(self: PT, pattern: str) -> Generator[PT, None, None]:
         path_pattern = self.joinpath(pattern)
         for name in self._accessor.glob(self, path_pattern):
             name = self._sub_path(name)
             name = name.split(self._flavour.sep)
             yield self._make_child(name)
 
-    def rglob(self, pattern):
+    def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
         path_pattern = self.joinpath("**", pattern)
         for name in self._accessor.glob(self, path_pattern):
             name = self._sub_path(name)
@@ -268,27 +294,27 @@ class UPath(pathlib.Path):
         sp = self.path
         return re.sub(f"^({sp}|{sp[1:]})/", "", name)
 
-    def absolute(self):
+    def absolute(self: PT) -> PT:
         # fsspec paths are always absolute
         return self
 
-    def resolve(self, strict=False):
+    def resolve(self: PT, strict: bool = False) -> PT:
         raise NotImplementedError
 
-    def exists(self):
+    def exists(self) -> bool:
         """
         Whether this path exists.
         """
         if not getattr(self._accessor, "exists"):
             try:
                 self._accessor.stat(self)
-            except (FileNotFoundError):
+            except FileNotFoundError:
                 return False
             return True
         else:
-            return self._accessor.exists(self)
+            return bool(self._accessor.exists(self))
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         try:
             info = self._accessor.info(self)
             if info["type"] == "directory":
@@ -297,7 +323,7 @@ class UPath(pathlib.Path):
             return False
         return False
 
-    def is_file(self):
+    def is_file(self) -> bool:
         try:
             info = self._accessor.info(self)
             if info["type"] == "file":
@@ -306,34 +332,34 @@ class UPath(pathlib.Path):
             return False
         return False
 
-    def is_mount(self):
+    def is_mount(self) -> bool:
         return False
 
-    def is_symlink(self):
+    def is_symlink(self) -> bool:
         try:
             info = self._accessor.info(self)
             if "islink" in info:
-                return info["islink"]
+                return bool(info["islink"])
         except FileNotFoundError:
             return False
         return False
 
-    def is_socket(self):
+    def is_socket(self) -> bool:
         return False
 
-    def is_fifo(self):
+    def is_fifo(self) -> bool:
         return False
 
-    def is_block_device(self):
+    def is_block_device(self) -> bool:
         return False
 
-    def is_char_device(self):
+    def is_char_device(self) -> bool:
         return False
 
-    def is_absolute(self):
+    def is_absolute(self) -> bool:
         return True
 
-    def unlink(self, missing_ok=False):
+    def unlink(self, missing_ok: bool = False) -> None:
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError
@@ -341,7 +367,7 @@ class UPath(pathlib.Path):
                 return
         self._accessor.rm(self, recursive=False)
 
-    def rmdir(self, recursive=True):
+    def rmdir(self, recursive: bool = True) -> None:
         """Add warning if directory not empty
         assert is_dir?
         """
@@ -349,7 +375,7 @@ class UPath(pathlib.Path):
             raise NotADirectoryError
         self._accessor.rm(self, recursive=recursive)
 
-    def chmod(self, mode, *, follow_symlinks=True):
+    def chmod(self, mode, *, follow_symlinks: bool = True) -> None:
         raise NotImplementedError
 
     def rename(self, target):
@@ -392,10 +418,17 @@ class UPath(pathlib.Path):
     def readlink(self):
         raise NotImplementedError
 
-    def touch(self, truncate=True, **kwargs):
+    def touch(self, *args: int, truncate: bool = True, **kwargs) -> None:
+        if len(args) > 2:
+            raise TypeError("too many arguments")
+        else:
+            for key, val in zip(["mode", "exists_ok"], args):
+                if key in kwargs:
+                    raise TypeError(f"provided {key!r} as arg and kwarg")
+                kwargs[key] = val
         self._accessor.touch(self, truncate=truncate, **kwargs)
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+    def mkdir(self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False) -> None:
         """
         Create a new directory at this given path.
         """
@@ -418,7 +451,7 @@ class UPath(pathlib.Path):
                     raise
 
     @classmethod
-    def _from_parts(cls, args, url=None, **kwargs):
+    def _from_parts(cls: type[PT], args: list[str | PathLike], url: SplitResult | None = None, **kwargs: Any) -> PT:
         obj = object.__new__(cls)
         drv, root, parts = obj._parse_args(args)
         obj._drv = drv
@@ -439,7 +472,14 @@ class UPath(pathlib.Path):
         return obj
 
     @classmethod
-    def _from_parsed_parts(cls, drv, root, parts, url=None, **kwargs):
+    def _from_parsed_parts(
+        cls: type[PT],
+        drv: str,
+        root: str,
+        parts: list[str],
+        url: SplitResult | None = None,
+        **kwargs: Any
+    ) -> PT:
         obj = object.__new__(cls)
         obj._drv = drv
         obj._parts = parts
@@ -459,7 +499,7 @@ class UPath(pathlib.Path):
         obj._root = root
         return obj
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the string representation of the path, suitable for
         passing to system calls."""
         try:
@@ -475,10 +515,10 @@ class UPath(pathlib.Path):
             return self._str
 
     @property
-    def fs(self):
+    def fs(self) -> AbstractFileSystem:
         return self._accessor._fs
 
-    def __truediv__(self, key):
+    def __truediv__(self: PT, key: str | PathLike) -> PT:
         # Add `/` root if not present
         if len(self._parts) == 0:
             key = f"{self._root}{key}"
@@ -498,7 +538,7 @@ class UPath(pathlib.Path):
         )
         return out
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict) -> None:
         self._kwargs = state["_kwargs"].copy()
 
     def __reduce__(self):
@@ -513,7 +553,7 @@ class UPath(pathlib.Path):
             {"_kwargs": self._kwargs.copy()},
         )
 
-    def with_suffix(self, suffix):
+    def with_suffix(self: PT, suffix: str) -> PT:
         """Return a new path with the file suffix changed.  If the path
         has no suffix, add given suffix.  If the given suffix is an empty
         string, remove the suffix from the path.
@@ -539,7 +579,7 @@ class UPath(pathlib.Path):
             **self._kwargs,
         )
 
-    def with_name(self, name):
+    def with_name(self: PT, name: str) -> PT:
         """Return a new path with the file name changed."""
         if not self.name:
             raise ValueError("%r has an empty name" % (self,))
@@ -561,12 +601,12 @@ class UPath(pathlib.Path):
         )
 
     @property
-    def parents(self):
+    def parents(self) -> _UPathParents:
         """A sequence of this upath's logical parents."""
         return _UPathParents(self)
 
 
-class _UPathParents(Sequence):
+class _UPathParents(Sequence[UPath]):
     """This object provides sequence-like access to the logical ancestors
     of a path.  Don't try to construct it yourself."""
 
