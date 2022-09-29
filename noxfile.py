@@ -23,6 +23,12 @@ def lint(session):
 
 
 @nox.session()
+def type_checking(session):
+    session.install("mypy")
+    session.run("mypy", "upath")
+
+
+@nox.session()
 def install(session):
     session.install(".")
 

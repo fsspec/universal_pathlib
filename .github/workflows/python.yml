@@ -3,13 +3,12 @@ on:
   push:
   pull_request:
 jobs:
-  build:
+  tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: [3.7, 3.8, 3.9, "3.10", "3.11-dev"]
         os: [ubuntu-latest, windows-latest]
-
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -23,9 +22,33 @@ jobs:
     - name: Test with pytest
       run: |
         nox -s smoke
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip nox
     - name: Lint
       run: |
         nox -s lint
+    - name: Type Checking
+      run: |
+        nox -s type_checking
+
+  build:
+    needs: [tests, lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip nox
     - name: build package
       run: |
         nox -s build
