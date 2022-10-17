@@ -426,6 +426,8 @@ class UPath(pathlib.Path):
         raise NotImplementedError
 
     def touch(self, *args: int, truncate: bool = True, **kwargs) -> None:
+        # Keep the calling signature compatible with Path
+        # (without changing current fsspec behavior for defaults)
         if len(args) > 2:
             raise TypeError("too many arguments")
         else:
