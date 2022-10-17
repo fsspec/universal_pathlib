@@ -51,3 +51,21 @@ include = []
 [tool.black]
 line-length = 80
 target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+exclude = "^notebooks|^venv.*|tests.*|^noxfile.py"
+
+[[tool.mypy.overrides]]
+module = "fsspec.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "webdav4.fsspec.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true

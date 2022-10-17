@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 import importlib
 import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING
-from typing import TypeVar
 
 from fsspec.core import get_filesystem_class
 
 if TYPE_CHECKING:
-    from upath.core import UPath
+    from upath.core import PT
 
 __all__ = [
     "get_upath_class",
@@ -15,7 +16,7 @@ __all__ = [
 
 
 class _Registry:
-    known_implementations: "dict[str, type[UPath]]" = {
+    known_implementations: dict[str, str] = {
         "abfs": "upath.implementations.cloud.AzurePath",
         "adl": "upath.implementations.cloud.AzurePath",
         "az": "upath.implementations.cloud.AzurePath",
@@ -31,25 +32,23 @@ class _Registry:
         "webdav+https": "upath.implementations.webdav.WebdavPath",
     }
 
-    def __getitem__(self, item: str) -> "type[UPath] | None":
+    def __getitem__(self, item: str) -> type[PT] | None:
         try:
             fqn = self.known_implementations[item]
         except KeyError:
             return None
-        mod, name = fqn.rsplit(".", 1)
-        mod = importlib.import_module(mod)
-        return getattr(mod, name)
+        module_name, name = fqn.rsplit(".", 1)
+        mod = importlib.import_module(module_name)
+        return getattr(mod, name)  # type: ignore
 
 
 _registry = _Registry()
 
-_T = TypeVar("_T", bound="UPath")
-
 
 @lru_cache()
-def get_upath_class(protocol: str) -> "type[_T] | None":
+def get_upath_class(protocol: str) -> type[PT] | None:
     """return the upath cls for the given protocol"""
-    cls = _registry[protocol]
+    cls: type[PT] | None = _registry[protocol]
     if cls is not None:
         return cls
     else:
@@ -69,4 +68,4 @@ def get_upath_class(protocol: str) -> "type[_T] | None":
                     stacklevel=2,
                 )
             mod = importlib.import_module("upath.core")
-            return getattr(mod, "UPath")
+            return getattr(mod, "UPath")  # type: ignore
