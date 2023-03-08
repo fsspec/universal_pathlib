@@ -156,6 +156,21 @@ class BaseTests:
         with pytest.raises(FileExistsError):
             new_dir.mkdir(exist_ok=False)
 
+    def test_mkdir_parents_true_exists_ok_true(self):
+        new_dir = self.path.joinpath("parent", "new_dir_may_not_exist")
+        new_dir.mkdir(parents=True)
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
+        new_dir.mkdir(parents=True, exist_ok=True)
+
+    def test_mkdir_parents_true_exists_ok_false(self):
+        new_dir = self.path.joinpath("parent", "new_dir_may_exist")
+        new_dir.mkdir(parents=True)
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
+        with pytest.raises(FileExistsError):
+            new_dir.mkdir(parents=True, exist_ok=False)
+
     def test_open(self):
         pass
 

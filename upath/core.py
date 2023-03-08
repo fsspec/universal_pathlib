@@ -443,23 +443,15 @@ class UPath(pathlib.Path):
         """
         Create a new directory at this given path.
         """
-        if parents:
+        try:
             self._accessor.mkdir(
                 self,
-                create_parents=True,
-                exist_ok=exist_ok,
+                create_parents=parents,
                 mode=mode,
             )
-        else:
-            try:
-                self._accessor.mkdir(
-                    self,
-                    create_parents=False,
-                    mode=mode,
-                )
-            except FileExistsError:
-                if not exist_ok or not self.is_dir():
-                    raise
+        except FileExistsError:
+            if not exist_ok or not self.is_dir():
+                raise
 
     @classmethod
     def _from_parts(
