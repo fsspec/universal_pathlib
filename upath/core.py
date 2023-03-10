@@ -80,6 +80,11 @@ class _FSSpecAccessor:
             self._format_path(path), create_parents=create_parents, **kwargs
         )
 
+    def makedirs(self, path, exist_ok=False, **kwargs):
+        return self._fs.makedirs(
+            self._format_path(path), exist_ok=exist_ok, **kwargs
+        )
+
     def touch(self, path, **kwargs):
         return self._fs.touch(self._format_path(path), **kwargs)
 
@@ -443,15 +448,20 @@ class UPath(pathlib.Path):
         """
         Create a new directory at this given path.
         """
-        try:
-            self._accessor.mkdir(
-                self,
-                create_parents=parents,
-                mode=mode,
-            )
-        except FileExistsError:
-            if not exist_ok or not self.is_dir():
-                raise
+        if parents:
+            if not exist_ok and self.exists():
+                raise FileExistsError
+            self._accessor.makedirs(self, exist_ok=exist_ok)
+        else:
+            try:
+                self._accessor.mkdir(
+                    self,
+                    create_parents=False,
+                    mode=mode,
+                )
+            except FileExistsError:
+                if not exist_ok or not self.is_dir():
+                    raise
 
     @classmethod
     def _from_parts(
