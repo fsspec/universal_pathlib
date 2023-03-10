@@ -37,3 +37,7 @@ class TestAzurePath(BaseTests):
 
         with pytest.raises(NotADirectoryError):
             (self.path / "a" / "file.txt").rmdir()
+
+    @pytest.mark.skip
+    def test_makedirs_exist_ok_false(self):
+        pass

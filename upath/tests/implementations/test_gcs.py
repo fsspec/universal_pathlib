@@ -29,3 +29,7 @@ class TestGCSPath(BaseTests):
         assert not mock_dir.exists()
         with pytest.raises(NotADirectoryError):
             self.path.joinpath("file1.txt").rmdir()
+
+    @pytest.mark.skip
+    def test_makedirs_exist_ok_false(self):
+        pass
