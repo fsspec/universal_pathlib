@@ -47,6 +47,22 @@ class TestUPathHttp(BaseTests):
         pass
 
     @pytest.mark.skip
+    def test_mkdir_parents_true_exists_ok_true(self):
+        pass
+
+    @pytest.mark.skip
+    def test_mkdir_parents_true_exists_ok_false(self):
+        pass
+
+    @pytest.mark.skip
+    def test_makedirs_exist_ok_true(self):
+        pass
+
+    @pytest.mark.skip
+    def test_makedirs_exist_ok_false(self):
+        pass
+
+    @pytest.mark.skip
     def test_touch_unlink(self):
         pass
 
