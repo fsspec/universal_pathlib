@@ -4,6 +4,7 @@ import pathlib
 import re
 import sys
 from os import PathLike
+from pathlib import _PosixFlavour  # type: ignore
 from typing import Sequence
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -89,17 +90,41 @@ class _FSSpecAccessor:
         return self._fs.touch(self._format_path(path), **kwargs)
 
 
+class _UriFlavour(_PosixFlavour):
+    def parse_parts(self, parts):
+        parsed = []
+        sep = self.sep
+        drv = root = ""
+        it = reversed(parts)
+        for part in it:
+            if part:
+                drv, root, rel = self.splitroot(part)
+                if not root or root and rel:
+                    for x in reversed(rel.split(sep)):
+                        parsed.append(sys.intern(x))
+
+        if drv or root:
+            parsed.append(drv + root)
+        parsed.reverse()
+        return drv, root, parsed
+
+    def splitroot(self, part, sep="/"):
+        # Treat the first slash in the path as the root if it exists
+        if part and part[0] == sep:
+            return "", sep, part[1:]
+        return "", "", part
+
+
 PT = TypeVar("PT", bound="UPath")
 
 
 class UPath(pathlib.Path):
-
     __slots__ = (
         "_url",
         "_kwargs",
         "_accessor",  # overwritten because of default in Python 3.10
     )
-    _flavour = pathlib._posix_flavour  # type: ignore
+    _flavour = _UriFlavour()
     _default_accessor = _FSSpecAccessor
 
     # typing

@@ -251,3 +251,11 @@ def test_relative_to():
         UPath("s3://test_bucket/file.txt", anon=True).relative_to(
             UPath("s3://test_bucket", anon=False)
         )
+
+
+def test_uri_parsing():
+    assert (
+        str(UPath("http://www.example.com//a//b/"))
+        == "http://www.example.com//a//b/"
+    )
+
