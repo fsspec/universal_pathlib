@@ -336,7 +336,40 @@ class UPath(pathlib.Path):
         return self
 
     def resolve(self: PT, strict: bool = False) -> PT:
-        raise NotImplementedError
+        """Return a new path with '.' and '..' parts normalized."""
+        _parts = self._parts
+
+        # Do not attempt to normalize path if no parts are dots
+        if ".." not in _parts and "." not in _parts:
+            return self
+
+        sep = self._flavour.sep
+
+        resolved: list[str] = []
+        resolvable_parts = _parts[1:]
+        idx_max = len(resolvable_parts) - 1
+        for i, part in enumerate(resolvable_parts):
+            if part == "..":
+                if resolved:
+                    resolved.pop()
+            elif part != ".":
+                if i < idx_max:
+                    part += sep
+                resolved.append(part)
+
+        path = "".join(resolved)
+        url = self._url
+        if url is not None:
+            url = url._replace(path=path)
+        parts = _parts[:1] + path.split(sep)
+
+        return self._from_parsed_parts(
+            self._drv,
+            self._root,
+            parts,
+            url=url,
+            **self._kwargs,
+        )
 
     def exists(self) -> bool:
         """
