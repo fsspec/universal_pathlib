@@ -76,3 +76,6 @@ class TestUPathHttp(BaseTests):
 
     def test_fsspec_compat(self):
         pass
+
+    def test_resolve(self):
+        assert str(self.path.resolve()).endswith("/")
