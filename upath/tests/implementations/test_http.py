@@ -76,3 +76,9 @@ class TestUPathHttp(BaseTests):
 
     def test_fsspec_compat(self):
         pass
+
+    def test_resolve(self):
+        # Also tests following redirects, because the test server issues a
+        # 301 redirect for `http://127.0.0.1:8080/folder` to
+        # `http://127.0.0.1:8080/folder/`
+        assert str(self.path.resolve()).endswith("/")

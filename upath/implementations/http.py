@@ -1,3 +1,5 @@
+from fsspec.asyn import sync
+
 import upath.core
 
 
@@ -47,3 +49,35 @@ class HTTPPath(upath.core.UPath):
         name = name.strip("/")
 
         return name
+
+    def resolve(
+        self: "HTTPPath", strict: bool = False, follow_redirects: bool = True
+    ) -> "HTTPPath":
+        """Normalize the path and resolve redirects."""
+        # Normalise the path
+        resolved_path = super().resolve(strict=strict)
+
+        if follow_redirects:
+            # Ensure we have a url
+            parsed_url = resolved_path._url
+            if parsed_url is None:
+                return resolved_path
+            else:
+                url = parsed_url.geturl()
+            # Get the fsspec fs
+            fs = resolved_path._accessor._fs
+            # Ensure we have a session
+            session = sync(fs.loop, fs.set_session)
+            # Use HEAD requests if the server allows it, falling back to GETs
+            for method in (session.head, session.get):
+                r = sync(fs.loop, method, url, allow_redirects=True)
+                try:
+                    r.raise_for_status()
+                except Exception as exc:
+                    if method == session.get:
+                        raise FileNotFoundError(self) from exc
+                else:
+                    resolved_path = HTTPPath(str(r.url))
+                    break
+
+        return resolved_path

@@ -251,3 +251,71 @@ def test_relative_to():
         UPath("s3://test_bucket/file.txt", anon=True).relative_to(
             UPath("s3://test_bucket", anon=False)
         )
+
+
+def test_uri_parsing():
+    assert (
+        str(UPath("http://www.example.com//a//b/"))
+        == "http://www.example.com//a//b/"
+    )
+
+
+NORMALIZATIONS = (
+    ("unnormalized", "normalized"),
+    (
+        # Expected normalization results according to curl
+        ("http://example.com", "http://example.com/"),
+        ("http://example.com/", "http://example.com/"),
+        ("http://example.com/a", "http://example.com/a"),
+        ("http://example.com//a", "http://example.com//a"),
+        ("http://example.com///a", "http://example.com///a"),
+        ("http://example.com////a", "http://example.com////a"),
+        ("http://example.com/a/.", "http://example.com/a/"),
+        ("http://example.com/a/./", "http://example.com/a/"),
+        ("http://example.com/a/./b", "http://example.com/a/b"),
+        ("http://example.com/a/.//", "http://example.com/a//"),
+        ("http://example.com/a/.//b", "http://example.com/a//b"),
+        ("http://example.com/a//.", "http://example.com/a//"),
+        ("http://example.com/a//./", "http://example.com/a//"),
+        ("http://example.com/a//./b", "http://example.com/a//b"),
+        ("http://example.com/a//.//", "http://example.com/a///"),
+        ("http://example.com/a//.//b", "http://example.com/a///b"),
+        ("http://example.com/a/..", "http://example.com/"),
+        ("http://example.com/a/../", "http://example.com/"),
+        ("http://example.com/a/../.", "http://example.com/"),
+        ("http://example.com/a/../..", "http://example.com/"),
+        ("http://example.com/a/../../", "http://example.com/"),
+        ("http://example.com/a/../..//", "http://example.com//"),
+        ("http://example.com/a/..//", "http://example.com//"),
+        ("http://example.com/a/..//.", "http://example.com//"),
+        ("http://example.com/a/..//..", "http://example.com/"),
+        ("http://example.com/a/../b", "http://example.com/b"),
+        ("http://example.com/a/..//b", "http://example.com//b"),
+        ("http://example.com/a//..", "http://example.com/a/"),
+        ("http://example.com/a//../", "http://example.com/a/"),
+        ("http://example.com/a//../.", "http://example.com/a/"),
+        ("http://example.com/a//../..", "http://example.com/"),
+        ("http://example.com/a//../../", "http://example.com/"),
+        ("http://example.com/a//../..//", "http://example.com//"),
+        ("http://example.com/a//..//..", "http://example.com/a/"),
+        ("http://example.com/a//../b", "http://example.com/a/b"),
+        ("http://example.com/a//..//", "http://example.com/a//"),
+        ("http://example.com/a//..//.", "http://example.com/a//"),
+        ("http://example.com/a//..//b", "http://example.com/a//b"),
+        # Normalization with and without an authority component
+        ("memory:/a/b/..", "memory:/a/"),
+        ("memory:/a/b/../..", "memory:/"),
+        ("memory:/a/b/../../..", "memory:/"),
+        ("memory://a/b/..", "memory://a/"),
+        ("memory://a/b/../..", "memory://a/"),
+        ("memory://a/b/../../..", "memory://a/"),
+    ),
+)
+
+
+@pytest.mark.parametrize(*NORMALIZATIONS)
+def test_normalize(unnormalized, normalized):
+    expected = str(UPath(normalized))
+    # Normalise only, do not attempt to follow redirects for http:// paths here
+    result = str(UPath.resolve(UPath(unnormalized)))
+    assert expected == result

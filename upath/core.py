@@ -4,6 +4,7 @@ import pathlib
 import re
 import sys
 from os import PathLike
+from pathlib import _PosixFlavour  # type: ignore
 from typing import Sequence
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -89,17 +90,41 @@ class _FSSpecAccessor:
         return self._fs.touch(self._format_path(path), **kwargs)
 
 
+class _UriFlavour(_PosixFlavour):
+    def parse_parts(self, parts):
+        parsed = []
+        sep = self.sep
+        drv = root = ""
+        it = reversed(parts)
+        for part in it:
+            if part:
+                drv, root, rel = self.splitroot(part)
+                if not root or root and rel:
+                    for x in reversed(rel.split(sep)):
+                        parsed.append(sys.intern(x))
+
+        if drv or root:
+            parsed.append(drv + root)
+        parsed.reverse()
+        return drv, root, parsed
+
+    def splitroot(self, part, sep="/"):
+        # Treat the first slash in the path as the root if it exists
+        if part and part[0] == sep:
+            return "", sep, part[1:]
+        return "", "", part
+
+
 PT = TypeVar("PT", bound="UPath")
 
 
 class UPath(pathlib.Path):
-
     __slots__ = (
         "_url",
         "_kwargs",
         "_accessor",  # overwritten because of default in Python 3.10
     )
-    _flavour = pathlib._posix_flavour  # type: ignore
+    _flavour = _UriFlavour()
     _default_accessor = _FSSpecAccessor
 
     # typing
@@ -311,7 +336,40 @@ class UPath(pathlib.Path):
         return self
 
     def resolve(self: PT, strict: bool = False) -> PT:
-        raise NotImplementedError
+        """Return a new path with '.' and '..' parts normalized."""
+        _parts = self._parts
+
+        # Do not attempt to normalize path if no parts are dots
+        if ".." not in _parts and "." not in _parts:
+            return self
+
+        sep = self._flavour.sep
+
+        resolved: list[str] = []
+        resolvable_parts = _parts[1:]
+        idx_max = len(resolvable_parts) - 1
+        for i, part in enumerate(resolvable_parts):
+            if part == "..":
+                if resolved:
+                    resolved.pop()
+            elif part != ".":
+                if i < idx_max:
+                    part += sep
+                resolved.append(part)
+
+        path = "".join(resolved)
+        url = self._url
+        if url is not None:
+            url = url._replace(path=path)
+        parts = _parts[:1] + path.split(sep)
+
+        return self._from_parsed_parts(
+            self._drv,
+            self._root,
+            parts,
+            url=url,
+            **self._kwargs,
+        )
 
     def exists(self) -> bool:
         """
