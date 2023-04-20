@@ -160,6 +160,7 @@ def test_list_args():
     assert path_a._parts == path_b._parts
     assert path_a._url == path_b._url
 
+
 def test_child_path():
     path_a = UPath("gcs://bucket/folder")
     path_b = UPath("gcs://bucket") / "folder"
