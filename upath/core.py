@@ -551,7 +551,6 @@ class UPath(pathlib.Path):
         # Update to (full) URL
         obj._url = urlsplit(stringify_path(obj))
 
-
         return obj
 
     @classmethod
