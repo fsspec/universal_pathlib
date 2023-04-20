@@ -176,6 +176,9 @@ class UPath(pathlib.Path):
 
             else:
                 # return upath instance
+                # Note: cloud paths always have a root
+                if not parsed_url.path:
+                    parsed_url = parsed_url._replace(path="/")
                 args_list.insert(0, parsed_url.path)
                 return upath_cls._from_parts(
                     args_list, url=parsed_url, **kwargs
@@ -544,6 +547,10 @@ class UPath(pathlib.Path):
                 root = parts[1:]
         obj._root = root
         obj._parts = parts
+
+        # Update to (full) URL
+        obj._url = urlsplit(stringify_path(obj))
+
 
         return obj
 
