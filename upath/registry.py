@@ -3,9 +3,13 @@ from __future__ import annotations
 import importlib
 import warnings
 from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fsspec.core import get_filesystem_class
+
+import upath.errors
+
 
 if TYPE_CHECKING:
     from upath.core import PT
@@ -46,14 +50,14 @@ _registry = _Registry()
 
 
 @lru_cache()
-def get_upath_class(protocol: str) -> type[PT] | None:
-    """return the upath cls for the given protocol"""
+def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
+    """Return the upath cls for the given protocol."""
     cls: type[PT] | None = _registry[protocol]
     if cls is not None:
         return cls
     else:
         if not protocol:
-            return None  # we want to use pathlib for `None` protocol
+            return Path  # we want to use pathlib for `None` protocol
         try:
             _fs_cls = get_filesystem_class(protocol)
         except ValueError:
@@ -64,7 +68,7 @@ def get_upath_class(protocol: str) -> type[PT] | None:
                     f"UPath {protocol!r} filesystem not explicitly implemented."
                     " Falling back to default implementation."
                     " This filesystem may not be tested.",
-                    UserWarning,
+                    upath.errors.DefaultImplementationWarning,
                     stacklevel=2,
                 )
             mod = importlib.import_module("upath.core")

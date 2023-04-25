@@ -3,8 +3,10 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+from collections import ChainMap
 from os import PathLike
 from pathlib import _PosixFlavour  # type: ignore
+from pathlib import PurePath
 from typing import Sequence
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -20,6 +22,7 @@ if TYPE_CHECKING:
     from typing import Any
     from typing import Generator
     from urllib.parse import SplitResult
+
     from fsspec.spec import AbstractFileSystem
 
 __all__ = [
@@ -53,13 +56,13 @@ class _FSSpecAccessor:
         p_fmt = self._format_path(path)
         contents = self._fs.listdir(p_fmt, **kwargs)
         if len(contents) == 0 and not self._fs.isdir(p_fmt):
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
         elif (
             len(contents) == 1
             and contents[0]["name"] == p_fmt
             and contents[0]["type"] == "file"
         ):
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
         return contents
 
     def glob(self, _path, path_pattern, **kwargs):
@@ -136,50 +139,66 @@ class UPath(pathlib.Path):
     _closed: bool
     _accessor: _FSSpecAccessor
 
+    @classmethod
+    def _from_path(
+        cls,
+        other: PT | pathlib.Path,
+        *args: str | PathLike,
+        **kwargs: Any,
+    ) -> PT | pathlib.Path:
+        """Construct from copy of given path class instance."""
+        if not isinstance(other, PurePath):
+            raise TypeError("Need a path type for `_from_path`.")
+        parts = list(args)
+        _cls: type[Any] = type(other)
+        drv, root, parts = _cls._parse_args(parts)
+        drv, root, parts = other._flavour.join_parsed_parts(  # type: ignore
+            other._drv,  # type: ignore
+            other._root,  # type: ignore
+            other._parts,  # type: ignore
+            drv,
+            root,
+            parts,
+        )
+        _kwargs = getattr(other, "_kwargs", {})
+        _url = getattr(other, "_url", None)
+        other_kwargs = {}
+        if _url:
+            other_kwargs["url"] = _url
+        other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
+        new_kwargs = ChainMap(kwargs, _kwargs)
+        out: PT = _cls(
+            _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
+            **new_kwargs,
+        )
+        return out
+
     def __new__(cls: type[PT], *args: str | PathLike, **kwargs: Any) -> PT:
         args_list = list(args)
         other = args_list.pop(0)
 
         if isinstance(other, pathlib.Path):
             # Create a (modified) copy, if first arg is a Path object
-            _cls: type[Any] = type(other)
-            drv, root, parts = _cls._parse_args(args_list)
-            drv, root, parts = _cls._flavour.join_parsed_parts(
-                other._drv, other._root, other._parts, drv, root, parts  # type: ignore # noqa: E501
-            )
+            return cls._from_path(other, *args_list, **kwargs)  # type: ignore
 
-            _kwargs = getattr(other, "_kwargs", {})
-            _url = getattr(other, "_url", None)
-            other_kwargs = _kwargs.copy()
-            if _url:
-                other_kwargs["url"] = _url
-            new_kwargs = _kwargs.copy()
-            new_kwargs.update(kwargs)
+        url = stringify_path(other)
+        parsed_url = urlsplit(url)
+        for key in ["scheme", "netloc"]:
+            val = kwargs.get(key)
+            if val:
+                parsed_url = parsed_url._replace(**{key: val})
 
-            return _cls(  # type: ignore
-                _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
-                **new_kwargs,
-            )
+        upath_cls = get_upath_class(protocol=parsed_url.scheme)
+        if upath_cls in {pathlib.Path, None}:
+            # treat as local filesystem, return PosixPath or WindowsPath
+            return pathlib.Path(*args, **kwargs)  # type: ignore
 
         else:
-            url = stringify_path(other)
-            parsed_url = urlsplit(url)
-            for key in ["scheme", "netloc"]:
-                val = kwargs.get(key)
-                if val:
-                    parsed_url = parsed_url._replace(**{key: val})
-
-            upath_cls = get_upath_class(protocol=parsed_url.scheme)
-            if upath_cls is None:
-                # treat as local filesystem, return PosixPath or WindowsPath
-                return pathlib.Path(*args, **kwargs)  # type: ignore
-
-            else:
-                # return upath instance
-                args_list.insert(0, parsed_url.path)
-                return upath_cls._from_parts(
-                    args_list, url=parsed_url, **kwargs
-                )
+            args_list.insert(0, parsed_url.path)
+            # return upath instance
+            return upath_cls._from_parts(  # type: ignore
+                args_list, url=parsed_url, **kwargs
+            )
 
     def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
@@ -320,11 +339,13 @@ class UPath(pathlib.Path):
             yield self._make_child(name)
 
     def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
-        path_pattern = self.joinpath("**", pattern)
-        for name in self._accessor.glob(self, path_pattern):
-            name = self._sub_path(name)
-            name = name.split(self._flavour.sep)
-            yield self._make_child(name)
+        path_pattern = self.joinpath(pattern)
+        r_path_pattern = self.joinpath("**", pattern)
+        for p in (path_pattern, r_path_pattern):
+            for name in self._accessor.glob(self, p):
+                name = self._sub_path(name)
+                name = name.split(self._flavour.sep)
+                yield self._make_child(name)
 
     def _sub_path(self, name):
         # only want the path name with iterdir
@@ -372,9 +393,7 @@ class UPath(pathlib.Path):
         )
 
     def exists(self) -> bool:
-        """
-        Whether this path exists.
-        """
+        """Check whether this path exists or not."""
         if not getattr(self._accessor, "exists"):
             try:
                 self._accessor.stat(self)
@@ -432,24 +451,23 @@ class UPath(pathlib.Path):
     def unlink(self, missing_ok: bool = False) -> None:
         if not self.exists():
             if not missing_ok:
-                raise FileNotFoundError
-            else:
-                return
+                raise FileNotFoundError(str(self))
+            return
         self._accessor.rm(self, recursive=False)
 
     def rmdir(self, recursive: bool = True) -> None:
-        """Add warning if directory not empty
-        assert is_dir?
-        """
         if not self.is_dir():
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
+        if not recursive and next(self.iterdir()):  # type: ignore
+            raise OSError(f"Not recursive and directory not empty: {self}")
         self._accessor.rm(self, recursive=recursive)
 
     def chmod(self, mode, *, follow_symlinks: bool = True) -> None:
         raise NotImplementedError
 
-    def rename(self, target):
+    def rename(self, target, **kwargs):
         # can be implemented, but may be tricky
+        # see fsspec fs.mv
         raise NotImplementedError
 
     def replace(self, target):
@@ -508,7 +526,7 @@ class UPath(pathlib.Path):
         """
         if parents:
             if not exist_ok and self.exists():
-                raise FileExistsError
+                raise FileExistsError(str(self))
             self._accessor.makedirs(self, exist_ok=exist_ok)
         else:
             try:
@@ -519,7 +537,7 @@ class UPath(pathlib.Path):
                 )
             except FileExistsError:
                 if not exist_ok or not self.is_dir():
-                    raise
+                    raise FileExistsError(str(self))
 
     @classmethod
     def _from_parts(
