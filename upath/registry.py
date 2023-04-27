@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 
 from fsspec.core import get_filesystem_class
 
-import upath.errors
-
 
 if TYPE_CHECKING:
     from upath.core import PT
@@ -57,7 +55,7 @@ def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
         return cls
     else:
         if not protocol:
-            return Path  # we want to use pathlib for `None` protocol
+            return None  # we want to use pathlib for `None` protocol
         try:
             _fs_cls = get_filesystem_class(protocol)
         except ValueError:
@@ -68,7 +66,7 @@ def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
                     f"UPath {protocol!r} filesystem not explicitly implemented."
                     " Falling back to default implementation."
                     " This filesystem may not be tested.",
-                    upath.errors.DefaultImplementationWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
             mod = importlib.import_module("upath.core")

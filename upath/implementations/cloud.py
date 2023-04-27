@@ -48,7 +48,7 @@ class CloudPath(upath.core.UPath):
         relative path to `self`.
         """
         sp = re.escape(self.path)
-        netloc = self._url.netloc  # type: ignore
+        netloc = self._url.netloc
         return re.sub(
             f"^({netloc})?/?({sp}|{sp[1:]})/?",
             "",
@@ -56,7 +56,7 @@ class CloudPath(upath.core.UPath):
         )
 
     def joinpath(self, *args):
-        if self._url.netloc:  # type: ignore
+        if self._url.netloc:
             return super().joinpath(*args)
         # handles a bucket in the path
         else:

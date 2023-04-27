@@ -209,10 +209,22 @@ class BaseTests:
         with pytest.raises(NotImplementedError):
             self.path.readlink()
 
-    @pytest.mark.xfail
     def test_rename(self):
-        # need to implement
-        raise False
+        upath = self.path.joinpath("file1.txt")
+        target = upath.parent.joinpath("file1_renamed.txt")
+        moved = upath.rename(target)
+        assert target == moved
+        assert not upath.exists()
+        assert moved.exists()
+
+    def test_rename2(self):
+        upath = self.path.joinpath("folder1/file2.txt")
+        target = "file2_renamed.txt"
+        moved = upath.rename(target)
+        target_path = upath.parent.joinpath(target).resolve()
+        assert target_path == moved
+        assert not upath.exists()
+        assert moved.exists()
 
     def test_replace(self):
         pass
@@ -220,8 +232,11 @@ class BaseTests:
     def test_resolve(self):
         pass
 
-    def test_rglob(self):
-        pass
+    def test_rglob(self, pathlib_base):
+        pattern = "*.txt"
+        result = [*self.path.rglob(pattern)]
+        expected = [*pathlib_base.rglob(pattern)]
+        assert len(result) == len(expected)
 
     def test_samefile(self):
         pass
@@ -386,3 +401,8 @@ class BaseTests:
         assert p.is_file()
         with pytest.raises(NotADirectoryError):
             _ = list(p.iterdir())
+
+    def test_rmdir_not_empty(self):
+        p = self.path.joinpath("folder1")
+        with pytest.raises(OSError, match="not empty"):
+            p.rmdir(recursive=False)

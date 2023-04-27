@@ -92,6 +92,16 @@ class _FSSpecAccessor:
     def touch(self, path, **kwargs):
         return self._fs.touch(self._format_path(path), **kwargs)
 
+    def mv(self, path, target, recursive=False, maxdepth=None, **kwargs):
+        if hasattr(target, "_accessor"):
+            target = target._accessor._format_path(target)
+        return self._fs.mv(
+            self._format_path(path),
+            target,
+            recursive=recursive,
+            maxdepth=maxdepth,
+            **kwargs,
+        )
 
 class _UriFlavour(_PosixFlavour):
     def parse_parts(self, parts):
@@ -139,47 +149,13 @@ class UPath(pathlib.Path):
     _closed: bool
     _accessor: _FSSpecAccessor
 
-    @classmethod
-    def _from_path(
-        cls,
-        other: PT | pathlib.Path,
-        *args: str | PathLike,
-        **kwargs: Any,
-    ) -> PT | pathlib.Path:
-        """Construct from copy of given path class instance."""
-        if not isinstance(other, PurePath):
-            raise TypeError("Need a path type for `_from_path`.")
-        parts = list(args)
-        _cls: type[Any] = type(other)
-        drv, root, parts = _cls._parse_args(parts)
-        drv, root, parts = other._flavour.join_parsed_parts(  # type: ignore
-            other._drv,  # type: ignore
-            other._root,  # type: ignore
-            other._parts,  # type: ignore
-            drv,
-            root,
-            parts,
-        )
-        _kwargs = getattr(other, "_kwargs", {})
-        _url = getattr(other, "_url", None)
-        other_kwargs = {}
-        if _url:
-            other_kwargs["url"] = _url
-        other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
-        new_kwargs = ChainMap(kwargs, _kwargs)
-        out: PT = _cls(
-            _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
-            **new_kwargs,
-        )
-        return out
-
     def __new__(cls: type[PT], *args: str | PathLike, **kwargs: Any) -> PT:
         args_list = list(args)
         other = args_list.pop(0)
 
         if isinstance(other, pathlib.Path):
             # Create a (modified) copy, if first arg is a Path object
-            return cls._from_path(other, *args_list, **kwargs)  # type: ignore
+            return _from_path(other, *args_list, **kwargs)  # type: ignore
 
         url = stringify_path(other)
         parsed_url = urlsplit(url)
@@ -465,10 +441,18 @@ class UPath(pathlib.Path):
     def chmod(self, mode, *, follow_symlinks: bool = True) -> None:
         raise NotImplementedError
 
-    def rename(self, target, **kwargs):
-        # can be implemented, but may be tricky
-        # see fsspec fs.mv
-        raise NotImplementedError
+    def rename(self, target, recursive=False, maxdepth=None, **kwargs):
+        """Move file, see `fsspec.AbstractFileSystem.mv`."""
+        if not isinstance(target, UPath):
+            target = self.parent.joinpath(target).resolve()
+        self._accessor.mv(
+            self,
+            target,
+            recursive=recursive,
+            maxdepth=maxdepth,
+            **kwargs,
+        )
+        return target
 
     def replace(self, target):
         raise NotImplementedError
@@ -746,3 +730,37 @@ class _UPathParents(Sequence[UPath]):
 
     def __repr__(self):
         return "<{}.parents>".format(self._pathcls.__name__)
+
+
+def _from_path(
+    other: PT | pathlib.Path,
+    *args: str | PathLike,
+    **kwargs: Any,
+) -> PT | pathlib.Path:
+    """Construct from copy of given path class instance."""
+    if not isinstance(other, PurePath):
+        raise TypeError("Need a path type for `_from_path`.")
+    parts = list(args)
+    _cls: type[Any] = type(other)
+    drv, root, parts = _cls._parse_args(parts)
+    drv, root, parts = other._flavour.join_parsed_parts(  # type: ignore
+        other._drv,  # type: ignore
+        other._root,  # type: ignore
+        other._parts,  # type: ignore
+        drv,
+        root,
+        parts,
+    )
+    _kwargs = getattr(other, "_kwargs", {})
+    _url = getattr(other, "_url", None)
+    other_kwargs = {}
+    if _url:
+        other_kwargs["url"] = _url
+    other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
+    new_kwargs = ChainMap(kwargs, _kwargs)
+    out: PT = _cls(
+        _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
+        **new_kwargs,
+    )
+    return out
+
