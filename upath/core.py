@@ -103,6 +103,7 @@ class _FSSpecAccessor:
             **kwargs,
         )
 
+
 class _UriFlavour(_PosixFlavour):
     def parse_parts(self, parts):
         parsed = []
@@ -763,4 +764,3 @@ def _from_path(
         **new_kwargs,
     )
     return out
-
