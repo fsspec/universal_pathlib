@@ -164,11 +164,12 @@ class UPath(Path):
 
             _kwargs = getattr(other, "_kwargs", {})
             _url = getattr(other, "_url", None)
-            other_kwargs = {}
+            other_kwargs = _kwargs.copy()
             if _url:
                 other_kwargs["url"] = _url
-            other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
-            new_kwargs = ChainMap(kwargs, _kwargs)
+            new_kwargs = _kwargs.copy()
+            new_kwargs.update(kwargs)
+
             return _cls(  # type: ignore
                 _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
                 **new_kwargs,
@@ -182,7 +183,7 @@ class UPath(Path):
                 parsed_url = parsed_url._replace(**{key: val})
 
         upath_cls = get_upath_class(protocol=parsed_url.scheme)
-        if upath_cls in {Path, None}:
+        if upath_cls is None:
             # treat as local filesystem, return PosixPath or WindowsPath
             return Path(*args, **kwargs)  # type: ignore
 
