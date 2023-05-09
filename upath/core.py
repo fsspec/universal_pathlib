@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 import sys
-from collections import ChainMap
 from os import PathLike
 from pathlib import _PosixFlavour  # type: ignore
 from pathlib import Path
