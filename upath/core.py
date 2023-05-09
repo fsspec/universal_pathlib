@@ -156,7 +156,23 @@ class UPath(pathlib.Path):
 
         if isinstance(other, pathlib.Path):
             # Create a (modified) copy, if first arg is a Path object
-            return _from_path(other, *args_list, **kwargs)  # type: ignore
+            _cls: type[Any] = type(other)
+            drv, root, parts = _cls._parse_args(args_list)
+            drv, root, parts = _cls._flavour.join_parsed_parts(
+                other._drv, other._root, other._parts, drv, root, parts  # type: ignore # noqa: E501
+            )
+
+            _kwargs = getattr(other, "_kwargs", {})
+            _url = getattr(other, "_url", None)
+            other_kwargs = {}
+            if _url:
+                other_kwargs["url"] = _url
+            other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
+            new_kwargs = ChainMap(kwargs, _kwargs)
+            return _cls(  # type: ignore
+                _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
+                **new_kwargs,
+            )
 
         url = stringify_path(other)
         parsed_url = urlsplit(url)
@@ -170,12 +186,11 @@ class UPath(pathlib.Path):
             # treat as local filesystem, return PosixPath or WindowsPath
             return pathlib.Path(*args, **kwargs)  # type: ignore
 
-        else:
-            args_list.insert(0, parsed_url.path)
-            # return upath instance
-            return upath_cls._from_parts(  # type: ignore
-                args_list, url=parsed_url, **kwargs
-            )
+        args_list.insert(0, parsed_url.path)
+        # return upath instance
+        return upath_cls._from_parts(  # type: ignore
+            args_list, url=parsed_url, **kwargs
+        )
 
     def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
@@ -731,36 +746,3 @@ class _UPathParents(Sequence[UPath]):
 
     def __repr__(self):
         return "<{}.parents>".format(self._pathcls.__name__)
-
-
-def _from_path(
-    other: PT | pathlib.Path,
-    *args: str | PathLike,
-    **kwargs: Any,
-) -> PT | pathlib.Path:
-    """Construct from copy of given path class instance."""
-    if not isinstance(other, PurePath):
-        raise TypeError("Need a path type for `_from_path`.")
-    parts = list(args)
-    _cls: type[Any] = type(other)
-    drv, root, parts = _cls._parse_args(parts)
-    drv, root, parts = other._flavour.join_parsed_parts(  # type: ignore
-        other._drv,  # type: ignore
-        other._root,  # type: ignore
-        other._parts,  # type: ignore
-        drv,
-        root,
-        parts,
-    )
-    _kwargs = getattr(other, "_kwargs", {})
-    _url = getattr(other, "_url", None)
-    other_kwargs = {}
-    if _url:
-        other_kwargs["url"] = _url
-    other_kwargs = ChainMap(other_kwargs, _kwargs)  # type: ignore
-    new_kwargs = ChainMap(kwargs, _kwargs)
-    out: PT = _cls(
-        _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
-        **new_kwargs,
-    )
-    return out
