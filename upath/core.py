@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import pathlib
 import re
 import sys
 from collections import ChainMap
 from os import PathLike
 from pathlib import _PosixFlavour  # type: ignore
+from pathlib import Path
 from pathlib import PurePath
 from typing import Sequence
 from typing import TypeVar
@@ -132,7 +132,7 @@ class _UriFlavour(_PosixFlavour):
 PT = TypeVar("PT", bound="UPath")
 
 
-class UPath(pathlib.Path):
+class UPath(Path):
     __slots__ = (
         "_url",
         "_kwargs",
@@ -154,7 +154,7 @@ class UPath(pathlib.Path):
         args_list = list(args)
         other = args_list.pop(0)
 
-        if isinstance(other, pathlib.Path):
+        if isinstance(other, PurePath):
             # Create a (modified) copy, if first arg is a Path object
             _cls: type[Any] = type(other)
             drv, root, parts = _cls._parse_args(args_list)
@@ -182,9 +182,9 @@ class UPath(pathlib.Path):
                 parsed_url = parsed_url._replace(**{key: val})
 
         upath_cls = get_upath_class(protocol=parsed_url.scheme)
-        if upath_cls in {pathlib.Path, None}:
+        if upath_cls in {Path, None}:
             # treat as local filesystem, return PosixPath or WindowsPath
-            return pathlib.Path(*args, **kwargs)  # type: ignore
+            return Path(*args, **kwargs)  # type: ignore
 
         args_list.insert(0, parsed_url.path)
         # return upath instance
