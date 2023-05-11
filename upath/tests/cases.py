@@ -406,3 +406,12 @@ class BaseTests:
         p = self.path.joinpath("folder1")
         with pytest.raises(OSError, match="not empty"):
             p.rmdir(recursive=False)
+
+    def test_joinpath_copies_url_params(self):
+        query = "param1=value1"
+        path1 = self.path / f"test_joinpath_dir1?{query}"
+        assert path1._url.query == query
+        path2 = path1 / "file1.txt"
+        assert path2._url.query == query
+        path3 = path1 / "file2.txt?param2=value2"
+        assert path3._url.query == "param1=value1&param2=value2"

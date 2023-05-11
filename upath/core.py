@@ -9,6 +9,8 @@ from pathlib import PurePath
 from typing import Sequence
 from typing import TypeVar
 from typing import TYPE_CHECKING
+from urllib.parse import parse_qsl
+from urllib.parse import urlencode
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
@@ -245,6 +247,18 @@ class UPath(Path):
         scheme = scheme + ":"
         netloc = "//" + netloc if netloc else ""
         formatted = scheme + netloc + path
+        if url and url.query:
+            formatted_url = urlsplit(formatted, scheme=scheme)
+            new_query = parse_qsl(url.query) + parse_qsl(formatted_url.query)
+            formatted = urlunsplit(
+                (
+                    formatted_url.scheme,
+                    formatted_url.netloc,
+                    formatted_url.path,
+                    urlencode(new_query),
+                    formatted_url.fragment,
+                )
+            )
         return formatted
 
     @property
