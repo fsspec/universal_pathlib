@@ -7,7 +7,7 @@ Universal Pathlib is a python library that aims to extend Python's built-in [`pa
 ### Pypi
 
 ```bash
-pip install universal_pathlib
+python -m pip install universal_pathlib
 ```
 
 ### conda

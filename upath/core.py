@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import pathlib
 import re
 import sys
 from os import PathLike
 from pathlib import _PosixFlavour  # type: ignore
+from pathlib import Path
+from pathlib import PurePath
 from typing import Sequence
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from typing import Any
     from typing import Generator
     from urllib.parse import SplitResult
+
     from fsspec.spec import AbstractFileSystem
 
 __all__ = [
@@ -53,13 +55,13 @@ class _FSSpecAccessor:
         p_fmt = self._format_path(path)
         contents = self._fs.listdir(p_fmt, **kwargs)
         if len(contents) == 0 and not self._fs.isdir(p_fmt):
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
         elif (
             len(contents) == 1
             and contents[0]["name"] == p_fmt
             and contents[0]["type"] == "file"
         ):
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
         return contents
 
     def glob(self, _path, path_pattern, **kwargs):
@@ -88,6 +90,17 @@ class _FSSpecAccessor:
 
     def touch(self, path, **kwargs):
         return self._fs.touch(self._format_path(path), **kwargs)
+
+    def mv(self, path, target, recursive=False, maxdepth=None, **kwargs):
+        if hasattr(target, "_accessor"):
+            target = target._accessor._format_path(target)
+        return self._fs.mv(
+            self._format_path(path),
+            target,
+            recursive=recursive,
+            maxdepth=maxdepth,
+            **kwargs,
+        )
 
 
 class _UriFlavour(_PosixFlavour):
@@ -118,7 +131,7 @@ class _UriFlavour(_PosixFlavour):
 PT = TypeVar("PT", bound="UPath")
 
 
-class UPath(pathlib.Path):
+class UPath(Path):
     __slots__ = (
         "_url",
         "_kwargs",
@@ -140,7 +153,7 @@ class UPath(pathlib.Path):
         args_list = list(args)
         other = args_list.pop(0)
 
-        if isinstance(other, pathlib.Path):
+        if isinstance(other, PurePath):
             # Create a (modified) copy, if first arg is a Path object
             _cls: type[Any] = type(other)
             drv, root, parts = _cls._parse_args(args_list)
@@ -161,25 +174,23 @@ class UPath(pathlib.Path):
                 **new_kwargs,
             )
 
-        else:
-            url = stringify_path(other)
-            parsed_url = urlsplit(url)
-            for key in ["scheme", "netloc"]:
-                val = kwargs.get(key)
-                if val:
-                    parsed_url = parsed_url._replace(**{key: val})
+        url = stringify_path(other)
+        parsed_url = urlsplit(url)
+        for key in ["scheme", "netloc"]:
+            val = kwargs.get(key)
+            if val:
+                parsed_url = parsed_url._replace(**{key: val})
 
-            upath_cls = get_upath_class(protocol=parsed_url.scheme)
-            if upath_cls is None:
-                # treat as local filesystem, return PosixPath or WindowsPath
-                return pathlib.Path(*args, **kwargs)  # type: ignore
+        upath_cls = get_upath_class(protocol=parsed_url.scheme)
+        if upath_cls is None:
+            # treat as local filesystem, return PosixPath or WindowsPath
+            return Path(*args, **kwargs)  # type: ignore
 
-            else:
-                # return upath instance
-                args_list.insert(0, parsed_url.path)
-                return upath_cls._from_parts(
-                    args_list, url=parsed_url, **kwargs
-                )
+        args_list.insert(0, parsed_url.path)
+        # return upath instance
+        return upath_cls._from_parts(  # type: ignore
+            args_list, url=parsed_url, **kwargs
+        )
 
     def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
@@ -320,11 +331,13 @@ class UPath(pathlib.Path):
             yield self._make_child(name)
 
     def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
-        path_pattern = self.joinpath("**", pattern)
-        for name in self._accessor.glob(self, path_pattern):
-            name = self._sub_path(name)
-            name = name.split(self._flavour.sep)
-            yield self._make_child(name)
+        path_pattern = self.joinpath(pattern)
+        r_path_pattern = self.joinpath("**", pattern)
+        for p in (path_pattern, r_path_pattern):
+            for name in self._accessor.glob(self, p):
+                name = self._sub_path(name)
+                name = name.split(self._flavour.sep)
+                yield self._make_child(name)
 
     def _sub_path(self, name):
         # only want the path name with iterdir
@@ -372,9 +385,7 @@ class UPath(pathlib.Path):
         )
 
     def exists(self) -> bool:
-        """
-        Whether this path exists.
-        """
+        """Check whether this path exists or not."""
         if not getattr(self._accessor, "exists"):
             try:
                 self._accessor.stat(self)
@@ -432,25 +443,32 @@ class UPath(pathlib.Path):
     def unlink(self, missing_ok: bool = False) -> None:
         if not self.exists():
             if not missing_ok:
-                raise FileNotFoundError
-            else:
-                return
+                raise FileNotFoundError(str(self))
+            return
         self._accessor.rm(self, recursive=False)
 
     def rmdir(self, recursive: bool = True) -> None:
-        """Add warning if directory not empty
-        assert is_dir?
-        """
         if not self.is_dir():
-            raise NotADirectoryError
+            raise NotADirectoryError(str(self))
+        if not recursive and next(self.iterdir()):  # type: ignore
+            raise OSError(f"Not recursive and directory not empty: {self}")
         self._accessor.rm(self, recursive=recursive)
 
     def chmod(self, mode, *, follow_symlinks: bool = True) -> None:
         raise NotImplementedError
 
-    def rename(self, target):
-        # can be implemented, but may be tricky
-        raise NotImplementedError
+    def rename(self, target, recursive=False, maxdepth=None, **kwargs):
+        """Move file, see `fsspec.AbstractFileSystem.mv`."""
+        if not isinstance(target, UPath):
+            target = self.parent.joinpath(target).resolve()
+        self._accessor.mv(
+            self,
+            target,
+            recursive=recursive,
+            maxdepth=maxdepth,
+            **kwargs,
+        )
+        return target
 
     def replace(self, target):
         raise NotImplementedError
@@ -508,7 +526,7 @@ class UPath(pathlib.Path):
         """
         if parents:
             if not exist_ok and self.exists():
-                raise FileExistsError
+                raise FileExistsError(str(self))
             self._accessor.makedirs(self, exist_ok=exist_ok)
         else:
             try:
@@ -519,7 +537,7 @@ class UPath(pathlib.Path):
                 )
             except FileExistsError:
                 if not exist_ok or not self.is_dir():
-                    raise
+                    raise FileExistsError(str(self))
 
     @classmethod
     def _from_parts(

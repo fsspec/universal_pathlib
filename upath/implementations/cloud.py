@@ -1,5 +1,6 @@
-import upath.core
 import re
+
+import upath.core
 
 
 class _CloudAccessor(upath.core._FSSpecAccessor):
@@ -10,12 +11,13 @@ class _CloudAccessor(upath.core._FSSpecAccessor):
         return f"{path._url.netloc}/{path.path.lstrip('/')}"
 
     def mkdir(self, path, create_parents=True, **kwargs):
+        _path = self._format_path(path)
         if (
             not create_parents
             and not kwargs.get("exist_ok", False)
-            and self._fs.exists(self._format_path(path))
+            and self._fs.exists(_path)
         ):
-            raise FileExistsError
+            raise FileExistsError(_path)
         return super().mkdir(path, create_parents=create_parents, **kwargs)
 
 
@@ -46,8 +48,12 @@ class CloudPath(upath.core.UPath):
         relative path to `self`.
         """
         sp = re.escape(self.path)
-        subed = re.sub(f"^({self._url.netloc})?/?({sp}|{sp[1:]})/?", "", name)
-        return subed
+        netloc = self._url.netloc
+        return re.sub(
+            f"^({netloc})?/?({sp}|{sp[1:]})/?",
+            "",
+            name,
+        )
 
     def joinpath(self, *args):
         if self._url.netloc:

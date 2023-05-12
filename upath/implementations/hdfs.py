@@ -16,7 +16,7 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
             return self._fs.makedirs(pth, **kwargs)
         else:
             if not kwargs.get("exist_ok", False) and self._fs.exists(pth):
-                raise FileExistsError
+                raise FileExistsError(pth)
             return self._fs.mkdir(pth, create_parents=create_parents, **kwargs)
 
 

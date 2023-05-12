@@ -3,9 +3,11 @@ from __future__ import annotations
 import importlib
 import warnings
 from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fsspec.core import get_filesystem_class
+
 
 if TYPE_CHECKING:
     from upath.core import PT
@@ -46,8 +48,8 @@ _registry = _Registry()
 
 
 @lru_cache()
-def get_upath_class(protocol: str) -> type[PT] | None:
-    """return the upath cls for the given protocol"""
+def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
+    """Return the upath cls for the given protocol."""
     cls: type[PT] | None = _registry[protocol]
     if cls is not None:
         return cls

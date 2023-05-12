@@ -82,3 +82,11 @@ class TestUPathHttp(BaseTests):
         # 301 redirect for `http://127.0.0.1:8080/folder` to
         # `http://127.0.0.1:8080/folder/`
         assert str(self.path.resolve()).endswith("/")
+
+    def test_rename(self):
+        with pytest.raises(NotImplementedError):
+            return super().test_rename()
+
+    def test_rename2(self):
+        with pytest.raises(NotImplementedError):
+            return super().test_rename()

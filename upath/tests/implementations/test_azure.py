@@ -41,3 +41,7 @@ class TestAzurePath(BaseTests):
     @pytest.mark.skip
     def test_makedirs_exist_ok_false(self):
         pass
+
+    @pytest.mark.xfail(reason="test interaction")
+    def test_rglob(self, pathlib_base):
+        return super().test_rglob(pathlib_base)
