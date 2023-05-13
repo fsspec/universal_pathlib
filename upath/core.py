@@ -567,8 +567,8 @@ class UPath(Path):
 
         # Update to (full) URL
         if url:
-            url = url._replace(path=root + "/".join(parts[1:]))
-        obj._url = urlsplit(stringify_path(obj))
+            url = url._replace(path=root + cls._flavour.join(parts[1:]))
+        obj._url = url
 
         return obj
 
@@ -586,7 +586,6 @@ class UPath(Path):
         obj._parts = parts
         if sys.version_info < (3, 9):
             obj._closed = False
-        obj._url = url
         obj._kwargs = kwargs.copy()
 
         if not root:
@@ -596,8 +595,11 @@ class UPath(Path):
                 root = parts.pop(0)
         if len(obj._parts) == 0 or obj._parts[0] != root:
             obj._parts.insert(0, root)
-
         obj._root = root
+
+        if url:
+            url = url._replace(path=root + cls._flavour.join(parts[1:]))
+        obj._url = url
         return obj
 
     def __str__(self) -> str:
