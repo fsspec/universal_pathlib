@@ -407,7 +407,6 @@ class BaseTests:
         with pytest.raises(OSError, match="not empty"):
             p.rmdir(recursive=False)
 
-
     def test_private_url_attr_in_sync(self):
         p = self.path
         p1 = self.path.joinpath("c")
