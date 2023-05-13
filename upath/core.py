@@ -176,6 +176,9 @@ class UPath(Path):
 
         url = stringify_path(other)
         parsed_url = urlsplit(url)
+        if not parsed_url.path:
+            parsed_url = parsed_url._replace(path="/")  # ensure path has root
+
         for key in ["scheme", "netloc"]:
             val = kwargs.get(key)
             if val:
@@ -551,7 +554,6 @@ class UPath(Path):
         obj._drv = drv
         if sys.version_info < (3, 9):
             obj._closed = False
-        obj._url = url
         obj._kwargs = kwargs.copy()
 
         if not root:
@@ -562,6 +564,11 @@ class UPath(Path):
                 root = parts[1:]
         obj._root = root
         obj._parts = parts
+
+        # Update to (full) URL
+        if url:
+            url = url._replace(path=root + "/".join(parts[1:]))
+        obj._url = urlsplit(stringify_path(obj))
 
         return obj
 
