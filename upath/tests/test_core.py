@@ -5,7 +5,7 @@ import warnings
 
 import pytest
 from upath import UPath
-from upath.implementations.cloud import S3Path
+from upath.implementations.cloud import S3Path, GCSPath
 from .cases import BaseTests
 from .utils import only_on_windows, skip_on_windows
 
@@ -121,7 +121,7 @@ PATHS = (
     (
         ("/tmp/abc", (), None, pathlib.Path),
         ("s3://bucket/folder", ({"anon": True}), "s3fs", S3Path),
-        ("gs://bucket/folder", ({"token": "anon"}), "gcsfs", UPath),
+        ("gs://bucket/folder", ({"token": "anon"}), "gcsfs", GCSPath),
     ),
 )
 
@@ -148,6 +148,17 @@ def test_create_from_type(path, storage_options, module, object_type):
     except (ImportError, ModuleNotFoundError):
         # fs failed to import
         pass
+
+
+def test_list_args():
+    path_a = UPath("gcs://bucket", "folder")
+    path_b = UPath("gcs://bucket") / "folder"
+
+    assert str(path_a) == str(path_b)
+    assert path_a._root == path_b._root
+    assert path_a._drv == path_b._drv
+    assert path_a._parts == path_b._parts
+    assert path_a._url == path_b._url
 
 
 def test_child_path():
