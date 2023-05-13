@@ -411,4 +411,5 @@ class BaseTests:
         p = self.path
         p1 = self.path.joinpath("c")
         p2 = self.path / "c"
-        assert p1._url == p2._url != p._url
+        assert p1._url == p2._url
+        assert p1 != p._url
