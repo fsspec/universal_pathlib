@@ -336,7 +336,7 @@ def webdav_server(tmp_path_factory):
 def webdav_fixture(local_testdir, webdav_server):
     webdav_path, webdav_url = webdav_server
     if os.path.isdir(webdav_path):
-        os.rmdir(webdav_path)
+        shutil.rmtree(webdav_path, ignore_errors=True)
     try:
         shutil.copytree(local_testdir, webdav_path)
         yield webdav_url
