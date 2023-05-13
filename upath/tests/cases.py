@@ -406,3 +406,10 @@ class BaseTests:
         p = self.path.joinpath("folder1")
         with pytest.raises(OSError, match="not empty"):
             p.rmdir(recursive=False)
+
+
+    def test_private_url_attr_in_sync(self):
+        p = self.path
+        p1 = self.path.joinpath("c")
+        p2 = self.path / "c"
+        assert p1._url == p2._url != p._url
