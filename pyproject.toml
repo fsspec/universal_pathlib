@@ -51,6 +51,12 @@ include = []
 [tool.black]
 line-length = 80
 target-version = ['py38']
+extend-exclude = '''
+(
+  ^/upath/tests/test_pathlib.py
+)
+'''
+
 
 [tool.mypy]
 python_version = "3.7"
