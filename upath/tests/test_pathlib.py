@@ -2058,8 +2058,8 @@ class PathTest(unittest.TestCase):
         recursion_limit = 50
         # directory_depth > recursion_limit
         directory_depth = recursion_limit + 10
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d'] * directory_depth))
+        base = self.cls(os_helper.TESTFN, 'deep')
+        path = self.cls(base, *(['d'] * directory_depth))
         path.mkdir(parents=True)
 
         with set_recursion_limit(recursion_limit):
@@ -2859,6 +2859,8 @@ class PathTest(unittest.TestCase):
 
 class WalkTests(unittest.TestCase):
 
+    cls = pathlib.Path
+
     def setUp(self):
         self.addCleanup(os_helper.rmtree, os_helper.TESTFN)
 
@@ -2879,7 +2881,7 @@ class WalkTests(unittest.TestCase):
         #           broken_link3
         #       TEST2/
         #         tmp4              a lone file
-        self.walk_path = pathlib.Path(os_helper.TESTFN, "TEST1")
+        self.walk_path = self.cls(os_helper.TESTFN, "TEST1")
         self.sub1_path = self.walk_path / "SUB1"
         self.sub11_path = self.sub1_path / "SUB11"
         self.sub2_path = self.walk_path / "SUB2"
@@ -2889,8 +2891,8 @@ class WalkTests(unittest.TestCase):
         tmp3_path = self.sub2_path / "tmp3"
         tmp5_path = sub21_path / "tmp3"
         self.link_path = self.sub2_path / "link"
-        t2_path = pathlib.Path(os_helper.TESTFN, "TEST2")
-        tmp4_path = pathlib.Path(os_helper.TESTFN, "TEST2", "tmp4")
+        t2_path = self.cls(os_helper.TESTFN, "TEST2")
+        tmp4_path = self.cls(os_helper.TESTFN, "TEST2", "tmp4")
         broken_link_path = self.sub2_path / "broken_link"
         broken_link2_path = self.sub2_path / "broken_link2"
         broken_link3_path = self.sub2_path / "broken_link3"
@@ -2907,8 +2909,8 @@ class WalkTests(unittest.TestCase):
         if os_helper.can_symlink():
             os.symlink(os.path.abspath(t2_path), self.link_path)
             os.symlink('broken', broken_link_path, True)
-            os.symlink(pathlib.Path('tmp3', 'broken'), broken_link2_path, True)
-            os.symlink(pathlib.Path('SUB21', 'tmp5'), broken_link3_path, True)
+            os.symlink(self.cls('tmp3', 'broken'), broken_link2_path, True)
+            os.symlink(self.cls('SUB21', 'tmp5'), broken_link3_path, True)
             self.sub2_tree = (self.sub2_path, ["SUB21"],
                               ["broken_link", "broken_link2", "broken_link3",
                                "link", "tmp3"])
@@ -3049,8 +3051,8 @@ class WalkTests(unittest.TestCase):
 
     def test_walk_many_open_files(self):
         depth = 30
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d']*depth))
+        base = self.cls(os_helper.TESTFN, 'deep')
+        path = self.cls(base, *(['d']*depth))
         path.mkdir(parents=True)
 
         iters = [base.walk(top_down=False) for _ in range(100)]
@@ -3072,8 +3074,8 @@ class WalkTests(unittest.TestCase):
         recursion_limit = 40
         # directory_depth > recursion_limit
         directory_depth = recursion_limit + 10
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d'] * directory_depth))
+        base = self.cls(os_helper.TESTFN, 'deep')
+        path = self.cls(base, *(['d'] * directory_depth))
         path.mkdir(parents=True)
 
         with set_recursion_limit(recursion_limit):
@@ -3245,7 +3247,7 @@ class PosixPathTest(PathTest):
                      "Bad file descriptor in /dev/fd affects only macOS")
     def test_handling_bad_descriptor(self):
         try:
-            file_descriptors = list(pathlib.Path('/dev/fd').rglob("*"))[3:]
+            file_descriptors = list(self.cls('/dev/fd').rglob("*"))[3:]
             if not file_descriptors:
                 self.skipTest("no file descriptors - issue was not reproduced")
             # Checking all file descriptors because there is no guarantee
