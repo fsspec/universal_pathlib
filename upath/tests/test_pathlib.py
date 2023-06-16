@@ -12,11 +12,27 @@ import tempfile
 import unittest
 from unittest import mock
 
-from test.support import import_helper
-from test.support import set_recursion_limit
-from test.support import is_emscripten, is_wasi
-from test.support import os_helper
-from test.support.os_helper import TESTFN, FakePath
+# === cpython test.support imports ====================================
+#
+# NOTE:
+#   we replace these imports with compatible code to be able to use the
+#   newest cpython tests on all platforms and python versions supported
+#   by universal_pathlib.
+#
+# IMPORTS:
+#   from test.support import import_helper
+#   from test.support import set_recursion_limit
+#   from test.support import is_emscripten, is_wasi
+#   from test.support import os_helper
+#   from test.support.os_helper import TESTFN, FakePath
+#
+from ._pathlib_test_support import import_helper
+from ._pathlib_test_support import set_recursion_limit
+from ._pathlib_test_support import is_emscripten, is_wasi
+from ._pathlib_test_support import os_helper
+from ._pathlib_test_support import TESTFN, FakePath
+#
+# =====================================================================
 
 try:
     import grp, pwd
