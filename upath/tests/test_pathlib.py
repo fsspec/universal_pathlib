@@ -39,6 +39,8 @@ try:
 except ImportError:
     grp = pwd = None
 
+from upath import UPath
+
 
 # Make sure any symbolic links in the base test path are resolved.
 BASE = os.path.realpath(TESTFN)
@@ -1562,11 +1564,11 @@ class PurePathSubclassTest(PurePathTest):
 
 @only_posix
 class PosixPathAsPureTest(PurePosixPathTest):
-    cls = pathlib.PosixPath
+    cls = UPath
 
 @only_nt
 class WindowsPathAsPureTest(PureWindowsPathTest):
-    cls = pathlib.WindowsPath
+    cls = UPath
 
     def test_owner(self):
         P = self.cls
@@ -1586,7 +1588,7 @@ class WindowsPathAsPureTest(PureWindowsPathTest):
 class PathTest(unittest.TestCase):
     """Tests for the FS-accessing functionalities of the Path classes."""
 
-    cls = pathlib.Path
+    cls = UPath
 
     # (BASE)
     #  |
@@ -2859,7 +2861,7 @@ class PathTest(unittest.TestCase):
 
 class WalkTests(unittest.TestCase):
 
-    cls = pathlib.Path
+    cls = UPath
 
     def setUp(self):
         self.addCleanup(os_helper.rmtree, os_helper.TESTFN)
