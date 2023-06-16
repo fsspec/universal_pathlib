@@ -55,6 +55,7 @@ only_posix = unittest.skipIf(os.name == 'nt',
 # Tests for the pure classes.
 #
 
+@unittest.skip("stdlib")
 class PurePathTest(unittest.TestCase):
     cls = pathlib.PurePath
 
@@ -779,6 +780,7 @@ class PurePathTest(unittest.TestCase):
             self.assertEqual(str(pp), str(p))
 
 
+@unittest.skip("stdlib")
 class PurePosixPathTest(PurePathTest):
     cls = pathlib.PurePosixPath
 
@@ -873,6 +875,7 @@ class PurePosixPathTest(PurePathTest):
         self.assertEqual(p, pp)
 
 
+@unittest.skip("stdlib")
 class PureWindowsPathTest(PurePathTest):
     cls = pathlib.PureWindowsPath
 
@@ -1548,6 +1551,7 @@ class PureWindowsPathTest(PurePathTest):
         self.assertIs(False, P('c:/NUL/con/baz').is_reserved())
 
 
+@unittest.skip("stdlib")
 class PurePathSubclassTest(PurePathTest):
     class cls(pathlib.PurePath):
         pass
@@ -3380,7 +3384,7 @@ class WindowsPathTest(PathTest):
             check()
 
 
-
+@unittest.skip("stdlib")
 class PathSubclassTest(PathTest):
     class cls(pathlib.Path):
         pass
@@ -3389,6 +3393,7 @@ class PathSubclassTest(PathTest):
     test_repr_roundtrips = None
 
 
+@unittest.skip("stdlib")
 class CompatiblePathTest(unittest.TestCase):
     """
     Test that a type can be made compatible with PurePath
