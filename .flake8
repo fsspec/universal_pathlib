@@ -10,5 +10,3 @@ exclude =
     .github,
     .gitignore,
     .pytest_cache,
-    
-    
