@@ -34,6 +34,9 @@ from ._pathlib_test_support import TESTFN, FakePath
 #
 # =====================================================================
 
+import pytest
+pytestmark = pytest.mark.pathlib
+
 try:
     import grp, pwd
 except ImportError:
