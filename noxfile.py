@@ -14,6 +14,8 @@ def tests(session: nox.Session) -> None:
     session.install(".[dev]")
     session.run(
         "pytest",
+        "-m",
+        "not hdfs",
         "--cov",
         "--cov-config=pyproject.toml",
         *session.posargs,
