@@ -357,6 +357,9 @@ def azurite_credentials():
 def docker_azurite(azurite_credentials):
     requests = pytest.importorskip("requests")
 
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
+
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"
     cmd = (
