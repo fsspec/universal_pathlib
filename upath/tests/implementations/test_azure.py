@@ -1,4 +1,5 @@
 import pytest
+
 from upath import UPath
 from upath.implementations.cloud import AzurePath
 

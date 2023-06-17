@@ -2,6 +2,7 @@ import pytest
 
 from upath import UPath
 from upath.implementations.cloud import GCSPath
+
 from ..cases import BaseTests
 from ..utils import skip_on_windows
 
