@@ -17,25 +17,6 @@ import fsspec
 from .utils import posixify
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--skiphdfs", action="store_true", default=False, help="skip hdfs tests"
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "hdfs: mark test as hdfs")
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--skiphdfs"):
-        return
-    skip_hdfs = pytest.mark.skip(reason="skipping hdfs")
-    for item in items:
-        if "hdfs" in item.keywords:
-            item.add_marker(skip_hdfs)
-
-
 class DummyTestFS(LocalFileSystem):
     protocol = "mock"
     root_marker = "/"

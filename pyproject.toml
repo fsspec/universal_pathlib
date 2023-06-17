@@ -57,6 +57,12 @@ extend-exclude = '''
 )
 '''
 
+[tool.pytest.ini_options]
+addopts = "-m 'not (pathlib)'"
+markers = [
+  "hdfs: mark test as hdfs",
+  "pathlib: mark cpython pathlib tests",
+]
 
 [tool.mypy]
 python_version = "3.7"

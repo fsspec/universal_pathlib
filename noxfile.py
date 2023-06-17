@@ -56,7 +56,7 @@ def smoke(session):
         "wsgidav",
         "cheroot",
     )
-    session.run(*"pytest --skiphdfs -vv upath".split())
+    session.run("pytest", "-m", "not (hdfs or pathlib)", "-vv", "upath")
 
 
 @nox.session()
