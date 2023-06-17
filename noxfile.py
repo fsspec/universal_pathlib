@@ -1,74 +1,80 @@
-import sys
+"""Automation using nox."""
+import glob
+import os
 
 import nox
-from pathlib import Path
+
+nox.options.reuse_existing_virtualenvs = True
+nox.options.sessions = "lint", "tests"
+locations = ("upath",)
 
 
-@nox.session()
-def develop(session):
-    session.install("flit")
-    session.run(*"flit install -s".split())
+@nox.session(python=["3.8", "3.9", "3.10", "3.11", "pypy3.8", "pypy3.9"])
+def tests(session: nox.Session) -> None:
+    session.install(".[dev]")
+    session.run(
+        "pytest",
+        "--cov",
+        "--cov-config=pyproject.toml",
+        *session.posargs,
+        env={"COVERAGE_FILE": f".coverage.{session.python}"},
+    )
 
 
-@nox.session()
-def black(session):
-    session.install("black")
-    session.run(*"black upath noxfile.py setup.py".split())
+@nox.session
+def lint(session: nox.Session) -> None:
+    session.install("pre-commit")
+    session.install("-e", ".[tests]")
+
+    args = *(session.posargs or ("--show-diff-on-failure",)), "--all-files"
+    session.run("pre-commit", "run", *args)
+    session.run("python", "-m", "mypy")
+    session.run("python", "-m", "pylint", *locations)
 
 
-@nox.session()
-def lint(session):
-    session.install("flake8")
-    session.run("flake8", "upath")
-
-
-@nox.session()
-def type_checking(session):
-    session.install("mypy")
-    session.run("mypy", "upath")
-
-
-@nox.session()
-def install(session):
+@nox.session
+def safety(session: nox.Session) -> None:
+    """Scan dependencies for insecure packages."""
     session.install(".")
+    session.install("safety")
+    session.run("safety", "check", "--full-report")
+
+
+@nox.session
+def build(session: nox.Session) -> None:
+    session.install("build", "setuptools", "twine")
+    session.run("python", "-m", "build")
+    dists = glob.glob("dist/*")
+    session.run("twine", "check", *dists, silent=True)
+
+
+@nox.session
+def develop(session: nox.Session) -> None:
+    """Sets up a python development environment for the project."""
+    args = session.posargs or ("venv",)
+    venv_dir = os.fsdecode(os.path.abspath(args[0]))
+
+    session.log(f"Setting up virtual environment in {venv_dir}")
+    session.install("virtualenv")
+    session.run("virtualenv", venv_dir, silent=True)
+
+    python = os.path.join(venv_dir, "bin/python")
+    session.run(python, "-m", "pip", "install", "-e", ".[dev]", external=True)
+
+
+@nox.session
+def black(session):
+    print("please run `nox -s lint` instead")
+    raise SystemExit(1)
+
+
+@nox.session
+def type_checking(session):
+    print("please run `nox -s lint` instead")
+    raise SystemExit(1)
 
 
 @nox.session()
 def smoke(session):
-    if (3, 10) < sys.version_info <= (3, 11, 0, "final"):
-        # workaround for missing aiohttp wheels for py3.11
-        session.install(
-            "aiohttp",
-            "--no-binary",
-            "aiohttp",
-            env={"AIOHTTP_NO_EXTENSIONS": "1"},
-        )
-
-    session.install(
-        "pytest",
-        "adlfs",
-        "aiohttp",
-        "requests",
-        "gcsfs",
-        "s3fs",
-        "moto[s3,server]",
-        "webdav4[fsspec]",
-        "wsgidav",
-        "cheroot",
-    )
-    session.run(*"pytest --skiphdfs -vv upath".split())
-
-
-@nox.session()
-def build(session):
-    session.install("flit")
-    session.run(*"flit build".split())
-
-
-@nox.session()
-def rm_dirs(session):
-    paths = ["build", "dist"]
-    for path in paths:
-        p = Path(path)
-        if p.exists():
-            session.run(*f"rm -rf {str(p)}".split())
+    print("please tun `nox -s tests` instead")
+    raise SystemExit(1)
