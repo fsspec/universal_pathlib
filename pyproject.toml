@@ -35,10 +35,7 @@ addopts = "-ra"
 
 [tool.coverage.run]
 branch = true
-source = ["upath", "tests"]
-
-[tool.coverage.paths]
-source = ["src", "*/site-packages"]
+source = ["upath"]
 
 [tool.coverage.report]
 show_missing = true
