@@ -1,5 +1,14 @@
 # Universal Pathlib
 
+[![PyPI](https://img.shields.io/pypi/v/universal_pathlib.svg)](https://pypi.org/project/universal_pathlib/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/universal_pathlib)](https://pypi.org/project/universal_pathlib/)
+[![PyPI - License](https://img.shields.io/pypi/l/universal_pathlib)](https://github.com/fsspec/universal_pathlib/blob/main/LICENSE)
+[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/universal_pathlib?label=conda)](https://anaconda.org/conda-forge/universal_pathlib)
+
+[![Tests](https://github.com/fsspec/universal_pathlib/actions/workflows/python.yml/badge.svg)](https://github.com/fsspec/universal_pathlib/workflows/Tests/badge.svg)
+[![GitHub issues](https://img.shields.io/github/issues/fsspec/universal_pathlib)](https://github.com/fsspec/universal_pathlib/issues)
+[![Codestyle black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 Universal Pathlib is a python library that aims to extend Python's built-in [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html) api to use a variety of backend filesystems using [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/intro.html)
 
 ## Installation
@@ -51,6 +60,17 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 Other fsspec-compatible filesystems may also work, but are not supported and tested.
 Contributions for new filesystems are welcome!
 
+## Contributing
+
+Contributions are very welcome.
+To learn more, see the [Contributor Guide](CONTRIBUTING.rst).
+
 ## License
 
-MIT License
+Distributed under the terms of the [MIT license](LICENSE),
+*universal_pathlib* is free and open source software.
+
+## Issues
+
+If you encounter any problems,
+please [file an issue](https://github.com/fsspec/universal_pathlib/issues) along with a detailed description.

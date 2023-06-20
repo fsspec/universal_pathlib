@@ -1,61 +1,67 @@
 [build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core>=2,<4"]
+requires = ["setuptools>=48", "setuptools_scm[toml]>=6.3.1"]
+build-backend = "setuptools.build_meta"
 
-[tool]
-[tool.flit]
-[tool.flit.metadata]
-dist-name = "universal_pathlib"
-author = "Andrew Fulton"
-author-email = "andrewfulton9@gmail.com"
-classifiers = []
-home-page = "https://github.com/fsspec/universal_pathlib"
-keywords = ""
-license = "MIT"
-maintainer = "Andrew Fulton"
-maintainer-email = "andrewfulton9@gmail.com"
-module = "upath"
-requires = ["fsspec"]
-requires-python = ">=3.7"
-description-file = "README.md"
-
-[tool.flit.metadata.urls]
-
-[tool.flit.metadata.requires-extra]
-dev = []
-doc = []
-test = [
-  "aiohttp",
-  "adlfs",
-  "flake8",
-  "gcsfs",
-  "hadoop-test-cluster",
-  "ipython",
-  "jupyter",
-  "moto",
-  "pyarrow",
-  "pylint",
-  "pytest",
-  "requests",
-  "s3fs",
-  "webdav4[fsspec]"
-]
-
-[tool.flit.scripts]
-
-[tool.flit.sdist]
-include = []
-
-[tool.flit.entrypoints]
+[tool.setuptools_scm]
+write_to = "upath/_version.py"
+version_scheme = "post-release"
 
 [tool.black]
-line-length = 80
-target-version = ['py38']
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+known_first_party = ["upath"]
+force_single_line = true
+line_length = 88
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["upath"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+  "if typing.TYPE_CHECKING:",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "raise AssertionError",
+  "@overload",
+]
 
 [tool.mypy]
-python_version = "3.7"
-warn_return_any = true
-warn_unused_configs = true
+# Error output
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+show_traceback = true
+pretty = true
+check_untyped_defs = false
+# Warnings
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+files = ["upath"]
 exclude = "^notebooks|^venv.*|tests.*|^noxfile.py"
 
 [[tool.mypy.overrides]]
@@ -66,6 +72,19 @@ ignore_missing_imports = true
 module = "webdav4.fsspec.*"
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "setuptools.*"
-ignore_missing_imports = true
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pylint.message_control]
+enable = ["c-extension-no-member", "no-else-return"]
+
+[tool.pylint.variables]
+dummy-variables-rgx = "_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_"
+ignored-argument-names = "_.*|^ignored_|^unused_|args|kwargs"
+
+[tool.codespell]
+ignore-words-list = " "
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]

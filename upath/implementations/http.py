@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fsspec.asyn import sync
 
 import upath.core
@@ -51,8 +53,8 @@ class HTTPPath(upath.core.UPath):
         return name
 
     def resolve(
-        self: "HTTPPath", strict: bool = False, follow_redirects: bool = True
-    ) -> "HTTPPath":
+        self: HTTPPath, strict: bool = False, follow_redirects: bool = True
+    ) -> HTTPPath:
         """Normalize the path and resolve redirects."""
         # Normalise the path
         resolved_path = super().resolve(strict=strict)

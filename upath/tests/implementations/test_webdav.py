@@ -1,6 +1,7 @@
 import pytest  # noqa: F401
 
 from upath import UPath
+
 from ..cases import BaseTests
 
 
