@@ -15,6 +15,7 @@ from fsspec.registry import register_implementation, _registry
 import fsspec
 
 from .utils import posixify
+from .utils import rmtree
 
 
 def pytest_addoption(parser):
@@ -335,13 +336,12 @@ def webdav_server(tmp_path_factory):
 @pytest.fixture
 def webdav_fixture(local_testdir, webdav_server):
     webdav_path, webdav_url = webdav_server
-    if os.path.isdir(webdav_path):
-        shutil.rmtree(webdav_path, ignore_errors=True)
     try:
-        shutil.copytree(local_testdir, webdav_path)
+        shutil.copytree(local_testdir, webdav_path, dirs_exist_ok=True)
         yield webdav_url
     finally:
-        shutil.rmtree(webdav_path, ignore_errors=True)
+        rmtree(webdav_path)
+        os.mkdir(webdav_path, mode=0o700)
 
 
 @pytest.fixture(scope="session")
