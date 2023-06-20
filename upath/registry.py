@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from fsspec.core import get_filesystem_class
 
-
 if TYPE_CHECKING:
     from upath.core import PT
 
@@ -47,7 +46,7 @@ class _Registry:
 _registry = _Registry()
 
 
-@lru_cache()
+@lru_cache
 def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
     """Return the upath cls for the given protocol."""
     cls: type[PT] | None = _registry[protocol]
@@ -70,4 +69,4 @@ def get_upath_class(protocol: str) -> type[PT] | type[Path] | None:
                     stacklevel=2,
                 )
             mod = importlib.import_module("upath.core")
-            return getattr(mod, "UPath")  # type: ignore
+            return mod.UPath  # type: ignore

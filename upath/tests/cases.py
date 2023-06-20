@@ -1,9 +1,10 @@
 import pickle
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 import pytest
+
 from upath import UPath
 
 
@@ -44,13 +45,9 @@ class BaseTests:
         path_glob = list(pathlib_base.glob("**/*.txt"))
 
         _mock_start = len(self.path.parts)
-        mock_glob_normalized = sorted(
-            [a.parts[_mock_start:] for a in mock_glob]
-        )
+        mock_glob_normalized = sorted([a.parts[_mock_start:] for a in mock_glob])
         _path_start = len(pathlib_base.parts)
-        path_glob_normalized = sorted(
-            [a.parts[_path_start:] for a in path_glob]
-        )
+        path_glob_normalized = sorted([a.parts[_path_start:] for a in path_glob])
 
         print(mock_glob_normalized, path_glob_normalized)
         assert mock_glob_normalized == path_glob_normalized
@@ -102,7 +99,7 @@ class BaseTests:
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
+        assert {p.name for p in pl_iter} == {u.name for u in up_iter}
         assert next(self.path.parent.iterdir()).exists()
 
     def test_iterdir2(self, local_testdir):
@@ -115,7 +112,7 @@ class BaseTests:
             assert x.exists()
 
         assert len(up_iter) == len(pl_iter)
-        assert set(p.name for p in pl_iter) == set(u.name for u in up_iter)
+        assert {p.name for p in pl_iter} == {u.name for u in up_iter}
         assert next(self.path.parent.iterdir()).exists()
 
     def test_parents(self):
@@ -201,8 +198,7 @@ class BaseTests:
     def test_read_text(self, local_testdir):
         upath = self.path.joinpath("file1.txt")
         assert (
-            upath.read_text()
-            == Path(local_testdir).joinpath("file1.txt").read_text()
+            upath.read_text() == Path(local_testdir).joinpath("file1.txt").read_text()
         )
 
     def test_readlink(self):

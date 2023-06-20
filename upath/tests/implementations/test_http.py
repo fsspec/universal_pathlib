@@ -1,9 +1,9 @@
 import pytest  # noqa: F401
-
 from fsspec import get_filesystem_class
 
 from upath import UPath
 from upath.implementations.http import HTTPPath
+
 from ..cases import BaseTests
 from ..utils import skip_on_windows
 

@@ -2,6 +2,7 @@ import pytest
 
 from upath import UPath
 from upath.implementations.memory import MemoryPath
+
 from ..cases import BaseTests
 
 

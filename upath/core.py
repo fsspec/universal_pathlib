@@ -3,12 +3,12 @@ from __future__ import annotations
 import re
 import sys
 from os import PathLike
-from pathlib import _PosixFlavour  # type: ignore
 from pathlib import Path
 from pathlib import PurePath
+from pathlib import _PosixFlavour  # type: ignore
+from typing import TYPE_CHECKING
 from typing import Sequence
 from typing import TypeVar
-from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
@@ -74,9 +74,7 @@ class _FSSpecAccessor:
         return self._fs.info(self._format_path(path), **kwargs)
 
     def rm(self, path, recursive, **kwargs):
-        return self._fs.rm(
-            self._format_path(path), recursive=recursive, **kwargs
-        )
+        return self._fs.rm(self._format_path(path), recursive=recursive, **kwargs)
 
     def mkdir(self, path, create_parents=True, **kwargs):
         return self._fs.mkdir(
@@ -84,9 +82,7 @@ class _FSSpecAccessor:
         )
 
     def makedirs(self, path, exist_ok=False, **kwargs):
-        return self._fs.makedirs(
-            self._format_path(path), exist_ok=exist_ok, **kwargs
-        )
+        return self._fs.makedirs(self._format_path(path), exist_ok=exist_ok, **kwargs)
 
     def touch(self, path, **kwargs):
         return self._fs.touch(self._format_path(path), **kwargs)
@@ -199,9 +195,7 @@ class UPath(Path):
         if item == "_accessor":
             # cache the _accessor attribute on first access
             kwargs = self._kwargs.copy()
-            self._accessor = _accessor = self._default_accessor(
-                self._url, **kwargs
-            )
+            self._accessor = _accessor = self._default_accessor(self._url, **kwargs)
             return _accessor
         else:
             raise AttributeError(item)
@@ -211,9 +205,7 @@ class UPath(Path):
         drv, root, parts = self._flavour.join_parsed_parts(
             self._drv, self._root, self._parts, drv, root, parts
         )
-        return self._from_parsed_parts(
-            drv, root, parts, url=self._url, **self._kwargs
-        )
+        return self._from_parsed_parts(drv, root, parts, url=self._url, **self._kwargs)
 
     def _make_child_relpath(self: PT, part: str) -> PT:
         # This is an optimization used for dir walking.  `part` must be
@@ -253,9 +245,7 @@ class UPath(Path):
     @property
     def path(self) -> str:
         if self._parts:
-            join_parts = (
-                self._parts[1:] if self._parts[0] == "/" else self._parts
-            )
+            join_parts = self._parts[1:] if self._parts[0] == "/" else self._parts
             path: str = self._flavour.join(join_parts)
             return self._root + path
         else:
@@ -389,14 +379,15 @@ class UPath(Path):
 
     def exists(self) -> bool:
         """Check whether this path exists or not."""
-        if not getattr(self._accessor, "exists"):
+        accessor = self._accessor
+        try:
+            return bool(accessor.exists(self))
+        except AttributeError:
             try:
                 self._accessor.stat(self)
             except FileNotFoundError:
                 return False
             return True
-        else:
-            return bool(self._accessor.exists(self))
 
     def is_dir(self) -> bool:
         try:
@@ -663,12 +654,12 @@ class UPath(Path):
         """
         f = self._flavour
         if f.sep in suffix or f.altsep and f.altsep in suffix:
-            raise ValueError("Invalid suffix %r" % (suffix,))
+            raise ValueError(f"Invalid suffix {suffix!r}")
         if suffix and not suffix.startswith(".") or suffix == ".":
             raise ValueError("Invalid suffix %r" % (suffix))
         name = self.name
         if not name:
-            raise ValueError("%r has an empty name" % (self,))
+            raise ValueError(f"{self!r} has an empty name")
         old_suffix = self.suffix
         if not old_suffix:
             name = name + suffix
@@ -685,7 +676,7 @@ class UPath(Path):
     def with_name(self: PT, name: str) -> PT:
         """Return a new path with the file name changed."""
         if not self.name:
-            raise ValueError("%r has an empty name" % (self,))
+            raise ValueError(f"{self!r} has an empty name")
         drv, root, parts = self._flavour.parse_parts((name,))
         if (
             not name
@@ -754,4 +745,4 @@ class _UPathParents(Sequence[UPath]):
         )
 
     def __repr__(self):
-        return "<{}.parents>".format(self._pathcls.__name__)
+        return f"<{self._pathcls.__name__}.parents>"
