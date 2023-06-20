@@ -23,9 +23,10 @@ exclude = '''
   | dist
 )/
 '''
-extend-exclude = '''
+force-exclude = '''
 (
-  ^/upath/tests/test_pathlib.py
+  ^/upath/tests/_pathlib_test_support.py
+  |^/upath/tests/test_pathlib.py
 )
 '''
 

@@ -50,7 +50,6 @@ def build(session: nox.Session) -> None:
     session.run("twine", "check", *dists, silent=True)
 
 
-
 @nox.session
 def develop(session: nox.Session) -> None:
     """Sets up a python development environment for the project."""
