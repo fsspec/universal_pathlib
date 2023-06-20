@@ -43,9 +43,6 @@ jobs:
     - name: Run tests
       run: nox -s tests-${{ matrix.nox_pyv || matrix.pyv }} -- --cov-report=xml
 
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v3.1.1
-
   lint:
     runs-on: ubuntu-latest
 
