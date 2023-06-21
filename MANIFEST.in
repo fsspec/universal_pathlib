@@ -1,0 +1,3 @@
+exclude .git*
+recursive-exclude .git *
+recursive-exclude .github *

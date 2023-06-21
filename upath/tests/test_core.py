@@ -4,10 +4,14 @@ import sys
 import warnings
 
 import pytest
+
 from upath import UPath
-from upath.implementations.cloud import S3Path, GCSPath
+from upath.implementations.cloud import GCSPath
+from upath.implementations.cloud import S3Path
+
 from .cases import BaseTests
-from .utils import only_on_windows, skip_on_windows
+from .utils import only_on_windows
+from .utils import skip_on_windows
 
 
 @skip_on_windows
@@ -40,7 +44,7 @@ class TestUpath(BaseTests):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            # On Windows the path needs to be prefixed with `/`, becaue
+            # On Windows the path needs to be prefixed with `/`, because
             # `UPath` implements `_posix_flavour`, which requires a `/` root
             # in order to correctly deserialize pickled objects
             root = "/" if sys.platform.startswith("win") else ""
@@ -145,7 +149,7 @@ def test_create_from_type(path, storage_options, module, object_type):
         new = cast(str(parent))
         # test that object cast is same type
         assert isinstance(new, cast)
-    except (ImportError, ModuleNotFoundError):
+    except ImportError:
         # fs failed to import
         pass
 
@@ -248,15 +252,11 @@ def test_copy_path_append_kwargs():
 
 def test_relative_to():
     assert "s3://test_bucket/file.txt" == str(
-        UPath("s3://test_bucket/file.txt").relative_to(
-            UPath("s3://test_bucket")
-        )
+        UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
     )
 
     with pytest.raises(ValueError):
-        UPath("s3://test_bucket/file.txt").relative_to(
-            UPath("gcs://test_bucket")
-        )
+        UPath("s3://test_bucket/file.txt").relative_to(UPath("gcs://test_bucket"))
 
     with pytest.raises(ValueError):
         UPath("s3://test_bucket/file.txt", anon=True).relative_to(
@@ -266,8 +266,7 @@ def test_relative_to():
 
 def test_uri_parsing():
     assert (
-        str(UPath("http://www.example.com//a//b/"))
-        == "http://www.example.com//a//b/"
+        str(UPath("http://www.example.com//a//b/")) == "http://www.example.com//a//b/"
     )
 
 

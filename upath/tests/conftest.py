@@ -1,40 +1,21 @@
 import os
-import shutil
-import tempfile
-from pathlib import Path
-import subprocess
 import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
 import threading
 import time
-import sys
-
-import pytest
-from fsspec.implementations.local import LocalFileSystem
-from fsspec.registry import register_implementation, _registry
+from pathlib import Path
 
 import fsspec
+import pytest
+from fsspec.implementations.local import LocalFileSystem
+from fsspec.registry import _registry
+from fsspec.registry import register_implementation
 
 from .utils import posixify
 from .utils import rmtree
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--skiphdfs", action="store_true", default=False, help="skip hdfs tests"
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "hdfs: mark test as hdfs")
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--skiphdfs"):
-        return
-    skip_hdfs = pytest.mark.skip(reason="skipping hdfs")
-    for item in items:
-        if "hdfs" in item.keywords:
-            item.add_marker(skip_hdfs)
 
 
 class DummyTestFS(LocalFileSystem):
@@ -172,10 +153,10 @@ def s3_server():
             timeout -= 0.1  # pragma: no cover
             time.sleep(0.1)  # pragma: no cover
         anon = False
-        s3so = dict(
-            client_kwargs={"endpoint_url": endpoint_uri},
-            use_listings_cache=True,
-        )
+        s3so = {
+            "client_kwargs": {"endpoint_url": endpoint_uri},
+            "use_listings_cache": True,
+        }
         yield anon, s3so
     finally:
         proc.terminate()
@@ -302,8 +283,8 @@ def http_fixture(local_testdir, http_server):
 @pytest.fixture(scope="session")
 def webdav_server(tmp_path_factory):
     try:
-        from wsgidav.wsgidav_app import WsgiDAVApp
         from cheroot import wsgi
+        from wsgidav.wsgidav_app import WsgiDAVApp
     except ImportError as err:
         pytest.skip(str(err))
 
@@ -316,9 +297,7 @@ def webdav_server(tmp_path_factory):
             "host": host,
             "port": port,
             "provider_mapping": {"/": tempdir},
-            "simple_dc": {
-                "user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}
-            },
+            "simple_dc": {"user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}},
         }
     )
     srvr = wsgi.Server(bind_addr=(host, port), wsgi_app=app)
@@ -358,6 +337,9 @@ def azurite_credentials():
 @pytest.fixture(scope="session")
 def docker_azurite(azurite_credentials):
     requests = pytest.importorskip("requests")
+
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
 
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"

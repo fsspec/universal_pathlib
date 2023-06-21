@@ -1,7 +1,23 @@
 [flake8]
-max-line-length = 80
+ignore=
+    # Whitespace before ':'
+    E203
+    # Too many leading '#' for block comment
+    E266
+    # Line break occurred before a binary operator
+    W503
+    # unindexed parameters in the str.format, see:
+    # https://pypi.org/project/flake8-string-format/
+    P1
+max_line_length = 88
+max-complexity = 15
+select = B,C,E,F,W,T4,B902,T,P
+show_source = true
+count = true
 per-file-ignores =
     upath/__init__.py: F401
+    upath/tests/test_pathlib.py: E127,E128,E201,E202,E203,E225,E255,E302,E303,E306,E401,E402,E501,E731
+    upath/tests/utils.py: C901
 exclude =
     .noxfile,
     .nox,
@@ -10,5 +26,3 @@ exclude =
     .github,
     .gitignore,
     .pytest_cache,
-    
-    
