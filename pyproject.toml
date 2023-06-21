@@ -23,6 +23,12 @@ exclude = '''
   | dist
 )/
 '''
+force-exclude = '''
+(
+  ^/upath/tests/_pathlib_test_support.py
+  |^/upath/tests/test_pathlib.py
+)
+'''
 
 [tool.isort]
 profile = "black"
@@ -31,7 +37,11 @@ force_single_line = true
 line_length = 88
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra -m 'not (hdfs or pathlib)'"
+markers = [
+  "hdfs: mark test as hdfs",
+  "pathlib: mark cpython pathlib tests",
+]
 
 [tool.coverage.run]
 branch = true
