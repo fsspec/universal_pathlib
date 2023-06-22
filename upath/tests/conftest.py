@@ -305,22 +305,22 @@ def webdav_server(tmp_path_factory):
     thread.start()
 
     try:
-        yield tempdir, f"webdav+http://{host}:{port}"
+        yield f"webdav+http://{host}:{port}", app
     finally:
         srvr.stop()
-        thread.join()
 
 
 @pytest.fixture
 def webdav_fixture(local_testdir, webdav_server):
-    webdav_path, webdav_url = webdav_server
-    if os.path.isdir(webdav_path):
-        shutil.rmtree(webdav_path, ignore_errors=True)
+    webdav_url, app = webdav_server
+    # switch to new test directory
+    fs_provider = app.provider_map["/"]
+    fs_provider.root_folder_path = local_testdir
     try:
-        shutil.copytree(local_testdir, webdav_path)
         yield webdav_url
     finally:
-        shutil.rmtree(webdav_path, ignore_errors=True)
+        # clear locks if any are held
+        fs_provider.lock_manager.storage.clear()
 
 
 @pytest.fixture(scope="session")
