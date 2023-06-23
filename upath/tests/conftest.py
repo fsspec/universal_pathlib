@@ -315,7 +315,7 @@ def webdav_fixture(local_testdir, webdav_server):
     webdav_url, app = webdav_server
     # switch to new test directory
     fs_provider = app.provider_map["/"]
-    fs_provider.root_folder_path = local_testdir
+    fs_provider.root_folder_path = os.path.abspath(local_testdir)
     try:
         yield webdav_url
     finally:
