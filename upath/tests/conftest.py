@@ -15,7 +15,6 @@ from fsspec.registry import _registry
 from fsspec.registry import register_implementation
 
 from .utils import posixify
-from .utils import rmtree
 
 
 class DummyTestFS(LocalFileSystem):
@@ -306,21 +305,22 @@ def webdav_server(tmp_path_factory):
     thread.start()
 
     try:
-        yield tempdir, f"webdav+http://{host}:{port}"
+        yield f"webdav+http://{host}:{port}", app
     finally:
         srvr.stop()
-        thread.join()
 
 
 @pytest.fixture
 def webdav_fixture(local_testdir, webdav_server):
-    webdav_path, webdav_url = webdav_server
+    webdav_url, app = webdav_server
+    # switch to new test directory
+    fs_provider = app.provider_map["/"]
+    fs_provider.root_folder_path = os.path.abspath(local_testdir)
     try:
-        shutil.copytree(local_testdir, webdav_path, dirs_exist_ok=True)
         yield webdav_url
     finally:
-        rmtree(webdav_path)
-        os.mkdir(webdav_path, mode=0o700)
+        # clear locks if any are held
+        fs_provider.lock_manager.storage.clear()
 
 
 @pytest.fixture(scope="session")
