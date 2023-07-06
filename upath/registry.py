@@ -19,6 +19,7 @@ __all__ = [
 class _Registry:
     known_implementations: dict[str, str] = {
         "abfs": "upath.implementations.cloud.AzurePath",
+        "abfss": "upath.implementations.cloud.AzurePath",
         "adl": "upath.implementations.cloud.AzurePath",
         "az": "upath.implementations.cloud.AzurePath",
         "gcs": "upath.implementations.cloud.GCSPath",
