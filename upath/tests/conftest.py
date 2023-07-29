@@ -3,7 +3,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from pathlib import Path
@@ -32,16 +31,9 @@ def clear_registry():
 
 
 @pytest.fixture(scope="function")
-def tempdir(clear_registry):
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield tempdir
-
-
-@pytest.fixture(scope="function")
-def local_testdir(tempdir, clear_registry):
-    tmp = Path(tempdir)
-    tmp.mkdir(exist_ok=True)
-    folder1 = tmp.joinpath("folder1")
+def local_testdir(tmp_path, clear_registry):
+    tmp_path.mkdir(exist_ok=True)
+    folder1 = tmp_path.joinpath("folder1")
     folder1.mkdir()
     folder1_files = ["file1.txt", "file2.txt"]
     for f in folder1_files:
@@ -49,16 +41,16 @@ def local_testdir(tempdir, clear_registry):
         p.touch()
         p.write_text(f)
 
-    file1 = tmp.joinpath("file1.txt")
+    file1 = tmp_path.joinpath("file1.txt")
     file1.touch()
     file1.write_text("hello world")
-    file2 = tmp.joinpath("file2.txt")
+    file2 = tmp_path.joinpath("file2.txt")
     file2.touch()
     file2.write_bytes(b"hello world")
     if sys.platform.startswith("win"):
-        yield str(Path(tempdir)).replace("\\", "/")
+        yield str(tmp_path).replace("\\", "/")
     else:
-        yield tempdir
+        yield str(tmp_path)
 
 
 @pytest.fixture()
@@ -96,11 +88,11 @@ def htcluster():
 
 
 @pytest.fixture()
-def hdfs(htcluster, tempdir, local_testdir):
+def hdfs(htcluster, tmp_path, local_testdir):
     pyarrow = pytest.importorskip("pyarrow")
     host, user, port = "0.0.0.0", "hdfs", 9000
     hdfs = pyarrow.hdfs.connect(host="0.0.0.0", port=9000, user=user)
-    hdfs.mkdir(tempdir, create_parents=True)
+    hdfs.mkdir(tmp_path, create_parents=True)
     for x in Path(local_testdir).glob("**/*"):
         if x.is_file():
             text = x.read_text().encode("utf8")
@@ -243,32 +235,33 @@ def gcs_fixture(docker_gcs, local_testdir):
 
 
 @pytest.fixture(scope="session")
-def http_server():
-    with tempfile.TemporaryDirectory() as tempdir:
-        requests = pytest.importorskip("requests")
-        pytest.importorskip("http.server")
-        proc = subprocess.Popen(
-            shlex.split(f"python -m http.server --directory {tempdir} 8080")
-        )
-        try:
-            url = "http://127.0.0.1:8080/folder"
-            path = Path(tempdir) / "folder"
-            path.mkdir()
-            timeout = 10
-            while True:
-                try:
-                    r = requests.get(url, timeout=10)
-                    if r.ok:
-                        yield path, url
-                        break
-                except Exception as e:  # noqa: E722
-                    timeout -= 1
-                    if timeout < 0:
-                        raise SystemError from e
-                    time.sleep(1)
-        finally:
-            proc.terminate()
-            proc.wait()
+def http_server(tmp_path_factory):
+    http_tempdir = tmp_path_factory.mktemp("http")
+
+    requests = pytest.importorskip("requests")
+    pytest.importorskip("http.server")
+    proc = subprocess.Popen(
+        shlex.split(f"python -m http.server --directory {http_tempdir} 8080")
+    )
+    try:
+        url = "http://127.0.0.1:8080/folder"
+        path = Path(http_tempdir) / "folder"
+        path.mkdir()
+        timeout = 10
+        while True:
+            try:
+                r = requests.get(url, timeout=10)
+                if r.ok:
+                    yield path, url
+                    break
+            except Exception as e:  # noqa: E722
+                timeout -= 1
+                if timeout < 0:
+                    raise SystemError from e
+                time.sleep(1)
+    finally:
+        proc.terminate()
+        proc.wait()
 
 
 @pytest.fixture
@@ -287,7 +280,7 @@ def webdav_server(tmp_path_factory):
     except ImportError as err:
         pytest.skip(str(err))
 
-    tempdir = str(tmp_path_factory.mktemp("webdav"))
+    webdav_tmp_dir = str(tmp_path_factory.mktemp("webdav"))
 
     host = "127.0.0.1"
     port = 8090
@@ -295,7 +288,7 @@ def webdav_server(tmp_path_factory):
         {
             "host": host,
             "port": port,
-            "provider_mapping": {"/": tempdir},
+            "provider_mapping": {"/": webdav_tmp_dir},
             "simple_dc": {"user_mapping": {"*": {"USER": {"password": "PASSWORD"}}}},
         }
     )
