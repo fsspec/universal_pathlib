@@ -237,7 +237,7 @@ class UPath(Path):
             netloc: str = kwargs.get("netloc", "")
         else:
             scheme, netloc = url.scheme, url.netloc
-        scheme = scheme + ":"
+        scheme = (scheme + ":") if scheme else ""
         netloc = "//" + netloc if netloc else ""
         formatted = scheme + netloc + path
         return formatted
