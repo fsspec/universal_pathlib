@@ -17,6 +17,30 @@ from fsspec.registry import register_implementation
 from .utils import posixify
 
 
+def pytest_collection_modifyitems(items, config):
+    selected = []
+    deselected = []
+    for item in items:
+        markers = [mark.name for mark in item.iter_markers()]
+
+        is_pathlib = "pathlib_stdlib" in markers
+        is_selected_pathlib = "pathlib" in markers
+
+        if is_pathlib and not is_selected_pathlib:
+            deselected.append(item)
+        elif (
+            is_pathlib
+            and is_selected_pathlib
+            and markers.index("pathlib_stdlib") < markers.index("pathlib")
+        ):
+            deselected.append(item)
+        else:
+            selected.append(item)
+
+    config.hook.pytest_deselected(items=deselected)
+    items[:] = selected
+
+
 class DummyTestFS(LocalFileSystem):
     protocol = "mock"
     root_marker = "/"

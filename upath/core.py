@@ -12,6 +12,7 @@ from typing import TypeVar
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
+from fsspec.core import split_protocol
 from fsspec.registry import get_filesystem_class
 from fsspec.utils import stringify_path
 
@@ -170,13 +171,19 @@ class UPath(Path):
             new_kwargs = _kwargs.copy()
             new_kwargs.update(kwargs)
 
-            return _cls(  # type: ignore
+            return _cls(
                 _cls._format_parsed_parts(drv, root, parts, **other_kwargs),
                 **new_kwargs,
             )
 
         url = stringify_path(other)
+        protocol, _ = split_protocol(url)
         parsed_url = urlsplit(url)
+
+        if protocol is None and ":/" in url:
+            protocol = kwargs.get("scheme", parsed_url.scheme) or ""
+        else:
+            protocol = kwargs.get("scheme", protocol) or ""
 
         for key in ["scheme", "netloc"]:
             val = kwargs.get(key)
@@ -187,7 +194,7 @@ class UPath(Path):
             parsed_url = parsed_url._replace(path="/")  # ensure path has root
         args_list.insert(0, parsed_url.path)
 
-        upath_cls = get_upath_class(protocol=parsed_url.scheme)
+        upath_cls = get_upath_class(protocol=protocol)
         if upath_cls is None:
             raise ValueError(f"Unsupported filesystem: {parsed_url.scheme!r}")
 

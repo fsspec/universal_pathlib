@@ -37,10 +37,11 @@ force_single_line = true
 line_length = 88
 
 [tool.pytest.ini_options]
-addopts = "-ra -m 'not (hdfs or pathlib)'"
+addopts = "-ra -m 'not hdfs'"
 markers = [
   "hdfs: mark test as hdfs",
   "pathlib: mark cpython pathlib tests",
+  "pathlib_stdlib: mark stdlib tests that should be skipped",
 ]
 
 [tool.coverage.run]

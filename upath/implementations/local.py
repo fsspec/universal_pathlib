@@ -4,6 +4,7 @@ from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
 from typing import Iterable
+from urllib.parse import urlunsplit
 
 from fsspec.implementations.local import LocalFileSystem
 
@@ -56,7 +57,10 @@ class PosixUPath(PosixPath, UPath):
         return str(self)
 
     @classmethod
-    def _from_parts(cls, args, **kw):
+    def _from_parts(cls, args, *, url=None, **kw):
+        if url:
+            args = list(args)
+            args[0] = urlunsplit(url)
         return super(UPath, cls)._from_parts(args)
 
 
@@ -82,5 +86,8 @@ class WindowsUPath(WindowsPath, UPath):
         return str(self)
 
     @classmethod
-    def _from_parts(cls, args, **kw):
+    def _from_parts(cls, args, *, url=None, **kw):
+        if url:
+            args = list(args)
+            args[0] = urlunsplit(url)
         return super(UPath, cls)._from_parts(args)
