@@ -1,3 +1,4 @@
+import os
 import pathlib
 import pickle
 import sys
@@ -52,6 +53,18 @@ class TestUpath(BaseTests):
 
     def test_fsspec_compat(self):
         pass
+
+    def test_cwd(self):
+        pth = type(self.path).cwd()
+        assert str(pth) == os.getcwd()
+        assert isinstance(pth, pathlib.Path)
+        assert isinstance(pth, UPath)
+
+    def test_home(self):
+        pth = type(self.path).home()
+        assert str(pth) == os.path.expanduser("~")
+        assert isinstance(pth, pathlib.Path)
+        assert isinstance(pth, UPath)
 
 
 @pytest.mark.hdfs

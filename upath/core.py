@@ -147,7 +147,12 @@ class UPath(Path):
 
     def __new__(cls: type[PT], *args: str | PathLike, **kwargs: Any) -> PT:
         args_list = list(args)
-        other = args_list.pop(0)
+        try:
+            other = args_list.pop(0)
+        except IndexError:
+            other = "."
+        else:
+            other = other or "."
 
         if isinstance(other, PurePath):
             # Create a (modified) copy, if first arg is a Path object
@@ -172,21 +177,20 @@ class UPath(Path):
 
         url = stringify_path(other)
         parsed_url = urlsplit(url)
-        if not parsed_url.path:
-            parsed_url = parsed_url._replace(path="/")  # ensure path has root
 
         for key in ["scheme", "netloc"]:
             val = kwargs.get(key)
             if val:
                 parsed_url = parsed_url._replace(**{key: val})
 
+        if not parsed_url.path:
+            parsed_url = parsed_url._replace(path="/")  # ensure path has root
+        args_list.insert(0, parsed_url.path)
+
         upath_cls = get_upath_class(protocol=parsed_url.scheme)
         if upath_cls is None:
-            # treat as local filesystem, return PosixPath or WindowsPath
-            return Path(*args, **kwargs)  # type: ignore
+            raise ValueError(f"Unsupported filesystem: {parsed_url.scheme!r}")
 
-        args_list.insert(0, parsed_url.path)
-        # return upath instance
         return upath_cls._from_parts(  # type: ignore
             args_list, url=parsed_url, **kwargs
         )
@@ -476,11 +480,19 @@ class UPath(Path):
     def link_to(self, target):
         raise NotImplementedError
 
-    def cwd(self):
-        raise NotImplementedError
+    @classmethod
+    def cwd(cls):
+        if cls is UPath:
+            return get_upath_class("").cwd()
+        else:
+            raise NotImplementedError
 
-    def home(self):
-        raise NotImplementedError
+    @classmethod
+    def home(cls):
+        if cls is UPath:
+            return get_upath_class("").home()
+        else:
+            raise NotImplementedError
 
     def expanduser(self):
         raise NotImplementedError

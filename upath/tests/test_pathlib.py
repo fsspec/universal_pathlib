@@ -1705,7 +1705,8 @@ class PathTest(unittest.TestCase):
             self.assertIs(True, (p / 'linkB' / 'fileB').exists())
             self.assertIs(False, (p / 'linkA' / 'bah').exists())
             self.assertIs(False, (p / 'brokenLink').exists())
-            self.assertIs(True, (p / 'brokenLink').exists(follow_symlinks=False))
+            if sys.version_info >= (3, 12):
+                self.assertIs(True, (p / 'brokenLink').exists(follow_symlinks=False))
         self.assertIs(False, (p / 'foo').exists())
         self.assertIs(False, P('/xyzzy').exists())
         self.assertIs(False, P(BASE + '\udfff').exists())
@@ -1789,6 +1790,7 @@ class PathTest(unittest.TestCase):
         self.assertIn(cm.exception.errno, (errno.ENOTDIR,
                                            errno.ENOENT, errno.EINVAL))
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_glob_common(self):
         def _check(glob, expected):
             self.assertEqual(set(glob), { P(BASE, q) for q in expected })
@@ -1825,6 +1827,7 @@ class PathTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unacceptable pattern'):
             list(p.glob(''))
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_glob_case_sensitive(self):
         P = self.cls
         def _check(path, pattern, case_sensitive, expected):
@@ -1837,6 +1840,7 @@ class PathTest(unittest.TestCase):
         _check(path, "dirb/file*", True, [])
         _check(path, "dirb/file*", False, ["dirB/fileB"])
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     @os_helper.skip_unless_symlink
     def test_glob_follow_symlinks_common(self):
         def _check(path, glob, expected):
@@ -1862,6 +1866,7 @@ class PathTest(unittest.TestCase):
         _check(p, "dir*/*/../dirD/**/", ["dirC/dirD/../dirD"])
         _check(p, "*/dirD/**/", ["dirC/dirD"])
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     @os_helper.skip_unless_symlink
     def test_glob_no_follow_symlinks_common(self):
         def _check(path, glob, expected):
@@ -1927,6 +1932,7 @@ class PathTest(unittest.TestCase):
         _check(p.rglob("*.txt"), ["dirC/novel.txt"])
         _check(p.rglob("*.*"), ["dirC/novel.txt"])
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     @os_helper.skip_unless_symlink
     def test_rglob_follow_symlinks_common(self):
         def _check(path, glob, expected):
@@ -1956,6 +1962,7 @@ class PathTest(unittest.TestCase):
         _check(p, "*.txt", ["dirC/novel.txt"])
         _check(p, "*.*", ["dirC/novel.txt"])
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     @os_helper.skip_unless_symlink
     def test_rglob_no_follow_symlinks_common(self):
         def _check(path, glob, expected):
@@ -2030,6 +2037,7 @@ class PathTest(unittest.TestCase):
         self.assertEqual(set(p.glob("xyzzy/..")), set())
         self.assertEqual(set(p.glob("/".join([".."] * 50))), { P(BASE, *[".."] * 50)})
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     @os_helper.skip_unless_symlink
     def test_glob_permissions(self):
         # See bpo-38894
@@ -2059,6 +2067,7 @@ class PathTest(unittest.TestCase):
         bad_link.symlink_to("bad" * 200)
         self.assertEqual(sorted(base.glob('**/*')), [bad_link])
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_glob_above_recursion_limit(self):
         recursion_limit = 50
         # directory_depth > recursion_limit
@@ -2356,6 +2365,7 @@ class PathTest(unittest.TestCase):
     def test_complex_symlinks_relative_dot_dot(self):
         self._check_complex_symlinks(os.path.join('dirA', '..'))
 
+    @pytest.mark.skip("no concrete class support")
     def test_concrete_class(self):
         if self.cls is pathlib.Path:
             expected = pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath
@@ -2364,6 +2374,7 @@ class PathTest(unittest.TestCase):
         p = self.cls('a')
         self.assertIs(type(p), expected)
 
+    @pytest.mark.skip("UPath custom")
     def test_unsupported_flavour(self):
         if self.cls._flavour is os.path:
             self.skipTest("path flavour is supported")
@@ -2441,6 +2452,7 @@ class PathTest(unittest.TestCase):
         p = P('~/a:b')
         self.assertEqual(p.expanduser(), P(os.path.expanduser('~'), './a:b'))
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_with_segments(self):
         class P(self.cls):
             def __init__(self, *pathsegments, session_id):
@@ -2801,6 +2813,7 @@ class PathTest(unittest.TestCase):
         self.assertTrue(link.is_dir())
         self.assertTrue(list(link.iterdir()))
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_is_junction(self):
         P = self.cls(BASE)
 
@@ -2857,11 +2870,13 @@ class PathTest(unittest.TestCase):
         self.assertIs(self.cls('/dev/null\udfff').is_char_device(), False)
         self.assertIs(self.cls('/dev/null\x00').is_char_device(), False)
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_passing_kwargs_deprecated(self):
         with self.assertWarns(DeprecationWarning):
             self.cls(foo="bar")
 
 
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
 class WalkTests(unittest.TestCase):
 
     cls = UPath
@@ -3034,6 +3049,7 @@ class WalkTests(unittest.TestCase):
                 self.assertIn("link", dirs)
                 break
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_walk_bad_dir(self):
         errors = []
         walk_it = self.walk_path.walk(on_error=errors.append)
@@ -3075,6 +3091,7 @@ class WalkTests(unittest.TestCase):
                 self.assertEqual(next(it), expected)
             path = path / 'd'
 
+    @pytest.mark.skipif(sys.version_info < (3, 12), reason="py312+")
     def test_walk_above_recursion_limit(self):
         recursion_limit = 40
         # directory_depth > recursion_limit
