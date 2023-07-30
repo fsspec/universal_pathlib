@@ -32,7 +32,6 @@ class TestAzurePath(BaseTests):
         path = new_dir / "test.txt"
         path.write_text("hello")
         assert path.exists()
-        new_dir.fs.invalidate_cache()
         new_dir.rmdir()
         assert not new_dir.exists()
 
@@ -43,6 +42,5 @@ class TestAzurePath(BaseTests):
     def test_makedirs_exist_ok_false(self):
         pass
 
-    @pytest.mark.xfail(reason="test interaction")
     def test_rglob(self, pathlib_base):
         return super().test_rglob(pathlib_base)

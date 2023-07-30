@@ -5,6 +5,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 import fsspec
@@ -32,7 +33,6 @@ def clear_registry():
 
 @pytest.fixture(scope="function")
 def local_testdir(tmp_path, clear_registry):
-    tmp_path.mkdir(exist_ok=True)
     folder1 = tmp_path.joinpath("folder1")
     folder1.mkdir()
     folder1_files = ["file1.txt", "file2.txt"]
@@ -367,13 +367,31 @@ def docker_azurite(azurite_credentials):
 
 
 @pytest.fixture(scope="session")
-def azure_fixture(azurite_credentials, docker_azurite):
+def azure_container(azurite_credentials, docker_azurite):
     azure_storage = pytest.importorskip("azure.storage.blob")
     account_name, connection_string = azurite_credentials
     client = azure_storage.BlobServiceClient.from_connection_string(
         conn_str=connection_string
     )
-    container_name = "data"
+    container_name = str(uuid.uuid4())
     client.create_container(container_name)
 
-    yield f"az://{container_name}"
+    try:
+        yield container_name
+    finally:
+        client.delete_container(container_name)
+
+
+@pytest.fixture(scope="function")
+def azure_fixture(azurite_credentials, azure_container):
+    azure_storage = pytest.importorskip("azure.storage.blob")
+    account_name, connection_string = azurite_credentials
+    client = azure_storage.BlobServiceClient.from_connection_string(
+        conn_str=connection_string
+    ).get_container_client(azure_container)
+
+    try:
+        yield f"az://{azure_container}"
+    finally:
+        for blob in client.list_blobs():
+            client.delete_blob(blob["name"])
