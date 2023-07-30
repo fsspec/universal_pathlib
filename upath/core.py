@@ -180,7 +180,7 @@ class UPath(Path):
         protocol, _ = split_protocol(url)
         parsed_url = urlsplit(url)
 
-        if protocol is None and ":/" in url:
+        if protocol is None and ":/" in url[2:]:  # excludes windows paths: C:/...
             protocol = kwargs.get("scheme", parsed_url.scheme) or ""
         else:
             protocol = kwargs.get("scheme", protocol) or ""
