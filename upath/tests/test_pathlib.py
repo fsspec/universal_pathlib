@@ -153,8 +153,9 @@ class PurePathTest(unittest.TestCase):
             P('a').relative_to(b'b')
         with self.assertRaises(TypeError):
             P('a').with_name(b'b')
-        with self.assertRaises(TypeError):
-            P('a').with_stem(b'b')
+        if sys.version_info >= (3, 9):
+            with self.assertRaises(TypeError):
+                P('a').with_stem(b'b')
         with self.assertRaises(TypeError):
             P('a').with_suffix(b'b')
 
@@ -494,15 +495,16 @@ class PurePathTest(unittest.TestCase):
         self.assertEqual(par[0], P('a/b'))
         self.assertEqual(par[1], P('a'))
         self.assertEqual(par[2], P('.'))
-        self.assertEqual(par[-1], P('.'))
-        self.assertEqual(par[-2], P('a'))
-        self.assertEqual(par[-3], P('a/b'))
-        self.assertEqual(par[0:1], (P('a/b'),))
-        self.assertEqual(par[:2], (P('a/b'), P('a')))
-        self.assertEqual(par[:-1], (P('a/b'), P('a')))
-        self.assertEqual(par[1:], (P('a'), P('.')))
-        self.assertEqual(par[::2], (P('a/b'), P('.')))
-        self.assertEqual(par[::-1], (P('.'), P('a'), P('a/b')))
+        if sys.version_info >= (3, 10):
+            self.assertEqual(par[-1], P('.'))
+            self.assertEqual(par[-2], P('a'))
+            self.assertEqual(par[-3], P('a/b'))
+            self.assertEqual(par[0:1], (P('a/b'),))
+            self.assertEqual(par[:2], (P('a/b'), P('a')))
+            self.assertEqual(par[:-1], (P('a/b'), P('a')))
+            self.assertEqual(par[1:], (P('a'), P('.')))
+            self.assertEqual(par[::2], (P('a/b'), P('.')))
+            self.assertEqual(par[::-1], (P('.'), P('a'), P('a/b')))
         self.assertEqual(list(par), [P('a/b'), P('a'), P('.')])
         with self.assertRaises(IndexError):
             par[-4]
@@ -517,15 +519,16 @@ class PurePathTest(unittest.TestCase):
         self.assertEqual(par[0], P('/a/b'))
         self.assertEqual(par[1], P('/a'))
         self.assertEqual(par[2], P('/'))
-        self.assertEqual(par[-1], P('/'))
-        self.assertEqual(par[-2], P('/a'))
-        self.assertEqual(par[-3], P('/a/b'))
-        self.assertEqual(par[0:1], (P('/a/b'),))
-        self.assertEqual(par[:2], (P('/a/b'), P('/a')))
-        self.assertEqual(par[:-1], (P('/a/b'), P('/a')))
-        self.assertEqual(par[1:], (P('/a'), P('/')))
-        self.assertEqual(par[::2], (P('/a/b'), P('/')))
-        self.assertEqual(par[::-1], (P('/'), P('/a'), P('/a/b')))
+        if sys.version_info >= (3, 10):
+            self.assertEqual(par[-1], P('/'))
+            self.assertEqual(par[-2], P('/a'))
+            self.assertEqual(par[-3], P('/a/b'))
+            self.assertEqual(par[0:1], (P('/a/b'),))
+            self.assertEqual(par[:2], (P('/a/b'), P('/a')))
+            self.assertEqual(par[:-1], (P('/a/b'), P('/a')))
+            self.assertEqual(par[1:], (P('/a'), P('/')))
+            self.assertEqual(par[::2], (P('/a/b'), P('/')))
+            self.assertEqual(par[::-1], (P('/'), P('/a'), P('/a/b')))
         self.assertEqual(list(par), [P('/a/b'), P('/a'), P('/')])
         with self.assertRaises(IndexError):
             par[-4]
@@ -634,6 +637,7 @@ class PurePathTest(unittest.TestCase):
         self.assertRaises(ValueError, P('a/b').with_name, 'c/')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/d')
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     def test_with_stem_common(self):
         P = self.cls
         self.assertEqual(P('a/b').with_stem('d'), P('a/d'))
@@ -747,6 +751,7 @@ class PurePathTest(unittest.TestCase):
             self.assertRaises(ValueError, p.relative_to, P(''), walk_up=True)
             self.assertRaises(ValueError, p.relative_to, P('a'), walk_up=True)
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     def test_is_relative_to_common(self):
         P = self.cls
         p = P('a/b')
@@ -798,7 +803,6 @@ class PurePathTest(unittest.TestCase):
 class PurePosixPathTest(PurePathTest):
     cls = pathlib.PurePosixPath
 
-    @pytest.mark.xfail(reason="requires __new__ refactor")
     def test_drive_root_parts(self):
         check = self._check_drive_root_parts
         # Collapsing of excess leading slashes, except for the double-slash
@@ -1753,6 +1757,7 @@ class PathTest(unittest.TestCase):
         self.assertRaises(TypeError, (p / 'fileA').write_text, b'somebytes')
         self.assertEqual((p / 'fileA').read_text(encoding='latin-1'), 'äbcdefg')
 
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="py310+")
     def test_write_text_with_newlines(self):
         p = self.cls(BASE)
         # Check that `\n` character change nothing
@@ -1901,6 +1906,7 @@ class PathTest(unittest.TestCase):
         _check(p, "dir*/*/../dirD/**/", ["dirC/dirD/../dirD"])
         _check(p, "*/dirD/**/", ["dirC/dirD"])
 
+    @pytest.mark.skipif(sys.version_info < (3, 11), reason="py311+")
     def test_rglob_common(self):
         def _check(glob, expected):
             self.assertEqual(sorted(glob), sorted(P(BASE, q) for q in expected))
@@ -2070,6 +2076,7 @@ class PathTest(unittest.TestCase):
         self.assertEqual(len(set(base.glob("*/fileC"))), 50)
         self.assertEqual(len(set(base.glob("*/file*"))), 50)
 
+    @pytest.mark.skipif(sys.version_info < (3, 11), reason="py311+")
     @os_helper.skip_unless_symlink
     def test_glob_long_symlink(self):
         # See gh-87695
@@ -2091,6 +2098,7 @@ class PathTest(unittest.TestCase):
         with set_recursion_limit(recursion_limit):
             list(base.glob('**'))
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     @os_helper.skip_unless_symlink
     def test_readlink(self):
         P = self.cls(BASE)
@@ -2193,12 +2201,14 @@ class PathTest(unittest.TestCase):
         self.addCleanup(p.chmod, st.st_mode)
         self.assertNotEqual(p.stat(), st)
 
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="py310+")
     @os_helper.skip_unless_symlink
     def test_stat_no_follow_symlinks(self):
         p = self.cls(BASE) / 'linkA'
         st = p.stat()
         self.assertNotEqual(st, p.stat(follow_symlinks=False))
 
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="py310+")
     def test_stat_no_follow_symlinks_nosymlink(self):
         p = self.cls(BASE) / 'fileA'
         st = p.stat()
@@ -2404,6 +2414,7 @@ class PathTest(unittest.TestCase):
         p = self.cls.cwd()
         self._test_cwd(p)
 
+    @pytest.mark.skipif(sys.version_info < (3, 11), reason="py311+")
     def test_absolute_common(self):
         P = self.cls
 
@@ -2515,6 +2526,7 @@ class PathTest(unittest.TestCase):
         self.assertEqual(p.stat().st_mode, new_mode)
 
     # On Windows, os.chmod does not follow symlinks (issue #15411)
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="py310+")
     @only_posix
     @os_helper.skip_unless_working_chmod
     def test_chmod_follow_symlinks_true(self):
@@ -2573,6 +2585,7 @@ class PathTest(unittest.TestCase):
         self.assertFileNotFound(p.stat)
         self.assertFileNotFound(p.unlink)
 
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="py310+")
     @unittest.skipUnless(hasattr(os, "link"), "os.link() is not present")
     def test_hardlink_to(self):
         P = self.cls(BASE)

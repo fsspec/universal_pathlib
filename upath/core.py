@@ -185,6 +185,10 @@ class UPath(Path):
         else:
             protocol = kwargs.get("scheme", protocol) or ""
 
+        upath_cls = get_upath_class(protocol=protocol)
+        if upath_cls is None:
+            raise ValueError(f"Unsupported filesystem: {parsed_url.scheme!r}")
+
         for key in ["scheme", "netloc"]:
             val = kwargs.get(key)
             if val:
@@ -192,11 +196,11 @@ class UPath(Path):
 
         if not parsed_url.path:
             parsed_url = parsed_url._replace(path="/")  # ensure path has root
-        args_list.insert(0, parsed_url.path)
 
-        upath_cls = get_upath_class(protocol=protocol)
-        if upath_cls is None:
-            raise ValueError(f"Unsupported filesystem: {parsed_url.scheme!r}")
+        if not protocol:
+            args_list.insert(0, url)
+        else:
+            args_list.insert(0, parsed_url.path)
 
         return upath_cls._from_parts(  # type: ignore
             args_list, url=parsed_url, **kwargs
