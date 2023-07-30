@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - updated past changelog entries.
 
+### Fixed
+- improved azure test separation (#123).
+
 ## [0.0.24] - 2023-06-19
 ### Added
 - started a changelog to keep track of significant changes (#118).
