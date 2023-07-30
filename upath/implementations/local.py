@@ -62,7 +62,7 @@ class PosixUPath(PosixPath, UPath):
     def _from_parts(cls, args, *, url=None, **kw):
         if url:
             args = list(args)
-            args[0] = urlunsplit(url)
+            args[0] = urlunsplit(url._replace(scheme=url.scheme.upper()))
         return super(UPath, cls)._from_parts(args)
 
 
@@ -91,5 +91,5 @@ class WindowsUPath(WindowsPath, UPath):
     def _from_parts(cls, args, *, url=None, **kw):
         if url:
             args = list(args)
-            args[0] = urlunsplit(url)
+            args[0] = urlunsplit(url._replace(scheme=url.scheme.upper()))
         return super(UPath, cls)._from_parts(args)
