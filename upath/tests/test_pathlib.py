@@ -1255,6 +1255,7 @@ class PureWindowsPathTest(PurePathTest):
         self.assertRaises(ValueError, P('c:a/b').with_name, 'd:/e')
         self.assertRaises(ValueError, P('c:a/b').with_name, '//My/Share')
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     def test_with_stem(self):
         P = self.cls
         self.assertEqual(P('c:a/b').with_stem('d'), P('c:a/d'))
@@ -1398,6 +1399,7 @@ class PureWindowsPathTest(PurePathTest):
         self.assertRaises(ValueError, p.relative_to, P('//z/Share/Foo'), walk_up=True)
         self.assertRaises(ValueError, p.relative_to, P('//Server/z/Foo'), walk_up=True)
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     def test_is_relative_to(self):
         P = self.cls
         p = P('C:Foo/Bar')
@@ -1534,6 +1536,7 @@ class PureWindowsPathTest(PurePathTest):
         self.assertEqual(p / P('./dd:s'), P('C:/a/b/dd:s'))
         self.assertEqual(p / P('E:d:s'), P('E:d:s'))
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="py39+")
     def test_is_reserved(self):
         P = self.cls
         self.assertIs(False, P('').is_reserved())
@@ -2251,6 +2254,10 @@ class PathTest(unittest.TestCase):
         self.assertIs((P / 'fileA\udfff').is_file(), False)
         self.assertIs((P / 'fileA\x00').is_file(), False)
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 12) and os.name == "nt",
+        reason="py312+",
+    )
     def test_is_mount(self):
         P = self.cls(BASE)
         if os.name == 'nt':
