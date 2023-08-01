@@ -23,6 +23,16 @@ try:
 except ImportError:
     grp = pwd = None
 
+import pytest
+try:
+    from upath.core import UPath
+    from upath.implementations.local import PosixUPath, WindowsUPath
+except ImportError:
+    UPath = PosixUPath = WindowsUPath = object
+    pytestmark = pytest.mark.xfail(reason="no py312 support yet")
+else:
+    pytestmark = pytest.mark.skipif(sys.version_info[:2] != (3, 12), reason="py312 only")
+
 
 #
 # Tests for the pure classes.
@@ -1516,11 +1526,11 @@ only_posix = unittest.skipIf(os.name == 'nt',
 
 @only_posix
 class PosixPathAsPureTest(PurePosixPathTest, unittest.TestCase):
-    cls = pathlib.PosixPath
+    cls = PosixUPath
 
 @only_nt
 class WindowsPathAsPureTest(PureWindowsPathTest, unittest.TestCase):
-    cls = pathlib.WindowsPath
+    cls = WindowsUPath
 
     def test_owner(self):
         P = self.cls
@@ -1992,8 +2002,8 @@ class _BasePathTest(object):
         recursion_limit = 50
         # directory_depth > recursion_limit
         directory_depth = recursion_limit + 10
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d'] * directory_depth))
+        base = UPath(os_helper.TESTFN, 'deep')
+        path = UPath(base, *(['d'] * directory_depth))
         path.mkdir(parents=True)
 
         with set_recursion_limit(recursion_limit):
@@ -2722,7 +2732,7 @@ class WalkTests(unittest.TestCase):
         #           broken_link3
         #       TEST2/
         #         tmp4              a lone file
-        self.walk_path = pathlib.Path(os_helper.TESTFN, "TEST1")
+        self.walk_path = UPath(os_helper.TESTFN, "TEST1")
         self.sub1_path = self.walk_path / "SUB1"
         self.sub11_path = self.sub1_path / "SUB11"
         self.sub2_path = self.walk_path / "SUB2"
@@ -2732,8 +2742,8 @@ class WalkTests(unittest.TestCase):
         tmp3_path = self.sub2_path / "tmp3"
         tmp5_path = sub21_path / "tmp3"
         self.link_path = self.sub2_path / "link"
-        t2_path = pathlib.Path(os_helper.TESTFN, "TEST2")
-        tmp4_path = pathlib.Path(os_helper.TESTFN, "TEST2", "tmp4")
+        t2_path = UPath(os_helper.TESTFN, "TEST2")
+        tmp4_path = UPath(os_helper.TESTFN, "TEST2", "tmp4")
         broken_link_path = self.sub2_path / "broken_link"
         broken_link2_path = self.sub2_path / "broken_link2"
         broken_link3_path = self.sub2_path / "broken_link3"
@@ -2750,8 +2760,8 @@ class WalkTests(unittest.TestCase):
         if os_helper.can_symlink():
             os.symlink(os.path.abspath(t2_path), self.link_path)
             os.symlink('broken', broken_link_path, True)
-            os.symlink(pathlib.Path('tmp3', 'broken'), broken_link2_path, True)
-            os.symlink(pathlib.Path('SUB21', 'tmp5'), broken_link3_path, True)
+            os.symlink(UPath('tmp3', 'broken'), broken_link2_path, True)
+            os.symlink(UPath('SUB21', 'tmp5'), broken_link3_path, True)
             self.sub2_tree = (self.sub2_path, ["SUB21"],
                               ["broken_link", "broken_link2", "broken_link3",
                                "link", "tmp3"])
@@ -2892,8 +2902,8 @@ class WalkTests(unittest.TestCase):
 
     def test_walk_many_open_files(self):
         depth = 30
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d']*depth))
+        base = UPath(os_helper.TESTFN, 'deep')
+        path = UPath(base, *(['d']*depth))
         path.mkdir(parents=True)
 
         iters = [base.walk(top_down=False) for _ in range(100)]
@@ -2915,8 +2925,8 @@ class WalkTests(unittest.TestCase):
         recursion_limit = 40
         # directory_depth > recursion_limit
         directory_depth = recursion_limit + 10
-        base = pathlib.Path(os_helper.TESTFN, 'deep')
-        path = pathlib.Path(base, *(['d'] * directory_depth))
+        base = UPath(os_helper.TESTFN, 'deep')
+        path = UPath(base, *(['d'] * directory_depth))
         path.mkdir(parents=True)
 
         with set_recursion_limit(recursion_limit):
@@ -2925,18 +2935,18 @@ class WalkTests(unittest.TestCase):
 
 
 class PathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.Path
+    cls = UPath
 
     def test_concrete_class(self):
         p = self.cls('a')
         self.assertIs(type(p),
-            pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath)
+            WindowsUPath if os.name == 'nt' else PosixUPath)
 
     def test_unsupported_flavour(self):
         if os.name == 'nt':
-            self.assertRaises(NotImplementedError, pathlib.PosixPath)
+            self.assertRaises(NotImplementedError, PosixUPath)
         else:
-            self.assertRaises(NotImplementedError, pathlib.WindowsPath)
+            self.assertRaises(NotImplementedError, WindowsUPath)
 
     def test_glob_empty_pattern(self):
         p = self.cls()
@@ -2946,7 +2956,7 @@ class PathTest(_BasePathTest, unittest.TestCase):
 
 @only_posix
 class PosixPathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.PosixPath
+    cls = PosixUPath
 
     def test_absolute(self):
         P = self.cls
@@ -3108,7 +3118,7 @@ class PosixPathTest(_BasePathTest, unittest.TestCase):
                      "Bad file descriptor in /dev/fd affects only macOS")
     def test_handling_bad_descriptor(self):
         try:
-            file_descriptors = list(pathlib.Path('/dev/fd').rglob("*"))[3:]
+            file_descriptors = list(UPath('/dev/fd').rglob("*"))[3:]
             if not file_descriptors:
                 self.skipTest("no file descriptors - issue was not reproduced")
             # Checking all file descriptors because there is no guarantee
@@ -3130,7 +3140,7 @@ class PosixPathTest(_BasePathTest, unittest.TestCase):
 
 @only_nt
 class WindowsPathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.WindowsPath
+    cls = WindowsUPath
 
     def test_absolute(self):
         P = self.cls
@@ -3256,7 +3266,7 @@ class PurePathSubclassTest(_BasePurePathTest):
 
 
 class PathSubclassTest(_BasePathTest, unittest.TestCase):
-    class cls(pathlib.Path):
+    class cls(UPath):
         pass
 
     # repr() roundtripping is not supported in custom subclass.
