@@ -9,7 +9,6 @@ from test.support import os_helper
 from test.support.os_helper import TESTFN, FakePath
 """
 import os
-import shutil
 import stat
 import string
 import sys
@@ -23,6 +22,7 @@ import pytest
 from pytest import importorskip
 
 import_helper = SimpleNamespace(import_module=importorskip)
+import_module = importorskip
 
 
 @contextlib.contextmanager
