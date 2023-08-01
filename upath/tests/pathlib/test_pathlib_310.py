@@ -11,153 +11,14 @@ import tempfile
 import unittest
 from unittest import mock
 
-from test.support import import_helper
-from test.support import os_helper
-from test.support.os_helper import TESTFN, FakePath
+from ._test_support import import_helper
+from . import _test_support as os_helper
+from ._test_support import TESTFN, FakePath
 
 try:
     import grp, pwd
 except ImportError:
     grp = pwd = None
-
-
-class _BaseFlavourTest(object):
-
-    def _check_parse_parts(self, arg, expected):
-        f = self.flavour.parse_parts
-        sep = self.flavour.sep
-        altsep = self.flavour.altsep
-        actual = f([x.replace('/', sep) for x in arg])
-        self.assertEqual(actual, expected)
-        if altsep:
-            actual = f([x.replace('/', altsep) for x in arg])
-            self.assertEqual(actual, expected)
-
-    def test_parse_parts_common(self):
-        check = self._check_parse_parts
-        sep = self.flavour.sep
-        # Unanchored parts.
-        check([],                   ('', '', []))
-        check(['a'],                ('', '', ['a']))
-        check(['a/'],               ('', '', ['a']))
-        check(['a', 'b'],           ('', '', ['a', 'b']))
-        # Expansion.
-        check(['a/b'],              ('', '', ['a', 'b']))
-        check(['a/b/'],             ('', '', ['a', 'b']))
-        check(['a', 'b/c', 'd'],    ('', '', ['a', 'b', 'c', 'd']))
-        # Collapsing and stripping excess slashes.
-        check(['a', 'b//c', 'd'],   ('', '', ['a', 'b', 'c', 'd']))
-        check(['a', 'b/c/', 'd'],   ('', '', ['a', 'b', 'c', 'd']))
-        # Eliminating standalone dots.
-        check(['.'],                ('', '', []))
-        check(['.', '.', 'b'],      ('', '', ['b']))
-        check(['a', '.', 'b'],      ('', '', ['a', 'b']))
-        check(['a', '.', '.'],      ('', '', ['a']))
-        # The first part is anchored.
-        check(['/a/b'],             ('', sep, [sep, 'a', 'b']))
-        check(['/a', 'b'],          ('', sep, [sep, 'a', 'b']))
-        check(['/a/', 'b'],         ('', sep, [sep, 'a', 'b']))
-        # Ignoring parts before an anchored part.
-        check(['a', '/b', 'c'],     ('', sep, [sep, 'b', 'c']))
-        check(['a', '/b', '/c'],    ('', sep, [sep, 'c']))
-
-
-class PosixFlavourTest(_BaseFlavourTest, unittest.TestCase):
-    flavour = pathlib._posix_flavour
-
-    def test_parse_parts(self):
-        check = self._check_parse_parts
-        # Collapsing of excess leading slashes, except for the double-slash
-        # special case.
-        check(['//a', 'b'],             ('', '//', ['//', 'a', 'b']))
-        check(['///a', 'b'],            ('', '/', ['/', 'a', 'b']))
-        check(['////a', 'b'],           ('', '/', ['/', 'a', 'b']))
-        # Paths which look like NT paths aren't treated specially.
-        check(['c:a'],                  ('', '', ['c:a']))
-        check(['c:\\a'],                ('', '', ['c:\\a']))
-        check(['\\a'],                  ('', '', ['\\a']))
-
-    def test_splitroot(self):
-        f = self.flavour.splitroot
-        self.assertEqual(f(''), ('', '', ''))
-        self.assertEqual(f('a'), ('', '', 'a'))
-        self.assertEqual(f('a/b'), ('', '', 'a/b'))
-        self.assertEqual(f('a/b/'), ('', '', 'a/b/'))
-        self.assertEqual(f('/a'), ('', '/', 'a'))
-        self.assertEqual(f('/a/b'), ('', '/', 'a/b'))
-        self.assertEqual(f('/a/b/'), ('', '/', 'a/b/'))
-        # The root is collapsed when there are redundant slashes
-        # except when there are exactly two leading slashes, which
-        # is a special case in POSIX.
-        self.assertEqual(f('//a'), ('', '//', 'a'))
-        self.assertEqual(f('///a'), ('', '/', 'a'))
-        self.assertEqual(f('///a/b'), ('', '/', 'a/b'))
-        # Paths which look like NT paths aren't treated specially.
-        self.assertEqual(f('c:/a/b'), ('', '', 'c:/a/b'))
-        self.assertEqual(f('\\/a/b'), ('', '', '\\/a/b'))
-        self.assertEqual(f('\\a\\b'), ('', '', '\\a\\b'))
-
-
-class NTFlavourTest(_BaseFlavourTest, unittest.TestCase):
-    flavour = pathlib._windows_flavour
-
-    def test_parse_parts(self):
-        check = self._check_parse_parts
-        # First part is anchored.
-        check(['c:'],                   ('c:', '', ['c:']))
-        check(['c:/'],                  ('c:', '\\', ['c:\\']))
-        check(['/'],                    ('', '\\', ['\\']))
-        check(['c:a'],                  ('c:', '', ['c:', 'a']))
-        check(['c:/a'],                 ('c:', '\\', ['c:\\', 'a']))
-        check(['/a'],                   ('', '\\', ['\\', 'a']))
-        # UNC paths.
-        check(['//a/b'],                ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
-        check(['//a/b/'],               ('\\\\a\\b', '\\', ['\\\\a\\b\\']))
-        check(['//a/b/c'],              ('\\\\a\\b', '\\', ['\\\\a\\b\\', 'c']))
-        # Second part is anchored, so that the first part is ignored.
-        check(['a', 'Z:b', 'c'],        ('Z:', '', ['Z:', 'b', 'c']))
-        check(['a', 'Z:/b', 'c'],       ('Z:', '\\', ['Z:\\', 'b', 'c']))
-        # UNC paths.
-        check(['a', '//b/c', 'd'],      ('\\\\b\\c', '\\', ['\\\\b\\c\\', 'd']))
-        # Collapsing and stripping excess slashes.
-        check(['a', 'Z://b//c/', 'd/'], ('Z:', '\\', ['Z:\\', 'b', 'c', 'd']))
-        # UNC paths.
-        check(['a', '//b/c//', 'd'],    ('\\\\b\\c', '\\', ['\\\\b\\c\\', 'd']))
-        # Extended paths.
-        check(['//?/c:/'],              ('\\\\?\\c:', '\\', ['\\\\?\\c:\\']))
-        check(['//?/c:/a'],             ('\\\\?\\c:', '\\', ['\\\\?\\c:\\', 'a']))
-        check(['//?/c:/a', '/b'],       ('\\\\?\\c:', '\\', ['\\\\?\\c:\\', 'b']))
-        # Extended UNC paths (format is "\\?\UNC\server\share").
-        check(['//?/UNC/b/c'],          ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\']))
-        check(['//?/UNC/b/c/d'],        ('\\\\?\\UNC\\b\\c', '\\', ['\\\\?\\UNC\\b\\c\\', 'd']))
-        # Second part has a root but not drive.
-        check(['a', '/b', 'c'],         ('', '\\', ['\\', 'b', 'c']))
-        check(['Z:/a', '/b', 'c'],      ('Z:', '\\', ['Z:\\', 'b', 'c']))
-        check(['//?/Z:/a', '/b', 'c'],  ('\\\\?\\Z:', '\\', ['\\\\?\\Z:\\', 'b', 'c']))
-
-    def test_splitroot(self):
-        f = self.flavour.splitroot
-        self.assertEqual(f(''), ('', '', ''))
-        self.assertEqual(f('a'), ('', '', 'a'))
-        self.assertEqual(f('a\\b'), ('', '', 'a\\b'))
-        self.assertEqual(f('\\a'), ('', '\\', 'a'))
-        self.assertEqual(f('\\a\\b'), ('', '\\', 'a\\b'))
-        self.assertEqual(f('c:a\\b'), ('c:', '', 'a\\b'))
-        self.assertEqual(f('c:\\a\\b'), ('c:', '\\', 'a\\b'))
-        # Redundant slashes in the root are collapsed.
-        self.assertEqual(f('\\\\a'), ('', '\\', 'a'))
-        self.assertEqual(f('\\\\\\a/b'), ('', '\\', 'a/b'))
-        self.assertEqual(f('c:\\\\a'), ('c:', '\\', 'a'))
-        self.assertEqual(f('c:\\\\\\a/b'), ('c:', '\\', 'a/b'))
-        # Valid UNC paths.
-        self.assertEqual(f('\\\\a\\b'), ('\\\\a\\b', '\\', ''))
-        self.assertEqual(f('\\\\a\\b\\'), ('\\\\a\\b', '\\', ''))
-        self.assertEqual(f('\\\\a\\b\\c\\d'), ('\\\\a\\b', '\\', 'c\\d'))
-        # These are non-UNC paths (according to ntpath.py and test_ntpath).
-        # However, command.com says such paths are invalid, so it's
-        # difficult to know what the right semantics are.
-        self.assertEqual(f('\\\\\\a\\b'), ('', '\\', 'a\\b'))
-        self.assertEqual(f('\\\\a'), ('', '\\', 'a'))
 
 
 #
@@ -703,7 +564,7 @@ class _BasePurePathTest(object):
             self.assertEqual(str(pp), str(p))
 
 
-class PurePosixPathTest(_BasePurePathTest, unittest.TestCase):
+class PurePosixPathTest(_BasePurePathTest):
     cls = pathlib.PurePosixPath
 
     def test_root(self):
@@ -779,7 +640,7 @@ class PurePosixPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertEqual(pp, P('/c'))
 
 
-class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
+class PureWindowsPathTest(_BasePurePathTest):
     cls = pathlib.PureWindowsPath
 
     equivalences = _BasePurePathTest.equivalences.copy()
@@ -1317,7 +1178,7 @@ class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertIs(True, P('c:/baz/con/NUL').is_reserved())
         self.assertIs(False, P('c:/NUL/con/baz').is_reserved())
 
-class PurePathTest(_BasePurePathTest, unittest.TestCase):
+class PurePathTest(_BasePurePathTest):
     cls = pathlib.PurePath
 
     def test_concrete_class(self):
@@ -1358,11 +1219,11 @@ only_posix = unittest.skipIf(os.name == 'nt',
                              'test requires a POSIX-compatible system')
 
 @only_posix
-class PosixPathAsPureTest(PurePosixPathTest):
+class PosixPathAsPureTest(PurePosixPathTest, unittest.TestCase):
     cls = pathlib.PosixPath
 
 @only_nt
-class WindowsPathAsPureTest(PureWindowsPathTest):
+class WindowsPathAsPureTest(PureWindowsPathTest, unittest.TestCase):
     cls = pathlib.WindowsPath
 
     def test_owner(self):
@@ -2693,48 +2554,3 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
             # bpo-38883: ignore `HOME` when set on windows
             env['HOME'] = 'C:\\Users\\eve'
             check()
-
-
-class CompatiblePathTest(unittest.TestCase):
-    """
-    Test that a type can be made compatible with PurePath
-    derivatives by implementing division operator overloads.
-    """
-
-    class CompatPath:
-        """
-        Minimum viable class to test PurePath compatibility.
-        Simply uses the division operator to join a given
-        string and the string value of another object with
-        a forward slash.
-        """
-        def __init__(self, string):
-            self.string = string
-
-        def __truediv__(self, other):
-            return type(self)(f"{self.string}/{other}")
-
-        def __rtruediv__(self, other):
-            return type(self)(f"{other}/{self.string}")
-
-    def test_truediv(self):
-        result = pathlib.PurePath("test") / self.CompatPath("right")
-        self.assertIsInstance(result, self.CompatPath)
-        self.assertEqual(result.string, "test/right")
-
-        with self.assertRaises(TypeError):
-            # Verify improper operations still raise a TypeError
-            pathlib.PurePath("test") / 10
-
-    def test_rtruediv(self):
-        result = self.CompatPath("left") / pathlib.PurePath("test")
-        self.assertIsInstance(result, self.CompatPath)
-        self.assertEqual(result.string, "left/test")
-
-        with self.assertRaises(TypeError):
-            # Verify improper operations still raise a TypeError
-            10 / pathlib.PurePath("test")
-
-
-if __name__ == "__main__":
-    unittest.main()
