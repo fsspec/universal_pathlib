@@ -41,7 +41,6 @@ addopts = "-ra -m 'not hdfs'"
 markers = [
   "hdfs: mark test as hdfs",
   "pathlib: mark cpython pathlib tests",
-  "pathlib_stdlib: mark stdlib tests that should be skipped",
 ]
 
 [tool.coverage.run]

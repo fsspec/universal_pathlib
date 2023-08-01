@@ -1,5 +1,7 @@
 import sys
 
+import pytest
+
 BASE_URL = "https://raw.githubusercontent.com/python/cpython/{}/Lib/test/test_pathlib.py"  # noqa
 
 # current origin of pathlib tests:
@@ -25,3 +27,9 @@ def pytest_ignore_collect(collection_path, path, config):
         "test_pathlib_311.py": v2 != (3, 11),
         "test_pathlib_312.py": v2 != (3, 12),
     }.get(collection_path.name, False)
+
+
+def pytest_collection_modifyitems(config, items):
+    """mark all tests in this folder as pathlib tests"""
+    for item in items:
+        item.add_marker(pytest.mark.pathlib)
