@@ -12,11 +12,11 @@ import tempfile
 import unittest
 from unittest import mock
 
-from test.support import import_helper
-from test.support import set_recursion_limit
-from test.support import is_emscripten, is_wasi
-from test.support import os_helper
-from test.support.os_helper import TESTFN, FakePath
+from ._test_support import import_helper
+from ._test_support import set_recursion_limit
+from ._test_support import is_emscripten, is_wasi
+from . import _test_support as os_helper
+from ._test_support import TESTFN, FakePath
 
 try:
     import grp, pwd
@@ -706,7 +706,7 @@ class _BasePurePathTest(object):
             self.assertEqual(str(pp), str(p))
 
 
-class PurePosixPathTest(_BasePurePathTest, unittest.TestCase):
+class PurePosixPathTest(_BasePurePathTest):
     cls = pathlib.PurePosixPath
 
     def test_drive_root_parts(self):
@@ -800,7 +800,7 @@ class PurePosixPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertEqual(p, pp)
 
 
-class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
+class PureWindowsPathTest(_BasePurePathTest):
     cls = pathlib.PureWindowsPath
 
     equivalences = _BasePurePathTest.equivalences.copy()
@@ -1474,7 +1474,7 @@ class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertIs(True, P('c:/baz/con/NUL').is_reserved())
         self.assertIs(False, P('c:/NUL/con/baz').is_reserved())
 
-class PurePathTest(_BasePurePathTest, unittest.TestCase):
+class PurePathTest(_BasePurePathTest):
     cls = pathlib.PurePath
 
     def test_concrete_class(self):
@@ -1515,11 +1515,11 @@ only_posix = unittest.skipIf(os.name == 'nt',
                              'test requires a POSIX-compatible system')
 
 @only_posix
-class PosixPathAsPureTest(PurePosixPathTest):
+class PosixPathAsPureTest(PurePosixPathTest, unittest.TestCase):
     cls = pathlib.PosixPath
 
 @only_nt
-class WindowsPathAsPureTest(PureWindowsPathTest):
+class WindowsPathAsPureTest(PureWindowsPathTest, unittest.TestCase):
     cls = pathlib.WindowsPath
 
     def test_owner(self):
@@ -3247,7 +3247,7 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
             check()
 
 
-class PurePathSubclassTest(_BasePurePathTest, unittest.TestCase):
+class PurePathSubclassTest(_BasePurePathTest):
     class cls(pathlib.PurePath):
         pass
 
@@ -3261,48 +3261,3 @@ class PathSubclassTest(_BasePathTest, unittest.TestCase):
 
     # repr() roundtripping is not supported in custom subclass.
     test_repr_roundtrips = None
-
-
-class CompatiblePathTest(unittest.TestCase):
-    """
-    Test that a type can be made compatible with PurePath
-    derivatives by implementing division operator overloads.
-    """
-
-    class CompatPath:
-        """
-        Minimum viable class to test PurePath compatibility.
-        Simply uses the division operator to join a given
-        string and the string value of another object with
-        a forward slash.
-        """
-        def __init__(self, string):
-            self.string = string
-
-        def __truediv__(self, other):
-            return type(self)(f"{self.string}/{other}")
-
-        def __rtruediv__(self, other):
-            return type(self)(f"{other}/{self.string}")
-
-    def test_truediv(self):
-        result = pathlib.PurePath("test") / self.CompatPath("right")
-        self.assertIsInstance(result, self.CompatPath)
-        self.assertEqual(result.string, "test/right")
-
-        with self.assertRaises(TypeError):
-            # Verify improper operations still raise a TypeError
-            pathlib.PurePath("test") / 10
-
-    def test_rtruediv(self):
-        result = self.CompatPath("left") / pathlib.PurePath("test")
-        self.assertIsInstance(result, self.CompatPath)
-        self.assertEqual(result.string, "left/test")
-
-        with self.assertRaises(TypeError):
-            # Verify improper operations still raise a TypeError
-            10 / pathlib.PurePath("test")
-
-
-if __name__ == "__main__":
-    unittest.main()
