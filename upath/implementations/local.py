@@ -37,6 +37,8 @@ def _iterate_class_attrs(path_cls: type[Path]) -> Iterable[tuple[str, Any]]:
 
 
 class PosixUPath(PosixPath, UPath):
+    __slots__ = ()
+
     if os.name == "nt":
         __new__ = PosixPath.__new__
 
@@ -63,6 +65,8 @@ class PosixUPath(PosixPath, UPath):
 
 
 class WindowsUPath(WindowsPath, UPath):
+    __slots__ = ()
+
     if os.name != "nt":
         __new__ = WindowsPath.__new__
 
