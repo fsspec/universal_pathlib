@@ -25,8 +25,8 @@ exclude = '''
 '''
 force-exclude = '''
 (
-  ^/upath/tests/_pathlib_test_support.py
-  |^/upath/tests/test_pathlib.py
+  ^/upath/tests/pathlib/_test_support\.py
+  |^/upath/tests/pathlib/test_pathlib_.*\.py
 )
 '''
 

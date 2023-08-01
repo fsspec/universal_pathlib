@@ -1,14 +1,14 @@
 import sys
 
-BASE_URL = "https://raw.githubusercontent.com/python/cpython"
+BASE_URL = "https://raw.githubusercontent.com/python/cpython/{}/Lib/test/test_pathlib.py"  # noqa
 
 # current origin of pathlib tests:
 TEST_FILES = {
-    "test_pathlib_38.py":  f"{BASE_URL}/7475aa2c590e33a47f5e79e4079bca0645e93f2f/Lib/test/test_pathlib.py",
-    "test_pathlib_39.py":  f"{BASE_URL}/d718764f389acd1bf4a5a65661bb58862f14fb98/Lib/test/test_pathlib.py",
-    "test_pathlib_310.py": f"{BASE_URL}/b382bf50c53e6eab09f3e3bf0802ab052cb0289d/Lib/test/test_pathlib.py",
-    "test_pathlib_311.py": f"{BASE_URL}/846a23d0b8f08e62a90682c51ce01301eb923f2e/Lib/test/test_pathlib.py",
-    "test_pathlib_312.py": f"{BASE_URL}/97a6a418167f1c8bbb014fab813e440b88cf2221/Lib/test/test_pathlib.py",  # 3.12.0b4
+    "test_pathlib_38.py": "7475aa2c590e33a47f5e79e4079bca0645e93f2f",
+    "test_pathlib_39.py": "d718764f389acd1bf4a5a65661bb58862f14fb98",
+    "test_pathlib_310.py": "b382bf50c53e6eab09f3e3bf0802ab052cb0289d",
+    "test_pathlib_311.py": "846a23d0b8f08e62a90682c51ce01301eb923f2e",
+    "test_pathlib_312.py": "97a6a418167f1c8bbb014fab813e440b88cf2221",  # 3.12.0b4
 }
 
 
