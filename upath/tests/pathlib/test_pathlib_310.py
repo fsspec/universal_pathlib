@@ -20,6 +20,11 @@ try:
 except ImportError:
     grp = pwd = None
 
+from upath.core import UPath
+from upath.implementations.local import PosixUPath, WindowsUPath
+
+import pytest
+pytestmark = pytest.mark.skipif(sys.version_info[:2] != (3, 10), reason="py310 only")
 
 #
 # Tests for the pure classes.
@@ -155,7 +160,7 @@ class _BasePurePathTest(object):
             inner = r[len(clsname) + 1 : -1]
             self.assertEqual(eval(inner), p.as_posix())
             # The repr() roundtrips.
-            q = eval(r, pathlib.__dict__)
+            q = eval(r, {"PosixUPath": PosixUPath, "WindowsUPath": WindowsUPath})
             self.assertIs(q.__class__, p.__class__)
             self.assertEqual(q, p)
             self.assertEqual(repr(q), r)
@@ -1220,11 +1225,11 @@ only_posix = unittest.skipIf(os.name == 'nt',
 
 @only_posix
 class PosixPathAsPureTest(PurePosixPathTest, unittest.TestCase):
-    cls = pathlib.PosixPath
+    cls = PosixUPath
 
 @only_nt
 class WindowsPathAsPureTest(PureWindowsPathTest, unittest.TestCase):
-    cls = pathlib.WindowsPath
+    cls = WindowsUPath
 
     def test_owner(self):
         P = self.cls
@@ -2297,7 +2302,7 @@ class _BasePathTest(object):
 
 
 class PathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.Path
+    cls = UPath
 
     def test_class_getitem(self):
         self.assertIs(self.cls[str], self.cls)
@@ -2305,13 +2310,13 @@ class PathTest(_BasePathTest, unittest.TestCase):
     def test_concrete_class(self):
         p = self.cls('a')
         self.assertIs(type(p),
-            pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath)
+            WindowsUPath if os.name == 'nt' else PosixUPath)
 
     def test_unsupported_flavour(self):
         if os.name == 'nt':
-            self.assertRaises(NotImplementedError, pathlib.PosixPath)
+            self.assertRaises(NotImplementedError, PosixUPath)
         else:
-            self.assertRaises(NotImplementedError, pathlib.WindowsPath)
+            self.assertRaises(NotImplementedError, WindowsUPath)
 
     def test_glob_empty_pattern(self):
         p = self.cls()
@@ -2321,7 +2326,7 @@ class PathTest(_BasePathTest, unittest.TestCase):
 
 @only_posix
 class PosixPathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.PosixPath
+    cls = PosixUPath
 
     def _check_symlink_loop(self, *args, strict=True):
         path = self.cls(*args)
@@ -2464,7 +2469,7 @@ class PosixPathTest(_BasePathTest, unittest.TestCase):
                      "Bad file descriptor in /dev/fd affects only macOS")
     def test_handling_bad_descriptor(self):
         try:
-            file_descriptors = list(pathlib.Path('/dev/fd').rglob("*"))[3:]
+            file_descriptors = list(UPath('/dev/fd').rglob("*"))[3:]
             if not file_descriptors:
                 self.skipTest("no file descriptors - issue was not reproduced")
             # Checking all file descriptors because there is no guarantee
@@ -2486,7 +2491,7 @@ class PosixPathTest(_BasePathTest, unittest.TestCase):
 
 @only_nt
 class WindowsPathTest(_BasePathTest, unittest.TestCase):
-    cls = pathlib.WindowsPath
+    cls = WindowsUPath
 
     def test_glob(self):
         P = self.cls
