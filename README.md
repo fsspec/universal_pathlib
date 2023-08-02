@@ -61,7 +61,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 Other fsspec-compatible filesystems may also work, but are not supported and tested.
 Contributions for new filesystems are welcome!
 
-### Class inheritance diagram
+### Class hierarchy
 
 The individual `UPath` subclasses relate in the following way with `pathlib` classes:
 
@@ -116,9 +116,14 @@ flowchart TB
   style s1 fill:none,stroke:#ca0020,stroke-width:3px,stroke-dasharray: 3 3,color:#ca0020
 ```
 
-`PosixUPath` and `WindowsUPath` subclasses are 100% compatible with the `PosixPath` and `WindowsPath` classes of their
+When instantiating `UPath` the returned instance type depends on the path that was provided to the constructor.
+For "URI"-style paths, `UPath` returns a subclass instance corresponding to the supported `fsppec` protocol, defined
+by the URI-scheme. If there is no specialized subclass implementation available, `UPath` with return a `UPath` instance
+and raise a warning that the protocol is currently not being tested in the test-suite, and correct behavior is not
+guaranteed.
+If a local path is provided, `UPath` will return a `PosixUPath` or `WindowsUPath` instance.
+These two subclasses are 100% compatible with the `PosixPath` and `WindowsPath` classes of their
 specific Python version, and are tested against all relevant tests of the CPython pathlib test-suite.
-
 
 ## Contributing
 
