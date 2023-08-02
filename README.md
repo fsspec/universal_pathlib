@@ -28,10 +28,10 @@ conda install -c conda-forge universal_pathlib
 
 ## Basic Usage
 
-```python
+```pycon
+# pip install universal_pathlib s3fs
 >>> from upath import UPath
->>> import s3fs
-
+>>>
 >>> s3path = UPath("s3://test_bucket") / "example.txt"
 >>> s3path.name
 example.txt
@@ -60,6 +60,65 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 Other fsspec-compatible filesystems may also work, but are not supported and tested.
 Contributions for new filesystems are welcome!
+
+### Class inheritance diagram
+
+The individual `UPath` subclasses relate in the following way with `pathlib` classes:
+
+```mermaid
+flowchart TB
+  subgraph s0[pathlib]
+    A---> B
+    A--> AP
+    A--> AW
+
+    B--> BP
+    AP---> BP
+    B--> BW
+    AW---> BW
+  end
+  subgraph s1[upath]
+    B ---> U
+    U --> UP
+    U --> UW
+    BP --> UP
+    BW --> UW
+    U --> UL
+    U --> US3
+    U --> UH
+    U -.-> UO
+  end
+
+  A(PurePath)
+  AP(PurePosixPath)
+  AW(PureWindowsPath)
+  B(Path)
+  BP(PosixPath)
+  BW(WindowsPath)
+
+  U(UPath)
+  UP(PosixUPath)
+  UW(WindowsUPath)
+  UL(LocalPath)
+  US3(S3Path)
+  UH(HttpPath)
+  UO(...Path)
+
+  classDef np fill:#f7f7f7,stroke:#2166ac,stroke-width:2px,color:#333
+  classDef nu fill:#f7f7f7,stroke:#b2182b,stroke-width:2px,color:#333
+
+  class A,AP,AW,B,BP,BW,UP,UW np
+  class U,UL,US3,UH,UO nu
+
+  style UO stroke-dasharray: 3 3
+
+  style s0 fill:none,stroke:#0571b0,stroke-width:3px,stroke-dasharray: 3 3,color:#0571b0
+  style s1 fill:none,stroke:#ca0020,stroke-width:3px,stroke-dasharray: 3 3,color:#ca0020
+```
+
+`PosixUPath` and `WindowsUPath` subclasses are 100% compatible with the `PosixPath` and `WindowsPath` classes of their
+specific Python version, and are tested against all relevant tests of the CPython pathlib test-suite.
+
 
 ## Contributing
 
