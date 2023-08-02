@@ -1,3 +1,4 @@
+import os
 import pathlib
 import pickle
 import sys
@@ -53,6 +54,18 @@ class TestUpath(BaseTests):
     def test_fsspec_compat(self):
         pass
 
+    def test_cwd(self):
+        pth = type(self.path).cwd()
+        assert str(pth) == os.getcwd()
+        assert isinstance(pth, pathlib.Path)
+        assert isinstance(pth, UPath)
+
+    def test_home(self):
+        pth = type(self.path).home()
+        assert str(pth) == os.path.expanduser("~")
+        assert isinstance(pth, pathlib.Path)
+        assert isinstance(pth, UPath)
+
 
 @pytest.mark.hdfs
 def test_multiple_backend_paths(local_testdir, s3_fixture, hdfs):
@@ -93,23 +106,23 @@ def test_subclass_with_gcs():
 
 
 def test_instance_check(local_testdir):
-    path = pathlib.Path(local_testdir)
     upath = UPath(local_testdir)
     # test instance check passes
     assert isinstance(upath, pathlib.Path)
-    assert not isinstance(upath, UPath)
-    # test type is same as pathlib
-    assert type(upath) is type(path)
+    assert isinstance(upath, UPath)
+
+
+def test_instance_check_local_uri(local_testdir):
     upath = UPath(f"file://{local_testdir}")
-    # test default implementation is used
-    assert type(upath) is UPath
+    assert isinstance(upath, pathlib.Path)
+    assert isinstance(upath, UPath)
 
 
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))
     assert isinstance(path, pathlib.Path)
-    assert not isinstance(path, UPath)
+    assert isinstance(path, UPath)
 
 
 @skip_on_windows
@@ -215,7 +228,7 @@ def test_copy_path_posix():
     path = UPath("/tmp/folder")
     copy_path = UPath(path)
 
-    assert type(path) == type(copy_path) == type(pathlib.Path(""))
+    assert type(path) == type(copy_path)
     assert str(path) == str(copy_path)
     assert path._drv == copy_path._drv
     assert path._root == copy_path._root
@@ -226,7 +239,7 @@ def test_copy_path_append():
     path = UPath("/tmp/folder")
     copy_path = UPath(path, "folder2")
 
-    assert type(path) == type(copy_path) == type(pathlib.Path(""))
+    assert type(path) == type(copy_path)
     assert str(path / "folder2") == str(copy_path)
 
     path = UPath("/tmp/folder")

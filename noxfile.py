@@ -15,7 +15,7 @@ def tests(session: nox.Session) -> None:
     session.run(
         "pytest",
         "-m",
-        "not (hdfs or pathlib)",
+        "not hdfs",
         "--cov",
         "--cov-config=pyproject.toml",
         *session.posargs,
