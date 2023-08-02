@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - updated past changelog entries.
+- changed `UPath.__new__` behavior to return `UPath` subclasses for local paths (#125).
 
 ### Fixed
 - improved azure test separation (#123).
