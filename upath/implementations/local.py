@@ -6,6 +6,7 @@ from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
 from typing import Iterable
+from urllib.parse import SplitResult
 
 from fsspec.implementations.local import LocalFileSystem
 
@@ -49,11 +50,7 @@ class PosixUPath(PosixPath, UPath):
 
     @property
     def fs(self):
-        try:
-            return self._cached_fs
-        except AttributeError:
-            self._cached_fs = fs = LocalFileSystem()
-            return fs
+        return LocalFileSystem()
 
     @property
     def path(self) -> str:
@@ -61,7 +58,10 @@ class PosixUPath(PosixPath, UPath):
 
     @classmethod
     def _from_parts(cls, args, *, url=None, **kw):
-        return super(UPath, cls)._from_parts(args)
+        obj = super(UPath, cls)._from_parts(args)
+        obj._kwargs = {}
+        obj._url = SplitResult("", "", str(obj), "", "")
+        return obj
 
 
 class WindowsUPath(WindowsPath, UPath):
@@ -77,11 +77,7 @@ class WindowsUPath(WindowsPath, UPath):
 
     @property
     def fs(self):
-        try:
-            return self._cached_fs
-        except AttributeError:
-            self._cached_fs = fs = LocalFileSystem()
-            return fs
+        return LocalFileSystem()
 
     @property
     def path(self) -> str:
@@ -89,4 +85,7 @@ class WindowsUPath(WindowsPath, UPath):
 
     @classmethod
     def _from_parts(cls, args, *, url=None, **kw):
-        return super(UPath, cls)._from_parts(args)
+        obj = super(UPath, cls)._from_parts(args)
+        obj._kwargs = {}
+        obj._url = SplitResult("", "", str(obj), "", "")
+        return obj

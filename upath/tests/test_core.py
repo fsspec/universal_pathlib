@@ -3,6 +3,7 @@ import pathlib
 import pickle
 import sys
 import warnings
+from urllib.parse import SplitResult
 
 import pytest
 
@@ -240,6 +241,24 @@ def test_copy_path_append():
     copy_path = UPath(path, "folder2", "folder3")
 
     assert str(path / "folder2" / "folder3") == str(copy_path)
+
+
+@pytest.mark.parametrize(
+    "urlpath",
+    [
+        os.getcwd(),
+        pathlib.Path.cwd().as_uri(),
+        "mock:///abc",
+    ],
+)
+def test_access_to_private_kwargs_and_url(urlpath):
+    # fixme: this should be deprecated...
+    pth = UPath(urlpath)
+    assert isinstance(pth._kwargs, dict)
+    assert pth._kwargs == {}
+    assert isinstance(pth._url, SplitResult)
+    assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
+    assert pth._url.path == pth.path
 
 
 def test_copy_path_append_kwargs():
