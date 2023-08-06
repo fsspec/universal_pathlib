@@ -182,7 +182,7 @@ def test_child_path():
 
 
 def test_pickling():
-    path = UPath("gcs://bucket/folder", storage_options={"anon": True})
+    path = UPath("gcs://bucket/folder", token="anon")
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
@@ -192,7 +192,7 @@ def test_pickling():
 
 
 def test_pickling_child_path():
-    path = UPath("gcs://bucket", anon=True) / "subfolder" / "subsubfolder"
+    path = UPath("gcs://bucket", token="anon") / "subfolder" / "subsubfolder"
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
@@ -205,7 +205,7 @@ def test_pickling_child_path():
 
 
 def test_copy_path():
-    path = UPath("gcs://bucket/folder", anon=True)
+    path = UPath("gcs://bucket/folder", token="anon")
     copy_path = UPath(path)
 
     assert type(path) == type(copy_path)
