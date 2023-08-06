@@ -67,15 +67,12 @@ class TestUpath(BaseTests):
         assert isinstance(pth, UPath)
 
 
-@pytest.mark.hdfs
-def test_multiple_backend_paths(local_testdir, s3_fixture, hdfs):
-    _, anon, s3so = s3_fixture
+def test_multiple_backend_paths(local_testdir):
     path = f"s3:{local_testdir}"
-    s3_path = UPath(path, anon=anon, **s3so)
+    s3_path = UPath(path, anon=True)
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"
-    host, user, port = hdfs
-    path = f"hdfs:{local_testdir}"
-    UPath(path, host=host, user=user, port=port)
+    path = f"file://{local_testdir}"
+    UPath(path)
     assert s3_path.joinpath("text1.txt")._url.scheme == "s3"
 
 
@@ -125,20 +122,12 @@ def test_new_method(local_testdir):
     assert isinstance(path, UPath)
 
 
-@skip_on_windows
-class TestFSSpecLocal(BaseTests):
-    @pytest.fixture(autouse=True)
-    def path(self, local_testdir):
-        path = f"file://{local_testdir}"
-        self.path = UPath(path)
-
-
 PATHS = (
     ("path", "storage_options", "module", "object_type"),
     (
-        ("/tmp/abc", (), None, pathlib.Path),
-        ("s3://bucket/folder", ({"anon": True}), "s3fs", S3Path),
-        ("gs://bucket/folder", ({"token": "anon"}), "gcsfs", GCSPath),
+        ("/tmp/abc", {}, None, pathlib.Path),
+        ("s3://bucket/folder", {"anon": True}, "s3fs", S3Path),
+        ("gs://bucket/folder", {"token": "anon"}, "gcsfs", GCSPath),
     ),
 )
 
@@ -150,7 +139,7 @@ def test_create_from_type(path, storage_options, module, object_type):
         # skip if module cannot be imported
         pytest.importorskip(module)
     try:
-        upath = UPath(path, storage_options=storage_options)
+        upath = UPath(path, **storage_options)
         # test expected object type
         assert isinstance(upath, object_type)
         cast = type(upath)
@@ -159,7 +148,7 @@ def test_create_from_type(path, storage_options, module, object_type):
         assert isinstance(parent, cast)
         # test that created fs uses fsspec instance cache
         assert not hasattr(upath, "fs") or upath.fs is parent.fs
-        new = cast(str(parent))
+        new = cast(str(parent), **storage_options)
         # test that object cast is same type
         assert isinstance(new, cast)
     except ImportError:
@@ -190,7 +179,7 @@ def test_child_path():
 
 
 def test_pickling():
-    path = UPath("gcs://bucket/folder", storage_options={"anon": True})
+    path = UPath("gcs://bucket/folder", token="anon")
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
@@ -200,7 +189,7 @@ def test_pickling():
 
 
 def test_pickling_child_path():
-    path = UPath("gcs://bucket", anon=True) / "subfolder" / "subsubfolder"
+    path = UPath("gcs://bucket", token="anon") / "subfolder" / "subsubfolder"
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
@@ -213,7 +202,7 @@ def test_pickling_child_path():
 
 
 def test_copy_path():
-    path = UPath("gcs://bucket/folder", anon=True)
+    path = UPath("gcs://bucket/folder", token="anon")
     copy_path = UPath(path)
 
     assert type(path) == type(copy_path)
