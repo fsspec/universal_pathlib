@@ -67,15 +67,12 @@ class TestUpath(BaseTests):
         assert isinstance(pth, UPath)
 
 
-@pytest.mark.hdfs
-def test_multiple_backend_paths(local_testdir, s3_fixture, hdfs):
-    _, anon, s3so = s3_fixture
+def test_multiple_backend_paths(local_testdir):
     path = f"s3:{local_testdir}"
-    s3_path = UPath(path, anon=anon, **s3so)
+    s3_path = UPath(path, anon=True)
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"
-    host, user, port = hdfs
-    path = f"hdfs:{local_testdir}"
-    UPath(path, host=host, user=user, port=port)
+    path = f"file://{local_testdir}"
+    UPath(path)
     assert s3_path.joinpath("text1.txt")._url.scheme == "s3"
 
 
