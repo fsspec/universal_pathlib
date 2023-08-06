@@ -125,20 +125,12 @@ def test_new_method(local_testdir):
     assert isinstance(path, UPath)
 
 
-@skip_on_windows
-class TestFSSpecLocal(BaseTests):
-    @pytest.fixture(autouse=True)
-    def path(self, local_testdir):
-        path = f"file://{local_testdir}"
-        self.path = UPath(path)
-
-
 PATHS = (
     ("path", "storage_options", "module", "object_type"),
     (
-        ("/tmp/abc", (), None, pathlib.Path),
-        ("s3://bucket/folder", ({"anon": True}), "s3fs", S3Path),
-        ("gs://bucket/folder", ({"token": "anon"}), "gcsfs", GCSPath),
+        ("/tmp/abc", {}, None, pathlib.Path),
+        ("s3://bucket/folder", {"anon": True}, "s3fs", S3Path),
+        ("gs://bucket/folder", {"token": "anon"}, "gcsfs", GCSPath),
     ),
 )
 
@@ -150,7 +142,7 @@ def test_create_from_type(path, storage_options, module, object_type):
         # skip if module cannot be imported
         pytest.importorskip(module)
     try:
-        upath = UPath(path, storage_options=storage_options)
+        upath = UPath(path, **storage_options)
         # test expected object type
         assert isinstance(upath, object_type)
         cast = type(upath)
@@ -159,7 +151,7 @@ def test_create_from_type(path, storage_options, module, object_type):
         assert isinstance(parent, cast)
         # test that created fs uses fsspec instance cache
         assert not hasattr(upath, "fs") or upath.fs is parent.fs
-        new = cast(str(parent))
+        new = cast(str(parent), **storage_options)
         # test that object cast is same type
         assert isinstance(new, cast)
     except ImportError:
