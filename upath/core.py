@@ -34,7 +34,7 @@ class _FSSpecAccessor:
     __slots__ = ("_fs",)
 
     def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
-        if parsed_url:
+        if parsed_url and parsed_url.scheme:
             cls = get_filesystem_class(parsed_url.scheme)
             url_kwargs = cls._get_kwargs_from_urls(urlunsplit(parsed_url))
         else:
@@ -166,7 +166,7 @@ class UPath(Path):
             _kwargs = getattr(other, "_kwargs", {})
             _url = getattr(other, "_url", None)
             other_kwargs = _kwargs.copy()
-            if _url:
+            if _url and _url.scheme:
                 other_kwargs["url"] = _url
             new_kwargs = _kwargs.copy()
             new_kwargs.update(kwargs)
