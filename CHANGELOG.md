@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1]
+### Fixed
+- restore `._kwargs` and `._url` on `PosixUPath` and `WindowsUPath` subclasses (#131).
+- tests: fixed and refactored core tests (#130).
+
 ## [0.1.0]
 ### Changed
 - updated past changelog entries.
@@ -66,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/fsspec/universal_pathlib/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/fsspec/universal_pathlib/compare/v0.0.24...v0.1.0
 [0.0.24]: https://github.com/fsspec/universal_pathlib/compare/v0.0.23...v0.0.24
 [0.0.23]: https://github.com/fsspec/universal_pathlib/compare/v0.0.22...v0.0.23
