@@ -1,3 +1,32 @@
+"""upath.registry -- registry for file system specific implementations
+
+Retrieve UPath implementations via `get_upath_class`.
+Register custom UPath subclasses in one of two ways:
+
+### directly from Python
+
+>>> from upath import UPath
+>>> from upath.registry import register_implementation
+>>> my_protocol = "myproto"
+>>> class MyPath(UPath):
+...     pass
+>>> register_implementation(my_protocol, MyPath)
+
+### via entry points
+
+```toml
+# pyproject.toml
+[project.entry-points."unversal_pathlib.implementations"]
+myproto = "my_module.submodule:MyPath"
+```
+
+```ini
+# setup.cfg
+[options.entry_points]
+universal_pathlib.implementations =
+    myproto = my_module.submodule:MyPath
+```
+"""
 from __future__ import annotations
 
 import os
