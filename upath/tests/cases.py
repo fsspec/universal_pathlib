@@ -408,4 +408,11 @@ class BaseTests:
         p1 = self.path.joinpath("c")
         p2 = self.path / "c"
         assert p1._url == p2._url
-        assert p1 != p._url
+        assert p1._url != p._url
+
+    def test_as_uri(self):
+        # test that we can reconstruct the path from the uri
+        p0 = self.path
+        uri = p0.as_uri()
+        p1 = UPath(uri, **p0.fs.storage_options)
+        assert p0 == p1
