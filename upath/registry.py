@@ -40,6 +40,7 @@ from importlib.metadata import entry_points
 from typing import Any
 from typing import Iterator
 from typing import MutableMapping
+from typing import cast
 
 from fsspec.core import get_filesystem_class
 from fsspec.registry import available_protocols
@@ -83,7 +84,9 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         else:
             eps = entry_points()[_ENTRY_POINT_GROUP]
         ep_dct: dict[str, Any] = {ep.name: ep for ep in eps}
-        self._m = ChainMap({}, ep_dct, self.known_implementations)
+        self._m = ChainMap(
+            cast("dict[str, Any]", {}), ep_dct, self.known_implementations
+        )
 
     def __getitem__(self, item: str) -> type[upath.core.UPath]:
         fqn = self._m[item]
@@ -101,7 +104,10 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         return cls
 
     def __setitem__(self, item: str, value: type[upath.core.UPath] | str) -> None:
-        if not (issubclass(value, upath.core.UPath) or isinstance(value, str)):
+        if not (
+            (isinstance(value, type) and issubclass(value, upath.core.UPath))
+            or isinstance(value, str)
+        ):
             raise ValueError(
                 f"expected UPath subclass or FQN-string, got: {type(value).__name__!r}"
             )
