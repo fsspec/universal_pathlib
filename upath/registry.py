@@ -82,7 +82,7 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         if sys.version_info >= (3, 10):
             eps = entry_points(group=_ENTRY_POINT_GROUP)
         else:
-            eps = entry_points()[_ENTRY_POINT_GROUP]
+            eps = entry_points().get(_ENTRY_POINT_GROUP, [])
         ep_dct: dict[str, Any] = {ep.name: ep for ep in eps}
         self._m = ChainMap(
             cast("dict[str, Any]", {}), ep_dct, self.known_implementations
