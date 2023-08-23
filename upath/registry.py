@@ -82,9 +82,9 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         else:
             eps = entry_points().get(_ENTRY_POINT_GROUP, [])
         self._entries = {ep.name: ep for ep in eps}
-        self._m = ChainMap({}, self.known_implementations)
+        self._m = ChainMap({}, self.known_implementations)  # type: ignore
 
-    def __contains__(self, item: str) -> bool:
+    def __contains__(self, item: object) -> bool:
         return item in set().union(self._m, self._entries)
 
     def __getitem__(self, item: str) -> type[upath.core.UPath]:
