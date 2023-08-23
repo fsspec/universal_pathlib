@@ -160,7 +160,7 @@ def register_implementation(
         Whether to overwrite a protocol with the same name; if False,
         will raise instead.
     """
-    if not re.match(r"[a-z][a-z0-9+_.]+", protocol):
+    if not re.match(r"^[a-z][a-z0-9+_.]+$", protocol):
         raise ValueError(f"{protocol!r} is not a valid URI scheme")
     if not clobber and protocol in _registry:
         raise ValueError(f"{protocol!r} is already in registry and clobber is False!")
