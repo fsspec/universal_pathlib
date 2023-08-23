@@ -37,10 +37,8 @@ from collections import ChainMap
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
-from typing import Any
 from typing import Iterator
 from typing import MutableMapping
-from typing import cast
 
 from fsspec.core import get_filesystem_class
 from fsspec.registry import available_protocols
@@ -83,24 +81,25 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
             eps = entry_points(group=_ENTRY_POINT_GROUP)
         else:
             eps = entry_points().get(_ENTRY_POINT_GROUP, [])
-        ep_dct: dict[str, Any] = {ep.name: ep for ep in eps}
-        self._m = ChainMap(
-            cast("dict[str, Any]", {}), ep_dct, self.known_implementations
-        )
+        self._entries = {ep.name: ep for ep in eps}
+        self._m = ChainMap({}, self.known_implementations)
+
+    def __contains__(self, item: str) -> bool:
+        return item in set().union(self._m, self._entries)
 
     def __getitem__(self, item: str) -> type[upath.core.UPath]:
-        fqn = self._m[item]
+        fqn = self._m.get(item)
+        if fqn is None:
+            if item in self._entries:
+                fqn = self._m[item] = self._entries[item].load()
+        if fqn is None:
+            raise KeyError(f"{item} not in registry")
         if isinstance(fqn, str):
             module_name, name = fqn.rsplit(".", 1)
             mod = import_module(module_name)
             cls = getattr(mod, name)  # type: ignore
-        elif hasattr(fqn, "load"):
-            cls = fqn.load()
         else:
             cls = fqn
-
-        if not issubclass(cls, upath.core.UPath):
-            raise TypeError(f"expected UPath subclass, got: {cls.__name__!r}")
         return cls
 
     def __setitem__(self, item: str, value: type[upath.core.UPath] | str) -> None:
@@ -117,10 +116,10 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         raise NotImplementedError("removal is unsupported")
 
     def __len__(self) -> int:
-        return len(self._m)
+        return len(set().union(self._m, self._entries))
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self._m)
+        return iter(set().union(self._m, self._entries))
 
 
 _registry = _Registry()
