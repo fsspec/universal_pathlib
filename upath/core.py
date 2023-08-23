@@ -722,6 +722,9 @@ class UPath(Path):
         """A sequence of this upath's logical parents."""
         return _UPathParents(self)
 
+    def as_uri(self) -> str:
+        return str(self)
+
 
 class _UPathParents(Sequence[UPath]):
     """This object provides sequence-like access to the logical ancestors
