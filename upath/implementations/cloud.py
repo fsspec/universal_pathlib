@@ -10,7 +10,7 @@ class _CloudAccessor(upath.core._FSSpecAccessor):
         """
         netloc has already been set to project via `CloudPath._from_parts`
         """
-        return f"{path._url.netloc}/{path.path.lstrip('/')}"
+        return f"{path._url.netloc}/{path._path.lstrip('/')}"
 
     def mkdir(self, path, create_parents=True, **kwargs):
         _path = self._format_path(path)
@@ -49,7 +49,7 @@ class CloudPath(upath.core.UPath):
         `listdir` and `glob`. However, in `iterdir` and `glob` we only want the
         relative path to `self`.
         """
-        sp = re.escape(self.path)
+        sp = re.escape(self._path)
         netloc = self._url.netloc
         return re.sub(
             f"^({netloc})?/?({sp}|{sp[1:]})/?",
@@ -70,6 +70,10 @@ class CloudPath(upath.core.UPath):
             bucket = args_list.pop(0)
             self._kwargs["bucket"] = bucket
             return super().joinpath(*tuple(args_list))
+
+    @property
+    def path(self) -> str:
+        return f"{self._url.netloc}{super()._path}"
 
 
 class GCSPath(CloudPath):

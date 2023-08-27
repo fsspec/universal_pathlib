@@ -44,7 +44,7 @@ class _FSSpecAccessor:
         self._fs = cls(**url_kwargs)
 
     def _format_path(self, path: UPath) -> str:
-        return path.path
+        return path._path
 
     def open(self, path, mode="r", *args, **kwargs):
         return self._fs.open(self._format_path(path), mode, *args, **kwargs)
@@ -240,12 +240,7 @@ class UPath(Path):
 
         Note: for some file systems this can be prefixed by the protocol.
         """
-        if self._parts:
-            join_parts = self._parts[1:] if self._parts[0] == "/" else self._parts
-            path: str = self._flavour.join(join_parts)
-            return self._root + path
-        else:
-            return "/"
+        return self._path
 
     def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
@@ -297,6 +292,15 @@ class UPath(Path):
         netloc = "//" + netloc if netloc else ""
         formatted = scheme + netloc + path
         return formatted
+
+    @property
+    def _path(self) -> str:
+        if self._parts:
+            join_parts = self._parts[1:] if self._parts[0] == "/" else self._parts
+            path: str = self._flavour.join(join_parts)
+            return self._root + path
+        else:
+            return "/"
 
     def open(self, *args, **kwargs):
         return self._accessor.open(self, *args, **kwargs)
@@ -381,7 +385,7 @@ class UPath(Path):
 
     def _sub_path(self, name):
         # only want the path name with iterdir
-        sp = self.path
+        sp = self._path
         return re.sub(f"^({sp}|{sp[1:]})/", "", name)
 
     def absolute(self: PT) -> PT:
