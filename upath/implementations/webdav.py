@@ -53,10 +53,14 @@ class WebdavPath(upath.core.UPath):
 
     @property
     def protocol(self) -> str:
+        if self._url is None:
+            raise RuntimeError(str(self))
         return self._url.scheme.split("+")[0]
 
     @property
     def storage_options(self) -> dict[str, Any]:
+        if self._url is None:
+            raise RuntimeError(str(self))
         sopts = super().storage_options
         http_protocol = self._url.scheme.split("+")[1]
         assert http_protocol in {"http", "https"}

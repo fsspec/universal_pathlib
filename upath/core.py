@@ -214,6 +214,8 @@ class UPath(Path):
         is backed by fsspec or '' if it's backed by stdlib pathlib. For
         both `fsspec.get_filesystem_class` returns `LocalFileSystem`.
         """
+        if self._url is None:
+            return ""
         return self._url.scheme
 
     @property

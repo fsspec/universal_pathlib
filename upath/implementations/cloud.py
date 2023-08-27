@@ -73,6 +73,8 @@ class CloudPath(upath.core.UPath):
 
     @property
     def path(self) -> str:
+        if self._url is None:
+            raise RuntimeError(str(self))
         return f"{self._url.netloc}{super()._path}"
 
 

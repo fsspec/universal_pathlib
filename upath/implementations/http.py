@@ -89,4 +89,6 @@ class HTTPPath(upath.core.UPath):
     @property
     def path(self) -> str:
         # http filesystems use the full url as path
+        if self._url is None:
+            raise RuntimeError(str(self))
         return urlunsplit(self._url)
