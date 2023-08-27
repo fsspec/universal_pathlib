@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from fsspec import filesystem
 
 from upath import UPath
 
@@ -416,3 +417,24 @@ class BaseTests:
         uri = p0.as_uri()
         p1 = UPath(uri, **p0.fs.storage_options)
         assert p0 == p1
+
+    def test_protocol(self):
+        protocol = self.path.protocol
+        protocols = [p] if isinstance((p := type(self.path.fs).protocol), str) else p
+        print(protocol, protocols)
+        assert protocol in protocols
+
+    def test_storage_options(self):
+        storage_options = self.path.storage_options
+        assert storage_options == self.path.fs.storage_options
+
+    def test_read_with_fsspec(self):
+        p = self.path.joinpath("file2.txt")
+
+        protocol = p.protocol
+        storage_options = p.storage_options
+        path = p.path
+
+        fs = filesystem(protocol, **storage_options)
+        with fs.open(path) as f:
+            assert f.read() == b"hello world"
