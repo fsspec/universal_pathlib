@@ -44,7 +44,7 @@ class _FSSpecAccessor:
         self._fs = cls(**url_kwargs)
 
     def _format_path(self, path: UPath) -> str:
-        return path.path
+        return path._path
 
     def open(self, path, mode="r", *args, **kwargs):
         return self._fs.open(self._format_path(path), mode, *args, **kwargs)
@@ -206,6 +206,44 @@ class UPath(Path):
             args_list, url=parsed_url, **kwargs
         )
 
+    @property
+    def protocol(self) -> str:
+        """The filesystem_spec protocol
+
+        For local paths protocol is either 'file' if the UPath instance
+        is backed by fsspec or '' if it's backed by stdlib pathlib. For
+        both `fsspec.get_filesystem_class` returns `LocalFileSystem`.
+        """
+        if self._url is None:
+            return ""
+        return self._url.scheme
+
+    @property
+    def storage_options(self) -> dict[str, Any]:
+        """The filesystem_spec storage options dictionary
+
+        Accessing `.storage_options` does not instantiate the
+        corresponding fsspec filesystem class.
+        """
+        return {
+            key: value
+            for key, value in self._kwargs.items()
+            if key not in {"scheme", "netloc", "url"}
+        }
+
+    @property
+    def fs(self) -> AbstractFileSystem:
+        """The filesystem_spec filesystem instance"""
+        return self._accessor._fs
+
+    @property
+    def path(self) -> str:
+        """The filesystem_spec path for use with a filesystem instance
+
+        Note: for some file systems this can be prefixed by the protocol.
+        """
+        return self._path
+
     def __getattr__(self, item: str) -> Any:
         if item == "_accessor":
             # cache the _accessor attribute on first access
@@ -258,7 +296,7 @@ class UPath(Path):
         return formatted
 
     @property
-    def path(self) -> str:
+    def _path(self) -> str:
         if self._parts:
             join_parts = self._parts[1:] if self._parts[0] == "/" else self._parts
             path: str = self._flavour.join(join_parts)
@@ -349,7 +387,7 @@ class UPath(Path):
 
     def _sub_path(self, name):
         # only want the path name with iterdir
-        sp = self.path
+        sp = self._path
         return re.sub(f"^({sp}|{sp[1:]})/", "", name)
 
     def absolute(self: PT) -> PT:
@@ -630,10 +668,6 @@ class UPath(Path):
                 **self._kwargs,
             )
             return self._str
-
-    @property
-    def fs(self) -> AbstractFileSystem:
-        return self._accessor._fs
 
     def __truediv__(self: PT, key: str | PathLike) -> PT:
         # Add `/` root if not present

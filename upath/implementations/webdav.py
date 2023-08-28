@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from urllib.parse import ParseResult
 from urllib.parse import urlunsplit
 
@@ -49,3 +50,20 @@ class WebdavPath(upath.core.UPath):
         name = name.strip("/")
 
         return name
+
+    @property
+    def protocol(self) -> str:
+        if self._url is None:
+            raise RuntimeError(str(self))
+        return self._url.scheme.split("+")[0]
+
+    @property
+    def storage_options(self) -> dict[str, Any]:
+        if self._url is None:
+            raise RuntimeError(str(self))
+        sopts = super().storage_options
+        http_protocol = self._url.scheme.split("+")[1]
+        assert http_protocol in {"http", "https"}
+        base_url = urlunsplit(self._url._replace(scheme=http_protocol, path=""))
+        sopts["base_url"] = base_url
+        return sopts

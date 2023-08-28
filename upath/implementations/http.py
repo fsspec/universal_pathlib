@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlunsplit
+
 from fsspec.asyn import sync
 
 import upath.core
@@ -43,7 +45,7 @@ class HTTPPath(upath.core.UPath):
         relative path to `self`.
         """
         complete_address = self._format_parsed_parts(
-            None, None, [self.path], url=self._url, **self._kwargs
+            None, None, [self._path], url=self._url, **self._kwargs
         )
 
         if name.startswith(complete_address):
@@ -83,3 +85,10 @@ class HTTPPath(upath.core.UPath):
                     break
 
         return resolved_path
+
+    @property
+    def path(self) -> str:
+        # http filesystems use the full url as path
+        if self._url is None:
+            raise RuntimeError(str(self))
+        return urlunsplit(self._url)

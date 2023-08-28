@@ -125,6 +125,29 @@ If a local path is provided, `UPath` will return a `PosixUPath` or `WindowsUPath
 These two subclasses are 100% compatible with the `PosixPath` and `WindowsPath` classes of their
 specific Python version, and are tested against all relevant tests of the CPython pathlib test-suite.
 
+### UPath public class API
+
+`UPath`'s public class interface is identical to `pathlib.Path` with the addition of the following attributes:
+
+- `UPath(...).protocol: str` the filesystem_spec protocol _(note: for `PosixUPath` and `WindowsUPath` it's an empty string)_
+- `UPath(...).storage_options: dict[str, Any]` the storage options for instantiating the filesystem_spec class
+- `UPath(...).path: str` the filesystem_spec compatible path for use with filesystem instances
+- `UPath(...).fs: AbstractFileSystem` convenience attribute to access an instantiated filesystem
+
+the first three provide a public interface to access a file via fsspec as follows:
+
+```python
+from upath import UPath
+from fsspec import filesystem
+
+p = UPath("s3://bucket/file.txt", anon=True)
+
+fs = filesystem(p.protocol, **p.storage_options)  # equivalent to p.fs
+with fs.open(p.path) as f:
+    data = f.read()
+```
+
+
 ## Contributing
 
 Contributions are very welcome.

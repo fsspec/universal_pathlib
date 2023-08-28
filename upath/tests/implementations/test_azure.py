@@ -44,3 +44,8 @@ class TestAzurePath(BaseTests):
 
     def test_rglob(self, pathlib_base):
         return super().test_rglob(pathlib_base)
+
+    def test_protocol(self):
+        # test all valid protocols for azure...
+        protocol = self.path.protocol
+        assert protocol in ["abfs", "abfss", "adl", "az"]
