@@ -147,6 +147,39 @@ with fs.open(p.path) as f:
     data = f.read()
 ```
 
+### Register custom UPath implementations
+
+In case you develop a custom UPath implementation, feel free to open an issue to discuss integrating it
+in `universal_pathlib`. You can dynamically register your implementation too! Here are your options:
+
+#### Dynamic registration from Python
+
+```python
+# for example: mymodule/submodule.py
+from upath import UPath
+from upath.registry import register_implementation
+
+my_protocol = "myproto"
+class MyPath(UPath):
+    ...  # your custom implementation
+
+register_implementation(my_protocol, MyPath)
+```
+
+#### Registration via entry points
+
+```toml
+# pyproject.toml
+[project.entry-points."unversal_pathlib.implementations"]
+myproto = "my_module.submodule:MyPath"
+```
+
+```ini
+# setup.cfg
+[options.entry_points]
+universal_pathlib.implementations =
+    myproto = my_module.submodule:MyPath
+```
 
 ## Contributing
 
