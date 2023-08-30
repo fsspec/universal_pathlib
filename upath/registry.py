@@ -41,7 +41,7 @@ from typing import Iterator
 from typing import MutableMapping
 
 from fsspec.core import get_filesystem_class
-from fsspec.registry import available_protocols
+from fsspec.registry import known_implementations as _fsspec_known_implementations
 
 import upath.core
 
@@ -138,7 +138,7 @@ def available_implementations(*, fallback: bool = False) -> list[str]:
     if not fallback:
         return impl
     else:
-        return list({*impl, *available_protocols()})
+        return list({*impl, *list(_fsspec_known_implementations)})
 
 
 def register_implementation(
