@@ -1,5 +1,5 @@
 import pytest
-from fsspec.registry import available_protocols
+from fsspec.registry import known_implementations
 
 from upath import UPath
 from upath.registry import available_implementations
@@ -64,7 +64,7 @@ def test_available_implementations():
 
 def test_available_implementations_with_fallback():
     impl = available_implementations(fallback=True)
-    assert set(impl) == IMPLEMENTATIONS.union(available_protocols())
+    assert set(impl) == IMPLEMENTATIONS.union(list(known_implementations))
 
 
 def test_available_implementations_with_entrypoint(fake_entrypoint):
