@@ -30,6 +30,18 @@ __all__ = [
 ]
 
 
+def _check_fsspec_glob():
+    from fsspec.implementations.memory import MemoryFileSystem
+
+    m = type("_M", (MemoryFileSystem,), {"store": {}, "pseudo_dirs": [""]})()
+    m.touch("a.txt")
+    m.touch("f/b.txt")
+    return len(m.glob("**/*.txt")) == 2
+
+
+_FSSPEC_HAS_WORKING_GLOB = _check_fsspec_glob()
+
+
 class _FSSpecAccessor:
     __slots__ = ("_fs",)
 
@@ -376,14 +388,29 @@ class UPath(Path):
             name = name.split(self._flavour.sep)
             yield self._make_child(name)
 
-    def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
-        path_pattern = self.joinpath(pattern)
-        r_path_pattern = self.joinpath("**", pattern)
-        for p in (path_pattern, r_path_pattern):
-            for name in self._accessor.glob(self, p):
+    if _FSSPEC_HAS_WORKING_GLOB:
+
+        def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
+            r_path_pattern = self.joinpath("**", pattern)
+            for name in self._accessor.glob(self, r_path_pattern):
                 name = self._sub_path(name)
                 name = name.split(self._flavour.sep)
                 yield self._make_child(name)
+
+    else:
+
+        def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
+            path_pattern = self.joinpath(pattern)
+            r_path_pattern = self.joinpath("**", pattern)
+            seen = set()
+            for p in (path_pattern, r_path_pattern):
+                for name in self._accessor.glob(self, p):
+                    name = self._sub_path(name)
+                    name = name.split(self._flavour.sep)
+                    pth = self._make_child(name)
+                    if pth.parts not in seen:
+                        yield pth
+                        seen.add(pth.parts)
 
     def _sub_path(self, name):
         # only want the path name with iterdir
