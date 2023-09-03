@@ -4,7 +4,9 @@ import sys
 from pathlib import Path
 
 import pytest
+from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
+from packaging.version import Version
 
 from upath import UPath
 
@@ -41,9 +43,22 @@ class BaseTests:
         with pytest.raises(NotImplementedError):
             self.path.expanduser()
 
-    def test_glob(self, pathlib_base):
-        mock_glob = list(self.path.glob("**.txt"))
-        path_glob = list(pathlib_base.glob("**/*.txt"))
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            "*",
+            pytest.param(
+                "**/*.txt",
+                marks=pytest.mark.xfail()
+                if Version(fsspec_version) < Version("2023.9.0")
+                else (),
+            ),
+        ),
+    )
+    def test_glob(self, pathlib_base, pattern):
+        mock_glob = list(self.path.glob(pattern))
+        path_glob = list(pathlib_base.glob(pattern))
 
         _mock_start = len(self.path.parts)
         mock_glob_normalized = sorted([a.parts[_mock_start:] for a in mock_glob])
