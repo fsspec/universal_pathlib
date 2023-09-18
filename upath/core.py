@@ -29,17 +29,18 @@ __all__ = [
     "UPath",
 ]
 
+_FSSPEC_HAS_WORKING_GLOB = None
 
-def _check_fsspec_glob():
+
+def _check_fsspec_has_working_glob():
+    global _FSSPEC_HAS_WORKING_GLOB
     from fsspec.implementations.memory import MemoryFileSystem
 
     m = type("_M", (MemoryFileSystem,), {"store": {}, "pseudo_dirs": [""]})()
     m.touch("a.txt")
     m.touch("f/b.txt")
-    return len(m.glob("**/*.txt")) == 2
-
-
-_FSSPEC_HAS_WORKING_GLOB = _check_fsspec_glob()
+    g = _FSSPEC_HAS_WORKING_GLOB = len(m.glob("**/*.txt")) == 2
+    return g
 
 
 class _FSSpecAccessor:
@@ -388,18 +389,18 @@ class UPath(Path):
             name = name.split(self._flavour.sep)
             yield self._make_child(name)
 
-    if _FSSPEC_HAS_WORKING_GLOB:
+    def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
+        if _FSSPEC_HAS_WORKING_GLOB is None:
+            _check_fsspec_has_working_glob()
 
-        def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
+        if _FSSPEC_HAS_WORKING_GLOB:
             r_path_pattern = self.joinpath("**", pattern)
             for name in self._accessor.glob(self, r_path_pattern):
                 name = self._sub_path(name)
                 name = name.split(self._flavour.sep)
                 yield self._make_child(name)
 
-    else:
-
-        def rglob(self: PT, pattern: str) -> Generator[PT, None, None]:
+        else:
             path_pattern = self.joinpath(pattern)
             r_path_pattern = self.joinpath("**", pattern)
             seen = set()
