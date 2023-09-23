@@ -186,7 +186,7 @@ def test_pickling():
 
     assert type(path) == type(recovered_path)
     assert str(path) == str(recovered_path)
-    assert path.fs.storage_options == recovered_path.fs.storage_options
+    assert path.storage_options == recovered_path.storage_options
 
 
 def test_pickling_child_path():
@@ -199,7 +199,7 @@ def test_pickling_child_path():
     assert path._drv == recovered_path._drv
     assert path._root == recovered_path._root
     assert path._parts == recovered_path._parts
-    assert path.fs.storage_options == recovered_path.fs.storage_options
+    assert path.storage_options == recovered_path.storage_options
 
 
 def test_copy_path():
@@ -211,7 +211,7 @@ def test_copy_path():
     assert path._drv == copy_path._drv
     assert path._root == copy_path._root
     assert path._parts == copy_path._parts
-    assert path.fs.storage_options == copy_path.fs.storage_options
+    assert path.storage_options == copy_path.storage_options
 
 
 def test_copy_path_posix():

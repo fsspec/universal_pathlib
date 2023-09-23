@@ -50,7 +50,7 @@ class BaseTests:
             "*",
             pytest.param(
                 "**/*.txt",
-                marks=pytest.mark.xfail()
+                marks=pytest.mark.xfail(reason="requires fsspec>=2023.9.0")
                 if Version(fsspec_version) < Version("2023.9.0")
                 else (),
             ),
