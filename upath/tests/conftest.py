@@ -92,7 +92,7 @@ def hdfs(htcluster, tmp_path, local_testdir):
     pyarrow = pytest.importorskip("pyarrow")
     host, user, port = "0.0.0.0", "hdfs", 9000
     hdfs = pyarrow.hdfs.connect(host="0.0.0.0", port=9000, user=user)
-    hdfs.mkdir(tmp_path, create_parents=True)
+    hdfs.mkdir(str(tmp_path).encode("utf8"), create_parents=True)
     for x in Path(local_testdir).glob("**/*"):
         if x.is_file():
             text = x.read_text().encode("utf8")
