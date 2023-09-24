@@ -23,6 +23,20 @@ def tests(session: nox.Session) -> None:
     )
 
 
+@nox.session(python="3.8", name="tests-minversion")
+def tests_minversion(session: nox.Session) -> None:
+    session.install("fsspec==2022.1.0", ".[dev]")
+    session.run(
+        "pytest",
+        "-m",
+        "not hdfs",
+        "--cov",
+        "--cov-config=pyproject.toml",
+        *session.posargs,
+        env={"COVERAGE_FILE": f".coverage.{session.python}"},
+    )
+
+
 @nox.session
 def lint(session: nox.Session) -> None:
     session.install("pre-commit")
