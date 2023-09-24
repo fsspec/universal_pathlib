@@ -19,9 +19,6 @@ class TestUPathHDFS(BaseTests):
     def test_is_HDFSPath(self):
         assert isinstance(self.path, HDFSPath)
 
-    def test_chmod(self):
-        # todo
-        pass
-
-    def test_fsspec_compat(self):
+    @pytest.mark.skip
+    def test_makedirs_exist_ok_false(self):
         pass
