@@ -19,7 +19,18 @@ class _HDFSAccessor(upath.core._FSSpecAccessor):
         else:
             if not kwargs.get("exist_ok", False) and self._fs.exists(pth):
                 raise FileExistsError(pth)
+            print(kwargs, self._fs.exists(pth), pth)
             return self._fs.mkdir(pth, create_parents=create_parents, **kwargs)
+
+    def listdir(self, path, **kwargs):
+        try:
+            yield from super().listdir(path, **kwargs)
+        except OSError as err:
+            if err.args and err.args[0].startswith(
+                "GetFileInfo expects base_dir of selector to be a directory"
+            ):
+                raise NotADirectoryError(path)
+            raise
 
 
 class HDFSPath(upath.core.UPath):

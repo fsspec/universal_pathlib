@@ -131,6 +131,11 @@ class BaseTests:
         assert {p.name for p in pl_iter} == {u.name for u in up_iter}
         assert next(self.path.parent.iterdir()).exists()
 
+    def test_iterdir_trailing_slash(self):
+        files_noslash = list(self.path.joinpath("folder1").iterdir())
+        files_slash = list(self.path.joinpath("folder1/").iterdir())
+        assert files_noslash == files_slash
+
     def test_parents(self):
         p = self.path.joinpath("folder1", "file1.txt")
         assert p.is_file()

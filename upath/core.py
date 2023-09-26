@@ -276,7 +276,10 @@ class UPath(Path):
     def _make_child_relpath(self: PT, part: str) -> PT:
         # This is an optimization used for dir walking.  `part` must be
         # a single part relative to this path.
-        parts = self._parts + [part]
+        if self._parts[-1:] == [""] and part:
+            parts = self._parts[:-1] + [part]
+        else:
+            parts = self._parts + [part]
         return self._from_parsed_parts(
             self._drv, self._root, parts, url=self._url, **self._kwargs
         )
@@ -415,8 +418,8 @@ class UPath(Path):
 
     def _sub_path(self, name):
         # only want the path name with iterdir
-        sp = self._path
-        return re.sub(f"^({sp}|{sp[1:]})/", "", name)
+        sp = re.escape(self._path)
+        return re.sub(f"^({sp}|{sp[1:]})/?", "", name)
 
     def absolute(self: PT) -> PT:
         # fsspec paths are always absolute
