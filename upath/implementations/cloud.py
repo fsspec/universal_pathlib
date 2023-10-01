@@ -80,11 +80,11 @@ class CloudPath(upath.core.UPath):
         return f"{self._url.netloc}{super()._path}"
 
 
-if sys.version >= (3, 12):
-    from upath._core312plus import PathOrStr
-    from upath._core312plus import fsspecpathmod
-    from upath._core312plus import split_upath_protocol
-    from upath._core312plus import strip_upath_protocol
+if sys.version_info >= (3, 12):
+    from upath.core312plus import PathOrStr
+    from upath.core312plus import fsspecpathmod
+    from upath.core312plus import split_upath_protocol
+    from upath.core312plus import strip_upath_protocol
 
     class cloudpathmod(fsspecpathmod):
         sep: str = "/"

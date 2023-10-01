@@ -22,6 +22,10 @@ from upath.registry import get_upath_class
 PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
 
 
+class _FSSpecAccessor:
+    """this is a compatibility shim and will be removed"""
+
+
 class fsspecpathmod:
     sep: str = "/"
     altsep: str | None = None

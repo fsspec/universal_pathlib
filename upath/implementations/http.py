@@ -97,9 +97,9 @@ class HTTPPath(upath.core.UPath):
 
 
 if sys.version_info >= (3, 12):
-    from upath._core312plus import PathOrStr
-    from upath._core312plus import fsspecpathmod
-    from upath._core312plus import strip_upath_protocol
+    from upath.core312plus import PathOrStr
+    from upath.core312plus import fsspecpathmod
+    from upath.core312plus import strip_upath_protocol
 
     class httppathmod(fsspecpathmod):
         sep: str = "/"
