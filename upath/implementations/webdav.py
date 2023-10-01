@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import Any
 from urllib.parse import ParseResult
 from urllib.parse import urlunsplit
@@ -67,3 +68,20 @@ class WebdavPath(upath.core.UPath):
         base_url = urlunsplit(self._url._replace(scheme=http_protocol, path=""))
         sopts["base_url"] = base_url
         return sopts
+
+
+if sys.version_info >= (3, 12):
+
+    class WebdavPath(upath.core.UPath):  # noqa
+        def __init__(
+            self, *args, protocol: str | None = None, **storage_options: Any
+        ) -> None:
+            if self._protocol == "webdav+http":
+                ...
+            elif self._protocol == "webdav+https":
+                ...
+            elif self._protocol == "webdav":
+                ...
+            else:
+                raise NotImplementedError
+            super().__init__(*args, protocol="webdav", **storage_options)

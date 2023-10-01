@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import posixpath
+import sys
 from urllib.parse import urlunsplit
 
 from fsspec.asyn import sync
@@ -92,3 +94,30 @@ class HTTPPath(upath.core.UPath):
         if self._url is None:
             raise RuntimeError(str(self))
         return urlunsplit(self._url)
+
+
+if sys.version_info >= (3, 12):
+    from upath._core312plus import PathOrStr
+    from upath._core312plus import fsspecpathmod
+    from upath._core312plus import strip_upath_protocol
+
+    class httppathmod(fsspecpathmod):
+        sep: str = "/"
+        altsep: str | None = None
+
+        @staticmethod
+        def join(__path: PathOrStr, *paths: PathOrStr) -> str:
+            return posixpath.join(*map(strip_upath_protocol, [__path, *paths]))
+
+        @staticmethod
+        def splitroot(__path: PathOrStr) -> tuple[str, str, str]:
+            path = strip_upath_protocol(__path)
+            return posixpath.splitroot(path)
+
+        @staticmethod
+        def splitdrive(__path: PathOrStr) -> tuple[str, str]:
+            path = strip_upath_protocol(__path)
+            return posixpath.splitdrive(path)
+
+    class HTTPPath(upath.core.UPath):  # noqa
+        pathmod = httppathmod
