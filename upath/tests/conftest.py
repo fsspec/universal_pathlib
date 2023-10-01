@@ -11,8 +11,10 @@ from pathlib import Path
 import fsspec
 import pytest
 from fsspec.implementations.local import LocalFileSystem
+from fsspec.implementations.local import make_path_posix
 from fsspec.registry import _registry
 from fsspec.registry import register_implementation
+from fsspec.utils import stringify_path
 
 from .utils import posixify
 
@@ -20,6 +22,15 @@ from .utils import posixify
 class DummyTestFS(LocalFileSystem):
     protocol = "mock"
     root_marker = "/"
+
+    @classmethod
+    def _strip_protocol(cls, path):
+        path = stringify_path(path)
+        if path.startswith("mock://"):
+            path = path[7:]
+        elif path.startswith("mock:"):
+            path = path[5:]
+        return make_path_posix(path).rstrip("/") or cls.root_marker
 
 
 @pytest.fixture(scope="session")
