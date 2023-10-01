@@ -184,7 +184,7 @@ class UPath(Path):
         if args:
             args0 = args[0]
             if isinstance(args0, UPath):
-                self._storage_options = args0.storage_options
+                self._storage_options = {**args0.storage_options, **storage_options}
             else:
                 fs_cls: type[AbstractFileSystem] = get_filesystem_class(self._protocol)
                 pth_storage_options = fs_cls._get_kwargs_from_urls(str(args0))
@@ -207,9 +207,10 @@ class UPath(Path):
                 self._storage_options.get(key) != value
                 for key, value in arg.storage_options.items()
             ):
-                raise ValueError(
-                    "can't combine different UPath storage_options as parts"
-                )
+                # raise ValueError(
+                #     "can't combine different UPath storage_options as parts"
+                # ) todo: revisit and define behaviour
+                pass
 
         # fill ._raw_paths
         super().__init__(*args)
@@ -302,14 +303,14 @@ class UPath(Path):
     #     self._root = root
     #     self._tail_cached = tail
 
-    #   def _from_parsed_parts(self, drv, root, tail):
-    #       path_str = self._format_parsed_parts(drv, root, tail)
-    #       path = self.with_segments(path_str)
-    #       path._str = path_str or '.'
-    #       path._drv = drv
-    #       path._root = root
-    #       path._tail_cached = tail
-    #       return path
+    def _from_parsed_parts(self, drv, root, tail):
+        path_str = self._format_parsed_parts(drv, root, tail)
+        path = self.with_segments(path_str)
+        # path._str = path_str or '.'  # todo: upstream?
+        path._drv = drv
+        path._root = root
+        path._tail_cached = tail
+        return path
 
     # @classmethod
     # def _format_parsed_parts(cls, drv, root, tail):
