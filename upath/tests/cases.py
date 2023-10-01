@@ -431,7 +431,7 @@ class BaseTests:
         p2 = self.path / "c"
         assert p1._url == p2._url
         assert p1._url != p._url
-        assert p1._url.scheme == p1.protocol
+        assert p1.protocol == p2.protocol
 
     def test_as_uri(self):
         # test that we can reconstruct the path from the uri
