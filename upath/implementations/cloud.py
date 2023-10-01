@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import posixpath
 import re
+import sys
+from typing import Any
 
 import upath.core
 
@@ -23,7 +26,6 @@ class _CloudAccessor(upath.core._FSSpecAccessor):
         return super().mkdir(path, create_parents=create_parents, **kwargs)
 
 
-# project is not part of the path, but is part of the credentials
 class CloudPath(upath.core.UPath):
     _default_accessor = _CloudAccessor
 
@@ -76,6 +78,69 @@ class CloudPath(upath.core.UPath):
         if self._url is None:
             raise RuntimeError(str(self))
         return f"{self._url.netloc}{super()._path}"
+
+
+if sys.version >= (3, 12):
+    from upath._core312plus import PathOrStr
+    from upath._core312plus import fsspecpathmod
+    from upath._core312plus import split_upath_protocol
+    from upath._core312plus import strip_upath_protocol
+
+    class cloudpathmod(fsspecpathmod):
+        sep: str = "/"
+        altsep: str | None = None
+
+        @staticmethod
+        def join(__path: PathOrStr, *paths: PathOrStr) -> str:
+            protocol = split_upath_protocol(__path)
+            joined = posixpath.join(*map(strip_upath_protocol, [__path, *paths]))
+            if protocol:
+                return f"{protocol}://{joined}"
+            else:
+                return joined
+
+        @staticmethod
+        def splitroot(__path: PathOrStr) -> tuple[str, str, str]:
+            protocol = split_upath_protocol(__path)
+            path = strip_upath_protocol(__path)
+            if protocol:
+                drive, root, tail = path.partition("/")
+                return drive, root or "/", tail
+            else:
+                return "", "", path
+
+        @staticmethod
+        def splitdrive(__path: PathOrStr) -> tuple[str, str]:
+            protocol = split_upath_protocol(__path)
+            path = strip_upath_protocol(__path)
+            if protocol:
+                drive, root, tail = path.partition("/")
+                return drive, f"{root}{tail}"
+            else:
+                return "", path
+
+    class CloudPath(upath.core.UPath):  # noqa
+        pathmod = cloudpathmod
+
+        def __init__(
+            self, *args, protocol: str | None = None, **storage_options: Any
+        ) -> None:
+            if "bucket" in storage_options:
+                bucket = storage_options.pop("bucket")
+                args = [f"s3://{bucket}/", *args]
+            super().__init__(*args, protocol=protocol, **storage_options)
+
+        def mkdir(
+            self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        ) -> None:
+            if not parents and not exist_ok and self.exists():
+                raise FileExistsError(self.path)
+            super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+
+        def iterdir(self):
+            if self.is_file():
+                raise NotADirectoryError(str(self))
+            yield from super().iterdir()
 
 
 class GCSPath(CloudPath):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import upath.core
 
 
@@ -27,3 +29,12 @@ class MemoryPath(upath.core.UPath):
             name = name.rstrip("/")
             name = self._sub_path(name)
             yield self._make_child_relpath(name)
+
+
+if sys.version_info >= (3, 12):
+
+    class MemoryPath(upath.core.UPath):  # noqa
+        def iterdir(self):
+            if not self.is_dir():
+                raise NotADirectoryError(str(self))
+            yield from super().iterdir()
