@@ -347,7 +347,7 @@ class BaseTests:
         pickled_path = pickle.dumps(path)
         recovered_path = pickle.loads(pickled_path)
 
-        assert type(path) == type(recovered_path)
+        assert type(path) is type(recovered_path)
         assert str(path) == str(recovered_path)
         assert path.fs.storage_options == recovered_path.fs.storage_options
 
@@ -356,7 +356,7 @@ class BaseTests:
         pickled_path = pickle.dumps(path)
         recovered_path = pickle.loads(pickled_path)
 
-        assert type(path) == type(recovered_path)
+        assert type(path) is type(recovered_path)
         assert str(path) == str(recovered_path)
         assert path.drive == recovered_path.drive
         assert path.root == recovered_path.root
@@ -377,7 +377,7 @@ class BaseTests:
         path = self.path
         copy_path = UPath(path)
 
-        assert type(path) == type(copy_path)
+        assert type(path) is type(copy_path)
         assert str(path) == str(copy_path)
         assert path.drive == copy_path.drive
         assert path.root == copy_path.root
