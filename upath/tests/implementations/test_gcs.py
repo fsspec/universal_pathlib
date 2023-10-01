@@ -5,6 +5,7 @@ from upath.implementations.cloud import GCSPath
 
 from ..cases import BaseTests
 from ..utils import skip_on_windows
+from ..utils import xfail_if_version
 
 
 @skip_on_windows
@@ -34,3 +35,15 @@ class TestGCSPath(BaseTests):
     @pytest.mark.skip
     def test_makedirs_exist_ok_false(self):
         pass
+
+    @xfail_if_version("gcsfs", lt="2022.7.1", reason="requires gcsfs>=2022.7.1")
+    def test_mkdir(self):
+        super().test_mkdir()
+
+    @xfail_if_version("gcsfs", lt="2022.7.1", reason="requires gcsfs>=2022.7.1")
+    def test_mkdir_exists_ok_false(self):
+        super().test_mkdir_exists_ok_false()
+
+    @xfail_if_version("gcsfs", lt="2022.7.1", reason="requires gcsfs>=2022.7.1")
+    def test_mkdir_exists_ok_true(self):
+        super().test_mkdir_exists_ok_true()
