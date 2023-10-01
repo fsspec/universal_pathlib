@@ -356,10 +356,11 @@ class BaseTests:
 
         assert type(path) == type(recovered_path)
         assert str(path) == str(recovered_path)
-        assert path._drv == recovered_path._drv
-        assert path._root == recovered_path._root
-        assert path._parts == recovered_path._parts
+        assert path.drive == recovered_path.drive
+        assert path.root == recovered_path.root
+        assert path.parts == recovered_path.parts
         assert path.fs.storage_options == recovered_path.fs.storage_options
+        assert path.storage_options == recovered_path.storage_options
 
     def test_child_path(self):
         path_str = str(self.path).rstrip("/")
@@ -367,10 +368,8 @@ class BaseTests:
         path_b = self.path / "folder"
 
         assert str(path_a) == str(path_b)
-        assert path_a._root == path_b._root
-        assert path_a._drv == path_b._drv
-        assert path_a._parts == path_b._parts
-        assert path_a._url == path_b._url
+        assert path_a.root == path_b.root
+        assert path_a.drive == path_b.drive
 
     def test_copy_path(self):
         path = self.path
@@ -378,9 +377,9 @@ class BaseTests:
 
         assert type(path) == type(copy_path)
         assert str(path) == str(copy_path)
-        assert path._drv == copy_path._drv
-        assert path._root == copy_path._root
-        assert path._parts == copy_path._parts
+        assert path.drive == copy_path.drive
+        assert path.root == copy_path.root
+        assert path.parts == copy_path.parts
         assert path.fs.storage_options == copy_path.fs.storage_options
 
     def test_with_name(self):
@@ -430,6 +429,7 @@ class BaseTests:
         p2 = self.path / "c"
         assert p1._url == p2._url
         assert p1._url != p._url
+        assert p1._url.scheme == p1.protocol
 
     def test_as_uri(self):
         # test that we can reconstruct the path from the uri

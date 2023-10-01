@@ -52,6 +52,7 @@ _PROTOCOL_RE = re.compile(
     r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?P<slashes>//?)(?P<path>.*)"
 )
 
+
 def split_upath_protocol(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
         return m.group("protocol")
@@ -67,6 +68,7 @@ def strip_upath_protocol(pth: str) -> str:
         return fsspec_strip_protocol(pth)
     else:
         return pth
+
 
 def get_upath_protocol(
     pth: str | PurePath,
@@ -113,10 +115,12 @@ class UPath(Path):
     #         cls = WindowsPath if os.name == 'nt' else PosixPath
     #     return object.__new__(cls)
 
-    def __new__(cls, *args, protocol: str | None = None, **storage_options: Any) -> Self:
+    def __new__(
+        cls, *args, protocol: str | None = None, **storage_options: Any
+    ) -> Self:
         # fill empty arguments
         if not args:
-            args = ".",
+            args = (".",)
 
         # create a copy if UPath class
         part0, *parts = args
@@ -175,18 +179,18 @@ class UPath(Path):
     #         warnings._deprecated("pathlib.PurePath(**kwargs)", msg, remove=(3, 14))
     #     super().__init__(*args)
 
-    def __init__(self, *args, protocol: str | None = None, **storage_options: Any) -> None:
-        # handle deprecated arguments
-        if "netloc" in storage_options:
-            raise NotImplementedError  # todo ...
-
+    def __init__(
+        self, *args, protocol: str | None = None, **storage_options: Any
+    ) -> None:
         # retrieve storage_options
         if args:
             args0 = args[0]
             if isinstance(args0, UPath):
                 self._storage_options = {**args0.storage_options, **storage_options}
             else:
-                fs_cls: type[AbstractFileSystem] = get_filesystem_class(self._protocol)
+                fs_cls: type[AbstractFileSystem] = get_filesystem_class(
+                    protocol or self._protocol
+                )
                 pth_storage_options = fs_cls._get_kwargs_from_urls(str(args0))
                 self._storage_options = {**pth_storage_options, **storage_options}
         else:
@@ -197,11 +201,9 @@ class UPath(Path):
         for arg in args:
             if not isinstance(arg, UPath):
                 continue
-            # protcols: only identical (or empty "") protocols can combine
+            # protocols: only identical (or empty "") protocols can combine
             if arg.protocol and arg.protocol != self._protocol:
-                raise TypeError(
-                    "can't combine different UPath protocols as parts"
-                )
+                raise TypeError("can't combine different UPath protocols as parts")
             # storage_options: args may not define other storage_options
             if any(
                 self._storage_options.get(key) != value
@@ -231,15 +233,13 @@ class UPath(Path):
             return self._fs_cached
         except AttributeError:
             fs = self._fs_cached = filesystem(
-                protocol=self._protocol, **self._storage_options
+                protocol=self.protocol, **self.storage_options
             )
             return fs
 
     @property
     def path(self) -> str:
-        return self._format_parsed_parts(
-            self.drive, self.root, self._tail
-        ) or '.'
+        return super().__str__()
 
     @property
     def _kwargs(self):
@@ -252,7 +252,18 @@ class UPath(Path):
 
     @property
     def _url(self):
-        return urlsplit(str(self))
+        return urlsplit(str(self))  # todo: deprecate
+
+    def _transform_init_params(
+        self,
+        *args: PathOrStr,
+        protocol: str | None,
+        **storage_options: Any,
+    ) -> tuple[tuple[PathOrStr, ...], str | None, dict[str, Any]]:
+        # handle deprecated arguments
+        if "netloc" in storage_options:
+            raise NotImplementedError  # todo ...
+        return args, protocol, storage_options
 
     # === pathlib.PurePath ============================================
 
@@ -303,14 +314,14 @@ class UPath(Path):
     #     self._root = root
     #     self._tail_cached = tail
 
-    def _from_parsed_parts(self, drv, root, tail):
-        path_str = self._format_parsed_parts(drv, root, tail)
-        path = self.with_segments(path_str)
-        # path._str = path_str or '.'  # todo: upstream?
-        path._drv = drv
-        path._root = root
-        path._tail_cached = tail
-        return path
+    # def _from_parsed_parts(self, drv, root, tail):
+    #     path_str = self._format_parsed_parts(drv, root, tail)
+    #     path = self.with_segments(path_str)
+    #     path._str = path_str or '.'
+    #     path._drv = drv
+    #     path._root = root
+    #     path._tail_cached = tail
+    #     return path
 
     # @classmethod
     # def _format_parsed_parts(cls, drv, root, tail):
@@ -321,18 +332,10 @@ class UPath(Path):
     #     return cls._flavour.sep.join(tail)
 
     def __str__(self):
-        try:
-            return self._str
-        except AttributeError:
-            path = self._format_parsed_parts(
-                self.drive, self.root, self._tail
-            ) or '.'
-            # self._str = get_filesystem_class(self._protocol).unstrip_protocol(path)
-            if self._protocol:
-                self._str = f"{self._protocol}://{path}"
-            else:
-                self._str = path
-            return self._str
+        if self._protocol:
+            return f"{self._protocol}://{self.path}"
+        else:
+            return self.path
 
     def __fspath__(self):
         msg = (
@@ -456,7 +459,6 @@ class UPath(Path):
     #       """The concatenation of the drive and root, or ''."""
     #       anchor = self.drive + self.root
     #       return anchor
-
 
     # @property
     # def name(self):
@@ -679,8 +681,7 @@ class UPath(Path):
         #   return self._flavour.samestat(st, other_st)
         raise NotImplementedError
 
-    def open(self, mode='r', buffering=-1, encoding=None,
-             errors=None, newline=None):
+    def open(self, mode="r", buffering=-1, encoding=None, errors=None, newline=None):
         return self.fs.open(self.path, mode)  # fixme
 
     # def read_bytes(self):
@@ -723,10 +724,10 @@ class UPath(Path):
         # return os.scandir(self)
         raise NotImplementedError
 
-    # def _make_child_relpath(self, name):
-    #     path = super()._make_child_relpath(name)
-    #     path._fs_cached = self._fs_cached
-    #     return path
+    def _make_child_relpath(self, name):
+        path = super()._make_child_relpath(name)
+        del path._str  # fix _str = str(self) assignment
+        return path
 
     # def glob(self, pattern, *, case_sensitive=None):
     #     sys.audit("pathlib.Path.glob", self, pattern)
@@ -962,7 +963,7 @@ class UPath(Path):
         self.fs.rm(self.path, recursive=False)
 
     def rmdir(self, recursive: bool = True):  # fixme: non-standard
-    # def rmdir(self):
+        # def rmdir(self):
         # os.rmdir(self)
         if not self.is_dir():
             raise NotADirectoryError(str(self))
@@ -971,7 +972,7 @@ class UPath(Path):
         self.fs.rm(self.path, recursive=recursive)
 
     def rename(self, target, *, recursive=False, maxdepth=None, **kwargs):
-    # def rename(self, target):
+        # def rename(self, target):
         # os.rename(self, target)
         # return self.with_segments(target)
         if not isinstance(target, UPath):
