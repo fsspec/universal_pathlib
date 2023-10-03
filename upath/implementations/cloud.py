@@ -132,8 +132,9 @@ if sys.version_info >= (3, 12):
             else:
                 return "", path
 
-    class CloudPath(upath.core.UPath):  # noqa
-        pathmod = cloudpathmod
+    class CloudPath(upath.core312plus.UPath):  # noqa
+        __slots__ = ()
+        pathmod = _flavour = cloudpathmod
 
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
@@ -157,12 +158,12 @@ if sys.version_info >= (3, 12):
 
 
 class GCSPath(CloudPath):
-    pass
+    __slots__ = ()
 
 
 class S3Path(CloudPath):
-    pass
+    __slots__ = ()
 
 
 class AzurePath(CloudPath):
-    pass
+    __slots__ = ()
