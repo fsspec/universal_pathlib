@@ -3,13 +3,21 @@ from __future__ import annotations
 import os
 import posixpath
 import re
+import sys
 import warnings
 from copy import copy
 from pathlib import Path
 from pathlib import PurePath
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeAlias
+from typing import cast
 from urllib.parse import urlsplit
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    Self = Any
 
 from fsspec import AbstractFileSystem
 from fsspec import filesystem
@@ -36,7 +44,7 @@ class fsspecpathmod:
     @staticmethod
     def splitroot(__path: PathOrStr) -> tuple[str, str, str]:
         path = strip_upath_protocol(__path)
-        return posixpath.splitroot(path)
+        return posixpath.splitroot(path)  # type: ignore
 
     @staticmethod
     def splitdrive(__path: PathOrStr) -> tuple[str, str]:
@@ -59,7 +67,11 @@ def split_upath_protocol(pth: str) -> str:
     return ""
 
 
-def strip_upath_protocol(pth: str) -> str:
+def strip_upath_protocol(pth: PathOrStr) -> str:
+    if isinstance(pth, PurePath):
+        pth = str(pth)
+    elif not isinstance(pth, str):
+        pth = os.fspath(pth)
     if m := _PROTOCOL_RE.match(pth):
         protocol = m.group("protocol")
         path = m.group("path")
@@ -107,6 +119,11 @@ class UPath(Path):
         "_storage_options",
         "_fs_cached",
     )
+    if TYPE_CHECKING:
+        _protocol: str
+        _storage_options: dict[str, Any]
+        _fs_cached: AbstractFileSystem
+
     pathmod = _flavour = fsspecpathmod
 
     def __new__(
@@ -139,7 +156,7 @@ class UPath(Path):
             raise ValueError(f"Unsupported filesystem: {pth_protocol!r}")
 
         # create a new instance
-        obj = object.__new__(upath_cls)
+        obj: UPath = cast("UPath", object.__new__(upath_cls))
         obj._protocol = pth_protocol
 
         if cls is not UPath and not issubclass(upath_cls, cls):
@@ -153,7 +170,9 @@ class UPath(Path):
                 f" override the default implementation for {pth_protocol!r}."
             )
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
-            upath_cls.__init__(obj, *args, protocol=pth_protocol, **storage_options)
+            upath_cls.__init__(
+                obj, *args, protocol=pth_protocol, **storage_options
+            )  # type: ignore
 
         return obj
 
@@ -376,10 +395,10 @@ class UPath(Path):
         else:
             raise NotImplementedError
 
-    def absolute(self):
+    def absolute(self) -> Self:
         return self
 
-    def resolve(self, strict=False):
+    def resolve(self, strict: bool = False) -> Self:
         _parts = self.parts
 
         # Do not attempt to normalize path if no parts are dots
