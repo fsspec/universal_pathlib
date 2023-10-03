@@ -3,6 +3,7 @@ from __future__ import annotations
 import posixpath
 import re
 import sys
+import warnings
 from typing import Any
 
 import upath.core
@@ -62,16 +63,28 @@ class CloudPath(upath.core.UPath):
     def joinpath(self, *args):
         if self._url.netloc:
             return super().joinpath(*args)
-        # handles a bucket in the path
-        else:
-            path = args[0]
-            if isinstance(path, list):
-                args_list = list(*args)
+
+        # if no bucket is defined for self
+        sep = self._flavour.sep
+        args_list = []
+        for arg in args:
+            if isinstance(arg, list):
+                warnings.warn(
+                    "lists as arguments to joinpath are deprecated",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                args_list.extend(arg)
             else:
-                args_list = path.split(self._flavour.sep)
-            bucket = args_list.pop(0)
-            self._kwargs["bucket"] = bucket
-            return super().joinpath(*tuple(args_list))
+                args_list.extend(arg.split(sep))
+        bucket = args_list.pop(0)
+        return type(self)(
+            "/",
+            *args_list,
+            **self.storage_options,
+            bucket=bucket,
+            scheme=self.protocol,
+        )
 
     @property
     def path(self) -> str:
