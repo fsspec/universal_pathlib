@@ -96,7 +96,14 @@ if sys.version_info >= (3, 12):
     from inspect import ismemberdescriptor
 
     def _iterate_class_attrs(path_cls: type[Path]) -> Iterable[tuple[str, Any]]:
-        ignore = {"__slots__", "__module__", "__new__", "pathmod", "_flavour"}
+        ignore = {
+            "__slots__",
+            "__module__",
+            "__new__",
+            "__init__",
+            "pathmod",
+            "_flavour",
+        }
         visited = set()
         for cls in path_cls.__mro__:
             if cls is object:
