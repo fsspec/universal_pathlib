@@ -369,16 +369,16 @@ class UPath(Path):
 
     def glob(self, pattern: str, *, case_sensitive=None):
         path_pattern = self.joinpath(pattern).path
+        sep = self._flavour.sep
         for name in self.fs.glob(path_pattern):
-            name = name.removeprefix(self.path)
-            _, _, name = name.partition(self._flavour.sep)
+            name = name.removeprefix(self.path).removeprefix(sep)
             yield self.joinpath(name)
 
     def rglob(self, pattern: str, *, case_sensitive=None):
         r_path_pattern = self.joinpath("**", pattern).path
+        sep = self._flavour.sep
         for name in self.fs.glob(r_path_pattern):
-            name = name.removeprefix(self.path)
-            _, _, name = name.partition(self._flavour.sep)
+            name = name.removeprefix(self.path).removeprefix(sep)
             yield self.joinpath(name)
 
     @classmethod
