@@ -100,7 +100,7 @@ def get_upath_protocol(
     # if storage_options and not protocol:
     #     protocol = "file"
     if protocol and pth_protocol and protocol != pth_protocol:
-        raise TypeError(
+        raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
         )
     return protocol or pth_protocol or ""
@@ -294,6 +294,19 @@ class UPath(Path):
 
     def is_reserved(self):
         return False
+
+    def relative_to(self, other, /, *_deprecated, walk_up=False):
+        if isinstance(other, UPath) and self.storage_options != other.storage_options:
+            raise ValueError(
+                "paths have different storage_options:"
+                f" {self.storage_options!r} != {other.storage_options!r}"
+            )
+        return super().relative_to(other, *_deprecated, walk_up=walk_up)
+
+    def is_relative_to(self, other, /, *_deprecated):
+        if isinstance(other, UPath) and self.storage_options != other.storage_options:
+            return False
+        return super().is_relative_to(other, *_deprecated)
 
     # === pathlib.Path ================================================
 
