@@ -116,6 +116,7 @@ def test_instance_check_local_uri(local_testdir):
     assert isinstance(upath, UPath)
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 12), reason="requires python<3.12")
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))
