@@ -8,7 +8,6 @@ from copy import copy
 from pathlib import Path
 from pathlib import PurePath
 from typing import Any
-from typing import Self
 from typing import TypeAlias
 from urllib.parse import urlsplit
 
@@ -112,7 +111,7 @@ class UPath(Path):
 
     def __new__(
         cls, *args, protocol: str | None = None, **storage_options: Any
-    ) -> Self:
+    ) -> UPath:
         # fill empty arguments
         if not args:
             args = (".",)
@@ -139,8 +138,23 @@ class UPath(Path):
         if upath_cls is None:
             raise ValueError(f"Unsupported filesystem: {pth_protocol!r}")
 
+        # create a new instance
         obj = object.__new__(upath_cls)
         obj._protocol = pth_protocol
+
+        if cls is not UPath and not issubclass(upath_cls, cls):
+            msg = (
+                f"{cls.__name__!s}(...) detected protocol {pth_protocol!r} and"
+                f" returns a {upath_cls.__name__} instance that isn't a direct"
+                f" subclass of {cls.__name__}. This will raise an exception in"
+                " future universal_pathlib versions. To prevent the issue, use"
+                " UPath(...) to create instances of unrelated protocols or the"
+                f" {cls.__name__} class can be registered with the protocol to"
+                f" override the default implementation for {pth_protocol!r}."
+            )
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            upath_cls.__init__(obj, *args, protocol=pth_protocol, **storage_options)
+
         return obj
 
     def __init__(
