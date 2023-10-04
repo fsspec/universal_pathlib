@@ -1,6 +1,7 @@
 """Automation using nox."""
 import glob
 import os
+import sys
 
 import nox
 
@@ -11,6 +12,9 @@ locations = ("upath",)
 
 @nox.session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3.8", "pypy3.9"])
 def tests(session: nox.Session) -> None:
+    if sys.version_info[:2] == (3, 12):
+        # workaround until aiohttp binary wheels are available
+        session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
     session.install(".[dev]")
     session.run(
         "pytest",
