@@ -14,7 +14,7 @@ class _WebdavAccessor(upath.core._FSSpecAccessor):
 
         parsed_url = parsed_url._replace(scheme=parsed_url.scheme[7:], path="")
         base_url = urlunsplit(parsed_url)
-        self._fs = WebdavFileSystem(base_url, **kwargs)
+        self._fs = WebdavFileSystem(base_url=base_url, **kwargs)
 
     def listdir(self, path, **kwargs):
         base_url = urlunsplit(path._url._replace(path=""))

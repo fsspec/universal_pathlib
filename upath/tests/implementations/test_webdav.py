@@ -18,7 +18,7 @@ class TestUPathWebdav(BaseTests):
         # we need to add base_url to storage options for webdav filesystems,
         # to be able to serialize the http protocol to string...
         storage_options = self.path.storage_options
-        base_url = storage_options.pop("base_url")
+        base_url = storage_options["base_url"]
         assert storage_options == self.path.fs.storage_options
         assert base_url == self.path.fs.client.base_url
 
