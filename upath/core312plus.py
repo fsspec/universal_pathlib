@@ -108,6 +108,10 @@ def get_upath_protocol(
     return protocol or pth_protocol or ""
 
 
+def make_instance(cls, args, kwargs):
+    return cls(*args, **kwargs)
+
+
 def _get_pathmod(arg: PurePath) -> fsspecpathmod:
     try:
         return arg.pathmod  # type: ignore
@@ -256,11 +260,12 @@ class UPath(Path):
     # === pathlib.PurePath ============================================
 
     def __reduce__(self):
-        state = {
-            "_protocol": self._protocol,
-            "_storage_options": self._storage_options,
+        args = tuple(self._raw_paths)
+        kwargs = {
+            "protocol": self._protocol,
+            **self._storage_options,
         }
-        return (self.__class__, tuple(self._raw_paths), (None, state))
+        return (make_instance, (type(self), args, kwargs))
 
     def with_segments(self, *pathsegments):
         return type(self)(
