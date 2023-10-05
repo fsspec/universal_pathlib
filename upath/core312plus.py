@@ -98,7 +98,7 @@ def get_upath_protocol(
     elif isinstance(pth, PurePath):
         pth_protocol = ""
     else:
-        raise TypeError("expected a str or PurePath instance")
+        raise TypeError(f"expected a str or PurePath instance, got: {pth!r}")
     # if storage_options and not protocol:
     #     protocol = "file"
     if protocol and pth_protocol and protocol != pth_protocol:
