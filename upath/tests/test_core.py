@@ -3,6 +3,7 @@ import pathlib
 import pickle
 import sys
 import warnings
+from typing import Mapping
 from urllib.parse import SplitResult
 
 import pytest
@@ -251,7 +252,7 @@ def test_copy_path_append():
 def test_access_to_private_kwargs_and_url(urlpath):
     # fixme: this should be deprecated...
     pth = UPath(urlpath)
-    assert isinstance(pth._kwargs, dict)
+    assert isinstance(pth._kwargs, Mapping)
     assert pth._kwargs == {}
     assert isinstance(pth._url, SplitResult)
     assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
