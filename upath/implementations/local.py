@@ -116,7 +116,6 @@ if sys.version_info >= (3, 12):
                 if ismemberdescriptor(func_or_value):
                     continue
 
-                print(attr, func_or_value)
                 yield attr, func_or_value
                 visited.add(attr)
 
