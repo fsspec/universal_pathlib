@@ -8,8 +8,10 @@ import warnings
 from copy import copy
 from pathlib import Path
 from pathlib import PurePath
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Mapping
 from typing import TypeAlias
 from typing import cast
 from urllib.parse import urlsplit
@@ -221,8 +223,8 @@ class UPath(Path):
         return self._protocol
 
     @property
-    def storage_options(self) -> dict[str, Any]:
-        return self._storage_options
+    def storage_options(self) -> Mapping[str, Any]:
+        return MappingProxyType(self._storage_options)
 
     @property
     def fs(self) -> AbstractFileSystem:
