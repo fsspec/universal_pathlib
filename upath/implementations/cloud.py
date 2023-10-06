@@ -172,3 +172,9 @@ class S3Path(CloudPath):
 
 class AzurePath(CloudPath):
     __slots__ = ()
+
+    def touch(self, mode=0o666, exist_ok=True):
+        if exist_ok and self.exists():
+            self.fs.open(self.path, mode="a")  # fixme: add test for updated time!
+        else:
+            self.fs.touch(self.path, truncate=True)
