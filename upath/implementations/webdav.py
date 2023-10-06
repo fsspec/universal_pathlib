@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 from urllib.parse import ParseResult
+from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
 import upath.core
@@ -71,17 +72,43 @@ class WebdavPath(upath.core.UPath):
 
 
 if sys.version_info >= (3, 12):
+    import upath.core312plus
 
-    class WebdavPath(upath.core.UPath):  # noqa
+    class WebdavPath(upath.core312plus.UPath):  # noqa
+        __slots__ = ()
+
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
-            if self._protocol == "webdav+http":
-                ...
-            elif self._protocol == "webdav+https":
-                ...
-            elif self._protocol == "webdav":
-                ...
+            base_options = getattr(self, "_storage_options", {})  # when unpickling
+            if args:
+                args0, *argsN = args
+                url = urlsplit(str(args0))
+                args0 = urlunsplit(url._replace(scheme="", netloc="")) or "/"
+                if "base_url" not in storage_options:
+                    if self._protocol == "webdav+http":
+                        storage_options["base_url"] = urlunsplit(
+                            url._replace(scheme="http", path="")
+                        )
+                    elif self._protocol == "webdav+https":
+                        storage_options["base_url"] = urlunsplit(
+                            url._replace(scheme="https", path="")
+                        )
             else:
-                raise NotImplementedError
-            super().__init__(*args, protocol="webdav", **storage_options)
+                args0, argsN = "/", ()
+            storage_options = {**base_options, **storage_options}
+            if "base_url" not in storage_options:
+                raise ValueError(
+                    f"must provide `base_url` storage option for args: {args!r}"
+                )
+            self._protocol = "webdav"
+            super().__init__(args0, *argsN, protocol="webdav", **storage_options)
+
+        @property
+        def path(self) -> str:
+            # webdav paths don't start at "/"
+            return super().path.removeprefix("/")
+
+        def __str__(self):
+            base_url = self.storage_options["base_url"].removesuffix("/")
+            return super().__str__().replace("webdav://", f"webdav+{base_url}", 1)

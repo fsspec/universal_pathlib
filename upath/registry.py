@@ -72,6 +72,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "memory": "upath.implementations.memory.MemoryPath",
         "s3": "upath.implementations.cloud.S3Path",
         "s3a": "upath.implementations.cloud.S3Path",
+        "webdav": "upath.implementations.webdav.WebdavPath",
         "webdav+http": "upath.implementations.webdav.WebdavPath",
         "webdav+https": "upath.implementations.webdav.WebdavPath",
     }
