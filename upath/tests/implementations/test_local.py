@@ -16,6 +16,7 @@ class TestFSSpecLocal(BaseTests):
     def test_is_LocalPath(self):
         assert isinstance(self.path, LocalPath)
 
+
 @skip_on_windows
 class TestRayIOFSSpecLocal(BaseTests):
     @pytest.fixture(autouse=True)
