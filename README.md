@@ -181,6 +181,15 @@ universal_pathlib.implementations =
     myproto = my_module.submodule:MyPath
 ```
 
+### Known issues solvable by installing newer upstream dependencies
+
+Some issues in UPath's behavior with specific filesystems can be fixed by installing newer versions of
+the dependencies. The following list will be kept up to date whenever we encounter more:
+
+- **UPath().glob()** fsspec fixed its glob behavior when handling `**` patterns in versions `fsspec>=2023.9.0`
+- **GCSPath().mkdir()** a few mkdir quirks are solved by installing `gcsfs>=2022.7.1`
+- **fsspec.filesystem(WebdavPath().protocol)** the webdav protocol was added to fsspec in version `fsspec>=2022.5.0`
+
 ## Contributing
 
 Contributions are very welcome.

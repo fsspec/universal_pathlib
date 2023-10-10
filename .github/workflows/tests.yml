@@ -22,6 +22,12 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-latest]
         pyv: ['3.8', '3.9', '3.10', '3.11']
+        fsspec: ['']
+
+        include:
+          - os: ubuntu-20.04
+            pyv: '3.8'
+            fsspec: 'minversion'
 
     steps:
     - name: Check out the repository
@@ -41,7 +47,7 @@ jobs:
         nox --version
 
     - name: Run tests
-      run: nox -s tests-${{ matrix.nox_pyv || matrix.pyv }} -- --cov-report=xml
+      run: nox -s tests-${{ matrix.fsspec || matrix.pyv }} -- --cov-report=xml
 
   lint:
     runs-on: ubuntu-latest
