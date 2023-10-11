@@ -131,6 +131,7 @@ class UPath(Path):
         _fs_cached: AbstractFileSystem
 
     pathmod = _flavour = fsspecpathmod
+    _supports_empty_parts = False
 
     def __new__(
         cls, *args, protocol: str | None = None, **storage_options: Any
@@ -274,6 +275,20 @@ class UPath(Path):
             **self._storage_options,
         )
 
+    @classmethod
+    def _parse_path(cls, path):
+        if cls._supports_empty_parts:
+            drv, root, rel = cls._flavour.splitroot(path)
+            if not root:
+                parsed = []
+            else:
+                parsed = list(map(sys.intern, rel.split(cls._flavour.sep)))
+                if parsed[-1] == ".":
+                    parsed[-1] = ""
+                parsed = [x for x in parsed if x != "."]
+            return drv, root, parsed
+        return super()._parse_path(path)
+
     def __str__(self):
         if self._protocol:
             return f"{self._protocol}://{self.path}"
@@ -367,6 +382,10 @@ class UPath(Path):
         return self.fs.open(self.path, mode)  # fixme
 
     def iterdir(self):
+        if self._supports_empty_parts and self.parts[-1:] == ("",):
+            base = self.with_segments(self.anchor, *self._tail[:-1])
+        else:
+            base = self
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -375,8 +394,8 @@ class UPath(Path):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            _, _, name = name.rpartition(self._flavour.sep)
-            yield self._make_child_relpath(name)
+            _, _, name = name.removesuffix("/").rpartition(self._flavour.sep)
+            yield base._make_child_relpath(name)
 
     def _scandir(self):
         # return os.scandir(self)
@@ -427,10 +446,13 @@ class UPath(Path):
 
         resolved: list[str] = []
         resolvable_parts = _parts[1:]
-        for part in resolvable_parts:
+        last_idx = len(resolvable_parts) - 1
+        for idx, part in enumerate(resolvable_parts):
             if part == "..":
                 if resolved:
                     resolved.pop()
+                if self._supports_empty_parts and idx == last_idx:
+                    resolved.append("")
             elif part != ".":
                 resolved.append(part)
 
