@@ -61,7 +61,9 @@ class BaseTests:
         path_glob = list(pathlib_base.glob(pattern))
 
         _mock_start = len(self.path.parts)
-        mock_glob_normalized = sorted([a.parts[_mock_start:] for a in mock_glob])
+        mock_glob_normalized = sorted(
+            [tuple(filter(None, a.parts[_mock_start:])) for a in mock_glob]
+        )
         _path_start = len(pathlib_base.parts)
         path_glob_normalized = sorted([a.parts[_path_start:] for a in path_glob])
 
