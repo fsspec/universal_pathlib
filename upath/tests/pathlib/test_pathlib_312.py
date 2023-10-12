@@ -23,15 +23,11 @@ try:
 except ImportError:
     grp = pwd = None
 
+from upath.core312plus import UPath
+from upath.implementations.local import PosixUPath, WindowsUPath
+
 import pytest
-try:
-    from upath.core import UPath
-    from upath.implementations.local import PosixUPath, WindowsUPath
-except ImportError:
-    UPath = PosixUPath = WindowsUPath = object
-    pytestmark = pytest.mark.xfail(reason="no py312 support yet")
-else:
-    pytestmark = pytest.mark.skipif(sys.version_info[:2] != (3, 12), reason="py312 only")
+pytestmark = pytest.mark.skipif(sys.version_info[:2] != (3, 12), reason="py312 only")
 
 
 #
@@ -88,13 +84,11 @@ class _BasePurePathTest(object):
 
     def test_bytes(self):
         P = self.cls
-        message = (r"argument should be a str or an os\.PathLike object "
-                   r"where __fspath__ returns a str, not 'bytes'")
-        with self.assertRaisesRegex(TypeError, message):
+        with self.assertRaises(TypeError):
             P(b'a')
-        with self.assertRaisesRegex(TypeError, message):
+        with self.assertRaises(TypeError):
             P(b'a', 'b')
-        with self.assertRaisesRegex(TypeError, message):
+        with self.assertRaises(TypeError):
             P('a', b'b')
         with self.assertRaises(TypeError):
             P('a').joinpath(b'b')
@@ -556,6 +550,7 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, P('.').with_name, 'd.xml')
         self.assertRaises(ValueError, P('/').with_name, 'd.xml')
         self.assertRaises(ValueError, P('a/b').with_name, '')
+        self.assertRaises(ValueError, P('a/b').with_name, '.')
         self.assertRaises(ValueError, P('a/b').with_name, '/c')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/d')
@@ -573,6 +568,7 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, P('.').with_stem, 'd')
         self.assertRaises(ValueError, P('/').with_stem, 'd')
         self.assertRaises(ValueError, P('a/b').with_stem, '')
+        self.assertRaises(ValueError, P('a/b').with_stem, '.')
         self.assertRaises(ValueError, P('a/b').with_stem, '/c')
         self.assertRaises(ValueError, P('a/b').with_stem, 'c/')
         self.assertRaises(ValueError, P('a/b').with_stem, 'c/d')
@@ -636,8 +632,14 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, p.relative_to, P('a/b/c'))
         self.assertRaises(ValueError, p.relative_to, P('a/c'))
         self.assertRaises(ValueError, p.relative_to, P('/a'))
+        self.assertRaises(ValueError, p.relative_to, P("../a"))
+        self.assertRaises(ValueError, p.relative_to, P("a/.."))
+        self.assertRaises(ValueError, p.relative_to, P("/a/.."))
         self.assertRaises(ValueError, p.relative_to, P('/'), walk_up=True)
         self.assertRaises(ValueError, p.relative_to, P('/a'), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("../a"), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("a/.."), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("/a/.."), walk_up=True)
         p = P('/a/b')
         self.assertEqual(p.relative_to(P('/')), P('a/b'))
         self.assertEqual(p.relative_to('/'), P('a/b'))
@@ -666,8 +668,14 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, p.relative_to, P())
         self.assertRaises(ValueError, p.relative_to, '')
         self.assertRaises(ValueError, p.relative_to, P('a'))
+        self.assertRaises(ValueError, p.relative_to, P("../a"))
+        self.assertRaises(ValueError, p.relative_to, P("a/.."))
+        self.assertRaises(ValueError, p.relative_to, P("/a/.."))
         self.assertRaises(ValueError, p.relative_to, P(''), walk_up=True)
         self.assertRaises(ValueError, p.relative_to, P('a'), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("../a"), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("a/.."), walk_up=True)
+        self.assertRaises(ValueError, p.relative_to, P("/a/.."), walk_up=True)
 
     def test_is_relative_to_common(self):
         P = self.cls
