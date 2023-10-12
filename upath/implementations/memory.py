@@ -30,6 +30,13 @@ class MemoryPath(upath.core.UPath):
             name = self._sub_path(name)
             yield self._make_child_relpath(name)
 
+    @classmethod
+    def _from_parts(cls, args, url=None, **kwargs):
+        if url and url.netloc:
+            args[0:0] = ["/", url.netloc]
+            url = url._replace(netloc="")
+        return super()._from_parts(args, url=url, **kwargs)
+
 
 if sys.version_info >= (3, 12):
 
@@ -38,3 +45,8 @@ if sys.version_info >= (3, 12):
             if not self.is_dir():
                 raise NotADirectoryError(str(self))
             yield from super().iterdir()
+
+        @property
+        def path(self):
+            path = super().path
+            return "/" if path == "." else path
