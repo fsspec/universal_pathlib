@@ -88,6 +88,26 @@ class HTTPPath(upath.core.UPath):
         return resolved_path
 
     @property
+    def drive(self):
+        return f"{self._url.scheme}://{self._url.netloc}"
+
+    @property
+    def anchor(self) -> str:
+        return self.drive + self.root
+
+    @property
+    def parts(self) -> tuple[str, ...]:
+        parts = super().parts
+        if not parts:
+            return ()
+        p0, *partsN = parts
+        if p0 == "/":
+            p0 = self.anchor
+        if not partsN and self._url.path == "/":
+            partsN = [""]
+        return (p0, *partsN)
+
+    @property
     def path(self) -> str:
         # http filesystems use the full url as path
         if self._url is None:

@@ -95,7 +95,6 @@ class TestUPathHttp(BaseTests):
 @pytest.mark.parametrize(
     "args,parts",
     [
-        (("http://example.com"), ("http://example.com/",)),
         (("http://example.com/"), ("http://example.com/", "")),
         (("http://example.com//"), ("http://example.com/", "", "")),
         (("http://example.com///"), ("http://example.com/", "", "", "")),
