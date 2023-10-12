@@ -339,12 +339,15 @@ NORMALIZATIONS = (
         ("http://example.com/a//..//.", "http://example.com/a//"),
         ("http://example.com/a//..//b", "http://example.com/a//b"),
         # Normalization with and without an authority component
-        ("memory:/a/b/..", "memory:/a/"),
-        ("memory:/a/b/../..", "memory:/"),
-        ("memory:/a/b/../../..", "memory:/"),
-        ("memory://a/b/..", "memory://a/"),
-        ("memory://a/b/../..", "memory://a/"),
-        ("memory://a/b/../../..", "memory://a/"),
+        ("memory:/a/b/..", "memory:///a/"),
+        ("memory:/a/b/../..", "memory:///"),
+        ("memory:/a/b/../../..", "memory:///"),
+        ("memory://a/b/..", "memory:///a/"),
+        ("memory://a/b/../..", "memory:///"),
+        ("memory://a/b/../../..", "memory:///"),
+        ("memory:///a/b/..", "memory:///a/"),
+        ("memory:///a/b/../..", "memory:///"),
+        ("memory:///a/b/../../..", "memory:///"),
     ),
 )
 
