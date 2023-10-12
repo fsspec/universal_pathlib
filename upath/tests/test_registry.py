@@ -22,6 +22,7 @@ IMPLEMENTATIONS = {
     "s3a",
     "webdav+http",
     "webdav+https",
+    "github",
 }
 
 

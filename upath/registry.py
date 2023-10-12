@@ -74,6 +74,7 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         "s3a": "upath.implementations.cloud.S3Path",
         "webdav+http": "upath.implementations.webdav.WebdavPath",
         "webdav+https": "upath.implementations.webdav.WebdavPath",
+        "github": "upath.implementations.github.GitHubPath",
     }
 
     def __init__(self) -> None:
