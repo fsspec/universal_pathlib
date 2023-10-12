@@ -85,7 +85,7 @@ def strip_upath_protocol(pth: PathOrStr) -> str:
 
 
 def get_upath_protocol(
-    pth: str | PurePath,
+    pth: str | PurePath | os.PathLike,
     *,
     protocol: str | None = None,
     storage_options: dict[str, Any] | None = None,

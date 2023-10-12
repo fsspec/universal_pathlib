@@ -103,7 +103,7 @@ class HTTPPath(upath.core.UPath):
         p0, *partsN = parts
         if p0 == "/":
             p0 = self.anchor
-        if not partsN and self._url.path == "/":
+        if not partsN and self._url and self._url.path == "/":
             partsN = [""]
         return (p0, *partsN)
 
