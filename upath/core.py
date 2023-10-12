@@ -307,7 +307,7 @@ class UPath(Path):
         else:
             scheme, netloc = url.scheme, url.netloc
         scheme = (scheme + ":") if scheme else ""
-        netloc = "//" + netloc if netloc else ""
+        netloc = "//" + netloc  # always add netloc
         formatted = scheme + netloc + path
         return formatted
 
