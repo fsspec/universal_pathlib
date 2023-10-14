@@ -70,7 +70,7 @@ class TestUpath(BaseTests):
 
 
 def test_multiple_backend_paths(local_testdir):
-    path = f"s3:{local_testdir}"
+    path = "s3://bucket/"
     s3_path = UPath(path, anon=True)
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"
     path = f"file://{local_testdir}"
@@ -246,7 +246,13 @@ def test_copy_path_append():
     [
         os.getcwd(),
         pathlib.Path.cwd().as_uri(),
-        "mock:///abc",
+        pytest.param(
+            "mock:///abc",
+            marks=pytest.mark.skipif(
+                os.name == "nt",
+                reason="_url not well defined for mock filesystem on windows",
+            ),
+        ),
     ],
 )
 def test_access_to_private_kwargs_and_url(urlpath):
