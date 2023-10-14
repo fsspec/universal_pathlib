@@ -24,7 +24,7 @@ class LocalPath(UPath):
     __slots__ = ()
 
 
-class FilePath(UPath):
+class FilePath(LocalPath):
     __slots__ = ()
 
 
