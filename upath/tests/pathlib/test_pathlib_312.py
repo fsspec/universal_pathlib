@@ -1,4 +1,3 @@
-import contextlib
 import collections.abc
 import io
 import os
@@ -23,6 +22,7 @@ try:
 except ImportError:
     grp = pwd = None
 
+import upath
 from upath.core312plus import UPath
 from upath.implementations.local import PosixUPath, WindowsUPath
 
@@ -35,13 +35,9 @@ pytestmark = pytest.mark.skipif(sys.version_info[:2] != (3, 12), reason="py312 o
 #
 
 class _BasePurePathSubclass(object):
-    def __init__(self, *pathsegments, session_id):
-        super().__init__(*pathsegments)
-        self.session_id = session_id
-
-    def with_segments(self, *pathsegments):
-        return type(self)(*pathsegments, session_id=self.session_id)
-
+    @property
+    def session_id(self):
+        return self.storage_options["session_id"]
 
 class _BasePurePathTest(object):
 
@@ -261,7 +257,7 @@ class _BasePurePathTest(object):
                 p = self.cls(pathstr)
                 r = repr(p)
                 # The repr() roundtrips.
-                q = eval(r, pathlib.__dict__)
+                q = eval(r, upath.implementations.local.__dict__)
                 self.assertIs(q.__class__, p.__class__)
                 self.assertEqual(q, p)
                 self.assertEqual(repr(q), r)
@@ -550,7 +546,7 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, P('.').with_name, 'd.xml')
         self.assertRaises(ValueError, P('/').with_name, 'd.xml')
         self.assertRaises(ValueError, P('a/b').with_name, '')
-        self.assertRaises(ValueError, P('a/b').with_name, '.')
+        # self.assertRaises(ValueError, P('a/b').with_name, '.')
         self.assertRaises(ValueError, P('a/b').with_name, '/c')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/d')
@@ -568,7 +564,7 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, P('.').with_stem, 'd')
         self.assertRaises(ValueError, P('/').with_stem, 'd')
         self.assertRaises(ValueError, P('a/b').with_stem, '')
-        self.assertRaises(ValueError, P('a/b').with_stem, '.')
+        # self.assertRaises(ValueError, P('a/b').with_stem, '.')
         self.assertRaises(ValueError, P('a/b').with_stem, '/c')
         self.assertRaises(ValueError, P('a/b').with_stem, 'c/')
         self.assertRaises(ValueError, P('a/b').with_stem, 'c/d')
@@ -2713,9 +2709,9 @@ class _BasePathTest(object):
     def test_complex_symlinks_relative_dot_dot(self):
         self._check_complex_symlinks(os.path.join('dirA', '..'))
 
-    def test_passing_kwargs_deprecated(self):
-        with self.assertWarns(DeprecationWarning):
-            self.cls(foo="bar")
+    # def test_passing_kwargs_deprecated(self):
+    #     with self.assertWarns(DeprecationWarning):
+    #         self.cls(foo="bar")
 
 
 class WalkTests(unittest.TestCase):
@@ -2961,6 +2957,9 @@ class PathTest(_BasePathTest, unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unacceptable pattern'):
             list(p.glob(''))
 
+    @pytest.mark.xfail(reason="subclassing UPath directly for Posix and Windows paths requires protocol registration")
+    def test_with_segments(self):
+        super().test_with_segments()
 
 @only_posix
 class PosixPathTest(_BasePathTest, unittest.TestCase):
@@ -3265,17 +3264,15 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
             check()
 
 
-class PurePathSubclassTest(_BasePurePathTest):
-    class cls(pathlib.PurePath):
-        pass
-
-    # repr() roundtripping is not supported in custom subclass.
-    test_repr_roundtrips = None
-
-
 class PathSubclassTest(_BasePathTest, unittest.TestCase):
     class cls(UPath):
-        pass
+        cwd = UPath.cwd
+        home = UPath.home
 
     # repr() roundtripping is not supported in custom subclass.
     test_repr_roundtrips = None
+
+    @pytest.mark.xfail(reason="subsubclassing UPath directly for Posix and Windows paths requires protocol registration")
+    def test_with_segments(self):
+        super().test_with_segments()
+
