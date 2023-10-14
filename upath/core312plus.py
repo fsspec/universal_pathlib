@@ -163,18 +163,31 @@ class UPath(Path):
             raise ValueError(f"Unsupported filesystem: {pth_protocol!r}")
 
         # create a new instance
-        obj: UPath = cast("UPath", object.__new__(upath_cls))
+        if cls is UPath:
+            obj: UPath = cast("UPath", object.__new__(upath_cls))
+        elif issubclass(cls, upath_cls):
+            obj: UPath = cast("UPath", object.__new__(cls))
+        elif issubclass(cls, UPath):  #
+            obj: UPath = cast("UPath", object.__new__(upath_cls))
+        else:
+            raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
+
         obj._protocol = pth_protocol
 
-        if cls is not UPath and not issubclass(upath_cls, cls):
+        if not isinstance(obj, cls) and not issubclass(upath_cls, cls):
+            msg_protocol = repr(pth_protocol)
+            if not pth_protocol:
+                msg_protocol += " (empty string)"
             msg = (
-                f"{cls.__name__!s}(...) detected protocol {pth_protocol!r} and"
+                f"{cls.__name__!s}(...) detected protocol {msg_protocol!s} and"
                 f" returns a {upath_cls.__name__} instance that isn't a direct"
                 f" subclass of {cls.__name__}. This will raise an exception in"
                 " future universal_pathlib versions. To prevent the issue, use"
-                " UPath(...) to create instances of unrelated protocols or the"
-                f" {cls.__name__} class can be registered with the protocol to"
-                f" override the default implementation for {pth_protocol!r}."
+                " UPath(...) to create instances of unrelated protocols or you"
+                f" can instead derive your subclass {cls.__name__!s}(...) from"
+                f" {upath_cls.__name__} or alternatively override behavior via"
+                f" registering the {cls.__name__} implementation with protocol"
+                f" {msg_protocol!s} replacing the default implementation."
             )
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
             upath_cls.__init__(
