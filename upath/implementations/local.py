@@ -101,6 +101,7 @@ if sys.version_info >= (3, 12):
             "__module__",
             "__new__",
             "__init__",
+            "with_segments",
             "pathmod",
             "_flavour",
         }
@@ -131,10 +132,6 @@ if sys.version_info >= (3, 12):
             locals()[attr] = func_or_attr
         del attr, func_or_attr
 
-        @property
-        def storage_options(self) -> dict[str, Any]:
-            return {}
-
     class WindowsUPath(WindowsPath, UPath):  # noqa
         __slots__ = ()
         pathmod = _flavour = WindowsPath._flavour
@@ -146,7 +143,3 @@ if sys.version_info >= (3, 12):
         for attr, func_or_attr in _iterate_class_attrs(WindowsPath):
             locals()[attr] = func_or_attr
         del attr, func_or_attr
-
-        @property
-        def storage_options(self) -> dict[str, Any]:
-            return {}
