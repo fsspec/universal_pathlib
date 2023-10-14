@@ -46,7 +46,7 @@ class PosixUPath(PosixPath, LocalPath):
     __slots__ = ()
 
     if os.name == "nt":
-        __new__ = PosixPath.__new__
+        __new__ = PosixPath.__new__  # type: ignore
 
     # assign all PosixPath methods/attrs to prevent multi inheritance issues
     for attr, func_or_attr in _iterate_class_attrs(PosixPath):
@@ -73,7 +73,7 @@ class WindowsUPath(WindowsPath, LocalPath):
     __slots__ = ()
 
     if os.name != "nt":
-        __new__ = WindowsPath.__new__
+        __new__ = WindowsPath.__new__  # type: ignore
 
     # assign all WindowsPath methods/attrs to prevent multi inheritance issues
     for attr, func_or_attr in _iterate_class_attrs(WindowsPath):
