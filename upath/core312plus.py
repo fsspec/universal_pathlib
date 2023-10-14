@@ -411,8 +411,7 @@ class UPath(Path):
             yield base._make_child_relpath(name)
 
     def _scandir(self):
-        # return os.scandir(self)
-        raise NotImplementedError
+        raise NotImplementedError  # todo
 
     def _make_child_relpath(self, name):
         path = super()._make_child_relpath(name)
@@ -516,7 +515,9 @@ class UPath(Path):
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
-    def rename(self, target, *, recursive=False, maxdepth=None, **kwargs):
+    def rename(
+        self, target, *, recursive=False, maxdepth=None, **kwargs
+    ):  # fixme: non-standard
         if not isinstance(target, UPath):
             target = self.parent.joinpath(target).resolve()
         self.fs.mv(
@@ -529,7 +530,7 @@ class UPath(Path):
         return target
 
     def replace(self, target):
-        raise NotImplementedError
+        raise NotImplementedError  # todo
 
     def symlink_to(self, target, target_is_directory=False):
         raise NotImplementedError
