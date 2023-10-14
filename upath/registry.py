@@ -111,6 +111,8 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
             raise ValueError(
                 f"expected UPath subclass or FQN-string, got: {type(value).__name__!r}"
             )
+        if not item or item in self._m:
+            get_upath_class.cache_clear()
         self._m[item] = value
 
     def __delitem__(self, __v: str) -> None:
