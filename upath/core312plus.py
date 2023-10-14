@@ -164,17 +164,23 @@ class UPath(Path):
 
         # create a new instance
         if cls is UPath:
+            # we called UPath() directly, and want an instance based on the
+            # provided or detected protocol (i.e. upath_cls)
             obj: UPath = cast("UPath", object.__new__(upath_cls))
+            obj._protocol = pth_protocol
+
         elif issubclass(cls, upath_cls):
-            obj: UPath = cast("UPath", object.__new__(cls))
-        elif issubclass(cls, UPath):  #
-            obj: UPath = cast("UPath", object.__new__(upath_cls))
-        else:
-            raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
+            # we called a sub- or sub-sub-class of UPath, i.e. S3Path() and the
+            # corresponding upath_cls based on protocol is equal-to or a
+            # parent-of the cls.
+            obj = cast("UPath", object.__new__(cls))  # type: ignore[unreachable]
+            obj._protocol = pth_protocol
 
-        obj._protocol = pth_protocol
-
-        if not isinstance(obj, cls) and not issubclass(upath_cls, cls):
+        elif issubclass(cls, UPath):
+            # we called a subclass of UPath directly, i.e. S3Path() but the
+            # detected protocol would return a non-related UPath subclass, i.e.
+            # S3Path("file:///abc"). This behavior is going to raise an error
+            # in future versions
             msg_protocol = repr(pth_protocol)
             if not pth_protocol:
                 msg_protocol += " (empty string)"
@@ -190,9 +196,16 @@ class UPath(Path):
                 f" {msg_protocol!s} replacing the default implementation."
             )
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
+
+            obj = cast("UPath", object.__new__(upath_cls))
+            obj._protocol = pth_protocol
+
             upath_cls.__init__(
                 obj, *args, protocol=pth_protocol, **storage_options
             )  # type: ignore
+
+        else:
+            raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
 
         return obj
 
