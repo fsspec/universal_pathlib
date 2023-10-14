@@ -281,8 +281,8 @@ class UPath(Path):
         return self.storage_options
 
     @property
-    def _url(self):
-        return urlsplit(str(self))  # todo: deprecate
+    def _url(self):  # todo: deprecate
+        return urlsplit(self.as_posix())
 
     # === pathlib.PurePath ============================================
 
