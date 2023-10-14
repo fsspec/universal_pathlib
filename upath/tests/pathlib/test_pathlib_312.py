@@ -2926,7 +2926,7 @@ class WalkTests(unittest.TestCase):
             path = path / 'd'
 
     def test_walk_above_recursion_limit(self):
-        recursion_limit = 40
+        recursion_limit = 50
         # directory_depth > recursion_limit
         directory_depth = recursion_limit + 10
         base = UPath(os_helper.TESTFN, 'deep')
