@@ -259,6 +259,11 @@ def test_access_to_private_kwargs_and_url(urlpath):
     assert isinstance(pth._url, SplitResult)
     assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
     assert pth._url.path == pth.path
+    subpth = pth / "foo"
+    assert subpth._kwargs == {}
+    assert isinstance(subpth._url, SplitResult)
+    assert subpth._url.scheme == "" or subpth._url.scheme in subpth.fs.protocol
+    assert subpth._url.path == subpth.path
 
 
 def test_copy_path_append_kwargs():

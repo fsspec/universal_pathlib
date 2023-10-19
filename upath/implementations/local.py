@@ -63,6 +63,22 @@ class PosixUPath(PosixPath, UPath):
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
 
+    @classmethod
+    def _from_parsed_parts(
+        cls,
+        drv,
+        root,
+        parts,
+        url=None,
+        **kwargs: Any,
+    ):
+        obj = super(UPath, cls)._from_parsed_parts(  # type: ignore[misc]
+            drv, root, parts
+        )
+        obj._kwargs = {}
+        obj._url = SplitResult("", "", str(obj), "", "")
+        return obj
+
 
 class WindowsUPath(WindowsPath, UPath):
     __slots__ = ()
@@ -86,6 +102,22 @@ class WindowsUPath(WindowsPath, UPath):
     @classmethod
     def _from_parts(cls, args, *, url=None, **kw):
         obj = super(UPath, cls)._from_parts(args)
+        obj._kwargs = {}
+        obj._url = SplitResult("", "", str(obj), "", "")
+        return obj
+
+    @classmethod
+    def _from_parsed_parts(
+        cls,
+        drv,
+        root,
+        parts,
+        url=None,
+        **kwargs: Any,
+    ):
+        obj = super(UPath, cls)._from_parsed_parts(  # type: ignore[misc]
+            drv, root, parts
+        )
         obj._kwargs = {}
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
