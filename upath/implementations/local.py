@@ -64,15 +64,15 @@ class PosixUPath(PosixPath, UPath):
         return obj
 
     @classmethod
-    def _format_parsed_parts(
+    def _from_parsed_parts(
         cls,
         drv,
         root,
         parts,
         url=None,
         **kwargs: Any,
-    ) -> str:
-        obj = super(UPath, cls)._format_parsed_parts(drv, root, parts)
+    ):
+        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)
         obj._kwargs = {}
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
@@ -105,15 +105,15 @@ class WindowsUPath(WindowsPath, UPath):
         return obj
 
     @classmethod
-    def _format_parsed_parts(
+    def _from_parsed_parts(
         cls,
         drv,
         root,
         parts,
         url=None,
         **kwargs: Any,
-    ) -> str:
-        obj = super(UPath, cls)._format_parsed_parts(drv, root, parts)
+    ):
+        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)
         obj._kwargs = {}
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
