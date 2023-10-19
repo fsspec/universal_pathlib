@@ -72,7 +72,7 @@ class PosixUPath(PosixPath, UPath):
         url=None,
         **kwargs: Any,
     ):
-        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)
+        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)  # type: ignore[misc]
         obj._kwargs = {}
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
@@ -113,7 +113,7 @@ class WindowsUPath(WindowsPath, UPath):
         url=None,
         **kwargs: Any,
     ):
-        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)
+        obj = super(UPath, cls)._from_parsed_parts(drv, root, parts)  # type: ignore[misc]
         obj._kwargs = {}
         obj._url = SplitResult("", "", str(obj), "", "")
         return obj
