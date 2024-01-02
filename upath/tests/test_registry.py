@@ -11,6 +11,7 @@ IMPLEMENTATIONS = {
     "abfss",
     "adl",
     "az",
+    "data",
     "file",
     "gcs",
     "gs",
