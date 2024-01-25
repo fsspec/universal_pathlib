@@ -64,6 +64,7 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         "adl": "upath.implementations.cloud.AzurePath",
         "az": "upath.implementations.cloud.AzurePath",
         "file": "upath.implementations.local.LocalPath",
+        "local": "upath.implementations.local.LocalPath",
         "gcs": "upath.implementations.cloud.GCSPath",
         "gs": "upath.implementations.cloud.GCSPath",
         "hdfs": "upath.implementations.hdfs.HDFSPath",
