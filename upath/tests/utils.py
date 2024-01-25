@@ -23,7 +23,10 @@ def posixify(path):
 
 
 def xfail_if_version(module, *, reason, **conditions):
-    ver = Version(get_package_version_without_import(module))
+    ver_str = get_package_version_without_import(module)
+    if ver_str is None:
+        return pytest.mark.skip(reason=f"NOT INSTALLED ({reason})")
+    ver = Version(ver_str)
     if not set(conditions).issubset({"lt", "le", "ne", "eq", "ge", "gt"}):
         raise ValueError("unknown condition")
     cond = True
