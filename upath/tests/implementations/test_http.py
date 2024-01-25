@@ -6,6 +6,7 @@ from upath.implementations.http import HTTPPath
 
 from ..cases import BaseTests
 from ..utils import skip_on_windows
+from ..utils import xfail_if_no_ssl_connection
 
 try:
     get_filesystem_class("http")
@@ -19,6 +20,7 @@ def test_httppath():
     assert path.exists()
 
 
+@xfail_if_no_ssl_connection
 def test_httpspath():
     path = UPath("https://example.com")
     assert isinstance(path, HTTPPath)
