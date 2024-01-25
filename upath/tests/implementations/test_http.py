@@ -1,5 +1,7 @@
 import pytest  # noqa: F401
+from fsspec import __version__ as fsspec_version
 from fsspec import get_filesystem_class
+from packaging.version import Version
 
 from upath import UPath
 from upath.implementations.http import HTTPPath
@@ -39,6 +41,27 @@ class TestUPathHttp(BaseTests):
     @pytest.mark.skip
     def test_mkdir(self):
         pass
+
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            pytest.param(
+                "*",
+                marks=pytest.mark.xfail(reason="requires fsspec<=2023.10.0")
+                if Version(fsspec_version) > Version("2023.10.0")
+                else (),
+            ),
+            pytest.param(
+                "**/*.txt",
+                marks=pytest.mark.xfail(reason="requires fsspec>=2023.9.0")
+                if Version(fsspec_version) < Version("2023.9.0")
+                else (),
+            ),
+        ),
+    )
+    def test_glob(self, pathlib_base, pattern):
+        super().test_glob(pathlib_base, pattern)
 
     @pytest.mark.skip
     def test_mkdir_exists_ok_false(self):
