@@ -33,3 +33,14 @@ def xfail_if_version(module, *, reason, **conditions):
     for op, val in conditions.items():
         cond &= getattr(operator, op)(ver, Version(val))
     return pytest.mark.xfail(cond, reason=reason)
+
+
+def xfail_if_no_ssl_connection(func):
+    try:
+        import requests
+
+        requests.get("https://example.com")
+    except (ImportError, requests.exceptions.SSLError):
+        return pytest.mark.xfail(reason="No SSL connection")(func)
+    else:
+        return func

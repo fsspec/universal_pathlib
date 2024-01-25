@@ -17,6 +17,7 @@ IMPLEMENTATIONS = {
     "hdfs",
     "http",
     "https",
+    "local",
     "memory",
     "s3",
     "s3a",
