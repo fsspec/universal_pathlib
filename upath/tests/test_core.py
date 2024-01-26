@@ -339,22 +339,28 @@ NORMALIZATIONS = (
         ("http://example.com/a//..//.", "http://example.com/a//"),
         ("http://example.com/a//..//b", "http://example.com/a//b"),
         # Normalization with and without an authority component
-        ("memory:/a/b/..", "memory:///a/"),
-        ("memory:/a/b/../..", "memory:///"),
-        ("memory:/a/b/../../..", "memory:///"),
-        ("memory://a/b/..", "memory:///a/"),
-        ("memory://a/b/../..", "memory:///"),
-        ("memory://a/b/../../..", "memory:///"),
-        ("memory:///a/b/..", "memory:///a/"),
-        ("memory:///a/b/../..", "memory:///"),
-        ("memory:///a/b/../../..", "memory:///"),
+        ("memory:/a/b/..", "memory://a/"),
+        ("memory:/a/b/.", "memory://a/b/"),
+        ("memory:/a/b/../..", "memory://"),
+        ("memory:/a/b/../../..", "memory://"),
+        ("memory://a/b/.", "memory://a/b/"),
+        ("memory://a/b/..", "memory://a/"),
+        ("memory://a/b/../..", "memory://"),
+        ("memory://a/b/../../..", "memory://"),
+        ("memory:///a/b/.", "memory://a/b/"),
+        ("memory:///a/b/..", "memory://a/"),
+        ("memory:///a/b/../..", "memory://"),
+        ("memory:///a/b/../../..", "memory://"),
     ),
 )
 
 
 @pytest.mark.parametrize(*NORMALIZATIONS)
 def test_normalize(unnormalized, normalized):
-    expected = str(UPath(normalized))
+    expected = UPath(normalized)
     # Normalise only, do not attempt to follow redirects for http:// paths here
-    result = str(UPath.resolve(UPath(unnormalized)))
+    result = UPath.resolve(UPath(unnormalized))
+    if expected.protocol == "memory":
+        pass
     assert expected == result
+    assert str(expected) == str(result)
