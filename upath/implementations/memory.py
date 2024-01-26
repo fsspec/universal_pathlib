@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import sys
 
+from typing import Any
+from urllib.parse import SplitResult
+
+
 import upath.core
+from upath.core import PT
 
 
 class _MemoryAccessor(upath.core._FSSpecAccessor):
@@ -33,9 +38,28 @@ class MemoryPath(upath.core.UPath):
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
         if url and url.netloc:
-            args[0:0] = ["/", url.netloc]
+            if args:
+                if args[0].startswith("/"):
+                    args[0] = args[0][1:]
+                args[0:1] = [f"/{url.netloc}/{args[0]}"]
+            else:
+                args[:] = f"/{url.netloc}"
             url = url._replace(netloc="")
         return super()._from_parts(args, url=url, **kwargs)
+
+    @classmethod
+    def _format_parsed_parts(
+        cls: type[PT],
+        drv: str,
+        root: str,
+        parts: list[str],
+        url: SplitResult | None = None,
+        **kwargs: Any,
+    ) -> str:
+        s = super()._format_parsed_parts(drv, root, parts, url=url, **kwargs)
+        if s.startswith("memory:///"):
+            s = s.replace("memory:///", "memory://", 1)
+        return s
 
 
 if sys.version_info >= (3, 12):

@@ -263,6 +263,11 @@ def test_access_to_private_kwargs_and_url(urlpath):
     assert isinstance(pth._url, SplitResult)
     assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
     assert pth._url.path == pth.path
+    subpth = pth / "foo"
+    assert subpth._kwargs == {}
+    assert isinstance(subpth._url, SplitResult)
+    assert subpth._url.scheme == "" or subpth._url.scheme in subpth.fs.protocol
+    assert subpth._url.path == subpth.path
 
 
 def test_copy_path_append_kwargs():
@@ -338,22 +343,28 @@ NORMALIZATIONS = (
         ("http://example.com/a//..//.", "http://example.com/a//"),
         ("http://example.com/a//..//b", "http://example.com/a//b"),
         # Normalization with and without an authority component
-        ("memory:/a/b/..", "memory:///a/"),
-        ("memory:/a/b/../..", "memory:///"),
-        ("memory:/a/b/../../..", "memory:///"),
-        ("memory://a/b/..", "memory:///a/"),
-        ("memory://a/b/../..", "memory:///"),
-        ("memory://a/b/../../..", "memory:///"),
-        ("memory:///a/b/..", "memory:///a/"),
-        ("memory:///a/b/../..", "memory:///"),
-        ("memory:///a/b/../../..", "memory:///"),
+        ("memory:/a/b/..", "memory://a/"),
+        ("memory:/a/b/.", "memory://a/b/"),
+        ("memory:/a/b/../..", "memory://"),
+        ("memory:/a/b/../../..", "memory://"),
+        ("memory://a/b/.", "memory://a/b/"),
+        ("memory://a/b/..", "memory://a/"),
+        ("memory://a/b/../..", "memory://"),
+        ("memory://a/b/../../..", "memory://"),
+        ("memory:///a/b/.", "memory://a/b/"),
+        ("memory:///a/b/..", "memory://a/"),
+        ("memory:///a/b/../..", "memory://"),
+        ("memory:///a/b/../../..", "memory://"),
     ),
 )
 
 
 @pytest.mark.parametrize(*NORMALIZATIONS)
 def test_normalize(unnormalized, normalized):
-    expected = str(UPath(normalized))
+    expected = UPath(normalized)
     # Normalise only, do not attempt to follow redirects for http:// paths here
-    result = str(UPath.resolve(UPath(unnormalized)))
+    result = UPath.resolve(UPath(unnormalized))
+    if expected.protocol == "memory":
+        pass
     assert expected == result
+    assert str(expected) == str(result)

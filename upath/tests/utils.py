@@ -23,10 +23,24 @@ def posixify(path):
 
 
 def xfail_if_version(module, *, reason, **conditions):
-    ver = Version(get_package_version_without_import(module))
+    ver_str = get_package_version_without_import(module)
+    if ver_str is None:
+        return pytest.mark.skip(reason=f"NOT INSTALLED ({reason})")
+    ver = Version(ver_str)
     if not set(conditions).issubset({"lt", "le", "ne", "eq", "ge", "gt"}):
         raise ValueError("unknown condition")
     cond = True
     for op, val in conditions.items():
         cond &= getattr(operator, op)(ver, Version(val))
     return pytest.mark.xfail(cond, reason=reason)
+
+
+def xfail_if_no_ssl_connection(func):
+    try:
+        import requests
+
+        requests.get("https://example.com")
+    except (ImportError, requests.exceptions.SSLError):
+        return pytest.mark.xfail(reason="No SSL connection")(func)
+    else:
+        return func
