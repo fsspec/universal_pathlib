@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import sys
-
 from typing import Any
 from urllib.parse import SplitResult
-
 
 import upath.core
 from upath.core import PT
