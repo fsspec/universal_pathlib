@@ -5,7 +5,6 @@ from typing import Any
 from urllib.parse import SplitResult
 
 import upath.core
-from upath.core import PT
 
 
 class _MemoryAccessor(upath.core._FSSpecAccessor):
@@ -47,7 +46,7 @@ class MemoryPath(upath.core.UPath):
 
     @classmethod
     def _format_parsed_parts(
-        cls: type[PT],
+        cls,
         drv: str,
         root: str,
         parts: list[str],
