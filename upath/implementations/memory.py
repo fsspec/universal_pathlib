@@ -71,3 +71,9 @@ if sys.version_info >= (3, 12):
         def path(self):
             path = super().path
             return "/" if path == "." else path
+
+        def __str__(self):
+            s = super().__str__()
+            if s.startswith("memory:///"):
+                s = s.replace("memory:///", "memory://", 1)
+            return s
