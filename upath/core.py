@@ -307,7 +307,7 @@ class UPath(Path):
         else:
             scheme, netloc = url.scheme, url.netloc
         scheme = (scheme + ":") if scheme else ""
-        netloc = "//" + netloc if netloc else ""
+        netloc = "//" + netloc  # always add netloc
         formatted = scheme + netloc + path
         return formatted
 
@@ -684,6 +684,22 @@ class UPath(Path):
             url = url._replace(path=root + cls._flavour.join(parts[1:]))
         obj._url = url
         return obj
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        p0, p1 = self.parts, other.parts
+        if len(p0) > len(p1):
+            if p0 and p0[-1] == "":
+                p0 = p0[:-1]
+        elif len(p1) > len(p0):
+            if p1 and p1[-1] == "":
+                p1 = p1[:-1]
+        return (
+            p0 == p1
+            and self.protocol == other.protocol
+            and self.storage_options == other.storage_options
+        )
 
     def __str__(self) -> str:
         """Return the string representation of the path, suitable for
