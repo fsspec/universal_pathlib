@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from itertools import chain
 from urllib.parse import urlunsplit
 
 from fsspec.asyn import sync
@@ -116,51 +117,16 @@ class HTTPPath(upath.core.UPath):
 
 
 if sys.version_info >= (3, 12):  # noqa
-    from itertools import chain
-    from urllib.parse import urlsplit
-
-    from upath.core312plus import PathOrStr
-    from upath.core312plus import fsspecpathmod
-    from upath.core312plus import strip_upath_protocol
-
-    class httppathmod(fsspecpathmod):
-        sep: str = "/"
-        altsep: str | None = None
-
-        @staticmethod
-        def join(__path: PathOrStr, *paths: PathOrStr) -> str:
-            path = strip_upath_protocol(__path).removesuffix("/")
-            paths = map(strip_upath_protocol, paths)
-            sep = httppathmod.sep
-            for b in paths:
-                if b.startswith(sep):
-                    path = b
-                elif not path:
-                    path += b
-                else:
-                    path += sep + b
-            return path
-
-        @staticmethod
-        def splitroot(__path: PathOrStr) -> tuple[str, str, str]:
-            # path = strip_upath_protocol(__path)
-            url = urlsplit(__path)
-            drive = urlunsplit(url._replace(path="", query="", fragment=""))
-            path = urlunsplit(url._replace(scheme="", netloc=""))
-            root = "/" if path.startswith("/") else ""
-            return drive, root, path.removeprefix("/")
-
-        @staticmethod
-        def splitdrive(__path: PathOrStr) -> tuple[str, str]:
-            path = strip_upath_protocol(__path)
-            url = urlsplit(path)
-            path = urlunsplit(url._replace(scheme="", netloc=""))
-            drive = urlunsplit(url._replace(path="", query="", fragment=""))
-            return drive, path
+    from upath.core312plus import FSSpecFlavour
 
     class HTTPPath(upath.core312plus.UPath):  # noqa
-        pathmod = _flavour = httppathmod
-        _supports_empty_parts = True
+        _flavour = FSSpecFlavour(
+            join_like_urljoin=True,
+            supports_empty_parts=True,
+            supports_netloc=True,
+            supports_query_parameters=True,
+            supports_fragments=True,
+        )
 
         @property
         def root(self) -> str:

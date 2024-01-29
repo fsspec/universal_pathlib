@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import posixpath
 import re
 import sys
 import warnings
@@ -94,54 +93,21 @@ class CloudPath(upath.core.UPath):
 
 
 if sys.version_info >= (3, 12):
-    from upath.core312plus import PathOrStr
-    from upath.core312plus import fsspecpathmod
-    from upath.core312plus import split_upath_protocol
-    from upath.core312plus import strip_upath_protocol
-
-    class cloudpathmod(fsspecpathmod):
-        sep: str = "/"
-        altsep: str | None = None
-
-        @staticmethod
-        def join(__path: PathOrStr, *paths: PathOrStr) -> str:
-            protocol = split_upath_protocol(__path)
-            joined = posixpath.join(*map(strip_upath_protocol, [__path, *paths]))
-            if protocol:
-                return f"{protocol}://{joined}"
-            else:
-                return joined
-
-        @staticmethod
-        def splitroot(__path: PathOrStr) -> tuple[str, str, str]:
-            protocol = split_upath_protocol(__path)
-            path = strip_upath_protocol(__path)
-            if protocol:
-                drive, root, tail = path.partition("/")
-                return drive, root or "/", tail
-            else:
-                return "", "", path
-
-        @staticmethod
-        def splitdrive(__path: PathOrStr) -> tuple[str, str]:
-            protocol = split_upath_protocol(__path)
-            path = strip_upath_protocol(__path)
-            if protocol:
-                drive, root, tail = path.partition("/")
-                return drive, f"{root}{tail}"
-            else:
-                return "", path
+    from upath.core312plus import FSSpecFlavour
 
     class CloudPath(upath.core312plus.UPath):  # noqa
         __slots__ = ()
-        pathmod = _flavour = cloudpathmod
+        _flavour = FSSpecFlavour(
+            join_prepends_protocol=True,
+            supports_netloc=True,
+        )
 
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
             if "bucket" in storage_options:
                 bucket = storage_options.pop("bucket")
-                args = [f"s3://{bucket}/", *args]
+                args = [f"{self._protocol}://{bucket}/", *args]
             super().__init__(*args, protocol=protocol, **storage_options)
 
         def mkdir(
@@ -175,6 +141,7 @@ class AzurePath(CloudPath):
 
     def touch(self, mode=0o666, exist_ok=True):
         if exist_ok and self.exists():
-            self.fs.open(self.path, mode="a")  # fixme: add test for updated time!
+            with self.fs.open(self.path, mode="a"):
+                pass
         else:
             self.fs.touch(self.path, truncate=True)
