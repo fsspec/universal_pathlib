@@ -7,6 +7,7 @@ from pathlib import Path
 from pathlib import PurePath
 from pathlib import _PosixFlavour  # type: ignore
 from typing import TYPE_CHECKING
+from typing import Callable
 from typing import Mapping
 from typing import Sequence
 from typing import TypeVar
@@ -112,6 +113,31 @@ class _FSSpecAccessor:
             maxdepth=maxdepth,
             **kwargs,
         )
+
+
+def _patch_accessor(
+    accessor_cls: type[_FSSpecAccessor],
+    fs_factory: Callable[[str, str, Mapping[str, Any]], AbstractFileSystem],
+) -> Callable[..., _FSSpecAccessor]:
+    """Patch the _FSSpecAccessor class to support `UPath._fs_factory` overrides"""
+
+    def _patch_init(
+        self,
+        parsed_url: SplitResult | None,
+        **kwargs: Any,
+    ) -> None:
+        self._fs = self._fs_factory(
+            parsed_url.geturl(), parsed_url.scheme or "", kwargs
+        )
+
+    return type(
+        f"Patched{accessor_cls.__name__}",
+        (accessor_cls,),
+        {
+            "__init__": _patch_init,
+            "_fs_factory": staticmethod(fs_factory),
+        },
+    )
 
 
 class _UriFlavour(_PosixFlavour):
@@ -249,21 +275,16 @@ class UPath(Path):
         """provide a clean migration path for custom user subclasses"""
 
         has_custom_fs_factory = cls._fs_factory is not UPath._fs_factory
+        is_patched = (
+            hasattr(cls._default_accessor, "_fs_factory")
+            and cls._default_accessor._fs_factory is not cls._fs_factory
+        )
 
-        if has_custom_fs_factory:
-            user_fs_factory = cls._fs_factory
-            user_accessor = cls._default_accessor
-
-            def _default_accessor(
-                parsed_url: SplitResult | None, **kwargs: Any
-            ) -> _FSSpecAccessor:
-                accessor = object.__new__(user_accessor)
-                accessor._fs = user_fs_factory(
-                    parsed_url.geturl(), parsed_url.scheme or "", kwargs
-                )
-                return accessor
-
-            cls._default_accessor = staticmethod(_default_accessor)
+        if has_custom_fs_factory and not is_patched:
+            cls._default_accessor = _patch_accessor(
+                accessor_cls=cls._default_accessor,
+                fs_factory=cls._fs_factory,
+            )
 
     @classmethod
     def _fs_factory(
