@@ -274,10 +274,13 @@ class UPath(Path):
     def __init_subclass__(cls, **kwargs):
         """provide a clean migration path for custom user subclasses"""
 
-        has_custom_fs_factory = cls._fs_factory is not UPath._fs_factory
+        has_custom_fs_factory = (
+            cls._fs_factory.__func__ is not UPath._fs_factory.__func__
+        )
         is_patched = (
             hasattr(cls._default_accessor, "_fs_factory")
-            and cls._default_accessor._fs_factory is not cls._fs_factory
+            and cls._default_accessor._fs_factory.__func__
+            is not cls._fs_factory.__func__
         )
 
         if has_custom_fs_factory and not is_patched:
