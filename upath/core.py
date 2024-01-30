@@ -7,6 +7,7 @@ from pathlib import Path
 from pathlib import PurePath
 from pathlib import _PosixFlavour  # type: ignore
 from typing import TYPE_CHECKING
+from typing import Mapping
 from typing import Sequence
 from typing import TypeVar
 from urllib.parse import urlsplit
@@ -243,6 +244,35 @@ class UPath(Path):
             for key, value in self._kwargs.items()
             if key not in {"scheme", "netloc", "url"}
         }
+
+    def __init_subclass__(cls, **kwargs):
+        """provide a clean migration path for custom user subclasses"""
+
+        has_custom_fs_factory = cls._fs_factory is not UPath._fs_factory
+
+        if has_custom_fs_factory:
+            user_fs_factory = cls._fs_factory
+
+            def _default_accessor(
+                parsed_url: SplitResult | None, **kwargs: Any
+            ) -> _FSSpecAccessor:
+                accessor = object.__new__(cls._default_accessor)
+                accessor._fs = user_fs_factory(
+                    parsed_url.geturl(), protocol=parsed_url.scheme or "", **kwargs
+                )
+                return accessor
+
+            cls._default_accessor = _default_accessor
+
+    @classmethod
+    def _fs_factory(
+        cls, urlpath: str, protocol: str | None, storage_options: Mapping[str, Any]
+    ) -> AbstractFileSystem:
+        """Instantiate the filesystem_spec filesystem class"""
+        fs_cls = get_filesystem_class(protocol)
+        so_dct = fs_cls._get_kwargs_from_urls(urlpath)
+        so_dct.update(storage_options)
+        return fs_cls(**storage_options)
 
     @property
     def fs(self) -> AbstractFileSystem:

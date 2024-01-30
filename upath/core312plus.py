@@ -14,6 +14,7 @@ from typing import Any
 from typing import Mapping
 from typing import TypeAlias
 from typing import cast
+from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 11):
@@ -22,7 +23,6 @@ else:
     Self = Any
 
 from fsspec import AbstractFileSystem
-from fsspec import filesystem
 from fsspec import get_filesystem_class
 from fsspec.core import strip_protocol as fsspec_strip_protocol
 
@@ -33,6 +33,9 @@ PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
 
 class _FSSpecAccessor:
     """this is a compatibility shim and will be removed"""
+
+    def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
+        pass
 
 
 class FSSpecFlavour:
@@ -370,13 +373,60 @@ class UPath(Path):
     def storage_options(self) -> Mapping[str, Any]:
         return MappingProxyType(self._storage_options)
 
+    def __init_subclass__(cls, **kwargs):
+        """provide a clean migration path for custom user subclasses"""
+
+        accessor_cls = getattr(cls, "_default_accessor", None)
+
+        # guess which parts the user subclass is customizing
+        has_custom_legacy_accessor = (
+            accessor_cls is not None
+            and issubclass(accessor_cls, _FSSpecAccessor)
+            and accessor_cls is not _FSSpecAccessor
+        )
+        has_customized_fs_instantiation = (
+            accessor_cls.__init__ is not _FSSpecAccessor.__init__
+            or hasattr(accessor_cls, "_fs")
+        )
+
+        if has_custom_legacy_accessor and has_customized_fs_instantiation:
+            warnings.warn(
+                "Detected a customized `__init__` method or `_fs` attribute"
+                " in the provided `_FSSpecAccessor` subclass. It is recommended to"
+                " instead override the `_fs_factory` classmethod to customize"
+                " filesystem instantiation.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+            def _fs_factory(
+                cls_, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+            ) -> AbstractFileSystem:
+                url = urlsplit(urlpath)
+                if protocol:
+                    url = url._replace(scheme=protocol)
+                inst = cls_._default_accessor(url, **storage_options)
+                return inst._fs
+
+            cls._fs_factory = classmethod(_fs_factory)
+
+    @classmethod
+    def _fs_factory(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> AbstractFileSystem:
+        """Instantiate the filesystem_spec filesystem class"""
+        fs_cls = get_filesystem_class(protocol)
+        so_dct = fs_cls._get_kwargs_from_urls(urlpath)
+        so_dct.update(storage_options)
+        return fs_cls(**storage_options)
+
     @property
     def fs(self) -> AbstractFileSystem:
         try:
             return self._fs_cached
         except AttributeError:
-            fs = self._fs_cached = filesystem(
-                protocol=self.protocol, **self.storage_options
+            fs = self._fs_cached = self._fs_factory(
+                str(self), self.protocol, self.storage_options
             )
             return fs
 
