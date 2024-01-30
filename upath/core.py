@@ -262,7 +262,7 @@ class UPath(Path):
                 )
                 return accessor
 
-            cls._default_accessor = _default_accessor
+            cls._default_accessor = staticmethod(_default_accessor)
 
     @classmethod
     def _fs_factory(
