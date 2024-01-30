@@ -46,7 +46,7 @@ def lint(session: nox.Session) -> None:
 
     args = *(session.posargs or ("--show-diff-on-failure",)), "--all-files"
     session.run("pre-commit", "run", *args)
-    session.run("python", "-m", "mypy")
+    # session.run("python", "-m", "mypy")
     # session.run("python", "-m", "pylint", *locations)
 
 
@@ -88,8 +88,8 @@ def black(session):
 
 @nox.session
 def type_checking(session):
-    print("please run `nox -s lint` instead")
-    raise SystemExit(1)
+    session.install("-e", ".[tests]")
+    session.run("python", "-m", "mypy")
 
 
 @nox.session()
