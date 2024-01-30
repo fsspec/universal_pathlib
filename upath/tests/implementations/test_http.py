@@ -115,3 +115,22 @@ class TestUPathHttp(BaseTests):
     def test_rename2(self):
         with pytest.raises(NotImplementedError):
             return super().test_rename()
+
+
+@pytest.mark.parametrize(
+    "args,parts",
+    [
+        (("http://example.com/"), ("http://example.com/", "")),
+        (("http://example.com//"), ("http://example.com/", "", "")),
+        (("http://example.com///"), ("http://example.com/", "", "", "")),
+        (("http://example.com/a"), ("http://example.com/", "a")),
+        (("http://example.com/a/"), ("http://example.com/", "a", "")),
+        (("http://example.com/a/b"), ("http://example.com/", "a", "b")),
+        (("http://example.com/a//b"), ("http://example.com/", "a", "", "b")),
+        (("http://example.com/a//b/"), ("http://example.com/", "a", "", "b", "")),
+    ],
+)
+def test_empty_parts(args, parts):
+    pth = UPath(args)
+    pth_parts = pth.parts
+    assert pth_parts == parts

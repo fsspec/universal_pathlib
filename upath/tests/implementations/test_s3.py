@@ -66,10 +66,12 @@ class TestUPathS3(BaseTests):
         # file doesn't exists, but missing_ok is True
         path.unlink(missing_ok=True)
 
-    @pytest.mark.parametrize("joiner", [["bucket", "path", "file"], "bucket/path/file"])
+    @pytest.mark.parametrize(
+        "joiner", [["bucket", "path", "file"], ["bucket/path/file"]]
+    )
     def test_no_bucket_joinpath(self, joiner):
         path = UPath("s3://", anon=self.anon, **self.s3so)
-        path = path.joinpath(joiner)
+        path = path.joinpath(*joiner)
         assert str(path) == "s3://bucket/path/file"
 
     def test_creating_s3path_with_bucket(self):

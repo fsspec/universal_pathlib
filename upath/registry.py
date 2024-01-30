@@ -43,7 +43,7 @@ from typing import MutableMapping
 from fsspec.core import get_filesystem_class
 from fsspec.registry import known_implementations as _fsspec_known_implementations
 
-import upath.core
+import upath
 
 __all__ = [
     "get_upath_class",
@@ -55,7 +55,7 @@ __all__ = [
 _ENTRY_POINT_GROUP = "universal_pathlib.implementations"
 
 
-class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
+class _Registry(MutableMapping[str, "type[upath.UPath]"]):
     """internal registry for UPath subclasses"""
 
     known_implementations: dict[str, str] = {
@@ -73,6 +73,7 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
         "memory": "upath.implementations.memory.MemoryPath",
         "s3": "upath.implementations.cloud.S3Path",
         "s3a": "upath.implementations.cloud.S3Path",
+        "webdav": "upath.implementations.webdav.WebdavPath",
         "webdav+http": "upath.implementations.webdav.WebdavPath",
         "webdav+https": "upath.implementations.webdav.WebdavPath",
     }
@@ -88,7 +89,7 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
     def __contains__(self, item: object) -> bool:
         return item in set().union(self._m, self._entries)
 
-    def __getitem__(self, item: str) -> type[upath.core.UPath]:
+    def __getitem__(self, item: str) -> type[upath.UPath]:
         fqn = self._m.get(item)
         if fqn is None:
             if item in self._entries:
@@ -103,14 +104,16 @@ class _Registry(MutableMapping[str, "type[upath.core.UPath]"]):
             cls = fqn
         return cls
 
-    def __setitem__(self, item: str, value: type[upath.core.UPath] | str) -> None:
+    def __setitem__(self, item: str, value: type[upath.UPath] | str) -> None:
         if not (
-            (isinstance(value, type) and issubclass(value, upath.core.UPath))
+            (isinstance(value, type) and issubclass(value, upath.UPath))
             or isinstance(value, str)
         ):
             raise ValueError(
                 f"expected UPath subclass or FQN-string, got: {type(value).__name__!r}"
             )
+        if not item or item in self._m:
+            get_upath_class.cache_clear()
         self._m[item] = value
 
     def __delitem__(self, __v: str) -> None:
@@ -144,7 +147,7 @@ def available_implementations(*, fallback: bool = False) -> list[str]:
 
 def register_implementation(
     protocol: str,
-    cls: type[upath.core.UPath] | str,
+    cls: type[upath.UPath] | str,
     *,
     clobber: bool = False,
 ) -> None:
@@ -173,7 +176,7 @@ def get_upath_class(
     protocol: str,
     *,
     fallback: bool = True,
-) -> type[upath.core.UPath] | None:
+) -> type[upath.UPath] | None:
     """Return the upath cls for the given protocol.
 
     Returns `None` if no matching protocol can be found.
@@ -212,4 +215,4 @@ def get_upath_class(
                 UserWarning,
                 stacklevel=2,
             )
-            return upath.core.UPath
+            return upath.UPath

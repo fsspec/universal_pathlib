@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import sys
 from typing import Any
 from urllib.parse import SplitResult
 
 import upath.core
-from upath.core import PT
 
 
 class _MemoryAccessor(upath.core._FSSpecAccessor):
@@ -34,7 +34,6 @@ class MemoryPath(upath.core.UPath):
 
     @classmethod
     def _from_parts(cls, args, url=None, **kwargs):
-        print("A", args, url)
         if url and url.netloc:
             if args:
                 if args[0].startswith("/"):
@@ -43,12 +42,11 @@ class MemoryPath(upath.core.UPath):
             else:
                 args[:] = f"/{url.netloc}"
             url = url._replace(netloc="")
-            print("B", args, url)
         return super()._from_parts(args, url=url, **kwargs)
 
     @classmethod
     def _format_parsed_parts(
-        cls: type[PT],
+        cls,
         drv: str,
         root: str,
         parts: list[str],
@@ -59,3 +57,23 @@ class MemoryPath(upath.core.UPath):
         if s.startswith("memory:///"):
             s = s.replace("memory:///", "memory://", 1)
         return s
+
+
+if sys.version_info >= (3, 12):
+
+    class MemoryPath(upath.core.UPath):  # noqa
+        def iterdir(self):
+            if not self.is_dir():
+                raise NotADirectoryError(str(self))
+            yield from super().iterdir()
+
+        @property
+        def path(self):
+            path = super().path
+            return "/" if path == "." else path
+
+        def __str__(self):
+            s = super().__str__()
+            if s.startswith("memory:///"):
+                s = s.replace("memory:///", "memory://", 1)
+            return s

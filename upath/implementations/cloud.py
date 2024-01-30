@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import sys
+import warnings
+from typing import Any
 
 import upath.core
 
@@ -23,7 +26,6 @@ class _CloudAccessor(upath.core._FSSpecAccessor):
         return super().mkdir(path, create_parents=create_parents, **kwargs)
 
 
-# project is not part of the path, but is part of the credentials
 class CloudPath(upath.core.UPath):
     _default_accessor = _CloudAccessor
 
@@ -60,16 +62,28 @@ class CloudPath(upath.core.UPath):
     def joinpath(self, *args):
         if self._url.netloc:
             return super().joinpath(*args)
-        # handles a bucket in the path
-        else:
-            path = args[0]
-            if isinstance(path, list):
-                args_list = list(*args)
+
+        # if no bucket is defined for self
+        sep = self._flavour.sep
+        args_list = []
+        for arg in args:
+            if isinstance(arg, list):
+                warnings.warn(
+                    "lists as arguments to joinpath are deprecated",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                args_list.extend(arg)
             else:
-                args_list = path.split(self._flavour.sep)
-            bucket = args_list.pop(0)
-            self._kwargs["bucket"] = bucket
-            return super().joinpath(*tuple(args_list))
+                args_list.extend(arg.split(sep))
+        bucket = args_list.pop(0)
+        return type(self)(
+            "/",
+            *args_list,
+            **self.storage_options,
+            bucket=bucket,
+            scheme=self.protocol,
+        )
 
     @property
     def path(self) -> str:
@@ -78,13 +92,56 @@ class CloudPath(upath.core.UPath):
         return f"{self._url.netloc}{super()._path}"
 
 
+if sys.version_info >= (3, 12):
+    from upath.core312plus import FSSpecFlavour
+
+    class CloudPath(upath.core312plus.UPath):  # noqa
+        __slots__ = ()
+        _flavour = FSSpecFlavour(
+            join_prepends_protocol=True,
+            supports_netloc=True,
+        )
+
+        def __init__(
+            self, *args, protocol: str | None = None, **storage_options: Any
+        ) -> None:
+            if "bucket" in storage_options:
+                bucket = storage_options.pop("bucket")
+                args = [f"{self._protocol}://{bucket}/", *args]
+            super().__init__(*args, protocol=protocol, **storage_options)
+
+        def mkdir(
+            self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        ) -> None:
+            if not parents and not exist_ok and self.exists():
+                raise FileExistsError(self.path)
+            super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+
+        def iterdir(self):
+            if self.is_file():
+                raise NotADirectoryError(str(self))
+            yield from super().iterdir()
+
+        def relative_to(self, other, /, *_deprecated, walk_up=False):
+            # use the parent implementation for the ValueError logic
+            super().relative_to(other, *_deprecated, walk_up=False)
+            return self
+
+
 class GCSPath(CloudPath):
-    pass
+    __slots__ = ()
 
 
 class S3Path(CloudPath):
-    pass
+    __slots__ = ()
 
 
 class AzurePath(CloudPath):
-    pass
+    __slots__ = ()
+
+    def touch(self, mode=0o666, exist_ok=True):
+        if exist_ok and self.exists():
+            with self.fs.open(self.path, mode="a"):
+                pass
+        else:
+            self.fs.touch(self.path, truncate=True)

@@ -9,8 +9,10 @@ nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 
 
-@nox.session(python=["3.8", "3.9", "3.10", "3.11", "pypy3.8", "pypy3.9"])
+@nox.session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3.8", "pypy3.9"])
 def tests(session: nox.Session) -> None:
+    # workaround in case no aiohttp binary wheels are available
+    session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
     session.install(".[dev]")
     session.run(
         "pytest",
@@ -44,7 +46,7 @@ def lint(session: nox.Session) -> None:
 
     args = *(session.posargs or ("--show-diff-on-failure",)), "--all-files"
     session.run("pre-commit", "run", *args)
-    session.run("python", "-m", "mypy")
+    # session.run("python", "-m", "mypy")
     # session.run("python", "-m", "pylint", *locations)
 
 
@@ -86,8 +88,8 @@ def black(session):
 
 @nox.session
 def type_checking(session):
-    print("please run `nox -s lint` instead")
-    raise SystemExit(1)
+    session.install("-e", ".[tests]")
+    session.run("python", "-m", "mypy")
 
 
 @nox.session()

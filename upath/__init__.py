@@ -1,9 +1,19 @@
 """Pathlib API extended to use fsspec backends."""
-from upath.core import UPath
+import sys
 
 try:
     from upath._version import __version__
 except ImportError:
     __version__ = "not-installed"
+
+if sys.version_info >= (3, 12):
+    import upath.core312plus as core
+
+    sys.modules["upath.core"] = core
+
+else:
+    import upath.core as core
+
+UPath = core.UPath
 
 __all__ = ["UPath"]

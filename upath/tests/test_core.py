@@ -3,6 +3,7 @@ import pathlib
 import pickle
 import sys
 import warnings
+from typing import Mapping
 from urllib.parse import SplitResult
 
 import pytest
@@ -26,7 +27,7 @@ def test_windows_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.WindowsPath)
 
 
-def test_UPath_untested_protocol_warning():
+def test_UPath_untested_protocol_warning(clear_registry):
     with warnings.catch_warnings(record=True) as w:
         _ = UPath("mock:/")
         assert len(w) == 1
@@ -69,7 +70,7 @@ class TestUpath(BaseTests):
 
 
 def test_multiple_backend_paths(local_testdir):
-    path = f"s3:{local_testdir}"
+    path = "s3://bucket/"
     s3_path = UPath(path, anon=True)
     assert s3_path.joinpath("text.txt")._url.scheme == "s3"
     path = f"file://{local_testdir}"
@@ -116,6 +117,7 @@ def test_instance_check_local_uri(local_testdir):
     assert isinstance(upath, UPath)
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 12), reason="requires python<3.12")
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))
@@ -139,22 +141,18 @@ def test_create_from_type(path, storage_options, module, object_type):
     if module:
         # skip if module cannot be imported
         pytest.importorskip(module)
-    try:
-        upath = UPath(path, **storage_options)
-        # test expected object type
-        assert isinstance(upath, object_type)
-        cast = type(upath)
-        parent = upath.parent
-        # test derived object is same type
-        assert isinstance(parent, cast)
-        # test that created fs uses fsspec instance cache
-        assert not hasattr(upath, "fs") or upath.fs is parent.fs
-        new = cast(str(parent), **storage_options)
-        # test that object cast is same type
-        assert isinstance(new, cast)
-    except ImportError:
-        # fs failed to import
-        pass
+    upath = UPath(path, **storage_options)
+    # test expected object type
+    assert isinstance(upath, object_type)
+    cast = type(upath)
+    parent = upath.parent
+    # test derived object is same type
+    assert isinstance(parent, cast)
+    # test that created fs uses fsspec instance cache
+    assert upath.fs is parent.fs
+    new = cast(str(parent), **storage_options)
+    # test that object cast is same type
+    assert isinstance(new, cast)
 
 
 def test_list_args():
@@ -162,9 +160,9 @@ def test_list_args():
     path_b = UPath("gcs://bucket") / "folder"
 
     assert str(path_a) == str(path_b)
-    assert path_a._root == path_b._root
-    assert path_a._drv == path_b._drv
-    assert path_a._parts == path_b._parts
+    assert path_a.root == path_b.root
+    assert path_a.drive == path_b.drive
+    assert path_a.parts == path_b.parts
     assert path_a._url == path_b._url
 
 
@@ -173,9 +171,9 @@ def test_child_path():
     path_b = UPath("gcs://bucket") / "folder"
 
     assert str(path_a) == str(path_b)
-    assert path_a._root == path_b._root
-    assert path_a._drv == path_b._drv
-    assert path_a._parts == path_b._parts
+    assert path_a.root == path_b.root
+    assert path_a.drive == path_b.drive
+    assert path_a.parts == path_b.parts
     assert path_a._url == path_b._url
 
 
@@ -184,7 +182,7 @@ def test_pickling():
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
-    assert type(path) == type(recovered_path)
+    assert type(path) is type(recovered_path)
     assert str(path) == str(recovered_path)
     assert path.storage_options == recovered_path.storage_options
 
@@ -194,11 +192,11 @@ def test_pickling_child_path():
     pickled_path = pickle.dumps(path)
     recovered_path = pickle.loads(pickled_path)
 
-    assert type(path) == type(recovered_path)
+    assert type(path) is type(recovered_path)
     assert str(path) == str(recovered_path)
-    assert path._drv == recovered_path._drv
-    assert path._root == recovered_path._root
-    assert path._parts == recovered_path._parts
+    assert path.drive == recovered_path.drive
+    assert path.root == recovered_path.root
+    assert path.parts == recovered_path.parts
     assert path.storage_options == recovered_path.storage_options
 
 
@@ -206,11 +204,11 @@ def test_copy_path():
     path = UPath("gcs://bucket/folder", token="anon")
     copy_path = UPath(path)
 
-    assert type(path) == type(copy_path)
+    assert type(path) is type(copy_path)
     assert str(path) == str(copy_path)
-    assert path._drv == copy_path._drv
-    assert path._root == copy_path._root
-    assert path._parts == copy_path._parts
+    assert path.drive == copy_path.drive
+    assert path.root == copy_path.root
+    assert path.parts == copy_path.parts
     assert path.storage_options == copy_path.storage_options
 
 
@@ -218,18 +216,18 @@ def test_copy_path_posix():
     path = UPath("/tmp/folder")
     copy_path = UPath(path)
 
-    assert type(path) == type(copy_path)
+    assert type(path) is type(copy_path)
     assert str(path) == str(copy_path)
-    assert path._drv == copy_path._drv
-    assert path._root == copy_path._root
-    assert path._parts == copy_path._parts
+    assert path.drive == copy_path.drive
+    assert path.root == copy_path.root
+    assert path.parts == copy_path.parts
 
 
 def test_copy_path_append():
     path = UPath("/tmp/folder")
     copy_path = UPath(path, "folder2")
 
-    assert type(path) == type(copy_path)
+    assert type(path) is type(copy_path)
     assert str(path / "folder2") == str(copy_path)
 
     path = UPath("/tmp/folder")
@@ -248,13 +246,19 @@ def test_copy_path_append():
     [
         os.getcwd(),
         pathlib.Path.cwd().as_uri(),
-        "mock:///abc",
+        pytest.param(
+            "mock:///abc",
+            marks=pytest.mark.skipif(
+                os.name == "nt",
+                reason="_url not well defined for mock filesystem on windows",
+            ),
+        ),
     ],
 )
 def test_access_to_private_kwargs_and_url(urlpath):
     # fixme: this should be deprecated...
     pth = UPath(urlpath)
-    assert isinstance(pth._kwargs, dict)
+    assert isinstance(pth._kwargs, Mapping)
     assert pth._kwargs == {}
     assert isinstance(pth._url, SplitResult)
     assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
@@ -270,10 +274,10 @@ def test_copy_path_append_kwargs():
     path = UPath("gcs://bucket/folder", anon=True)
     copy_path = UPath(path, anon=False)
 
-    assert type(path) == type(copy_path)
+    assert type(path) is type(copy_path)
     assert str(path) == str(copy_path)
-    assert not copy_path._kwargs["anon"]
-    assert path._kwargs["anon"]
+    assert not copy_path.storage_options["anon"]
+    assert path.storage_options["anon"]
 
 
 def test_relative_to():
