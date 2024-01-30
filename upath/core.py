@@ -252,13 +252,14 @@ class UPath(Path):
 
         if has_custom_fs_factory:
             user_fs_factory = cls._fs_factory
+            user_accessor = cls._default_accessor
 
             def _default_accessor(
                 parsed_url: SplitResult | None, **kwargs: Any
             ) -> _FSSpecAccessor:
-                accessor = object.__new__(cls._default_accessor)
+                accessor = object.__new__(user_accessor)
                 accessor._fs = user_fs_factory(
-                    parsed_url.geturl(), protocol=parsed_url.scheme or "", **kwargs
+                    parsed_url.geturl(), parsed_url.scheme or "", kwargs
                 )
                 return accessor
 
