@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import posixpath
 import sys
 import warnings
 from copy import copy
@@ -24,8 +23,8 @@ else:
 from fsspec import AbstractFileSystem
 from fsspec import get_filesystem_class
 
+from upath._flavour import FSSpecFlavour
 from upath._protocol import get_upath_protocol
-from upath._protocol import strip_upath_protocol
 from upath.registry import get_upath_class
 
 PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
@@ -36,149 +35,6 @@ class _FSSpecAccessor:
 
     def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
         pass
-
-
-class FSSpecFlavour:
-    """fsspec flavour for universal_pathlib
-
-    **INTERNAL AND VERY MUCH EXPERIMENTAL**
-
-    Implements the fsspec compatible low-level lexical operations on
-    PurePathBase-like objects.
-
-    Note:
-        In case you find yourself in need of subclassing FSSpecFlavour,
-        please open an issue in the universal_pathlib issue tracker:
-        https://github.com/fsspec/universal_pathlib/issues
-        Ideally we can find a way to make your use-case work by adding
-        more functionality to this class.
-
-    """
-
-    def __init__(
-        self,
-        *,
-        # URI behavior
-        join_prepends_protocol: bool = False,
-        join_like_urljoin: bool = False,
-        supports_empty_parts: bool = False,
-        supports_netloc: bool = False,
-        supports_query_parameters: bool = False,
-        supports_fragments: bool = False,
-        posixpath_only: bool = True,
-        # configurable separators
-        sep: str = "/",
-        altsep: str | None = None,
-    ):
-        self._owner = None
-        # separators
-        self.sep = sep
-        self.altsep = altsep
-        # configuration
-        self.join_prepends_protocol = join_prepends_protocol
-        self.join_like_urljoin = join_like_urljoin
-        self.supports_empty_parts = supports_empty_parts
-        self.supports_netloc = supports_netloc
-        self.supports_query_parameters = supports_query_parameters
-        self.supports_fragments = supports_fragments
-        self.posixpath_only = posixpath_only
-
-    def __set_name__(self, owner, name):
-        # helper to provide a more informative repr
-        self._owner = owner.__name__
-
-    def _asdict(self) -> dict[str, Any]:
-        """return a dict representation of the flavour's settings"""
-        dct = vars(self).copy()
-        dct.pop("_owner")
-        return dct
-
-    def __repr__(self):
-        return f"<{__name__}.{type(self).__name__} of {self._owner}>"
-
-    def join(self, __path: PathOrStr, *paths: PathOrStr) -> str:
-        """Join two or more path components, inserting '/' as needed."""
-        path = strip_upath_protocol(__path)
-        paths = map(strip_upath_protocol, paths)
-
-        if self.join_like_urljoin:
-            path = path.removesuffix("/")
-            sep = self.sep
-            for b in paths:
-                if b.startswith(sep):
-                    path = b
-                elif not path:
-                    path += b
-                else:
-                    path += sep + b
-            joined = path
-        elif self.posixpath_only:
-            joined = posixpath.join(path, *paths)
-        else:
-            joined = os.path.join(path, *paths)
-
-        if self.join_prepends_protocol and (protocol := get_upath_protocol(__path)):
-            joined = f"{protocol}://{joined}"
-
-        return joined
-
-    def splitroot(self, __path: PathOrStr) -> tuple[str, str, str]:
-        """Split a path in the drive, the root and the rest."""
-        if self.supports_fragments or self.supports_query_parameters:
-            url = urlsplit(__path)
-            drive = url._replace(path="", query="", fragment="").geturl()
-            path = url._replace(scheme="", netloc="").geturl()
-            # root = "/" if path.startswith("/") else ""
-            root = "/"  # emulate upath.core.UPath < 3.12 behaviour
-            return drive, root, path.removeprefix("/")
-
-        path = strip_upath_protocol(__path)
-        if self.supports_netloc:
-            protocol = get_upath_protocol(__path)
-            if protocol:
-                drive, root, tail = path.partition("/")
-                return drive, root or "/", tail
-            else:
-                return "", "", path
-        elif self.posixpath_only:
-            return posixpath.splitroot(path)
-        else:
-            drv, root, path = os.path.splitroot(path)
-            if os.name == "nt" and not drv:
-                drv = "C:"
-            return drv, root, path
-
-    def splitdrive(self, __path: PathOrStr) -> tuple[str, str]:
-        """Split a path into drive and path."""
-        if self.supports_fragments or self.supports_query_parameters:
-            path = strip_upath_protocol(__path)
-            url = urlsplit(path)
-            path = url._replace(scheme="", netloc="").geturl()
-            drive = url._replace(path="", query="", fragment="").geturl()
-            return drive, path
-
-        path = strip_upath_protocol(__path)
-        if self.supports_netloc:
-            protocol = get_upath_protocol(__path)
-            if protocol:
-                drive, root, tail = path.partition("/")
-                return drive, f"{root}{tail}"
-            else:
-                return "", path
-        elif self.posixpath_only:
-            return posixpath.splitdrive(path)
-        else:
-            drv, path = os.path.splitdrive(path)
-            if os.name == "nt" and not drv:
-                drv = "C:"
-            return drv, path
-
-    def normcase(self, __path: PathOrStr) -> str:
-        """Normalize case of pathname. Has no effect under Posix"""
-        if self.posixpath_only:
-            return posixpath.normcase(__path)
-        else:
-            return os.path.normcase(__path)
 
 
 def _make_instance(cls, args, kwargs):
