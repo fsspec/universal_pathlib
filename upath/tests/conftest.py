@@ -327,9 +327,12 @@ def webdav_fixture(local_testdir, webdav_server):
         fs_provider.lock_manager.storage.clear()
 
 
+AZURITE_PORT = int(os.environ.get("UPATH_AZURITE_PORT", "10000"))
+
+
 @pytest.fixture(scope="session")
 def azurite_credentials():
-    url = "http://localhost:10000"
+    url = f"http://localhost:{AZURITE_PORT}"
     account_name = "devstoreaccount1"
     key = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="  # noqa: E501
     endpoint = f"{url}/{account_name}"
@@ -348,10 +351,10 @@ def docker_azurite(azurite_credentials):
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"
     cmd = (
-        f"docker run --rm -d -p 10000:10000 --name {container_name} {image}"  # noqa: E501
+        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}"  # noqa: E501
         " azurite-blob --loose --blobHost 0.0.0.0"  # noqa: E501
     )
-    url = "http://localhost:10000"
+    url = f"http://localhost:{AZURITE_PORT}"
 
     stop_docker(container_name)
     subprocess.run(shlex.split(cmd), check=True)
