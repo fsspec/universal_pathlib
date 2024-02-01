@@ -12,16 +12,21 @@ __all__ = [
     "strip_upath_protocol",
 ]
 
-# Regular expression to match fsspec style protocols. Matches single
-# slash usage too.
+# Regular expression to match fsspec style protocols.
+# Matches single slash usage too for compatibility.
 _PROTOCOL_RE = re.compile(
     r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?P<slashes>//?)(?P<path>.*)"
 )
+
+# Matches data URIs
+_DATA_URI_RE = re.compile(r"^data:[^,]*,")
 
 
 def _match_protocol(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
         return m.group("protocol")
+    elif _DATA_URI_RE.match(pth):
+        return "data"
     return ""
 
 
@@ -54,9 +59,9 @@ def strip_upath_protocol(pth: str | os.PathLike[str]) -> str:
     elif not isinstance(pth, str):
         pth = os.fspath(pth)
     if m := _PROTOCOL_RE.match(pth):
-        protocol = m.group("protocol")
-        path = m.group("path")
         if len(m.group("slashes")) == 1:
+            protocol = m.group("protocol")
+            path = m.group("path")
             pth = f"{protocol}:///{path}"
         return strip_fsspec_protocol(pth)
     else:
