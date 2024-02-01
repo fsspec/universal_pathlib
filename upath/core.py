@@ -14,10 +14,11 @@ from typing import TypeVar
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
-from fsspec.core import split_protocol
 from fsspec.registry import get_filesystem_class
 from fsspec.utils import stringify_path
 
+from upath._protocol import get_upath_protocol
+from upath._protocol import strip_upath_protocol
 from upath.registry import get_upath_class
 
 if TYPE_CHECKING:
@@ -217,7 +218,7 @@ class UPath(Path):
             )
 
         url = stringify_path(other)
-        protocol, _ = split_protocol(url)
+        protocol = get_upath_protocol(url)
         parsed_url = urlsplit(url)
 
         if protocol is None and ":/" in url[2:]:  # excludes windows paths: C:/...
@@ -240,7 +241,7 @@ class UPath(Path):
         if not protocol:
             args_list.insert(0, url)
         else:
-            args_list.insert(0, parsed_url.path)
+            args_list.insert(0, strip_upath_protocol(url))
 
         return upath_cls._from_parts(  # type: ignore
             args_list, url=parsed_url, **kwargs

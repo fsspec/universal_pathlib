@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import posixpath
-import re
 import sys
 import warnings
 from copy import copy
@@ -24,8 +23,9 @@ else:
 
 from fsspec import AbstractFileSystem
 from fsspec import get_filesystem_class
-from fsspec.core import strip_protocol as fsspec_strip_protocol
 
+from upath._protocol import get_upath_protocol
+from upath._protocol import strip_upath_protocol
 from upath.registry import get_upath_class
 
 PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
@@ -117,7 +117,7 @@ class FSSpecFlavour:
         else:
             joined = os.path.join(path, *paths)
 
-        if self.join_prepends_protocol and (protocol := _match_protocol(__path)):
+        if self.join_prepends_protocol and (protocol := get_upath_protocol(__path)):
             joined = f"{protocol}://{joined}"
 
         return joined
@@ -128,12 +128,13 @@ class FSSpecFlavour:
             url = urlsplit(__path)
             drive = url._replace(path="", query="", fragment="").geturl()
             path = url._replace(scheme="", netloc="").geturl()
-            root = "/" if path.startswith("/") else ""
+            # root = "/" if path.startswith("/") else ""
+            root = "/"  # emulate upath.core.UPath < 3.12 behaviour
             return drive, root, path.removeprefix("/")
 
         path = strip_upath_protocol(__path)
         if self.supports_netloc:
-            protocol = _match_protocol(__path)
+            protocol = get_upath_protocol(__path)
             if protocol:
                 drive, root, tail = path.partition("/")
                 return drive, root or "/", tail
@@ -158,7 +159,7 @@ class FSSpecFlavour:
 
         path = strip_upath_protocol(__path)
         if self.supports_netloc:
-            protocol = _match_protocol(__path)
+            protocol = get_upath_protocol(__path)
             if protocol:
                 drive, root, tail = path.partition("/")
                 return drive, f"{root}{tail}"
@@ -178,57 +179,6 @@ class FSSpecFlavour:
             return posixpath.normcase(__path)
         else:
             return os.path.normcase(__path)
-
-
-_PROTOCOL_RE = re.compile(
-    r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?P<slashes>//?)(?P<path>.*)"
-)
-
-
-def strip_upath_protocol(pth: PathOrStr) -> str:
-    """strip protocol from path"""
-    if isinstance(pth, PurePath):
-        pth = str(pth)
-    elif not isinstance(pth, str):
-        pth = os.fspath(pth)
-    if m := _PROTOCOL_RE.match(pth):
-        protocol = m.group("protocol")
-        path = m.group("path")
-        if len(m.group("slashes")) == 1:
-            pth = f"{protocol}:///{path}"
-        return fsspec_strip_protocol(pth)
-    else:
-        return pth
-
-
-def _match_protocol(pth: str) -> str:
-    if m := _PROTOCOL_RE.match(pth):
-        return m.group("protocol")
-    return ""
-
-
-def get_upath_protocol(
-    pth: str | PurePath | os.PathLike,
-    *,
-    protocol: str | None = None,
-    storage_options: dict[str, Any] | None = None,
-) -> str:
-    """return the filesystem spec protocol"""
-    if isinstance(pth, str):
-        pth_protocol = _match_protocol(pth)
-    elif isinstance(pth, UPath):
-        pth_protocol = pth.protocol
-    elif isinstance(pth, PurePath):
-        pth_protocol = ""
-    else:
-        pth_protocol = _match_protocol(os.fspath(pth))
-    if storage_options and not protocol and not pth_protocol:
-        protocol = "file"
-    if protocol and pth_protocol and not pth_protocol.startswith(protocol):
-        raise ValueError(
-            f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
-        )
-    return protocol or pth_protocol or ""
 
 
 def _make_instance(cls, args, kwargs):
