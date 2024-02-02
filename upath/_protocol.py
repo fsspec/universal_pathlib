@@ -6,6 +6,7 @@ from pathlib import PurePath
 from typing import Any
 
 from fsspec.core import strip_protocol as strip_fsspec_protocol
+from fsspec.spec import AbstractFileSystem
 
 __all__ = [
     "get_upath_protocol",
@@ -52,7 +53,11 @@ def get_upath_protocol(
     return protocol or pth_protocol or ""
 
 
-def strip_upath_protocol(pth: str | os.PathLike[str]) -> str:
+def strip_upath_protocol(
+    pth: str | os.PathLike[str],
+    *,
+    allow_unknown: bool = False,
+) -> str:
     """strip protocol from path"""
     if isinstance(pth, PurePath):
         pth = str(pth)
@@ -63,6 +68,12 @@ def strip_upath_protocol(pth: str | os.PathLike[str]) -> str:
             protocol = m.group("protocol")
             path = m.group("path")
             pth = f"{protocol}:///{path}"
-        return strip_fsspec_protocol(pth)
+        try:
+            return strip_fsspec_protocol(pth)
+        except ValueError as err:
+            if allow_unknown and str(err).endswith(m.group("protocol")):
+                # fsspec raised ValueError because the protocol is not registered
+                return AbstractFileSystem._strip_protocol(pth)
+            raise
     else:
         return pth
