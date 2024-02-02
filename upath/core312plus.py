@@ -134,6 +134,14 @@ class UPath(Path):
     def __init__(
         self, *args, protocol: str | None = None, **storage_options: Any
     ) -> None:
+        # allow subclasses to customize __init__ arg parsing
+        base_options = getattr(self, "_storage_options", {})
+        args, protocol, storage_options = type(self)._transform_init_args(
+            args, protocol, {**base_options, **storage_options}
+        )
+        if self._protocol != protocol and protocol:
+            self._protocol = protocol
+
         # retrieve storage_options
         if args:
             args0 = args[0]
@@ -170,6 +178,16 @@ class UPath(Path):
         super().__init__(*args)
 
     # === upath.UPath only ============================================
+
+    @classmethod
+    def _transform_init_args(
+        cls,
+        args: tuple[str | os.PathLike, ...],
+        protocol: str,
+        storage_options: dict[str, Any],
+    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+        """allow customization of init args in subclasses"""
+        return args, protocol, storage_options
 
     @property
     def protocol(self) -> str:
