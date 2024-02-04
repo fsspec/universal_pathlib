@@ -117,7 +117,7 @@ class FSSpecFlavour:
             root = "/"  # emulate upath.core.UPath < 3.12 behaviour
             return drive, root, path.removeprefix("/")
 
-        path = strip_upath_protocol(__path)
+        path = strip_upath_protocol(__path, allow_unknown=True)
         if self.supports_netloc:
             protocol = get_upath_protocol(__path)
             if protocol:
