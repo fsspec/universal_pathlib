@@ -9,18 +9,21 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
-from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
 from fsspec import AbstractFileSystem
 from fsspec import get_filesystem_class
 
+from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import FSSpecFlavour
 from upath._protocol import get_upath_protocol
 from upath.registry import get_upath_class
+
+__all__ = ["UPath"]
+
 
 _FSSPEC_HAS_WORKING_GLOB = None
 
@@ -36,16 +39,13 @@ def _check_fsspec_has_working_glob():
     return g
 
 
-class _FSSpecAccessor:
-    """this is a compatibility shim and will be removed"""
-
-    def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
-        pass
-
-
 def _make_instance(cls, args, kwargs):
     """helper for pickling UPath instances"""
     return cls(*args, **kwargs)
+
+
+# accessors are deprecated
+_FSSpecAccessor = FSSpecAccessorShim
 
 
 class UPath(PathlibPathShim, Path):
@@ -212,11 +212,11 @@ class UPath(PathlibPathShim, Path):
         # guess which parts the user subclass is customizing
         has_custom_legacy_accessor = (
             accessor_cls is not None
-            and issubclass(accessor_cls, _FSSpecAccessor)
-            and accessor_cls is not _FSSpecAccessor
+            and issubclass(accessor_cls, FSSpecAccessorShim)
+            and accessor_cls is not FSSpecAccessorShim
         )
         has_customized_fs_instantiation = (
-            accessor_cls.__init__ is not _FSSpecAccessor.__init__
+            accessor_cls.__init__ is not FSSpecAccessorShim.__init__
             or hasattr(accessor_cls, "_fs")
         )
 
@@ -277,6 +277,15 @@ class UPath(PathlibPathShim, Path):
     @property
     def _url(self):  # todo: deprecate
         return urlsplit(self.as_posix())
+
+    @property
+    def _accessor(self):
+        warnings.warn(
+            "use UPath.fs instead of UPath._accessor",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return FSSpecAccessorShim.from_path(self)
 
     # === pathlib.PurePath ============================================
 

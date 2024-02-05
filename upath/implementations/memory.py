@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-import upath.core
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath.core import UPath
+
+__all__ = ["MemoryPath"]
+
+# accessors are deprecated
+_MemoryAccessor = _FSSpecAccessorShim
 
 
-class MemoryPath(upath.core.UPath):  # noqa
+class MemoryPath(UPath):
     def iterdir(self):
         if not self.is_dir():
             raise NotADirectoryError(str(self))

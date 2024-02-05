@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-import upath.core
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath.core import UPath
+
+__all__ = ["HDFSPath"]
+
+# accessors are deprecated
+_HDFSAccessor = _FSSpecAccessorShim
 
 
-class HDFSPath(upath.core.UPath):
+class HDFSPath(UPath):
     __slots__ = ()
 
     def mkdir(self, mode=0o777, parents=False, exist_ok=False):

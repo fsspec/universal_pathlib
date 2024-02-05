@@ -4,12 +4,18 @@ from itertools import chain
 
 from fsspec.asyn import sync
 
-import upath.core
-from upath._flavour import FSSpecFlavour
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath._flavour import FSSpecFlavour as _FSSpecFlavour
+from upath.core import UPath
+
+__all__ = ["HTTPPath"]
+
+# accessors are deprecated
+_HTTPAccessor = _FSSpecAccessorShim
 
 
-class HTTPPath(upath.core.UPath):  # noqa
-    _flavour = FSSpecFlavour(
+class HTTPPath(UPath):
+    _flavour = _FSSpecFlavour(
         join_like_urljoin=True,
         supports_empty_parts=True,
         supports_netloc=True,
@@ -22,7 +28,7 @@ class HTTPPath(upath.core.UPath):  # noqa
         return super().root or "/"
 
     def __str__(self):
-        return super(upath.core.UPath, self).__str__()
+        return super(UPath, self).__str__()
 
     def is_file(self):
         try:

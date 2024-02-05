@@ -11,7 +11,7 @@ from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
-from upath._flavour import FSSpecFlavour
+from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath.core import UPath
 
 __all__ = [
@@ -24,7 +24,7 @@ __all__ = [
 
 class LocalPath(UPath):
     __slots__ = ()
-    _flavour = FSSpecFlavour(
+    _flavour = _FSSpecFlavour(
         posixpath_only=False,
     )
 

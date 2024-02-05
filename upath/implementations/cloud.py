@@ -2,13 +2,25 @@ from __future__ import annotations
 
 from typing import Any
 
-import upath.core
-from upath._flavour import FSSpecFlavour
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath._flavour import FSSpecFlavour as _FSSpecFlavour
+from upath.core import UPath
+
+__all__ = [
+    "CloudPath",
+    "GCSPath",
+    "S3Path",
+    "AzurePath",
+]
 
 
-class CloudPath(upath.core.UPath):
+# accessors are deprecated
+_CloudAccessor = _FSSpecAccessorShim
+
+
+class CloudPath(UPath):
     __slots__ = ()
-    _flavour = FSSpecFlavour(
+    _flavour = _FSSpecFlavour(
         join_prepends_protocol=True,
         supports_netloc=True,
     )
