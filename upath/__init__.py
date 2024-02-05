@@ -6,14 +6,6 @@ try:
 except ImportError:
     __version__ = "not-installed"
 
-if sys.version_info >= (3, 12):
-    import upath.core312plus as core
-
-    sys.modules["upath.core"] = core
-
-else:
-    import upath.core as core
-
-UPath = core.UPath
+from upath.core import UPath
 
 __all__ = ["UPath"]
