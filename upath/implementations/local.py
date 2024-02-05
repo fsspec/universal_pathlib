@@ -11,6 +11,9 @@ from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
+from fsspec import __version__ as fsspec_version
+from packaging.version import Version
+
 from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath.core import UPath
 
@@ -20,6 +23,8 @@ __all__ = [
     "PosixUPath",
     "WindowsUPath",
 ]
+
+_LISTDIR_WORKS_ON_FILES = Version(fsspec_version) >= Version("2024.2.0")
 
 
 class LocalPath(UPath):
@@ -42,6 +47,11 @@ class LocalPath(UPath):
 
 class FilePath(LocalPath):
     __slots__ = ()
+
+    def iterdir(self):
+        if _LISTDIR_WORKS_ON_FILES and self.is_file():
+            raise NotADirectoryError(f"{self}")
+        return super().iterdir()
 
 
 _pathlib_py312_ignore = {

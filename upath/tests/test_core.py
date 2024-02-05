@@ -15,6 +15,7 @@ from upath.implementations.cloud import S3Path
 from .cases import BaseTests
 from .utils import only_on_windows
 from .utils import skip_on_windows
+from .utils import xfail_if_version
 
 
 @skip_on_windows
@@ -67,6 +68,12 @@ class TestUpath(BaseTests):
         assert str(pth) == os.path.expanduser("~")
         assert isinstance(pth, pathlib.Path)
         assert isinstance(pth, UPath)
+
+    @xfail_if_version("fsspec", reason="", ge="2024.2.0")
+    def test_iterdir_no_dir(self):
+        # the mock filesystem is basically just LocalFileSystem,
+        # so this test would need to have an iterdir fix.
+        super().test_iterdir_no_dir()
 
 
 def test_multiple_backend_paths(local_testdir):
