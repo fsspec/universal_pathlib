@@ -8,13 +8,24 @@ from functools import lru_cache
 from pathlib import PurePath
 from typing import Any
 from typing import Callable
-from typing import TypeAlias
+from typing import Union
 from urllib.parse import urlsplit
 
+if sys.version_info >= (3, 12):
+    from typing import TypeAlias
+else:
+    TypeAlias = Any
+
+from upath._compat import str_remove_prefix
+from upath._compat import str_remove_suffix
 from upath._protocol import get_upath_protocol
 from upath._protocol import strip_upath_protocol
 
-PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
+PathOrStr: TypeAlias = Union[str, PurePath, os.PathLike]
+
+__all__ = [
+    "FSSpecFlavour",
+]
 
 
 class FSSpecFlavour:
@@ -87,7 +98,7 @@ class FSSpecFlavour:
         paths = map(strip_upath_protocol, paths)
 
         if self.join_like_urljoin:
-            path = path.removesuffix("/")
+            path = str_remove_suffix(path, "/")
             sep = self.sep
             for b in paths:
                 if b.startswith(sep):
@@ -115,7 +126,7 @@ class FSSpecFlavour:
             path = url._replace(scheme="", netloc="").geturl()
             # root = "/" if path.startswith("/") else ""
             root = "/"  # emulate upath.core.UPath < 3.12 behaviour
-            return drive, root, path.removeprefix("/")
+            return drive, root, str_remove_prefix(path, "/")
 
         path = strip_upath_protocol(__path, allow_unknown=True)
         if self.supports_netloc:

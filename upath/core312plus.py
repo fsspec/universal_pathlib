@@ -290,7 +290,7 @@ class UPath(PathlibPathShim, Path):
 
     @classmethod
     def _parse_path(cls, path):
-        if cls._flavour.supports_empty_parts:
+        if getattr(cls._flavour, "supports_empty_parts", False):
             drv, root, rel = cls._flavour.splitroot(path)
             if not root:
                 parsed = []
@@ -410,7 +410,9 @@ class UPath(PathlibPathShim, Path):
         return self.fs.open(self.path, mode)  # fixme
 
     def iterdir(self):
-        if self._flavour.supports_empty_parts and self.parts[-1:] == ("",):
+        if getattr(self._flavour, "supports_empty_parts", False) and self.parts[
+            -1:
+        ] == ("",):
             base = self.with_segments(self.anchor, *self._tail[:-1])
         else:
             base = self
@@ -478,7 +480,10 @@ class UPath(PathlibPathShim, Path):
             if part == "..":
                 if resolved:
                     resolved.pop()
-                if self._flavour.supports_empty_parts and idx == last_idx:
+                if (
+                    getattr(self._flavour, "supports_empty_parts", False)
+                    and idx == last_idx
+                ):
                     resolved.append("")
             elif part != ".":
                 resolved.append(part)
