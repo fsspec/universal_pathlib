@@ -4,9 +4,22 @@ from typing import Any
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
+from fsspec.registry import known_implementations
+from fsspec.registry import register_implementation
+
 import upath.core
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
+
+__all__ = [
+    "WebdavPath",
+]
+
+# webdav was only registered in fsspec>=2022.5.0
+if "webdav" not in known_implementations:
+    import webdav4.fsspec
+
+    register_implementation("webdav", webdav4.fsspec.WebdavFileSystem)
 
 
 class WebdavPath(upath.core.UPath):
