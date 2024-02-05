@@ -44,8 +44,8 @@ def get_upath_protocol(
         pth_protocol = getattr(pth, "protocol", "")
     else:
         pth_protocol = _match_protocol(str(pth))
-    if storage_options and not protocol and not pth_protocol:
-        protocol = "file"
+    # if storage_options and not protocol and not pth_protocol:
+    #     protocol = "file"
     if protocol and pth_protocol and not pth_protocol.startswith(protocol):
         raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
