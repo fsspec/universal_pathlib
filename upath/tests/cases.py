@@ -191,7 +191,7 @@ class BaseTests:
         with pytest.raises(FileExistsError):
             new_dir.mkdir(parents=True, exist_ok=False)
 
-    @pytest.mark.xfail(sys.version_info >= (3, 12), reason="only valid on python<=3.11")
+    @pytest.mark.skip(reason="_accessor is unsupported in universal_pathlib>0.1.4")
     def test_makedirs_exist_ok_true(self):
         new_dir = self.path.joinpath("parent", "child", "dir_may_not_exist")
         new_dir._accessor.makedirs(new_dir, exist_ok=True)
@@ -199,7 +199,7 @@ class BaseTests:
             new_dir.joinpath(".file").touch()
         new_dir._accessor.makedirs(new_dir, exist_ok=True)
 
-    @pytest.mark.xfail(sys.version_info >= (3, 12), reason="only valid on python<=3.11")
+    @pytest.mark.skip(reason="_accessor is unsupported in universal_pathlib>0.1.4")
     def test_makedirs_exist_ok_false(self):
         new_dir = self.path.joinpath("parent", "child", "dir_may_exist")
         new_dir._accessor.makedirs(new_dir, exist_ok=False)
