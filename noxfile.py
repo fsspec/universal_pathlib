@@ -1,4 +1,5 @@
 """Automation using nox."""
+
 import glob
 import os
 

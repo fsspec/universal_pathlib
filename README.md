@@ -49,7 +49,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 ### Currently supported filesystems (and schemes)
 
-- `file:` Local filessystem
+- `file:` Local filesystem
 - `memory:` Ephemeral filesystem in RAM
 - `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage (requires `adlfs` to be installed)
 - `http:` and `https:` HTTP(S)-based filesystem

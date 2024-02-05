@@ -1,5 +1,6 @@
 """see upath/tests/conftest.py for fixtures
 """
+
 import fsspec
 import pytest  # noqa: F401
 
