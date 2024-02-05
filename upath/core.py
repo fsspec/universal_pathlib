@@ -28,6 +28,19 @@ from upath._flavour import FSSpecFlavour
 from upath._protocol import get_upath_protocol
 from upath.registry import get_upath_class
 
+_FSSPEC_HAS_WORKING_GLOB = None
+
+
+def _check_fsspec_has_working_glob():
+    global _FSSPEC_HAS_WORKING_GLOB
+    from fsspec.implementations.memory import MemoryFileSystem
+
+    m = type("_M", (MemoryFileSystem,), {"store": {}, "pseudo_dirs": [""]})()
+    m.touch("a.txt")
+    m.touch("f/b.txt")
+    g = _FSSPEC_HAS_WORKING_GLOB = len(m.glob("**/*.txt")) == 2
+    return g
+
 
 class _FSSpecAccessor:
     """this is a compatibility shim and will be removed"""
@@ -443,11 +456,29 @@ class UPath(PathlibPathShim, Path):
             yield self.joinpath(name)
 
     def rglob(self, pattern: str, *, case_sensitive=None):
-        r_path_pattern = self.joinpath("**", pattern).path
-        sep = self._flavour.sep
-        for name in self.fs.glob(r_path_pattern):
-            name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
-            yield self.joinpath(name)
+        if _FSSPEC_HAS_WORKING_GLOB is None:
+            _check_fsspec_has_working_glob()
+
+        if _FSSPEC_HAS_WORKING_GLOB:
+            r_path_pattern = self.joinpath("**", pattern).path
+            sep = self._flavour.sep
+            for name in self.fs.glob(r_path_pattern):
+                name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
+                yield self.joinpath(name)
+
+        else:
+            path_pattern = self.joinpath(pattern).path
+            r_path_pattern = self.joinpath("**", pattern).path
+            sep = self._flavour.sep
+            seen = set()
+            for p in (path_pattern, r_path_pattern):
+                for name in self.fs.glob(p):
+                    name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
+                    if name in seen:
+                        continue
+                    else:
+                        seen.add(name)
+                        yield self.joinpath(name)
 
     @classmethod
     def cwd(cls):
