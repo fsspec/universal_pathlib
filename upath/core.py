@@ -278,14 +278,16 @@ class UPath(PathlibPathShim, Path):
     def _url(self):  # todo: deprecate
         return urlsplit(self.as_posix())
 
-    @property
-    def _accessor(self):
-        warnings.warn(
-            "use UPath.fs instead of UPath._accessor",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return FSSpecAccessorShim.from_path(self)
+    def __getattr__(self, item):
+        if item == "_accessor":
+            warnings.warn(
+                "use UPath.fs instead of UPath._accessor",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return FSSpecAccessorShim.from_path(self)
+        else:
+            raise AttributeError(item)
 
     # === pathlib.PurePath ============================================
 
