@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from inspect import ismemberdescriptor
 from pathlib import Path
@@ -75,6 +76,14 @@ def _set_class_attributes(
             type_dict[attr] = func_or_value
 
 
+def _upath_init(inst: PosixUPath | WindowsUPath) -> None:
+    """helper to initialize the PosixPath/WindowsPath instance with UPath attrs"""
+    inst._protocol = ""
+    inst._storage_options = {}
+    if sys.version_info < (3, 10):
+        inst._init()
+
+
 class PosixUPath(PosixPath, LocalPath):
     __slots__ = ()
 
@@ -86,6 +95,10 @@ class PosixUPath(PosixPath, LocalPath):
         def __new__(
             cls, *args, protocol: str | None = None, **storage_options: Any
         ) -> UPath:
+            if os.name == "nt":
+                raise NotImplementedError(
+                    f"cannot instantiate {cls.__name__} on your system"
+                )
             obj = super().__new__(cls, *args)
             obj._protocol = ""
             return obj
@@ -95,20 +108,18 @@ class PosixUPath(PosixPath, LocalPath):
         ) -> None:
             super(Path, self).__init__()
             self._drv, self._root, self._parts = type(self)._parse_args(args)
-            self._storage_options = {}
+            _upath_init(self)
 
         @classmethod
         def _from_parts(cls, *args, **kwargs):
-            obj = super(Path, cls)._from_parts(cls, *args, **kwargs)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj = super(Path, cls)._from_parts(*args, **kwargs)
+            _upath_init(obj)
             return obj
 
         @classmethod
         def _from_parsed_parts(cls, drv, root, parts):
             obj = super(Path, cls)._from_parsed_parts(drv, root, parts)
-            obj._protocol = ""
-            obj._storage_options = {}
+            _upath_init(obj)
             return obj
 
         @property
@@ -127,6 +138,10 @@ class WindowsUPath(WindowsPath, LocalPath):
         def __new__(
             cls, *args, protocol: str | None = None, **storage_options: Any
         ) -> UPath:
+            if os.name != "nt":
+                raise NotImplementedError(
+                    f"cannot instantiate {cls.__name__} on your system"
+                )
             obj = super().__new__(cls, *args)
             obj._protocol = ""
             return obj
@@ -136,20 +151,18 @@ class WindowsUPath(WindowsPath, LocalPath):
         ) -> None:
             super(Path, self).__init__(*args)
             self._drv, self._root, self._parts = self._parse_args(args)
-            self._storage_options = {}
+            _upath_init(self)
 
         @classmethod
         def _from_parts(cls, *args, **kwargs):
-            obj = super(Path, cls)._from_parts(cls, *args, **kwargs)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj = super(Path, cls)._from_parts(*args, **kwargs)
+            _upath_init(obj)
             return obj
 
         @classmethod
         def _from_parsed_parts(cls, drv, root, parts):
             obj = super(Path, cls)._from_parsed_parts(drv, root, parts)
-            obj._protocol = ""
-            obj._storage_options = {}
+            _upath_init(obj)
             return obj
 
         @property
