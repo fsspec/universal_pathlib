@@ -13,11 +13,6 @@ from typing import cast
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    Self = Any
-
 from fsspec import AbstractFileSystem
 from fsspec import get_filesystem_class
 
@@ -494,10 +489,10 @@ class UPath(PathlibPathShim, Path):
         else:
             raise NotImplementedError
 
-    def absolute(self) -> Self:
+    def absolute(self):
         return self
 
-    def resolve(self, strict: bool = False) -> Self:
+    def resolve(self, strict: bool = False):
         _parts = self.parts
 
         # Do not attempt to normalize path if no parts are dots
