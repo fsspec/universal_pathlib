@@ -5,9 +5,9 @@ import os.path
 import posixpath
 import sys
 from functools import lru_cache
-from pathlib import PurePath
 from typing import Any
 from typing import Callable
+from typing import Iterable
 from typing import Union
 from urllib.parse import urlsplit
 
@@ -21,7 +21,7 @@ from upath._compat import str_remove_suffix
 from upath._protocol import get_upath_protocol
 from upath._protocol import strip_upath_protocol
 
-PathOrStr: TypeAlias = Union[str, PurePath, os.PathLike]
+PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
 
 __all__ = [
     "FSSpecFlavour",
@@ -88,30 +88,31 @@ class FSSpecFlavour:
 
     def join(self, __path: PathOrStr, *paths: PathOrStr) -> str:
         """Join two or more path components, inserting '/' as needed."""
+
+        # [py38-py312] _flavour.join is Callable[[list[str]], str]
         if isinstance(__path, (list, tuple)) and not paths:
-            # py38-py312 _flavour.join is Callable[[list[str]], str]
             if not __path:
                 return ""
-            __path, *paths = __path
+            __path, *paths = __path  # type: ignore
 
-        path = strip_upath_protocol(__path)
-        paths = map(strip_upath_protocol, paths)
+        _path0: str = strip_upath_protocol(__path)
+        _paths: Iterable[str] = map(strip_upath_protocol, paths)
 
         if self.join_like_urljoin:
-            path = str_remove_suffix(path, "/")
+            pth = str_remove_suffix(str(_path0), "/")
             sep = self.sep
-            for b in paths:
+            for b in _paths:
                 if b.startswith(sep):
-                    path = b
-                elif not path:
-                    path += b
+                    pth = b
+                elif not pth:
+                    pth += b
                 else:
-                    path += sep + b
-            joined = path
+                    pth += sep + b
+            joined = pth
         elif self.posixpath_only:
-            joined = posixpath.join(path, *paths)
+            joined = posixpath.join(_path0, *_paths)
         else:
-            joined = os.path.join(path, *paths)
+            joined = os.path.join(_path0, *_paths)
 
         if self.join_prepends_protocol and (protocol := get_upath_protocol(__path)):
             joined = f"{protocol}://{joined}"
@@ -121,24 +122,28 @@ class FSSpecFlavour:
     def splitroot(self, __path: PathOrStr) -> tuple[str, str, str]:
         """Split a path in the drive, the root and the rest."""
         if self.supports_fragments or self.supports_query_parameters:
-            url = urlsplit(__path)
+            url = urlsplit(str(__path))
             drive = url._replace(path="", query="", fragment="").geturl()
             path = url._replace(scheme="", netloc="").geturl()
             # root = "/" if path.startswith("/") else ""
             root = "/"  # emulate upath.core.UPath < 3.12 behaviour
             return drive, root, str_remove_prefix(path, "/")
 
-        path = strip_upath_protocol(__path, allow_unknown=True)
         if self.supports_netloc:
+            path = strip_upath_protocol(__path, allow_unknown=True)
             protocol = get_upath_protocol(__path)
             if protocol:
                 drive, root, tail = path.partition("/")
                 return drive, root or "/", tail
             else:
                 return "", "", path
+
         elif self.posixpath_only:
+            path = strip_upath_protocol(__path, allow_unknown=True)
             return _get_splitroot(posixpath)(path)
+
         else:
+            path = strip_upath_protocol(__path, allow_unknown=True)
             drv, root, path = _get_splitroot(os.path)(path)
             if os.name == "nt" and not drv:
                 drv = "C:"
@@ -221,7 +226,7 @@ class FSSpecFlavour:
 
 
 @lru_cache
-def _get_splitroot(mod) -> Callable[[os.PathLike], tuple[str, str, str]]:
+def _get_splitroot(mod) -> Callable[[PathOrStr], tuple[str, str, str]]:
     """return the splitroot function from the given module"""
     if hasattr(mod, "splitroot"):
         return mod.splitroot

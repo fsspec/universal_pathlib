@@ -7,6 +7,7 @@ from pathlib import Path
 from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
+from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
@@ -58,7 +59,7 @@ def _set_class_attributes(
     type_dict: MutableMapping[str, Any],
     src: type[Path],
     *,
-    ignore: set[str] = frozenset(_pathlib_py312_ignore),
+    ignore: Collection[str] = frozenset(_pathlib_py312_ignore),
 ) -> None:
     """helper function to assign all methods/attrs from src to a class dict"""
     visited = set()

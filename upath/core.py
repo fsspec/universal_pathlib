@@ -9,7 +9,6 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
-from typing import cast
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
@@ -96,14 +95,14 @@ class UPath(PathlibPathShim, Path):
         if cls is UPath:
             # we called UPath() directly, and want an instance based on the
             # provided or detected protocol (i.e. upath_cls)
-            obj: UPath = cast("UPath", object.__new__(upath_cls))
+            obj: UPath = object.__new__(upath_cls)
             obj._protocol = pth_protocol
 
         elif issubclass(cls, upath_cls):
             # we called a sub- or sub-sub-class of UPath, i.e. S3Path() and the
             # corresponding upath_cls based on protocol is equal-to or a
             # parent-of the cls.
-            obj = cast("UPath", object.__new__(cls))  # type: ignore[unreachable]
+            obj = object.__new__(cls)
             obj._protocol = pth_protocol
 
         elif issubclass(cls, UPath):
@@ -127,7 +126,7 @@ class UPath(PathlibPathShim, Path):
             )
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
 
-            obj = cast("UPath", object.__new__(upath_cls))
+            obj = object.__new__(upath_cls)
             obj._protocol = pth_protocol
 
             upath_cls.__init__(
@@ -145,7 +144,7 @@ class UPath(PathlibPathShim, Path):
         # allow subclasses to customize __init__ arg parsing
         base_options = getattr(self, "_storage_options", {})
         args, protocol, storage_options = type(self)._transform_init_args(
-            args, protocol, {**base_options, **storage_options}
+            args, protocol or self._protocol, {**base_options, **storage_options}
         )
         if self._protocol != protocol and protocol:
             self._protocol = protocol

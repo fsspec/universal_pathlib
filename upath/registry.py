@@ -37,6 +37,7 @@ from collections import ChainMap
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
+from typing import TYPE_CHECKING
 from typing import Iterator
 from typing import MutableMapping
 
@@ -78,6 +79,9 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "webdav+https": "upath.implementations.webdav.WebdavPath",
     }
 
+    if TYPE_CHECKING:
+        _m: MutableMapping[str, str | type[upath.UPath]]
+
     def __init__(self) -> None:
         if sys.version_info >= (3, 10):
             eps = entry_points(group=_ENTRY_POINT_GROUP)
@@ -90,7 +94,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         return item in set().union(self._m, self._entries)
 
     def __getitem__(self, item: str) -> type[upath.UPath]:
-        fqn = self._m.get(item)
+        fqn: str | type[upath.UPath] | None = self._m.get(item)
         if fqn is None:
             if item in self._entries:
                 fqn = self._m[item] = self._entries[item].load()

@@ -43,7 +43,7 @@ class WebdavPath(upath.core.UPath):
                         url._replace(scheme="https", path="")
                     )
         else:
-            args0, argsN = "/", ()
+            args0, argsN = "/", []
         storage_options = {**base_options, **storage_options}
         if "base_url" not in storage_options:
             raise ValueError(

@@ -6,7 +6,7 @@ import upath.core
 from upath._flavour import FSSpecFlavour
 
 
-class CloudPath(upath.core.UPath):  # noqa
+class CloudPath(upath.core.UPath):
     __slots__ = ()
     _flavour = FSSpecFlavour(
         join_prepends_protocol=True,
@@ -18,7 +18,7 @@ class CloudPath(upath.core.UPath):  # noqa
     ) -> None:
         if "bucket" in storage_options:
             bucket = storage_options.pop("bucket")
-            args = [f"{self._protocol}://{bucket}/", *args]
+            args = (f"{self._protocol}://{bucket}/", *args)
         super().__init__(*args, protocol=protocol, **storage_options)
 
     def mkdir(
