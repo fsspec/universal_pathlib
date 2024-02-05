@@ -149,7 +149,7 @@ class WindowsUPath(WindowsPath, LocalPath):
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
-            super(Path, self).__init__(*args)
+            super(Path, self).__init__()
             self._drv, self._root, self._parts = self._parse_args(args)
             _upath_init(self)
 
