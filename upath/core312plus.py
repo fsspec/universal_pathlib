@@ -5,12 +5,10 @@ import sys
 import warnings
 from copy import copy
 from pathlib import Path
-from pathlib import PurePath
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
-from typing import TypeAlias
 from typing import cast
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
@@ -23,11 +21,12 @@ else:
 from fsspec import AbstractFileSystem
 from fsspec import get_filesystem_class
 
+from upath._compat import PathlibPathShim
+from upath._compat import str_remove_prefix
+from upath._compat import str_remove_suffix
 from upath._flavour import FSSpecFlavour
 from upath._protocol import get_upath_protocol
 from upath.registry import get_upath_class
-
-PathOrStr: TypeAlias = "str | PurePath | os.PathLike"
 
 
 class _FSSpecAccessor:
@@ -42,11 +41,12 @@ def _make_instance(cls, args, kwargs):
     return cls(*args, **kwargs)
 
 
-class UPath(Path):
+class UPath(PathlibPathShim, Path):
     __slots__ = (
         "_protocol",
         "_storage_options",
         "_fs_cached",
+        *PathlibPathShim.__missing_py312_slots__,
     )
     if TYPE_CHECKING:
         _protocol: str
@@ -330,6 +330,21 @@ class UPath(Path):
     def is_reserved(self):
         return False
 
+    def __eq__(self, other):
+        if not isinstance(other, UPath):
+            return NotImplemented
+        return (
+            self.path == other.path
+            and self.storage_options == other.storage_options
+            and (
+                get_filesystem_class(self.protocol)
+                == get_filesystem_class(other.protocol)
+            )
+        )
+
+    def __hash__(self):
+        return hash((self.path, self.storage_options, self.protocol))
+
     def relative_to(self, other, /, *_deprecated, walk_up=False):
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             raise ValueError(
@@ -407,7 +422,7 @@ class UPath(Path):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            _, _, name = name.removesuffix("/").rpartition(self._flavour.sep)
+            _, _, name = str_remove_suffix(name, "/").rpartition(self._flavour.sep)
             yield base._make_child_relpath(name)
 
     def _scandir(self):
@@ -422,14 +437,14 @@ class UPath(Path):
         path_pattern = self.joinpath(pattern).path
         sep = self._flavour.sep
         for name in self.fs.glob(path_pattern):
-            name = name.removeprefix(self.path).removeprefix(sep)
+            name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
             yield self.joinpath(name)
 
     def rglob(self, pattern: str, *, case_sensitive=None):
         r_path_pattern = self.joinpath("**", pattern).path
         sep = self._flavour.sep
         for name in self.fs.glob(r_path_pattern):
-            name = name.removeprefix(self.path).removeprefix(sep)
+            name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
             yield self.joinpath(name)
 
     @classmethod
