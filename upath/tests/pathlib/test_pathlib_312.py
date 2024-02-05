@@ -23,7 +23,7 @@ except ImportError:
     grp = pwd = None
 
 import upath
-from upath.core312plus import UPath
+from upath.core import UPath
 from upath.implementations.local import PosixUPath, WindowsUPath
 
 import pytest

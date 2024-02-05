@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import sys
 from inspect import ismemberdescriptor
 from pathlib import Path
@@ -99,8 +98,8 @@ class PosixUPath(PosixPath, LocalPath):
             self._storage_options = {}
 
         @classmethod
-        def _from_parts(cls, args, **kwargs):
-            obj = super(Path, cls)._from_parts(cls, args, **kwargs)
+        def _from_parts(cls, *args, **kwargs):
+            obj = super(Path, cls)._from_parts(cls, *args, **kwargs)
             obj._protocol = ""
             obj._storage_options = {}
             return obj
@@ -128,7 +127,7 @@ class WindowsUPath(WindowsPath, LocalPath):
         def __new__(
             cls, *args, protocol: str | None = None, **storage_options: Any
         ) -> UPath:
-            obj = super(pathlib.Path).__new__(cls, *args)
+            obj = super().__new__(cls, *args)
             obj._protocol = ""
             return obj
 
@@ -140,8 +139,8 @@ class WindowsUPath(WindowsPath, LocalPath):
             self._storage_options = {}
 
         @classmethod
-        def _from_parts(cls, args, **kwargs):
-            obj = super(Path, cls)._from_parts(cls, args, **kwargs)
+        def _from_parts(cls, *args, **kwargs):
+            obj = super(Path, cls)._from_parts(cls, *args, **kwargs)
             obj._protocol = ""
             obj._storage_options = {}
             return obj
