@@ -78,7 +78,8 @@ class _BasePurePathTest(object):
         self.assertEqual(P(P('a'), 'b'), P('a/b'))
         self.assertEqual(P(P('a'), P('b')), P('a/b'))
         self.assertEqual(P(P('a'), P('b'), P('c')), P(FakePath("a/b/c")))
-        self.assertEqual(P(P('./a:b')), P('./a:b'))
+        if os.name != "nt":
+            self.assertEqual(P(P('./a:b')), P('./a:b'))
 
     def test_bytes(self):
         P = self.cls
