@@ -92,6 +92,13 @@ class UPath(PathlibPathShim, Path):
         if upath_cls is None:
             raise ValueError(f"Unsupported filesystem: {pth_protocol!r}")
         if cls._protocol_dispatch is not None and not cls._protocol_dispatch:
+            # user subclasses can request to disable protocol dispatch
+            # by setting MyUPathSubclass._protocol_dispatch to `False`.
+            # This will effectively ignore the registered UPath
+            # implementations and return an instance of MyUPathSubclass.
+            # This can be useful if a subclass wants to extend the UPath
+            # api, and it is fine to rely on the default implementation
+            # for all supported user protocols.
             upath_cls = cls
 
         # create a new instance
