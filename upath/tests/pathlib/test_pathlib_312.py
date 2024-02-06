@@ -2968,8 +2968,9 @@ class PathTest(_BasePathTest, unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unacceptable pattern'):
             list(p.glob(''))
 
-    @pytest.mark.xfail(reason="subclassing UPath directly for Posix and Windows paths requires protocol registration")
     def test_with_segments(self):
+        if self.cls is UPath:
+            pytest.skip(reason="")
         super().test_with_segments()
 
 @only_posix
@@ -3276,14 +3277,12 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
 
 
 class PathSubclassTest(_BasePathTest, unittest.TestCase):
-    class cls(UPath):
-        cwd = UPath.cwd
-        home = UPath.home
+    class cls(WindowsUPath if os.name == 'nt' else PosixUPath):
+        pass
 
     # repr() roundtripping is not supported in custom subclass.
     test_repr_roundtrips = None
 
-    @pytest.mark.xfail(reason="subsubclassing UPath directly for Posix and Windows paths requires protocol registration")
     def test_with_segments(self):
         super().test_with_segments()
 
