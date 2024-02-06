@@ -254,10 +254,12 @@ else:
                 msg = (
                     "support for supplying more than one positional argument "
                     "to pathlib.PurePath.relative_to() is deprecated and "
-                    "scheduled for removal in Python {remove}"
+                    "scheduled for removal in Python 3.14"
                 )
-                warnings._deprecated(
-                    "pathlib.PurePath.relative_to(*args)", msg, remove=(3, 14)
+                warnings.warn(
+                    f"pathlib.PurePath.relative_to(*args) {msg}",
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
             other = self.with_segments(other, *_deprecated)
             for step, path in enumerate([other] + list(other.parents)):  # noqa: B007
@@ -281,10 +283,12 @@ else:
                 msg = (
                     "support for supplying more than one argument to "
                     "pathlib.PurePath.is_relative_to() is deprecated and "
-                    "scheduled for removal in Python {remove}"
+                    "scheduled for removal in Python 3.14"
                 )
-                warnings._deprecated(
-                    "pathlib.PurePath.is_relative_to(*args)", msg, remove=(3, 14)
+                warnings.warn(
+                    f"pathlib.PurePath.is_relative_to(*args) {msg}",
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
             other = self.with_segments(other, *_deprecated)
             return other == self or other in self.parents
