@@ -413,8 +413,8 @@ class FSSpecAccessorShim:
 
     def __init_subclass__(cls, **kwargs):
         warnings.warn(
-            "All accessors have been deprecated. Please follow the"
-            " universal_pathlib v0.2.0 migration guide at"
+            "All _FSSpecAccessor subclasses have been deprecated. "
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
             " https://github.com/fsspec/universal_pathlib for more"
             " information.",
             DeprecationWarning,

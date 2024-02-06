@@ -244,9 +244,12 @@ class UPath(PathlibPathShim, Path):
         if has_custom_legacy_accessor and has_customized_fs_instantiation:
             warnings.warn(
                 "Detected a customized `__init__` method or `_fs` attribute"
-                " in the provided `_FSSpecAccessor` subclass. It is recommended to"
-                " instead override the `_fs_factory` classmethod to customize"
-                " filesystem instantiation.",
+                f" in the provided `_FSSpecAccessor` subclass of {cls.__name__!r}."
+                " It is recommended to instead override the `UPath._fs_factory`"
+                " classmethod to customize filesystem instantiation. Please follow"
+                " the universal_pathlib==0.2.0 migration guide at"
+                " https://github.com/fsspec/universal_pathlib for more"
+                " information.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -289,7 +292,11 @@ class UPath(PathlibPathShim, Path):
     @property
     def _kwargs(self):
         warnings.warn(
-            "use UPath.storage_options instead of UPath._kwargs",
+            "UPath._kwargs is deprecated. Please use"
+            " UPath.storage_options instead. Follow the"
+            " universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -302,7 +309,11 @@ class UPath(PathlibPathShim, Path):
     def __getattr__(self, item):
         if item == "_accessor":
             warnings.warn(
-                "use UPath.fs instead of UPath._accessor",
+                "UPath._accessor is deprecated. Please use"
+                " UPath.fs instead. Follow the"
+                " universal_pathlib==0.2.0 migration guide at"
+                " https://github.com/fsspec/universal_pathlib for more"
+                " information.",
                 DeprecationWarning,
                 stacklevel=2,
             )
