@@ -60,6 +60,7 @@ class UPath(PathlibPathShim, Path):
         _storage_options: dict[str, Any]
         _fs_cached: AbstractFileSystem
 
+    _protocol_dispatch: bool | None = None
     _flavour = FSSpecFlavour()
 
     def __new__(
@@ -90,6 +91,8 @@ class UPath(PathlibPathShim, Path):
         upath_cls = get_upath_class(protocol=pth_protocol)
         if upath_cls is None:
             raise ValueError(f"Unsupported filesystem: {pth_protocol!r}")
+        if cls._protocol_dispatch is not None and not cls._protocol_dispatch:
+            upath_cls = cls
 
         # create a new instance
         if cls is UPath:
@@ -182,6 +185,8 @@ class UPath(PathlibPathShim, Path):
                 pass
 
         # fill ._raw_paths
+        if hasattr(self, "_raw_paths"):
+            return
         super().__init__(*args)
 
     # === upath.UPath only ============================================
@@ -207,9 +212,25 @@ class UPath(PathlibPathShim, Path):
     def __init_subclass__(cls, **kwargs):
         """provide a clean migration path for custom user subclasses"""
 
+        # Check if the user subclass has a custom `__new__` method
+        has_custom_new_method = cls.__new__ is not UPath.__new__
+
+        if has_custom_new_method and cls._protocol_dispatch is None:
+            warnings.warn(
+                "Detected a customized `__new__` method in subclass"
+                f" {cls.__name__!r}. Protocol dispatch will be disabled"
+                " for this subclass. Please follow the"
+                " universal_pathlib==0.2.0 migration guide at"
+                " https://github.com/fsspec/universal_pathlib for more"
+                " information.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            cls._protocol_dispatch = False
+
+        # Check if the user subclass has defined a custom accessor class
         accessor_cls = getattr(cls, "_default_accessor", None)
 
-        # guess which parts the user subclass is customizing
         has_custom_legacy_accessor = (
             accessor_cls is not None
             and issubclass(accessor_cls, FSSpecAccessorShim)
@@ -288,6 +309,26 @@ class UPath(PathlibPathShim, Path):
             return FSSpecAccessorShim.from_path(self)
         else:
             raise AttributeError(item)
+
+    @classmethod
+    def _from_parts(cls, parts, **kwargs):
+        warnings.warn(
+            "UPath._from_parts is deprecated and should not be used."
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        parsed_url = kwargs.pop("url", None)
+        if parsed_url:
+            if protocol := parsed_url.scheme:
+                kwargs["protocol"] = protocol
+            if netloc := parsed_url.netloc:
+                kwargs["netloc"] = netloc
+        obj = UPath.__new__(cls, parts, **kwargs)
+        obj.__init__(*parts, **kwargs)
+        return obj
 
     # === pathlib.PurePath ============================================
 

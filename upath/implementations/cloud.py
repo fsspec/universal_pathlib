@@ -28,9 +28,14 @@ class CloudPath(UPath):
     def __init__(
         self, *args, protocol: str | None = None, **storage_options: Any
     ) -> None:
-        if "bucket" in storage_options:
-            bucket = storage_options.pop("bucket")
-            args = (f"{self._protocol}://{bucket}/", *args)
+        for key in ["bucket", "netloc"]:
+            bucket = storage_options.pop(key, None)
+            if bucket:
+                if args[0].startswith("/"):
+                    args = (f"{self._protocol}://{bucket}{args[0]}", *args[1:])
+                else:
+                    args = (f"{self._protocol}://{bucket}/", *args)
+                break
         super().__init__(*args, protocol=protocol, **storage_options)
 
     def mkdir(
