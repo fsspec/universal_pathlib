@@ -1,3 +1,4 @@
+import os
 from os import getenv
 
 import pytest
@@ -91,6 +92,7 @@ def github_subclass_old_style(clean_registry):
     register_implementation("github", GitHubPath, clobber=True)
 
 
+@pytest.mark.skipif("GITHUB_TOKEN" not in os.environ, reason="No GITHUB_TOKEN found")
 def test_migration_for_github_subclass(github_subclass_old_style):
 
     readme = UPath("github://fsspec:universal_pathlib@main/README.md").read_text()
