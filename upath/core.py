@@ -54,6 +54,9 @@ class UPath(PathlibPathShim, Path):
         "_storage_options",
         "_fs_cached",
         *PathlibPathShim.__missing_py312_slots__,
+        "__drv",
+        "__root",
+        "__parts",
     )
     if TYPE_CHECKING:
         _protocol: str
@@ -347,6 +350,76 @@ class UPath(PathlibPathShim, Path):
         obj = UPath.__new__(cls, parts, **kwargs)
         obj.__init__(*parts, **kwargs)
         return obj
+
+    @property
+    def _drv(self):
+        # direct access to ._drv should emit a warning,
+        # but there is no good way of doing this for now...
+        try:
+            return self.__drv
+        except AttributeError:
+            self._load_parts()
+            return self.__drv
+
+    @_drv.setter
+    def _drv(self, value):
+        self.__drv = value
+
+    @property
+    def drive(self):
+        try:
+            return self.__drv
+        except AttributeError:
+            self._load_parts()
+            return self.__drv
+
+    @property
+    def _root(self):
+        # direct access to ._root should emit a warning,
+        # but there is no good way of doing this for now...
+        try:
+            return self.__root
+        except AttributeError:
+            self._load_parts()
+            return self.__root
+
+    @_root.setter
+    def _root(self, value):
+        self.__root = value
+
+    @property
+    def root(self):
+        try:
+            return self.__root
+        except AttributeError:
+            self._load_parts()
+            return self.__root
+
+    @property
+    def _parts(self):
+        # UPath._parts is not used anymore, and not available
+        # in pathlib.Path for Python 3.12 and later.
+        # Direct access to ._parts should emit a deprecation warning,
+        # but there is no good way of doing this for now...
+        try:
+            return self.__parts
+        except AttributeError:
+            self._load_parts()
+            self.__parts = super().parts
+            return list(self.__parts)
+
+    @_parts.setter
+    def _parts(self, value):
+        self.__parts = value
+
+    @property
+    def parts(self):
+        try:
+            return self.__parts
+        except AttributeError:
+            self._load_parts()
+            self.__parts = super().parts
+            return self.__parts
 
     # === pathlib.PurePath ============================================
 

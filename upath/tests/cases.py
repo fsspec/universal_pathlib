@@ -464,3 +464,12 @@ class BaseTests:
         fs = filesystem(protocol, **storage_options)
         with fs.open(path) as f:
             assert f.read() == b"hello world"
+
+    def test_access_to_private_api(self):
+        # DO NOT access these private attributes in your code
+        p = UPath(str(self.path), **self.path.storage_options)
+        assert isinstance(p._drv, str)
+        p = UPath(str(self.path), **self.path.storage_options)
+        assert isinstance(p._root, str)
+        p = UPath(str(self.path), **self.path.storage_options)
+        assert isinstance(p._parts, (list, tuple))
