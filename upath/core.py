@@ -215,9 +215,10 @@ class UPath(PathlibPathShim, Path):
                 self._storage_options.get(key) != value
                 for key, value in arg.storage_options.items()
             ):
-                # raise ValueError(
-                #     "can't combine different UPath storage_options as parts"
-                # ) todo: revisit and define behaviour
+                # TODO:
+                #   Future versions of UPath could verify that storage_options
+                #   can be combined between UPath instances. Not sure if this
+                #   is really necessary though. A warning might be enough...
                 pass
 
         # fill ._raw_paths
