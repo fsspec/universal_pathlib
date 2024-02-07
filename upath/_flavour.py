@@ -4,7 +4,9 @@ import ntpath
 import os.path
 import posixpath
 import sys
+import warnings
 from functools import lru_cache
+from functools import wraps
 from typing import Any
 from typing import Callable
 from typing import Iterable
@@ -26,6 +28,23 @@ PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
 __all__ = [
     "FSSpecFlavour",
 ]
+
+
+def _deprecated(func):
+    if sys.version_info >= (3, 12):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(
+                f"{func.__name__} is deprecated on py3.12",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+    else:
+        return func
 
 
 class FSSpecFlavour:
@@ -181,48 +200,49 @@ class FSSpecFlavour:
         else:
             return os.path.normcase(__path)
 
-    if sys.version_info < (3, 12):
+    @_deprecated
+    def parse_parts(self, parts):
+        parsed = []
+        sep = self.sep
+        drv = root = ""
+        it = reversed(parts)
+        for part in it:
+            if part:
+                drv, root, rel = self.splitroot(part)
+                if not root or root and rel:
+                    for x in reversed(rel.split(sep)):
+                        parsed.append(sys.intern(x))
 
-        def parse_parts(self, parts):
-            parsed = []
-            sep = self.sep
-            drv = root = ""
-            it = reversed(parts)
-            for part in it:
-                if part:
-                    drv, root, rel = self.splitroot(part)
-                    if not root or root and rel:
-                        for x in reversed(rel.split(sep)):
-                            parsed.append(sys.intern(x))
+        if drv or root:
+            parsed.append(drv + root)
+        parsed.reverse()
+        return drv, root, parsed
 
-            if drv or root:
-                parsed.append(drv + root)
-            parsed.reverse()
-            return drv, root, parsed
+    @_deprecated
+    def join_parsed_parts(self, drv, root, parts, drv2, root2, parts2):
+        """
+        Join the two paths represented by the respective
+        (drive, root, parts) tuples.  Return a new (drive, root, parts) tuple.
+        """
+        if root2:
+            if not drv2 and drv:
+                return drv, root2, [drv + root2] + parts2[1:]
+        elif drv2:
+            if drv2 == drv or self.casefold(drv2) == self.casefold(drv):
+                # Same drive => second path is relative to the first
+                return drv, root, parts + parts2[1:]
+        else:
+            # Second path is non-anchored (common case)
+            return drv, root, parts + parts2
+        return drv2, root2, parts2
 
-        def join_parsed_parts(self, drv, root, parts, drv2, root2, parts2):
-            """
-            Join the two paths represented by the respective
-            (drive, root, parts) tuples.  Return a new (drive, root, parts) tuple.
-            """
-            if root2:
-                if not drv2 and drv:
-                    return drv, root2, [drv + root2] + parts2[1:]
-            elif drv2:
-                if drv2 == drv or self.casefold(drv2) == self.casefold(drv):
-                    # Same drive => second path is relative to the first
-                    return drv, root, parts + parts2[1:]
-            else:
-                # Second path is non-anchored (common case)
-                return drv, root, parts + parts2
-            return drv2, root2, parts2
-
-        def casefold(self, s: str) -> str:
-            """Casefold the string s."""
-            if self.posixpath_only or os.name != "nt":
-                return s
-            else:
-                return s.lower()
+    @_deprecated
+    def casefold(self, s: str) -> str:
+        """Casefold the string s."""
+        if self.posixpath_only or os.name != "nt":
+            return s
+        else:
+            return s.lower()
 
 
 @lru_cache

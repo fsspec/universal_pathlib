@@ -397,6 +397,37 @@ class UPath(PathlibPathShim, Path):
         obj.__init__(*parts, **kwargs)
         return obj
 
+    @classmethod
+    def _parse_args(cls, args):
+        warnings.warn(
+            "UPath._parse_args is deprecated and should not be used."
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        pth = cls._flavour.join(*args)
+        return cls._parse_path(pth)
+
+    @classmethod
+    def _format_parsed_parts(cls, drv, root, tail, **kwargs):
+        if kwargs:
+            warnings.warn(
+                "UPath._format_parsed_parts should not be used with"
+                " additional kwargs. Please follow the"
+                " universal_pathlib==0.2.0 migration guide at"
+                " https://github.com/fsspec/universal_pathlib for more"
+                " information.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if "url" in kwargs and tail[:1] == [f"{drv}{root}"]:
+                # This was called from code that expected py38-py311 behavior
+                # of _format_parsed_parts, which takes drv, root and parts
+                tail = tail[1:]
+        return super()._format_parsed_parts(drv, root, tail)
+
     @property
     def _drv(self):
         # direct access to ._drv should emit a warning,
