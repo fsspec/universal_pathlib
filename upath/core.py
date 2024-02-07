@@ -300,6 +300,18 @@ class UPath(PathlibPathShim, Path):
         return super().__str__()
 
     @property
+    def _path(self):
+        warnings.warn(
+            "UPath._path is deprecated and should not be used."
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.path
+
+    @property
     def _kwargs(self):
         warnings.warn(
             "UPath._kwargs is deprecated. Please use"
