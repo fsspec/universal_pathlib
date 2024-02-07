@@ -424,8 +424,9 @@ class FSSpecAccessorShim:
     @classmethod
     def from_path(cls, path: UPath) -> FSSpecAccessorShim:
         """internal accessor for backwards compatibility"""
-        obj = object.__new__(cls)
-        obj._fs = path.fs
+        url = path._url._replace(scheme=path.protocol)
+        obj = cls(url, **path.storage_options)
+        obj.__dict__["_fs"] = path.fs
         return obj
 
     def _format_path(self, path: UPath) -> str:

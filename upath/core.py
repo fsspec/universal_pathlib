@@ -369,7 +369,11 @@ class UPath(PathlibPathShim, Path):
                 DeprecationWarning,
                 stacklevel=2,
             )
-            return FSSpecAccessorShim.from_path(self)
+            if hasattr(self, "_default_accessor"):
+                accessor_cls = self._default_accessor
+            else:
+                accessor_cls = FSSpecAccessorShim
+            return accessor_cls.from_path(self)
         else:
             raise AttributeError(item)
 
