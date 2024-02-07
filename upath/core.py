@@ -9,6 +9,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
+from typing import TypeVar
 from urllib.parse import urlsplit
 
 from fsspec import AbstractFileSystem
@@ -23,6 +24,31 @@ from upath._protocol import get_upath_protocol
 from upath.registry import get_upath_class
 
 __all__ = ["UPath"]
+
+
+def __getattr__(name):
+    if name == "_UriFlavour":
+        warnings.warn(
+            "upath.core._UriFlavour should not be used anymore."
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return FSSpecFlavour
+    elif name == "PT":
+        warnings.warn(
+            "upath.core.PT should not be used anymore."
+            " Please follow the universal_pathlib==0.2.0 migration guide at"
+            " https://github.com/fsspec/universal_pathlib for more"
+            " information.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return TypeVar("PT", bound="UPath")
+    else:
+        raise AttributeError(name)
 
 
 _FSSPEC_HAS_WORKING_GLOB = None
