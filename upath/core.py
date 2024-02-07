@@ -313,7 +313,10 @@ class UPath(PathlibPathShim, Path):
         return self.storage_options
 
     @property
-    def _url(self):  # todo: deprecate
+    def _url(self):
+        # TODO:
+        #   _url should be deprecated, but for now there is no good way of
+        #   accessing query parameters from urlpaths...
         return urlsplit(self.as_posix())
 
     def __getattr__(self, item):
