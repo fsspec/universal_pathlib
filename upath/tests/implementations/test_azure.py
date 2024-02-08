@@ -49,3 +49,15 @@ class TestAzurePath(BaseTests):
         # test all valid protocols for azure...
         protocol = self.path.protocol
         assert protocol in ["abfs", "abfss", "adl", "az"]
+
+    def test_broken_mkdir(self):
+        path = UPath(
+            "az://new-container/",
+            **self.storage_options,
+        )
+        if path.exists():
+            path.rmdir()
+        path.mkdir(parents=True, exist_ok=False)
+
+        (path / "file").write_text("foo")
+        assert path.exists()
