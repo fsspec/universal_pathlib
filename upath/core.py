@@ -748,20 +748,19 @@ class UPath(PathlibPathShim, Path):
         self.fs.touch(self.path, truncate=not exist_ok)
 
     def mkdir(self, mode=0o777, parents=False, exist_ok=False):
-        if parents:
-            if not exist_ok and self.exists():
+        if parents and not exist_ok and self.exists():
+            raise FileExistsError(str(self))
+        try:
+            self.fs.mkdir(
+                self.path,
+                create_parents=parents,
+                mode=mode,
+            )
+        except FileExistsError:
+            if not exist_ok:
                 raise FileExistsError(str(self))
-            self.fs.makedirs(self.path, exist_ok=exist_ok)
-        else:
-            try:
-                self.fs.mkdir(
-                    self.path,
-                    create_parents=False,
-                    mode=mode,
-                )
-            except FileExistsError:
-                if not exist_ok or not self.is_dir():
-                    raise FileExistsError(str(self))
+            if not self.is_dir():
+                raise FileExistsError(str(self))
 
     def chmod(self, mode, *, follow_symlinks=True):
         raise NotImplementedError

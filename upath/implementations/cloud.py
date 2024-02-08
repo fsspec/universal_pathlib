@@ -59,6 +59,15 @@ class CloudPath(UPath):
 class GCSPath(CloudPath):
     __slots__ = ()
 
+    def mkdir(
+        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        try:
+            super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        except TypeError as err:
+            if "unexpected keyword argument 'create_parents'" in str(err):
+                self.fs.mkdir(self.path)
+
 
 class S3Path(CloudPath):
     __slots__ = ()
