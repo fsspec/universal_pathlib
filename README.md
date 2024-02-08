@@ -49,7 +49,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 ### Currently supported filesystems (and schemes)
 
-- `file:` Local filessystem
+- `file:` Local filesystem
 - `memory:` Ephemeral filesystem in RAM
 - `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage (requires `adlfs` to be installed)
 - `http:` and `https:` HTTP(S)-based filesystem
@@ -99,7 +99,7 @@ flowchart TB
   U(UPath)
   UP(PosixUPath)
   UW(WindowsUPath)
-  UL(LocalPath)
+  UL(FilePath)
   US3(S3Path)
   UH(HttpPath)
   UO(...Path)
@@ -168,13 +168,13 @@ register_implementation(my_protocol, MyPath)
 
 #### Registration via entry points
 
-```toml
+```
 # pyproject.toml
 [project.entry-points."unversal_pathlib.implementations"]
 myproto = "my_module.submodule:MyPath"
 ```
 
-```ini
+```
 # setup.cfg
 [options.entry_points]
 universal_pathlib.implementations =

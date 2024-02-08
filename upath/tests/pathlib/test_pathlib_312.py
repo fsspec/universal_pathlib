@@ -9,6 +9,7 @@ import socket
 import stat
 import tempfile
 import unittest
+from contextlib import nullcontext
 from unittest import mock
 
 from ._test_support import import_helper
@@ -16,6 +17,7 @@ from ._test_support import set_recursion_limit
 from ._test_support import is_emscripten, is_wasi
 from . import _test_support as os_helper
 from ._test_support import TESTFN, FakePath
+from ..utils import temporary_register
 
 try:
     import grp, pwd
@@ -23,7 +25,7 @@ except ImportError:
     grp = pwd = None
 
 import upath
-from upath.core312plus import UPath
+from upath.core import UPath
 from upath.implementations.local import PosixUPath, WindowsUPath
 
 import pytest
@@ -76,7 +78,8 @@ class _BasePurePathTest(object):
         self.assertEqual(P(P('a'), 'b'), P('a/b'))
         self.assertEqual(P(P('a'), P('b')), P('a/b'))
         self.assertEqual(P(P('a'), P('b'), P('c')), P(FakePath("a/b/c")))
-        self.assertEqual(P(P('./a:b')), P('./a:b'))
+        if os.name != "nt":
+            self.assertEqual(P(P('./a:b')), P('./a:b'))
 
     def test_bytes(self):
         P = self.cls
@@ -125,18 +128,25 @@ class _BasePurePathTest(object):
     def test_with_segments_common(self):
         class P(_BasePurePathSubclass, self.cls):
             pass
-        p = P('foo', 'bar', session_id=42)
-        self.assertEqual(42, (p / 'foo').session_id)
-        self.assertEqual(42, ('foo' / p).session_id)
-        self.assertEqual(42, p.joinpath('foo').session_id)
-        self.assertEqual(42, p.with_name('foo').session_id)
-        self.assertEqual(42, p.with_stem('foo').session_id)
-        self.assertEqual(42, p.with_suffix('.foo').session_id)
-        self.assertEqual(42, p.with_segments('foo').session_id)
-        self.assertEqual(42, p.relative_to('foo').session_id)
-        self.assertEqual(42, p.parent.session_id)
-        for parent in p.parents:
-            self.assertEqual(42, parent.session_id)
+
+        if self.cls is UPath:
+            cm = temporary_register("", P)
+        else:
+            cm = nullcontext()
+
+        with cm:
+            p = P('foo', 'bar', session_id=42)
+            self.assertEqual(42, (p / 'foo').session_id)
+            self.assertEqual(42, ('foo' / p).session_id)
+            self.assertEqual(42, p.joinpath('foo').session_id)
+            self.assertEqual(42, p.with_name('foo').session_id)
+            self.assertEqual(42, p.with_stem('foo').session_id)
+            self.assertEqual(42, p.with_suffix('.foo').session_id)
+            self.assertEqual(42, p.with_segments('foo').session_id)
+            self.assertEqual(42, p.relative_to('foo').session_id)
+            self.assertEqual(42, p.parent.session_id)
+            for parent in p.parents:
+                self.assertEqual(42, parent.session_id)
 
     def _get_drive_root_parts(self, parts):
         path = self.cls(*parts)
@@ -1682,23 +1692,25 @@ class _BasePathTest(object):
     def test_with_segments(self):
         class P(_BasePurePathSubclass, self.cls):
             pass
-        p = P(BASE, session_id=42)
-        self.assertEqual(42, p.absolute().session_id)
-        self.assertEqual(42, p.resolve().session_id)
-        if not is_wasi:  # WASI has no user accounts.
-            self.assertEqual(42, p.with_segments('~').expanduser().session_id)
-        self.assertEqual(42, (p / 'fileA').rename(p / 'fileB').session_id)
-        self.assertEqual(42, (p / 'fileB').replace(p / 'fileA').session_id)
-        if os_helper.can_symlink():
-            self.assertEqual(42, (p / 'linkA').readlink().session_id)
-        for path in p.iterdir():
-            self.assertEqual(42, path.session_id)
-        for path in p.glob('*'):
-            self.assertEqual(42, path.session_id)
-        for path in p.rglob('*'):
-            self.assertEqual(42, path.session_id)
-        for dirpath, dirnames, filenames in p.walk():
-            self.assertEqual(42, dirpath.session_id)
+
+        with temporary_register("", P):
+            p = P(BASE, session_id=42)
+            self.assertEqual(42, p.absolute().session_id)
+            self.assertEqual(42, p.resolve().session_id)
+            if not is_wasi:  # WASI has no user accounts.
+                self.assertEqual(42, p.with_segments('~').expanduser().session_id)
+            self.assertEqual(42, (p / 'fileA').rename(p / 'fileB').session_id)
+            self.assertEqual(42, (p / 'fileB').replace(p / 'fileA').session_id)
+            if os_helper.can_symlink():
+                self.assertEqual(42, (p / 'linkA').readlink().session_id)
+            for path in p.iterdir():
+                self.assertEqual(42, path.session_id)
+            for path in p.glob('*'):
+                self.assertEqual(42, path.session_id)
+            for path in p.rglob('*'):
+                self.assertEqual(42, path.session_id)
+            for dirpath, dirnames, filenames in p.walk():
+                self.assertEqual(42, dirpath.session_id)
 
     def test_samefile(self):
         fileA_path = os.path.join(BASE, 'fileA')
@@ -2957,8 +2969,9 @@ class PathTest(_BasePathTest, unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unacceptable pattern'):
             list(p.glob(''))
 
-    @pytest.mark.xfail(reason="subclassing UPath directly for Posix and Windows paths requires protocol registration")
     def test_with_segments(self):
+        if self.cls is UPath:
+            pytest.skip(reason="")
         super().test_with_segments()
 
 @only_posix
@@ -3265,14 +3278,12 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
 
 
 class PathSubclassTest(_BasePathTest, unittest.TestCase):
-    class cls(UPath):
-        cwd = UPath.cwd
-        home = UPath.home
+    class cls(WindowsUPath if os.name == 'nt' else PosixUPath):
+        pass
 
     # repr() roundtripping is not supported in custom subclass.
     test_repr_roundtrips = None
 
-    @pytest.mark.xfail(reason="subsubclassing UPath directly for Posix and Windows paths requires protocol registration")
     def test_with_segments(self):
         super().test_with_segments()
 

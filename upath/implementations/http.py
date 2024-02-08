@@ -1,77 +1,79 @@
 from __future__ import annotations
 
-import sys
 from itertools import chain
-from urllib.parse import urlunsplit
 
 from fsspec.asyn import sync
 
-import upath.core
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath._flavour import FSSpecFlavour as _FSSpecFlavour
+from upath.core import UPath
+
+__all__ = ["HTTPPath"]
+
+# accessors are deprecated
+_HTTPAccessor = _FSSpecAccessorShim
 
 
-class _HTTPAccessor(upath.core._FSSpecAccessor):
-    def __init__(self, parsed_url, *args, **kwargs):
-        super().__init__(parsed_url, *args, **kwargs)
+class HTTPPath(UPath):
+    _flavour = _FSSpecFlavour(
+        join_like_urljoin=True,
+        supports_empty_parts=True,
+        supports_netloc=True,
+        supports_query_parameters=True,
+        supports_fragments=True,
+    )
 
-    def _format_path(self, path):
-        return str(path)
+    @property
+    def root(self) -> str:
+        return super().root or "/"
 
-
-class HTTPPath(upath.core.UPath):
-    _default_accessor = _HTTPAccessor
-
-    def is_dir(self):
-        try:
-            return self._path_type() == "directory"
-        except FileNotFoundError:
-            return False
+    def __str__(self):
+        return super(UPath, self).__str__()
 
     def is_file(self):
         try:
-            return self._path_type() == "file"
+            next(super().iterdir())
+        except (StopIteration, NotADirectoryError):
+            return True
         except FileNotFoundError:
             return False
-
-    def _path_type(self):
-        try:
-            next(self.iterdir())
-        except (StopIteration, NotADirectoryError):
-            return "file"
         else:
-            return "directory"
+            return False
 
-    def _sub_path(self, name):
-        """
-        `fsspec` returns the full path as `scheme://netloc/<path>` with
-        `listdir` and `glob`. However, in `iterdir` and `glob` we only want the
-        relative path to `self`.
-        """
-        complete_address = self._format_parsed_parts(
-            None, None, [self._path], url=self._url, **self._kwargs
-        )
+    def is_dir(self):
+        try:
+            next(super().iterdir())
+        except (StopIteration, NotADirectoryError):
+            return False
+        except FileNotFoundError:
+            return False
+        else:
+            return True
 
-        if name.startswith(complete_address):
-            name = name[len(complete_address) :]  # noqa: E203
-        name = name.strip("/")
-
-        return name
+    def iterdir(self):
+        it = iter(super().iterdir())
+        try:
+            item0 = next(it)
+        except (StopIteration, NotADirectoryError):
+            raise NotADirectoryError(str(self))
+        except FileNotFoundError:
+            raise FileNotFoundError(str(self))
+        else:
+            yield from chain([item0], it)
 
     def resolve(
-        self: HTTPPath, strict: bool = False, follow_redirects: bool = True
+        self: HTTPPath,
+        strict: bool = False,
+        follow_redirects: bool = True,
     ) -> HTTPPath:
         """Normalize the path and resolve redirects."""
         # Normalise the path
         resolved_path = super().resolve(strict=strict)
 
         if follow_redirects:
-            # Ensure we have a url
-            parsed_url = resolved_path._url
-            if parsed_url is None:
-                return resolved_path
-            else:
-                url = parsed_url.geturl()
             # Get the fsspec fs
-            fs = resolved_path._accessor._fs
+            fs = self.fs
+            url = str(self)
             # Ensure we have a session
             session = sync(fs.loop, fs.set_session)
             # Use HEAD requests if the server allows it, falling back to GETs
@@ -87,110 +89,3 @@ class HTTPPath(upath.core.UPath):
                     break
 
         return resolved_path
-
-    @property
-    def drive(self):
-        return f"{self._url.scheme}://{self._url.netloc}"
-
-    @property
-    def anchor(self) -> str:
-        return self.drive + self.root
-
-    @property
-    def parts(self) -> tuple[str, ...]:
-        parts = super().parts
-        if not parts:
-            return ()
-        p0, *partsN = parts
-        if p0 == "/":
-            p0 = self.anchor
-        if not partsN and self._url and self._url.path == "/":
-            partsN = [""]
-        return (p0, *partsN)
-
-    @property
-    def path(self) -> str:
-        # http filesystems use the full url as path
-        if self._url is None:
-            raise RuntimeError(str(self))
-        return urlunsplit(self._url)
-
-
-if sys.version_info >= (3, 12):  # noqa
-    from upath.core312plus import FSSpecFlavour
-
-    class HTTPPath(upath.core312plus.UPath):  # noqa
-        _flavour = FSSpecFlavour(
-            join_like_urljoin=True,
-            supports_empty_parts=True,
-            supports_netloc=True,
-            supports_query_parameters=True,
-            supports_fragments=True,
-        )
-
-        @property
-        def root(self) -> str:
-            return super().root or "/"
-
-        def __str__(self):
-            return super(upath.core312plus.UPath, self).__str__()
-
-        def is_file(self):
-            try:
-                next(super().iterdir())
-            except (StopIteration, NotADirectoryError):
-                return True
-            except FileNotFoundError:
-                return False
-            else:
-                return False
-
-        def is_dir(self):
-            try:
-                next(super().iterdir())
-            except (StopIteration, NotADirectoryError):
-                return False
-            except FileNotFoundError:
-                return False
-            else:
-                return True
-
-        def iterdir(self):
-            it = iter(super().iterdir())
-            try:
-                item0 = next(it)
-            except (StopIteration, NotADirectoryError):
-                raise NotADirectoryError(str(self))
-            except FileNotFoundError:
-                raise FileNotFoundError(str(self))
-            else:
-                yield from chain([item0], it)
-
-        def resolve(
-            self: HTTPPath,
-            strict: bool = False,
-            follow_redirects: bool = True,
-        ) -> HTTPPath:
-            """Normalize the path and resolve redirects."""
-            # Normalise the path
-            resolved_path = super().resolve(strict=strict)
-
-            if follow_redirects:
-                # Get the fsspec fs
-                fs = self.fs
-                url = str(self)
-                # Ensure we have a session
-                session = sync(fs.loop, fs.set_session)
-                # Use HEAD requests if the server allows it, falling back to GETs
-                for method in (session.head, session.get):
-                    r = sync(fs.loop, method, url, allow_redirects=True)
-                    try:
-                        r.raise_for_status()
-                    except Exception as exc:
-                        if method == session.get:
-                            raise FileNotFoundError(self) from exc
-                    else:
-                        resolved_path = HTTPPath(str(r.url))
-                        break
-
-            return resolved_path

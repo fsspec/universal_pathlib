@@ -15,6 +15,7 @@ from upath.implementations.cloud import S3Path
 from .cases import BaseTests
 from .utils import only_on_windows
 from .utils import skip_on_windows
+from .utils import xfail_if_version
 
 
 @skip_on_windows
@@ -68,6 +69,12 @@ class TestUpath(BaseTests):
         assert isinstance(pth, pathlib.Path)
         assert isinstance(pth, UPath)
 
+    @xfail_if_version("fsspec", reason="", ge="2024.2.0")
+    def test_iterdir_no_dir(self):
+        # the mock filesystem is basically just LocalFileSystem,
+        # so this test would need to have an iterdir fix.
+        super().test_iterdir_no_dir()
+
 
 def test_multiple_backend_paths(local_testdir):
     path = "s3://bucket/"
@@ -117,7 +124,7 @@ def test_instance_check_local_uri(local_testdir):
     assert isinstance(upath, UPath)
 
 
-@pytest.mark.xfail(sys.version_info >= (3, 12), reason="requires python<3.12")
+@pytest.mark.xfail(reason="unsupported on universal_pathlib>0.1.4")
 def test_new_method(local_testdir):
     path = UPath.__new__(pathlib.Path, local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))

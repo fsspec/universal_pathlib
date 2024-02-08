@@ -1,5 +1,6 @@
 """see upath/tests/conftest.py for fixtures
 """
+
 import pytest  # noqa: F401
 
 from upath import UPath

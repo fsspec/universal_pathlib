@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 
 from upath import UPath
@@ -28,14 +26,7 @@ class TestMemoryPath(BaseTests):
         ("memory:/a", "memory://a"),
         ("memory:/a/b", "memory://a/b"),
         ("memory://", "memory://"),
-        pytest.param(
-            "memory://a",
-            "memory://a",
-            marks=pytest.mark.xfail(
-                sys.version_info < (3, 12),
-                reason="currently broken due to urllib parsing",
-            ),
-        ),
+        ("memory://a", "memory://a"),
         ("memory://a/b", "memory://a/b"),
         ("memory:///", "memory://"),
         ("memory:///a", "memory://a"),
