@@ -24,6 +24,7 @@ IMPLEMENTATIONS = {
     "webdav",
     "webdav+http",
     "webdav+https",
+    "github",
 }
 
 
