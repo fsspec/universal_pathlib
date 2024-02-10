@@ -7,6 +7,12 @@ from upath import UPath
 from upath.implementations.data import DataPath
 from upath.tests.cases import BaseTests
 
+from ..utils import xfail_if_version
+
+pytestmark = xfail_if_version(
+    "fsspec", lt="2023.12.2", reason="fsspec<2023.12.2 does not support data"
+)
+
 
 class TestUPathDataPath(BaseTests):
     """
