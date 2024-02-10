@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+import stat
 import sys
 import warnings
 from pathlib import Path
@@ -39,6 +40,13 @@ class BaseTests:
                 assert isinstance(stat[idx], int)
             for attr in UPathStatResult._fields + UPathStatResult._fields_extra:
                 assert hasattr(stat, attr)
+
+    def test_stat_st_size(self):
+        base = self.path.stat()  # base folder
+        assert stat.S_ISDIR(base.st_mode)
+        file1 = self.path.joinpath("file1.txt").stat()
+        assert stat.S_ISREG(file1.st_mode)
+        assert file1.st_size == 11
 
     def test_chmod(self):
         with pytest.raises(NotImplementedError):
