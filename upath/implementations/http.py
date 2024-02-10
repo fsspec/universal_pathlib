@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 
 from fsspec.asyn import sync
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath._flavour import FSSpecFlavour as _FSSpecFlavour
+from upath._stat import UPathStatResult
 from upath.core import UPath
 
 __all__ = ["HTTPPath"]
@@ -49,6 +51,19 @@ class HTTPPath(UPath):
             return False
         else:
             return True
+
+    def stat(self, follow_symlinks: bool = True):
+        if not follow_symlinks:
+            warnings.warn(
+                "HTTPPath.stat(follow_symlinks=False): follow_symlinks=False is"
+                " currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        info = self.fs.info(self.path)
+        if "url" in info:
+            info["type"] = "directory" if info["url"].endswith("/") else "file"
+        return UPathStatResult.from_info(info)
 
     def iterdir(self):
         it = iter(super().iterdir())
