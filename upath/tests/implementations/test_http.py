@@ -9,6 +9,7 @@ from upath.implementations.http import HTTPPath
 from ..cases import BaseTests
 from ..utils import skip_on_windows
 from ..utils import xfail_if_no_ssl_connection
+from ..utils import xfail_if_version
 
 try:
     get_filesystem_class("http")
@@ -119,6 +120,10 @@ class TestUPathHttp(BaseTests):
     def test_rename2(self):
         with pytest.raises(NotImplementedError):
             return super().test_rename()
+
+    @xfail_if_version("fsspec", lt="2024.2.0", reason="requires fsspec>=2024.2.0")
+    def test_stat_dir_st_mode(self):
+        super().test_stat_dir_st_mode()
 
 
 @pytest.mark.parametrize(
