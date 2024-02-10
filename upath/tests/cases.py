@@ -1,6 +1,8 @@
+import os
 import pickle
 import re
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
@@ -9,6 +11,7 @@ from fsspec import filesystem
 from packaging.version import Version
 
 from upath import UPath
+from upath._stat import UPathStatResult
 
 
 class BaseTests:
@@ -26,7 +29,16 @@ class BaseTests:
 
     def test_stat(self):
         stat = self.path.stat()
-        assert stat
+        assert isinstance(stat, UPathStatResult)
+        assert len(tuple(stat)) == os.stat_result.n_sequence_fields
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+
+            for idx in range(os.stat_result.n_sequence_fields):
+                assert isinstance(stat[idx], int)
+            for attr in UPathStatResult._fields + UPathStatResult._fields_extra:
+                assert hasattr(stat, attr)
 
     def test_chmod(self):
         with pytest.raises(NotImplementedError):

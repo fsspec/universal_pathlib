@@ -21,6 +21,7 @@ from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import FSSpecFlavour
 from upath._protocol import get_upath_protocol
+from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 
 __all__ = ["UPath"]
@@ -587,8 +588,15 @@ class UPath(PathlibPathShim, Path):
 
     # === pathlib.Path ================================================
 
-    def stat(self, *, follow_symlinks=True):
-        return self.fs.stat(self.path)
+    def stat(self, *, follow_symlinks=True) -> UPathStatResult:
+        if not follow_symlinks:
+            warnings.warn(
+                "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
+                " currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return UPathStatResult.from_info(self.fs.stat(self.path))
 
     def lstat(self):
         # return self.stat(follow_symlinks=False)
