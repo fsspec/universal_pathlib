@@ -41,11 +41,16 @@ class BaseTests:
             for attr in UPathStatResult._fields + UPathStatResult._fields_extra:
                 assert hasattr(stat, attr)
 
-    def test_stat_st_size(self):
+    def test_stat_dir_st_mode(self):
         base = self.path.stat()  # base folder
         assert stat.S_ISDIR(base.st_mode)
+
+    def test_stat_file_st_mode(self):
         file1 = self.path.joinpath("file1.txt").stat()
         assert stat.S_ISREG(file1.st_mode)
+
+    def test_stat_st_size(self):
+        file1 = self.path.joinpath("file1.txt").stat()
         assert file1.st_size == 11
 
     def test_chmod(self):
