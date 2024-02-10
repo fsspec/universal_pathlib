@@ -135,6 +135,11 @@ class UPathStatResult:
         self._seq = seq[: self.n_sequence_fields]
         self._info = info_dict or {}
 
+    def __repr__(self):
+        cls_name = type(self).__name__
+        seq_attrs = ", ".join(map("{0[0]}={0[1]}".format, zip(self._fields, self)))
+        return f"{cls_name}({seq_attrs}, info={self._info!r})"
+
     # --- access to the fsspec info dict ------------------------------
 
     @classmethod
