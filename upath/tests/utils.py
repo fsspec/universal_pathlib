@@ -1,5 +1,6 @@
 import operator
 import sys
+from contextlib import contextmanager
 
 import pytest
 from fsspec.utils import get_package_version_without_import
@@ -33,3 +34,29 @@ def xfail_if_version(module, *, reason, **conditions):
     for op, val in conditions.items():
         cond &= getattr(operator, op)(ver, Version(val))
     return pytest.mark.xfail(cond, reason=reason)
+
+
+def xfail_if_no_ssl_connection(func):
+    try:
+        import requests
+
+        requests.get("https://example.com")
+    except (ImportError, requests.exceptions.SSLError):
+        return pytest.mark.xfail(reason="No SSL connection")(func)
+    else:
+        return func
+
+
+@contextmanager
+def temporary_register(protocol, cls):
+    """helper to temporarily register a protocol for testing purposes"""
+    from upath.registry import _registry
+    from upath.registry import get_upath_class
+
+    m = _registry._m.maps[0]
+    try:
+        m[protocol] = cls
+        yield
+    finally:
+        m.clear()
+        get_upath_class.cache_clear()

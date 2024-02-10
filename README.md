@@ -49,7 +49,7 @@ For more examples, see the [example notebook here](notebooks/examples.ipynb)
 
 ### Currently supported filesystems (and schemes)
 
-- `file:` Local filessystem
+- `file:` Local filesystem
 - `memory:` Ephemeral filesystem in RAM
 - `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage (requires `adlfs` to be installed)
 - `http:` and `https:` HTTP(S)-based filesystem
@@ -99,7 +99,7 @@ flowchart TB
   U(UPath)
   UP(PosixUPath)
   UW(WindowsUPath)
-  UL(LocalPath)
+  UL(FilePath)
   US3(S3Path)
   UH(HttpPath)
   UO(...Path)
@@ -168,13 +168,13 @@ register_implementation(my_protocol, MyPath)
 
 #### Registration via entry points
 
-```toml
+```
 # pyproject.toml
 [project.entry-points."unversal_pathlib.implementations"]
 myproto = "my_module.submodule:MyPath"
 ```
 
-```ini
+```
 # setup.cfg
 [options.entry_points]
 universal_pathlib.implementations =
@@ -189,6 +189,7 @@ the dependencies. The following list will be kept up to date whenever we encount
 - **UPath().glob()** fsspec fixed its glob behavior when handling `**` patterns in versions `fsspec>=2023.9.0`
 - **GCSPath().mkdir()** a few mkdir quirks are solved by installing `gcsfs>=2022.7.1`
 - **fsspec.filesystem(WebdavPath().protocol)** the webdav protocol was added to fsspec in version `fsspec>=2022.5.0`
+- **stat.S_ISDIR(HTTPPath().stat().st_mode)** requires `fsspec>=2024.2.0` to correctly return `True` for directories
 
 ## Contributing
 

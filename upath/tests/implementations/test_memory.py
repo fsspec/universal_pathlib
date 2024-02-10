@@ -17,3 +17,22 @@ class TestMemoryPath(BaseTests):
 
     def test_is_MemoryPath(self):
         assert isinstance(self.path, MemoryPath)
+
+
+@pytest.mark.parametrize(
+    "path, expected",
+    [
+        ("memory:/", "memory://"),
+        ("memory:/a", "memory://a"),
+        ("memory:/a/b", "memory://a/b"),
+        ("memory://", "memory://"),
+        ("memory://a", "memory://a"),
+        ("memory://a/b", "memory://a/b"),
+        ("memory:///", "memory://"),
+        ("memory:///a", "memory://a"),
+        ("memory:///a/b", "memory://a/b"),
+    ],
+)
+def test_string_representation(path, expected):
+    path = UPath(path)
+    assert str(path) == expected

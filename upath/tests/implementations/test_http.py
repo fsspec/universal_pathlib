@@ -1,11 +1,15 @@
 import pytest  # noqa: F401
+from fsspec import __version__ as fsspec_version
 from fsspec import get_filesystem_class
+from packaging.version import Version
 
 from upath import UPath
 from upath.implementations.http import HTTPPath
 
 from ..cases import BaseTests
 from ..utils import skip_on_windows
+from ..utils import xfail_if_no_ssl_connection
+from ..utils import xfail_if_version
 
 try:
     get_filesystem_class("http")
@@ -19,6 +23,7 @@ def test_httppath():
     assert path.exists()
 
 
+@xfail_if_no_ssl_connection
 def test_httpspath():
     path = UPath("https://example.com")
     assert isinstance(path, HTTPPath)
@@ -37,6 +42,31 @@ class TestUPathHttp(BaseTests):
     @pytest.mark.skip
     def test_mkdir(self):
         pass
+
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            pytest.param(
+                "*",
+                marks=(
+                    pytest.mark.xfail(reason="requires fsspec<=2023.10.0")
+                    if Version(fsspec_version) > Version("2023.10.0")
+                    else ()
+                ),
+            ),
+            pytest.param(
+                "**/*.txt",
+                marks=(
+                    pytest.mark.xfail(reason="requires fsspec>=2023.9.0")
+                    if Version(fsspec_version) < Version("2023.9.0")
+                    else ()
+                ),
+            ),
+        ),
+    )
+    def test_glob(self, pathlib_base, pattern):
+        super().test_glob(pathlib_base, pattern)
 
     @pytest.mark.skip
     def test_mkdir_exists_ok_false(self):
@@ -90,3 +120,26 @@ class TestUPathHttp(BaseTests):
     def test_rename2(self):
         with pytest.raises(NotImplementedError):
             return super().test_rename()
+
+    @xfail_if_version("fsspec", lt="2024.2.0", reason="requires fsspec>=2024.2.0")
+    def test_stat_dir_st_mode(self):
+        super().test_stat_dir_st_mode()
+
+
+@pytest.mark.parametrize(
+    "args,parts",
+    [
+        (("http://example.com/"), ("http://example.com/", "")),
+        (("http://example.com//"), ("http://example.com/", "", "")),
+        (("http://example.com///"), ("http://example.com/", "", "", "")),
+        (("http://example.com/a"), ("http://example.com/", "a")),
+        (("http://example.com/a/"), ("http://example.com/", "a", "")),
+        (("http://example.com/a/b"), ("http://example.com/", "a", "b")),
+        (("http://example.com/a//b"), ("http://example.com/", "a", "", "b")),
+        (("http://example.com/a//b/"), ("http://example.com/", "a", "", "b", "")),
+    ],
+)
+def test_empty_parts(args, parts):
+    pth = UPath(args)
+    pth_parts = pth.parts
+    assert pth_parts == parts

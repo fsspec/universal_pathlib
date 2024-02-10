@@ -1,29 +1,27 @@
 from __future__ import annotations
 
-import upath.core
+from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
+from upath.core import UPath
+
+__all__ = ["MemoryPath"]
+
+# accessors are deprecated
+_MemoryAccessor = _FSSpecAccessorShim
 
 
-class _MemoryAccessor(upath.core._FSSpecAccessor):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._fs.root_marker = ""
-
-
-class MemoryPath(upath.core.UPath):
-    _default_accessor = _MemoryAccessor
-
+class MemoryPath(UPath):
     def iterdir(self):
-        """Iterate over the files in this directory.  Does not yield any
-        result for the special paths '.' and '..'.
-        """
-        for name in self._accessor.listdir(self):
-            # fsspec returns dictionaries
-            if isinstance(name, dict):
-                name = name.get("name")
-            if name in {".", ".."}:
-                # Yielding a path object for these makes little sense
-                continue
-            # only want the path name with iterdir
-            name = name.rstrip("/")
-            name = self._sub_path(name)
-            yield self._make_child_relpath(name)
+        if not self.is_dir():
+            raise NotADirectoryError(str(self))
+        yield from super().iterdir()
+
+    @property
+    def path(self):
+        path = super().path
+        return "/" if path == "." else path
+
+    def __str__(self):
+        s = super().__str__()
+        if s.startswith("memory:///"):
+            s = s.replace("memory:///", "memory://", 1)
+        return s
