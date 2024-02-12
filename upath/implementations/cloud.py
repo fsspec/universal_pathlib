@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
@@ -25,18 +26,22 @@ class CloudPath(UPath):
         supports_netloc=True,
     )
 
-    def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
-    ) -> None:
+    @classmethod
+    def _transform_init_args(
+        cls,
+        args: tuple[str | os.PathLike, ...],
+        protocol: str,
+        storage_options: dict[str, Any],
+    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
         for key in ["bucket", "netloc"]:
             bucket = storage_options.pop(key, None)
             if bucket:
-                if args[0].startswith("/"):
-                    args = (f"{self._protocol}://{bucket}{args[0]}", *args[1:])
+                if str(args[0]).startswith("/"):
+                    args = (f"{protocol}://{bucket}{args[0]}", *args[1:])
                 else:
-                    args = (f"{self._protocol}://{bucket}/", *args)
+                    args = (f"{protocol}://{bucket}/", *args)
                 break
-        super().__init__(*args, protocol=protocol, **storage_options)
+        return super()._transform_init_args(args, protocol, storage_options)
 
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
