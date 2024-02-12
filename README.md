@@ -10,11 +10,21 @@
 [![Codestyle black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-%23E05735)](./CHANGELOG.md)
 
-Universal Pathlib is a python library that aims to extend Python's built-in [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html) api to use a variety of backend filesystems using [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/intro.html)
+Universal Pathlib is a Python library that extends the [`pathlib.Path`][pathlib]
+API to support a variety of backend filesystems via [`filesystem_spec`][fsspec].
+
+[pathlib]: https://docs.python.org/3/library/pathlib.html
+[fsspec]: https://filesystem-spec.readthedocs.io/en/latest/intro.html
+
 
 ## Installation
 
-### Pypi
+Install the latest version of `universal_pathlib` with pip or conda. Please note
+that while this will install `fsspec` as a dependency, for some filesystems, you
+have to install additional packages. For example, to use S3, you need to install
+`s3fs`, or better depend on `fsspec[s3]`:
+
+### PyPI
 
 ```bash
 python -m pip install universal_pathlib
@@ -26,10 +36,32 @@ python -m pip install universal_pathlib
 conda install -c conda-forge universal_pathlib
 ```
 
+### Adding universal_pathlib to your project
+
+Below is a `pyproject.toml` based example for adding `universal_pathlib` to your
+project as a dependency if you want to use it with `s3` and `http` filesystems:
+
+```toml
+[project]
+name = "myproject"
+requires-python = ">=3.8"
+dependencies = [
+    "universal_pathlib",
+    "fsspec[s3,http]",
+]
+```
+
+See [filesystem_spec/setup.py][fsspec-setup-py] for an overview of the available
+fsspec extras.
+
+[fsspec-setup-py]:
+  https://github.com/fsspec/filesystem_spec/blob/master/setup.py#L12
+
+
 ## Basic Usage
 
 ```pycon
-# pip install universal_pathlib s3fs
+# pip install universal_pathlib fsspec[s3]
 >>> from upath import UPath
 >>>
 >>> s3path = UPath("s3://test_bucket") / "example.txt"
@@ -45,25 +77,35 @@ True
 'Hello World'
 ```
 
-For more examples, see the [example notebook here](notebooks/examples.ipynb)
+For more examples, see the [example notebook here][example-notebook].
 
-### Currently supported filesystems (and schemes)
+[example-notebook]: notebooks/examples.ipynb
+
+### Currently supported filesystems (and protocols)
 
 - `file:` Local filesystem
 - `memory:` Ephemeral filesystem in RAM
-- `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage (requires `adlfs` to be installed)
+- `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage _(requires `adlfs`)_
+- `data:` RFC 2397 style data URLs _(requires `fsspec>=2023.12.2`)_
+- `github:` GitHub repository filesystem
 - `http:` and `https:` HTTP(S)-based filesystem
 - `hdfs:` Hadoop distributed filesystem
-- `gs:` and `gcs:` Google Cloud Storage (requires `gcsfs` to be installed)
-- `s3:` and `s3a:` AWS S3 (requires `s3fs` to be installed)
-- `webdav+http:` and `webdav+https:` WebDAV-based filesystem on top of HTTP(S) (requires `webdav4[fsspec]` to be installed)
+- `gs:` and `gcs:` Google Cloud Storage _(requires `gcsfs`)_
+- `s3:` and `s3a:` AWS S3 _(requires `s3fs` to be installed)_
+- `webdav`, `webdav+http:` and `webdav+https:` WebDAV-based filesystem on top of
+  HTTP(S) _(requires `webdav4[fsspec]`)_
 
-Other fsspec-compatible filesystems may also work, but are not supported and tested.
-Contributions for new filesystems are welcome!
+It is likely, that other fsspec-compatible filesystems are supported through the
+default implementation. But because they are not tested in the universal_pathlib
+test-suite, correct behavior is not guaranteed. If you encounter any issues with
+a specific filesystem using the default implementation, please open an issue. We
+are happy to add support for other filesystems via custom UPath implementations.
+And of course, contributions for new filesystems are welcome!
 
 ### Class hierarchy
 
-The individual `UPath` subclasses relate in the following way with `pathlib` classes:
+The class hierarchy for `UPath` implementations and their relation to the stdlib
+`pathlib` classes are visualized in the following diagram:
 
 ```mermaid
 flowchart TB
@@ -112,29 +154,64 @@ flowchart TB
 
   style UO stroke-dasharray: 3 3
 
-  style s0 fill:none,stroke:#0571b0,stroke-width:3px,stroke-dasharray: 3 3,color:#0571b0
-  style s1 fill:none,stroke:#ca0020,stroke-width:3px,stroke-dasharray: 3 3,color:#ca0020
+  style s0 fill:none,stroke:#07b,stroke-width:3px,stroke-dasharray:3,color:#07b
+  style s1 fill:none,stroke:#d02,stroke-width:3px,stroke-dasharray:3,color:#d02
 ```
 
-When instantiating `UPath` the returned instance type depends on the path that was provided to the constructor.
-For "URI"-style paths, `UPath` returns a subclass instance corresponding to the supported `fsppec` protocol, defined
-by the URI-scheme. If there is no specialized subclass implementation available, `UPath` with return a `UPath` instance
-and raise a warning that the protocol is currently not being tested in the test-suite, and correct behavior is not
-guaranteed.
-If a local path is provided, `UPath` will return a `PosixUPath` or `WindowsUPath` instance.
-These two subclasses are 100% compatible with the `PosixPath` and `WindowsPath` classes of their
-specific Python version, and are tested against all relevant tests of the CPython pathlib test-suite.
+When instantiating `UPath` the returned instance type is determined by the path,
+or better said, the "protocol" that was provided to the constructor. The `UPath`
+class will return a registered implementation for the protocol, if available. If
+no specialized implementation can be found but the protocol is available through
+`fsspec`, it will return a `UPath` instance and provide filesystem access with a
+default implementation. Please note the default implementation can not guarantee
+correct behavior for filesystems that are not tested in the test-suite.
+
+### Local paths and url paths
+
+If a local path is provided `UPath` will return a `PosixUPath` or `WindowsUPath`
+instance. These two implementations are 100% compatible with the `PosixPath` and
+`WindowsPath` classes of their specific Python version. They're tested against a
+large subset of the CPython pathlib test-suite to ensure compatibility.
+
+If a local urlpath is provided, i.e. a "file://" or "local://" URI, the returned
+instance type will be a `FilePath` instance. This class is a subclass of `UPath`
+that provides file access via `LocalFileSystem` from `fsspec`. You can use it to
+ensure that all your local file access is done through `fsspec` as well.
 
 ### UPath public class API
 
-`UPath`'s public class interface is identical to `pathlib.Path` with the addition of the following attributes:
+The public class interface of `UPath` extends `pathlib.Path` via attributes that
+simplify interaction with `filesystem_spec`. Think of the `UPath` class in terms
+of the following code:
 
-- `UPath(...).protocol: str` the filesystem_spec protocol _(note: for `PosixUPath` and `WindowsUPath` it's an empty string)_
-- `UPath(...).storage_options: dict[str, Any]` the storage options for instantiating the filesystem_spec class
-- `UPath(...).path: str` the filesystem_spec compatible path for use with filesystem instances
-- `UPath(...).fs: AbstractFileSystem` convenience attribute to access an instantiated filesystem
+```python
+from pathlib import Path
+from typing import Any, Mapping
+from fsspec import AbstractFileSystem
 
-the first three provide a public interface to access a file via fsspec as follows:
+class UPath(Path):
+    # the real implementation is more complex, but this is the general idea
+
+    @property
+    def protocol(self) -> str:
+        """The fsspec protocol for the path."""
+
+    @property
+    def storage_options(self) -> Mapping[str, Any]:
+        """The fsspec storage options for the path."""
+
+    @property
+    def path(self) -> str:
+        """The path that a fsspec filesystem can use."""
+
+    @property
+    def fs(self) -> AbstractFileSystem:
+        """The cached fsspec filesystem instance for the path."""
+
+```
+
+These attributes are used to provide a public interface to move from the `UPath`
+instance to more fsspec specific code:
 
 ```python
 from upath import UPath
@@ -143,30 +220,129 @@ from fsspec import filesystem
 p = UPath("s3://bucket/file.txt", anon=True)
 
 fs = filesystem(p.protocol, **p.storage_options)  # equivalent to p.fs
+
 with fs.open(p.path) as f:
     data = f.read()
 ```
 
-### Register custom UPath implementations
+## Advanced Usage
 
-In case you develop a custom UPath implementation, feel free to open an issue to discuss integrating it
-in `universal_pathlib`. You can dynamically register your implementation too! Here are your options:
+If you want to create your own UPath implementations, there are multiple ways to
+customize your subclass behavior. Here are a few things to keep in mind when you
+create your own UPath implementation:
 
-#### Dynamic registration from Python
+### UPath's constructor, `upath.registry`, and subclassing
+
+When instantiating `UPath(...)` the `UPath.__new__()` method determines the path
+protocol and returns a registered implementation for the protocol, if available.
+The registered implementations are mapped in the `upath.registry` module. When a
+protocol is not registered, `universal_pathlib` checks if the protocol is mapped
+to an `fsspec` filesystem. If so, it returns an instance of `UPath` and provides
+filesystem access through the default implementation. The protocol is determined
+by either looking at the URI scheme of the first argument to the constructor, or
+by using the `protocol` keyword argument:
+
+```python
+from upath import UPath
+from upath.implementations.cloud import S3Path
+from upath.implementations.memory import MemoryPath
+
+p0 = UPath("s3://bucket/file.txt")
+assert p0.protocol == "s3"
+assert type(p0) is S3Path
+assert isinstance(p0, UPath)
+
+p1 = UPath("/some/path/file.txt", protocol="memory")
+assert p1.protocol == "memory"
+assert type(p1) is MemoryPath
+assert isinstance(p1, UPath)
+
+# the ftp filesystem current has no custom UPath implementation and is not
+# tested in the universal_pathlib test-suite. Therefore, the default UPath
+# implementation is returned, and a warning is emitted on instantiation.
+p2 = UPath("ftp://ftp.ncbi.nih.gov/snp/archive")
+assert p2.protocol == "ftp"
+assert type(p2) is UPath
+```
+
+This has some implications for custom UPath subclasses. We'll go through the two
+main cases where you might want to create a custom UPath implementation:
+
+#### Case 1: Custom filesystem works with default UPath implementation
+
+Let's say you would like to add a new implementation of your "myproto" protocol.
+You already built a custom AbstractFileSystem implementation for "myproto" which
+you have registered through `fsspec.registry`. In some cases it is possible that
+the custom filesystem class already works with `UPath`'s default implementation,
+and you don't need to necessarily create a custom UPath implementation:
+
+```python
+import fsspec.registry
+from fsspec.spec import AbstractFileSystem
+
+class MyProtoFileSystem(AbstractFileSystem):
+    protocol = ("myproto",)
+    ...  # your custom implementation
+
+fsspec.registry.register_implementation("myproto", MyProtoFileSystem)
+
+from upath import UPath
+
+p = UPath("myproto:///my/proto/path")
+assert type(p) is UPath
+assert p.protocol == "myproto"
+assert isinstance(p.fs, MyProtoFileSystem)
+```
+
+#### Case 2: Custom filesystem requires a custom UPath implementation
+
+Sometimes the default implementation isn't sufficient and some method(s) have to
+be overridden to provide correct behavior. In this case, create a custom `UPath`
+implementation:
+
+```python
+from upath import UPath
+
+class MyProtoPath(UPath):
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        something = {...: ...}  # fixes to make MyProtoFileSystem.mkdir work
+        self.fs.mkdir(self.path, **something)
+
+    def path(self):
+        path = super().path
+        if path.startswith("/"):
+            return path[1:]  # MyProtoFileSystem needs the path without "/"
+        return path
+```
+
+If you use your implementation directly via `MyProtoPath("myproto:///a/b")`, you
+can use this implementation already as is. If you want a call to `UPath(...)` to
+return your custom implementation when the detected protocol is `"myproto"`, you
+need to register your implementation. The next section explains your options.
+
+Also note: In case you develop a custom `UPath` implementation, please feel free
+to open an issue to discuss integrating it in `universal_pathlib`.
+
+#### Implementation registration dynamically from Python
+
+You can register your custom UPath implementation dynamically from Python:
 
 ```python
 # for example: mymodule/submodule.py
 from upath import UPath
 from upath.registry import register_implementation
 
-my_protocol = "myproto"
-class MyPath(UPath):
+class MyProtoPath(UPath):
     ...  # your custom implementation
 
-register_implementation(my_protocol, MyPath)
+register_implementation("myproto", MyProtoPath)
 ```
 
-#### Registration via entry points
+#### Implementation registration on installation via entry points
+
+If you distribute your implementation in your own Python package, you can inform
+`universal_pathlib` about your implementation via the `entry_points` mechanism:
 
 ```
 # pyproject.toml
@@ -181,27 +357,151 @@ universal_pathlib.implementations =
     myproto = my_module.submodule:MyPath
 ```
 
+Chose the method that fits your use-case best. If you have questions, open a new
+issue in the `universal_pathlib` repository. We are happy to help you!
+
+### Customization options for UPath subclasses
+
+#### Filesystem access methods
+
+Once you thoroughly test your custom UPath implementation, it's likely that some
+methods need to be overridden to provide correct behavior compared to `stdlib`'s
+`pathlib.Path` class. The most common issue is that for certain edge cases, your
+implementation is not raising the same exceptions compared to the `pathlib.Path`
+class. Or that the `UPath.path` property needs some prefix removed or added.
+
+```python
+class MyProtoPath(UPath):
+
+    @property
+    def path(self) -> str:
+        if p := self.path.startswith("/"):
+            p = p[1:]
+        return p
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        if some_edge_case:
+            raise FileExistsError(str(self))
+        super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+
+    def is_file(self):
+        return self.fs.isfile(self.path, myproto_option=123)
+```
+
+#### Storage option parsing
+
+It's possible that you might want to extract additional storage options from the
+user provided arguments to you constructor. You can provide a custom classmethod
+for `_parse_storage_options`:
+
+```python
+import os
+
+class MyProtoPath(UPath):
+
+    @classmethod
+    def _parse_storage_options(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        if "SOME_VAR" in os.environ:
+            storage_options["some_var"] = os.environ["SOME_VAR"]
+        storage_options["my_proto_caching"] = True
+        storage_options["extra"] = get_setting_from_path(urlpath)
+        return storage_options
+```
+
+#### Fsspec filesystem instantiation
+
+To have more control over fsspec filesystem instantiation you can write a custom
+`_fs_factory` classmethod:
+
+```python
+class MyProtoPath(UPath):
+
+    @classmethod
+    def _fs_factory(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> AbstractFileSystem:
+        myfs = ...  # custom code that creates a AbstractFileSystem instance
+        return myfs
+```
+
+#### Init argument parsing
+
+In special cases you need to take more control over how the init args are parsed
+for your custom subclass. You can override `__init__` or the `UPath` classmethod
+`_transform_init_args`. The latter handles pickling of your custom subclass in a
+better way in case you modify storage options or the protocol.
+
+```python
+class MyProtoPath(UPath):
+
+    @classmethod
+    def _transform_init_args(
+            cls,
+            args: tuple[str | os.PathLike, ...],
+            protocol: str,
+            storage_options: dict[str, Any],
+    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+        # check the cloud, http or webdav implementations for examples
+        ...
+        return args, protocol, storage_options
+```
+
+#### Stopping UPath's subclass dispatch mechanism
+
+There are cases for which you want to disable the protocol dispatch mechanism of
+the `UPath.__new__` constructor. For example if you want to extend the class API
+of your `UPath` implementation, and use it as the base class for other, directly
+instantiated subclasses. Together with other customization options this can be a
+useful feature. Please be aware that in this case all protocols are handled with
+the default implementation in UPath. Please always feel free to open an issue in
+the issue tracker to discuss your use case. We're happy to help with finding the
+most maintainable solution.
+
+```python
+class ExtraUPath(UPath):
+    _protocol_dispatch = False  # disable the registry return an ExtraUPath
+
+    def some_extra_method(self) -> str:
+        return "hello world"
+
+assert ExtraUPath("s3://bucket/file.txt").some_extra_method() == "hello world"
+```
+
 ### Known issues solvable by installing newer upstream dependencies
 
-Some issues in UPath's behavior with specific filesystems can be fixed by installing newer versions of
-the dependencies. The following list will be kept up to date whenever we encounter more:
+Some issues in `UPath`'s behavior with specific fsspec filesystems are fixed via
+installation of a newer version of its upstream dependencies. Below you can find
+a list of known issues and their solutions. We attempt to keep this list updated
+whenever we encounter more:
 
-- **UPath().glob()** fsspec fixed its glob behavior when handling `**` patterns in versions `fsspec>=2023.9.0`
-- **GCSPath().mkdir()** a few mkdir quirks are solved by installing `gcsfs>=2022.7.1`
-- **fsspec.filesystem(WebdavPath().protocol)** the webdav protocol was added to fsspec in version `fsspec>=2022.5.0`
-- **stat.S_ISDIR(HTTPPath().stat().st_mode)** requires `fsspec>=2024.2.0` to correctly return `True` for directories
+- **UPath().glob()**:
+  `fsspec` fixed glob behavior when handling `**` patterns in `fsspec>=2023.9.0`
+- **GCSPath().mkdir()**:
+  a few mkdir quirks are solved by installing `gcsfs>=2022.7.1`
+- **fsspec.filesystem(WebdavPath().protocol)**
+  the webdav protocol was added to fsspec in version `fsspec>=2022.5.0`
+- **stat.S_ISDIR(HTTPPath().stat().st_mode)**
+  requires `fsspec>=2024.2.0` to correctly return `True` for directories
+
 
 ## Contributing
 
 Contributions are very welcome.
 To learn more, see the [Contributor Guide](CONTRIBUTING.rst).
 
+
 ## License
 
 Distributed under the terms of the [MIT license](LICENSE),
 *universal_pathlib* is free and open source software.
 
+
 ## Issues
 
-If you encounter any problems,
-please [file an issue](https://github.com/fsspec/universal_pathlib/issues) along with a detailed description.
+If you encounter any problems, or if you create your own implementations and run
+into limitations, please [file an issue][issues] with a detailed description. We
+are always happy to help with any problems you might encounter.
+
+[issues]: https://github.com/fsspec/universal_pathlib/issues
