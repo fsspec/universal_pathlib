@@ -469,7 +469,174 @@ class ExtraUPath(UPath):
 assert ExtraUPath("s3://bucket/file.txt").some_extra_method() == "hello world"
 ```
 
-### Known issues solvable by installing newer upstream dependencies
+## Migration Guide
+
+UPath's internal implementation is likely going to change with larger changes in
+CPython's stdlib `pathlib` landing in the next Python versions (`3.13`, `3.14`).
+To reduce the problems for user code, when these changes are landing in `UPath`,
+there have been some significant changes in `v0.2.0`. This migration guide tries
+to help migrating code that extensively relies on private implementation details
+of the `UPath` class of versions `v0.1.x` to the new and better supported public
+interface of `v0.2.0`
+
+### migrating to `v0.2.0`
+
+### _FSSpecAccessor subclasses with custom filesystem access methods
+
+If you implemented a custom accessor subclass, it is now recommended to override
+the corresponding `UPath` methods in your subclass directly:
+
+```python
+# OLD: v0.1.x
+from upath.core import UPath, _FSSpecAccessor
+
+class MyAccessor(_FSSpecAccessor):
+    def exists(self, path, **kwargs):
+        # custom code
+        return path.fs.exists(self._format_path(path), **kwargs)
+
+    def touch(self, path, **kwargs):
+        # custom
+        return path.fs.touch(self._format_path(path), **kwargs)
+
+class MyPath(UPath):
+    _default_accessor = MyAccessor
+
+
+# NEW: v0.2.0+
+from upath import UPath
+
+class MyPath(UPath):
+    def exists(self, *, follow_symlinks=True):
+        kwargs = {}  # custom code
+        return self.fs.exists(self.path, **kwargs)
+
+    def touch(self, mode=0o666, exist_ok=True):
+        kwargs = {}  # custom code
+        self.fs.touch(self.path, **kwargs)
+```
+
+### _FSSpecAccessor subclasses with custom `__init__` method
+
+If you implemented a custom `__init__` method for your accessor subclass usually
+the intention is to customize how the fsspec filesystem instance is created. You
+have two options to recreate this with the new implementation. Chose one or both
+dependent on the level of control you need.
+
+```python
+# OLD: v0.1.x
+import fsspec
+from upath.core import UPath, _FSSpecAccessor
+
+class MyAccessor(_FSSpecAccessor):
+    def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
+        # custom code
+        protocol = ...
+        storage_options = ...
+        self._fs = fsspec.filesystem(protocol, storage_options)
+
+class MyPath(UPath):
+    _default_accessor = MyAccessor
+
+
+# NEW: v0.2.0+
+from upath import UPath
+
+class MyPath(UPath):
+    @classmethod
+    def _parse_storage_options(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        # custom code to change storage_options
+        storage_options = ...
+        return storage_options
+
+    @classmethod
+    def _fs_factory(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> AbstractFileSystem:
+        # custom code to instantiate fsspec filesystem
+        protocol = ...
+        storage_options = ...  # note changes to storage_options here won't
+                               # show up in MyPath().storage_options
+        return fsspec.filesystem(protocol, **storage_options)
+```
+
+### Access to `._accessor`
+
+The `_accessor` attribute and the `_FSSpecAccessor` class is deprecated. In case
+you need direct access to the underlying filesystem, just access `UPath().fs`.
+
+```python
+# OLD: v0.1.x
+from upath.core import UPath
+
+class MyPath(UPath):
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        self._accessor.mkdir(...)  # custom access to the underlying fs...
+
+
+# NEW: v0.2.0+
+from upath import UPath
+
+class MyPath(UPath):
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        self.fs.mkdir(...)
+```
+
+### Access to `._path`, `._kwargs`, `._drv`, `._root`, `._parts`
+
+If you access one of the listed private attributes directly, move your code over
+to the following public versions:
+
+| _deprecated_      | `v0.2.0+`                 |
+|:------------------|:--------------------------|
+| `UPath()._path`   | `UPath().path`            |
+| `UPath()._kwargs` | `UPath().storage_options` |
+| `UPath()._drv`    | `UPath().drive`           |
+| `UPath()._root`   | `UPath().root`            |
+| `UPath()._parts`  | `UPath().parts`           |
+
+### Access to `._url`
+
+Be aware that the `._url` attribute will likely be deprecated once `UPath()` has
+support for uri fragments and uri query parameters through a public api. In case
+you are interested in contributing this functionality, please open an issue!
+
+### Calling `_from_parts`, `_parse_args`, `_format_parsed_parts`
+
+If your code is currently calling any of the three above listed classmethods, it
+relies on functionality based on the implementation of `pathlib` in Python up to
+`3.11`. In `universal_pathlib` we vendor code that allows the `UPath()` class to
+be based on the `3.12` implementation of `pathlib.Path` alone. Usually, usage of
+those classmethods occurs when copying some code of the internal implementations
+of methods of the `UPath` `0.1.4` classes.
+
+- To reproduce custom `_format_parsed_parts` methods in `v0.2.0`, try overriding
+  `UPath().path` and/or `UPath().with_segments()`.
+- Custom `_from_parts` and `_parse_args` classmethods can now be implemented via
+  the `_transform_init_args` method or via more functionality in the new flavour
+  class. Please open an issue for discussion in case you have this use case.
+
+### Custom `_URIFlavour` classes
+
+The `_URIFlavour` class was removed from `universal_pathlib` and the new flavour
+class for fsspec filesystem path operations now lives in `upath._flavour`. As of
+now the internal FSSpecFlavour is experimental. In a future Python version, it's
+likely that a flavour or flavour-like base class will become public, that allows
+us to base our internal implementation on. Until then, if you find yourself in a
+situation where a custom path flavour would solve your problem, please feel free
+to open an issue for discussion. We're happy to find a maintainable solution.
+
+### Using `.parse_parts()`, `.casefold()`, `.join_parsed_parts()` of `._flavour`
+
+These methods of the `._flavour` attribute of `pathlib.Path()` and `UPath()` are
+specific to `pathlib` of Python versions up to `3.11`. `UPath()` is now based on
+the `3.12` implementation of `pathlib.Path`. Please refer to the implementations
+of the `upath._flavour` submodule to see how you could avoid using them.
+
+
+## Known issues solvable by installing newer upstream dependencies
 
 Some issues in `UPath`'s behavior with specific fsspec filesystems are fixed via
 installation of a newer version of its upstream dependencies. Below you can find
