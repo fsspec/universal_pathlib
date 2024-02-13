@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import warnings
 from itertools import chain
+from typing import Any
 
 from fsspec.asyn import sync
 
@@ -24,6 +26,18 @@ class HTTPPath(UPath):
         supports_query_parameters=True,
         supports_fragments=True,
     )
+
+    @classmethod
+    def _transform_init_args(
+        cls,
+        args: tuple[str | os.PathLike, ...],
+        protocol: str,
+        storage_options: dict[str, Any],
+    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+        # allow initialization via a path argument and protocol keyword
+        if args and not str(args[0]).startswith(protocol):
+            args = (f"{protocol}://{args[0].lstrip('/')}", *args[1:])
+        return args, protocol, storage_options
 
     @property
     def root(self) -> str:
