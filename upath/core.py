@@ -559,19 +559,23 @@ class UPath(PathlibPathShim, Path):
         return False
 
     def __eq__(self, other):
+        """UPaths are considered equal if their protocol, path and
+        storage_options are equal."""
         if not isinstance(other, UPath):
             return NotImplemented
         return (
             self.path == other.path
+            and self.protocol == other.protocol
             and self.storage_options == other.storage_options
-            and (
-                get_filesystem_class(self.protocol)
-                == get_filesystem_class(other.protocol)
-            )
         )
 
     def __hash__(self):
-        return hash((self.path, self.storage_options, self.protocol))
+        """The returned hash is based on the protocol and path only.
+
+        Note: in the future, if hash collisions become an issue, we
+          can add `fsspec.utils.tokenize(storage_options)`
+        """
+        return hash((self.protocol, self.path))
 
     def relative_to(self, other, /, *_deprecated, walk_up=False):
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
