@@ -11,9 +11,6 @@ from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
-from fsspec import __version__ as fsspec_version
-from packaging.version import Version
-
 from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath.core import UPath
 
@@ -24,7 +21,21 @@ __all__ = [
     "WindowsUPath",
 ]
 
-_LISTDIR_WORKS_ON_FILES = Version(fsspec_version) >= Version("2024.2.0")
+_LISTDIR_WORKS_ON_FILES: bool | None = None
+
+
+def _check_listdir_works_on_files() -> bool:
+    global _LISTDIR_WORKS_ON_FILES
+    from fsspec.implementations.local import LocalFileSystem
+
+    fs = LocalFileSystem()
+    try:
+        fs.ls(__file__)
+    except NotADirectoryError:
+        _LISTDIR_WORKS_ON_FILES = w = False
+    else:
+        _LISTDIR_WORKS_ON_FILES = w = True
+    return w
 
 
 class LocalPath(UPath):
@@ -49,6 +60,8 @@ class FilePath(LocalPath):
     __slots__ = ()
 
     def iterdir(self):
+        if _LISTDIR_WORKS_ON_FILES is None:
+            _check_listdir_works_on_files()
         if _LISTDIR_WORKS_ON_FILES and self.is_file():
             raise NotADirectoryError(f"{self}")
         return super().iterdir()
