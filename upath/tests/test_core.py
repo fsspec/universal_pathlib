@@ -375,3 +375,16 @@ def test_normalize(unnormalized, normalized):
         pass
     assert expected == result
     assert str(expected) == str(result)
+
+
+@pytest.mark.parametrize(
+    "uri,query_str",
+    [
+        ("s3://bucket/folder?versionId=1", "?versionId=1"),
+        ("http://example.com/abc?p=2", "?p=2"),
+    ],
+)
+def test_query_string(uri, query_str):
+    p = UPath(uri)
+    assert str(p).endswith(query_str)
+    assert p.path.endswith(query_str)
