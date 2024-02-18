@@ -20,6 +20,7 @@ from upath._compat import PathlibPathShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import FSSpecFlavour
+from upath._flavour import upath_urijoin
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
@@ -252,6 +253,18 @@ class UPath(PathlibPathShim, Path):
     @property
     def path(self) -> str:
         return super().__str__()
+
+    def joinuri(self, uri: str | os.PathLike[str]) -> UPath:
+        """Join with urljoin behavior for UPath instances"""
+        # short circuit if the new uri uses a different protocol
+        other_protocol = get_upath_protocol(uri)
+        if other_protocol and other_protocol != self._protocol:
+            return UPath(uri)
+        return UPath(
+            upath_urijoin(str(self), str(uri)),
+            protocol=other_protocol or self._protocol,
+            **self.storage_options,
+        )
 
     # === upath.UPath CUSTOMIZABLE API ================================
 
@@ -589,6 +602,17 @@ class UPath(PathlibPathShim, Path):
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             return False
         return super().is_relative_to(other, *_deprecated)
+
+    @property
+    def name(self):
+        tail = self._tail
+        if not tail:
+            return ""
+        name = tail[-1]
+        if not name and len(tail) >= 2:
+            return tail[-2]
+        else:
+            return name
 
     # === pathlib.Path ================================================
 

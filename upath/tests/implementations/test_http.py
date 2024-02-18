@@ -143,3 +143,45 @@ def test_empty_parts(args, parts):
     pth = UPath(args)
     pth_parts = pth.parts
     assert pth_parts == parts
+
+
+def test_query_parameters_passthrough():
+    pth = UPath("http://example.com/?a=1&b=2")
+    assert pth.parts == ("http://example.com/", "?a=1&b=2")
+
+
+@pytest.mark.parametrize(
+    "base,rel,expected",
+    [
+        (
+            "http://www.example.com/a/b/index.html",
+            "image.png?version=1",
+            "http://www.example.com/a/b/image.png?version=1",
+        ),
+        (
+            "http://www.example.com/a/b/index.html",
+            "../image.png",
+            "http://www.example.com/a/image.png",
+        ),
+        (
+            "http://www.example.com/a/b/index.html",
+            "/image.png",
+            "http://www.example.com/image.png",
+        ),
+        (
+            "http://www.example.com/a/b/index.html",
+            "ftp://other.com/image.png",
+            "ftp://other.com/image.png",
+        ),
+        (
+            "http://www.example.com/a/b/index.html",
+            "//other.com/image.png",
+            "http://other.com/image.png",
+        ),
+    ],
+)
+def test_joinuri_behavior(base, rel, expected):
+    p0 = UPath(base)
+    pr = p0.joinuri(rel)
+    pe = UPath(expected)
+    assert pr == pe
