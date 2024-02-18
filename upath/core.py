@@ -234,14 +234,17 @@ class UPath(PathlibPathShim, Path):
 
     @property
     def protocol(self) -> str:
+        """The fsspec protocol for the path."""
         return self._protocol
 
     @property
     def storage_options(self) -> Mapping[str, Any]:
+        """The fsspec storage options for the path."""
         return MappingProxyType(self._storage_options)
 
     @property
     def fs(self) -> AbstractFileSystem:
+        """The cached fsspec filesystem instance for the path."""
         try:
             return self._fs_cached
         except AttributeError:
@@ -252,6 +255,7 @@ class UPath(PathlibPathShim, Path):
 
     @property
     def path(self) -> str:
+        """The path that a fsspec filesystem can use."""
         return super().__str__()
 
     def joinuri(self, uri: str | os.PathLike[str]) -> UPath:
