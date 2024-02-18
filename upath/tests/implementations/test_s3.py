@@ -117,3 +117,10 @@ def s3_with_plus_chr_name(s3_server):
 
 def test_path_with_hash_and_space():
     assert "with#hash and space" in UPath("s3://bucket/with#hash and space/abc").parts
+
+
+def test_pathlib_consistent_join():
+    b0 = UPath("s3://mybucket/withkey/").joinpath("subfolder/myfile.txt")
+    b1 = UPath("s3://mybucket/withkey").joinpath("subfolder/myfile.txt")
+    assert b0 == b1
+    assert "s3://mybucket/withkey/subfolder/myfile.txt" == str(b0) == str(b1)
