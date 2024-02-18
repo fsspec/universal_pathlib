@@ -113,3 +113,7 @@ def s3_with_plus_chr_name(s3_server):
             for dir, _, keys in s3.walk(bucket):
                 for key in keys:
                     s3.rm(f"{dir}/{key}")
+
+
+def test_path_with_hash_and_space():
+    assert "with#hash and space" in UPath("s3://bucket/with#hash and space/abc").parts
