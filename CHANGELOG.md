@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.1] - 2024-02-18
+### Added
+- upath: added `UPath.joinuri()` (#189)
+
+### Fixed
+- fixed `UPath` instances not hashable (#188)
+- fixed missing `packaging` dependency (#187)
+- fixed pypi package classifiers
+
 ## [0.2.0] - 2024-02-13
 ### Added
 - upath: support Python 3.12 (#152)
@@ -109,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...HEAD
+[0.2.0]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fsspec/universal_pathlib/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/fsspec/universal_pathlib/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/fsspec/universal_pathlib/compare/v0.1.2...v0.1.3
