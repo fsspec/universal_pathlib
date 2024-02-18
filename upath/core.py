@@ -603,6 +603,17 @@ class UPath(PathlibPathShim, Path):
             return False
         return super().is_relative_to(other, *_deprecated)
 
+    @property
+    def name(self):
+        tail = self._tail
+        if not tail:
+            return ""
+        name = tail[-1]
+        if not name and len(tail) >= 2:
+            return tail[-2]
+        else:
+            return name
+
     # === pathlib.Path ================================================
 
     def stat(self, *, follow_symlinks=True) -> UPathStatResult:
