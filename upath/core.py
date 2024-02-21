@@ -6,14 +6,19 @@ import warnings
 from copy import copy
 from pathlib import Path
 from types import MappingProxyType
+from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import BinaryIO
+from typing import Literal
 from typing import Mapping
+from typing import TextIO
 from typing import TypeVar
+from typing import overload
 from urllib.parse import urlsplit
 
-from fsspec import AbstractFileSystem
-from fsspec import get_filesystem_class
+from fsspec.registry import get_filesystem_class
+from fsspec.spec import AbstractFileSystem
 
 from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
@@ -741,8 +746,64 @@ class UPath(PathlibPathShim, Path):
     def samefile(self, other_path):
         raise NotImplementedError
 
-    def open(self, mode="r", buffering=-1, encoding=None, errors=None, newline=None):
-        return self.fs.open(self.path, mode)  # fixme
+    @overload
+    def open(
+        self,
+        mode: Literal["r", "w", "a"] = ...,
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+        **fsspec_kwargs: Any,
+    ) -> TextIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: Literal["rb", "wb", "ab"] = ...,
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+        **fsspec_kwargs: Any,
+    ) -> BinaryIO: ...
+
+    def open(
+        self,
+        mode: str = "r",
+        *args: Any,
+        **fsspec_kwargs: Any,
+    ) -> IO[Any]:
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+
+        Parameters
+        ----------
+        mode:
+            Opening mode. Default is 'r'.
+        buffering:
+            Default is the block size of the underlying fsspec filesystem.
+        encoding:
+            Encoding is only used in text mode. Default is None.
+        errors:
+            Error handling for encoding. Only used in text mode. Default is None.
+        newline:
+            Newline handling. Only used in text mode. Default is None.
+        **fsspec_kwargs:
+            Additional options for the fsspec filesystem.
+        """
+        # match the signature of pathlib.Path.open()
+        for key, value in zip(["buffering", "encoding", "errors", "newline"], args):
+            if key in fsspec_kwargs:
+                raise TypeError(
+                    f"{type(self).__name__}.open() got multiple values for '{key}'"
+                )
+            fsspec_kwargs[key] = value
+        # translate pathlib buffering to fs block_size
+        if "buffering" in fsspec_kwargs:
+            fsspec_kwargs.setdefault("block_size", fsspec_kwargs.pop("buffering"))
+        return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
     def iterdir(self):
         for name in self.fs.listdir(self.path):
