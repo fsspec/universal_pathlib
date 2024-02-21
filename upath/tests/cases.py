@@ -236,7 +236,25 @@ class BaseTests:
             new_dir._accessor.makedirs(new_dir, exist_ok=False)
 
     def test_open(self):
-        pass
+        p = self.path.joinpath("file1.txt")
+        with p.open(mode="r") as f:
+            assert f.read() == "hello world"
+        with p.open(mode="rb") as f:
+            assert f.read() == b"hello world"
+
+    def test_open_buffering(self):
+        p = self.path.joinpath("file1.txt")
+        p.open(buffering=-1)
+
+    def test_open_block_size(self):
+        p = self.path.joinpath("file1.txt")
+        with p.open(mode="r", block_size=8192) as f:
+            assert f.read() == "hello world"
+
+    def test_open_errors(self):
+        p = self.path.joinpath("file1.txt")
+        with p.open(mode="r", encoding="ascii", errors="strict") as f:
+            assert f.read() == "hello world"
 
     def test_owner(self):
         with pytest.raises(NotImplementedError):
