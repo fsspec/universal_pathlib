@@ -20,6 +20,7 @@ from upath._compat import PathlibPathShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import FSSpecFlavour
+from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
@@ -287,8 +288,7 @@ class UPath(PathlibPathShim, Path):
         cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
     ) -> dict[str, Any]:
         """Parse storage_options from the urlpath"""
-        fs_cls: type[AbstractFileSystem] = get_filesystem_class(protocol)
-        pth_storage_options = fs_cls._get_kwargs_from_urls(urlpath)
+        pth_storage_options = upath_get_kwargs_from_url(urlpath)
         return {**pth_storage_options, **storage_options}
 
     @classmethod

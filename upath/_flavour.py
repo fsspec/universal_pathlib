@@ -18,14 +18,21 @@ if sys.version_info >= (3, 12):
 else:
     TypeAlias = Any
 
+from fsspec.registry import registry as class_registry
+
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
+from upath._flavour_sources import AbstractFileSystemFlavour
+from upath._flavour_sources import FileSystemFlavourBase
+from upath._flavour_sources import flavour_registry as flavour_registry
 from upath._protocol import get_upath_protocol
-from upath._protocol import strip_upath_protocol
+from upath._protocol import upath_normalize_uri
+from upath._protocol import upath_stringify
 
 PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
 
 __all__ = [
+    "FileSystemFlavourBase",
     "FSSpecFlavour",
     "upath_urijoin",
 ]
@@ -46,6 +53,53 @@ def _deprecated(func):
         return wrapper
     else:
         return func
+
+
+@lru_cache(maxsize=None)
+def _get_filesystem_flavour(protocol: str):
+    """return the fsspec flavour for the given protocol"""
+    # first try to get an already imported fsspec filesystem class
+    try:
+        return class_registry[protocol]
+    except KeyError:
+        pass
+    # next try to get the flavour from the generated flavour registry
+    # to avoid imports
+    try:
+        return flavour_registry[protocol]
+    except KeyError:
+        pass
+    # finally fallback to a default flavour for the protocol
+    warnings.warn(
+        f"using default flavour for protocol {protocol!r}",
+        UserWarning,
+        stacklevel=2,
+    )
+    flavour = type(
+        f"{protocol.title()}FileSystemFlavour",
+        (AbstractFileSystemFlavour,),
+        {"protocol": protocol, "root_marker": "/"},
+    )
+    return flavour
+
+
+def upath_strip_protocol(pth: str | os.PathLike[str]) -> str:
+    pth = upath_stringify(pth)
+    pth = upath_normalize_uri(pth)
+    protocol = get_upath_protocol(pth)
+    if not protocol:
+        return pth
+    flavour = _get_filesystem_flavour(protocol)
+    return flavour._strip_protocol(pth)
+
+
+def upath_get_kwargs_from_url(url: str) -> dict[str, Any]:
+    url = upath_normalize_uri(url)
+    protocol = get_upath_protocol(url)
+    if not protocol:
+        return {}
+    flavour = _get_filesystem_flavour(protocol)
+    return flavour._get_kwargs_from_urls(url)
 
 
 class FSSpecFlavour:
@@ -115,8 +169,8 @@ class FSSpecFlavour:
                 return ""
             __path, *paths = __path  # type: ignore
 
-        _path0: str = strip_upath_protocol(__path)
-        _paths: Iterable[str] = map(strip_upath_protocol, paths)
+        _path0: str = upath_strip_protocol(__path)
+        _paths: Iterable[str] = map(upath_strip_protocol, paths)
 
         if self.join_like_urljoin:
             pth = str_remove_suffix(str(_path0), "/")
@@ -150,7 +204,7 @@ class FSSpecFlavour:
             return drive, root, str_remove_prefix(path, "/")
 
         if self.supports_netloc:
-            path = strip_upath_protocol(__path, allow_unknown=True)
+            path = upath_strip_protocol(__path)
             protocol = get_upath_protocol(__path)
             if protocol:
                 drive, root, tail = path.partition("/")
@@ -159,11 +213,11 @@ class FSSpecFlavour:
                 return "", "", path
 
         elif self.posixpath_only:
-            path = strip_upath_protocol(__path, allow_unknown=True)
+            path = upath_strip_protocol(__path)
             return _get_splitroot(posixpath)(path)
 
         else:
-            path = strip_upath_protocol(__path, allow_unknown=True)
+            path = upath_strip_protocol(__path)
             drv, root, path = _get_splitroot(os.path)(path)
             if os.name == "nt" and not drv:
                 drv = "C:"
@@ -172,13 +226,13 @@ class FSSpecFlavour:
     def splitdrive(self, __path: PathOrStr) -> tuple[str, str]:
         """Split a path into drive and path."""
         if self.supports_fragments or self.supports_query_parameters:
-            path = strip_upath_protocol(__path)
+            path = upath_strip_protocol(__path)
             url = urlsplit(path)
             path = url._replace(scheme="", netloc="").geturl()
             drive = url._replace(path="", query="", fragment="").geturl()
             return drive, path
 
-        path = strip_upath_protocol(__path)
+        path = upath_strip_protocol(__path)
         if self.supports_netloc:
             protocol = get_upath_protocol(__path)
             if protocol:
