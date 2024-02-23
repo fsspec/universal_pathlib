@@ -11,7 +11,6 @@ from typing import Any
 from typing import Mapping
 from typing import Sequence
 from typing import Union
-from typing import cast
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 12):
@@ -34,8 +33,10 @@ if TYPE_CHECKING:
     from upath.core import UPath
 
 __all__ = [
-    "FileSystemFlavourBase",
+    "LazyFlavourDescriptor",
+    "default_flavour",
     "upath_urijoin",
+    "upath_get_kwargs_from_url",
 ]
 
 class_registry: Mapping[str, type[AbstractFileSystem]]
@@ -59,34 +60,33 @@ def _deprecated(func):
         return func
 
 
-class LazyFlavourDescriptor:
-    """descriptor to lazily get the flavour for a given protocol"""
+class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
+    sep: str = "/"
+    protocol: tuple[str, ...] = ()
+    root_marker: str = "/"
 
-    def __init__(self) -> None:
-        self._owner = None
+    @classmethod
+    def _strip_protocol(cls, path: str) -> str:
+        protocol = get_upath_protocol(path)
+        if path.startswith(protocol + "://"):
+            path = path[len(protocol) + 3 :]
+        elif path.startswith(protocol + "::"):
+            path = path[len(protocol) + 2 :]
+        path = path.rstrip("/")
+        return path or cls.root_marker
 
-    def __set_name__(self, owner: type[UPath], name: str) -> None:
-        # helper to provide a more informative repr
-        self._owner = owner
-        try:
-            self._default_protocol = self._owner.protocols[0]
-        except (AttributeError, IndexError):
-            self._default_protocol = None
+    @staticmethod
+    def _get_kwargs_from_urls(path: str) -> dict[str, Any]:
+        return {}
 
-    def __get__(self, instance: UPath, owner: type[UPath]) -> WrappedFileSystemFlavour:
-        if instance is not None:
-            return WrappedFileSystemFlavour.from_protocol(instance.protocol)
-        elif self._default_protocol:
-            return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
+    @classmethod
+    def _parent(cls, path):
+        path = cls._strip_protocol(path)
+        if "/" in path:
+            parent = path.rsplit("/", 1)[0].lstrip(cls.root_marker)
+            return cls.root_marker + parent
         else:
-            return self
-
-    def __repr__(self):
-        cls_name = f"{type(self).__name__}"
-        if self._owner is None:
-            return f"<unbound {cls_name}>"
-        else:
-            return f"<{cls_name} of {self._owner.__name__}>"
+            return cls.root_marker
 
 
 class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
@@ -111,7 +111,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     #   indicating the following settings via the protocol. This is a
     #   workaround to be able to implement the flavour correctly.
     # TODO:
-    #   Both these settings should be configured on the UPath class?!?
+    #   These settings should be configured on the UPath class?!?
     #
     _protocols_with_netloc_anchor = {
         "http",
@@ -176,17 +176,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
                 UserWarning,
                 stacklevel=2,
             )
-        # for now let's only allow valid python identifiers as new protocol names
-        assert protocol.isidentifier(), f"invalid protocol: {protocol!r}"
-        cls_name = f"{protocol.title()}FileSystemFlavour"
-        # avoid circular imports
-        base_cls = flavour_registry["abstract"]  # AbstractFileSystemFlavour
-        # overwrite the relevant attributes
-        attrs = {"protocol": protocol, "root_marker": "/"}
-        default = cast(
-            "type[FileSystemFlavourBase]", type(cls_name, (base_cls,), attrs)
-        )
-        return cls(default)
+        return cls(AnyProtocolFileSystemFlavour)
 
     def __repr__(self):
         if isinstance(self._spec, type):
@@ -376,6 +366,39 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             # Second path is non-anchored (common case)
             return drv, root, parts + parts2
         return drv2, root2, parts2
+
+
+default_flavour = WrappedFileSystemFlavour(AnyProtocolFileSystemFlavour)
+
+
+class LazyFlavourDescriptor:
+    """descriptor to lazily get the flavour for a given protocol"""
+
+    def __init__(self) -> None:
+        self._owner = None
+
+    def __set_name__(self, owner: type[UPath], name: str) -> None:
+        # helper to provide a more informative repr
+        self._owner = owner
+        try:
+            self._default_protocol = self._owner.protocols[0]
+        except (AttributeError, IndexError):
+            self._default_protocol = None
+
+    def __get__(self, instance: UPath, owner: type[UPath]) -> WrappedFileSystemFlavour:
+        if instance is not None:
+            return WrappedFileSystemFlavour.from_protocol(instance.protocol)
+        elif self._default_protocol:
+            return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
+        else:
+            return default_flavour
+
+    def __repr__(self):
+        cls_name = f"{type(self).__name__}"
+        if self._owner is None:
+            return f"<unbound {cls_name}>"
+        else:
+            return f"<{cls_name} of {self._owner.__name__}>"
 
 
 def upath_strip_protocol(pth: PathOrStr) -> str:

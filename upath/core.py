@@ -20,7 +20,6 @@ from upath._compat import PathlibPathShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import LazyFlavourDescriptor
-from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._protocol import get_upath_protocol
@@ -32,6 +31,8 @@ __all__ = ["UPath"]
 
 def __getattr__(name):
     if name == "_UriFlavour":
+        from upath._flavour import default_flavour
+
         warnings.warn(
             "upath.core._UriFlavour should not be used anymore."
             " Please follow the universal_pathlib==0.2.0 migration guide at"
@@ -40,7 +41,7 @@ def __getattr__(name):
             DeprecationWarning,
             stacklevel=2,
         )
-        return WrappedFileSystemFlavour
+        return default_flavour
     elif name == "PT":
         warnings.warn(
             "upath.core.PT should not be used anymore."
