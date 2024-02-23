@@ -7,8 +7,7 @@ from typing import Any
 
 __all__ = [
     "get_upath_protocol",
-    "upath_normalize_uri",
-    "upath_stringify",
+    "normalize_empty_netloc",
 ]
 
 # Regular expression to match fsspec style protocols.
@@ -53,16 +52,7 @@ def get_upath_protocol(
     return protocol or pth_protocol or ""
 
 
-def upath_stringify(pth: str | os.PathLike[str]) -> str:
-    """convert path to string"""
-    if isinstance(pth, PurePath):
-        pth = str(pth)
-    elif not isinstance(pth, str):
-        pth = os.fspath(pth)
-    return pth
-
-
-def upath_normalize_uri(pth: str) -> str:
+def normalize_empty_netloc(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
         if len(m.group("slashes")) == 1:
             protocol = m.group("protocol")

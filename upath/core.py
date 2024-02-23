@@ -19,7 +19,8 @@ from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
-from upath._flavour import FSSpecFlavour
+from upath._flavour import LazyFlavourDescriptor
+from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._protocol import get_upath_protocol
@@ -39,7 +40,7 @@ def __getattr__(name):
             DeprecationWarning,
             stacklevel=2,
         )
-        return FSSpecFlavour
+        return WrappedFileSystemFlavour
     elif name == "PT":
         warnings.warn(
             "upath.core.PT should not be used anymore."
@@ -93,7 +94,8 @@ class UPath(PathlibPathShim, Path):
         _fs_cached: AbstractFileSystem
 
     _protocol_dispatch: bool | None = None
-    _flavour = FSSpecFlavour()
+    # _flavour = FSSpecFlavour()
+    _flavour = LazyFlavourDescriptor()
 
     # === upath.UPath constructor =====================================
 
@@ -450,26 +452,9 @@ class UPath(PathlibPathShim, Path):
             DeprecationWarning,
             stacklevel=2,
         )
+        # TODO !!!
         pth = cls._flavour.join(*args)
         return cls._parse_path(pth)
-
-    @classmethod
-    def _format_parsed_parts(cls, drv, root, tail, **kwargs):
-        if kwargs:
-            warnings.warn(
-                "UPath._format_parsed_parts should not be used with"
-                " additional kwargs. Please follow the"
-                " universal_pathlib==0.2.0 migration guide at"
-                " https://github.com/fsspec/universal_pathlib for more"
-                " information.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            if "url" in kwargs and tail[:1] == [f"{drv}{root}"]:
-                # This was called from code that expected py38-py311 behavior
-                # of _format_parsed_parts, which takes drv, root and parts
-                tail = tail[1:]
-        return super()._format_parsed_parts(drv, root, tail)
 
     @property
     def _drv(self):
@@ -533,19 +518,67 @@ class UPath(PathlibPathShim, Path):
             **self._storage_options,
         )
 
-    @classmethod
-    def _parse_path(cls, path):
-        if getattr(cls._flavour, "supports_empty_parts", False):
-            drv, root, rel = cls._flavour.splitroot(path)
+    # === upath.UPath non-standard changes ============================
+
+    # FIXME:
+    #  this is a classmethod on the parent class, but we need to
+    #  override it here to make it possible to provide the _flavour
+    #  with the correct protocol...
+    #  pathlib 3.12 never calls this on the class. Only on the instance.
+    def _parse_path(self, path):
+        if self._flavour.supports_empty_parts:
+            drv, root, rel = self._flavour.splitroot(path)
             if not root:
                 parsed = []
             else:
-                parsed = list(map(sys.intern, rel.split(cls._flavour.sep)))
+                parsed = list(map(sys.intern, rel.split(self._flavour.sep)))
                 if parsed[-1] == ".":
                     parsed[-1] = ""
                 parsed = [x for x in parsed if x != "."]
+                if not self._flavour.has_meaningful_trailing_slash and parsed[-1] == "":
+                    parsed.pop()
             return drv, root, parsed
-        return super()._parse_path(path)
+        if not path:
+            return "", "", []
+        sep = self._flavour.sep
+        altsep = self._flavour.altsep
+        if altsep:
+            path = path.replace(altsep, sep)
+        drv, root, rel = self._flavour.splitroot(path)
+        if not root and drv.startswith(sep) and not drv.endswith(sep):
+            drv_parts = drv.split(sep)
+            if len(drv_parts) == 4 and drv_parts[2] not in "?.":
+                # e.g. //server/share
+                root = sep
+            elif len(drv_parts) == 6:
+                # e.g. //?/unc/server/share
+                root = sep
+        parsed = [sys.intern(str(x)) for x in rel.split(sep) if x and x != "."]
+        return drv, root, parsed
+
+    def _format_parsed_parts(self, drv, root, tail, **kwargs):
+        if kwargs:
+            warnings.warn(
+                "UPath._format_parsed_parts should not be used with"
+                " additional kwargs. Please follow the"
+                " universal_pathlib==0.2.0 migration guide at"
+                " https://github.com/fsspec/universal_pathlib for more"
+                " information.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if "url" in kwargs and tail[:1] == [f"{drv}{root}"]:
+                # This was called from code that expected py38-py311 behavior
+                # of _format_parsed_parts, which takes drv, root and parts
+                tail = tail[1:]
+
+        if drv or root:
+            return drv + root + self._flavour.sep.join(tail)
+        elif tail and self._flavour.splitdrive(tail[0])[0]:
+            tail = ["."] + tail
+        return self._flavour.sep.join(tail)
+
+    # === upath.UPath changes =========================================
 
     def __str__(self):
         if self._protocol:
@@ -677,10 +710,8 @@ class UPath(PathlibPathShim, Path):
         return self.fs.open(self.path, mode)  # fixme
 
     def iterdir(self):
-        if getattr(self._flavour, "supports_empty_parts", False) and self.parts[
-            -1:
-        ] == ("",):
-            base = self.with_segments(self.anchor, *self._tail[:-1])
+        if self._flavour.supports_empty_parts and self.parts[-1:] == ("",):
+            base = self.parent
         else:
             base = self
         for name in self.fs.listdir(self.path):
@@ -765,10 +796,7 @@ class UPath(PathlibPathShim, Path):
             if part == "..":
                 if resolved:
                     resolved.pop()
-                if (
-                    getattr(self._flavour, "supports_empty_parts", False)
-                    and idx == last_idx
-                ):
+                if self._flavour.has_meaningful_trailing_slash and idx == last_idx:
                     resolved.append("")
             elif part != ".":
                 resolved.append(part)
