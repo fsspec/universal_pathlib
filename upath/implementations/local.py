@@ -39,9 +39,6 @@ def _check_listdir_works_on_files() -> bool:
 
 class LocalPath(UPath):
     __slots__ = ()
-    # _flavour = _FSSpecFlavour(
-    #    posixpath_only=False,
-    # )
 
     @property
     def path(self):

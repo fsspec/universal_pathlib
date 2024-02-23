@@ -21,10 +21,6 @@ _CloudAccessor = _FSSpecAccessorShim
 
 class CloudPath(UPath):
     __slots__ = ()
-    # _flavour = _FSSpecFlavour(
-    #    join_prepends_protocol=True,
-    #    supports_netloc=True,
-    # )
 
     @classmethod
     def _transform_init_args(
