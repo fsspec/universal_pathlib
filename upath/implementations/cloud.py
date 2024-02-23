@@ -4,7 +4,7 @@ import os
 from typing import Any
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._flavour import FSSpecFlavour as _FSSpecFlavour
+from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 
 __all__ = [
@@ -21,10 +21,10 @@ _CloudAccessor = _FSSpecAccessorShim
 
 class CloudPath(UPath):
     __slots__ = ()
-    _flavour = _FSSpecFlavour(
-        join_prepends_protocol=True,
-        supports_netloc=True,
-    )
+    # _flavour = _FSSpecFlavour(
+    #    join_prepends_protocol=True,
+    #    supports_netloc=True,
+    # )
 
     @classmethod
     def _transform_init_args(
@@ -39,7 +39,8 @@ class CloudPath(UPath):
                 if str(args[0]).startswith("/"):
                     args = (f"{protocol}://{bucket}{args[0]}", *args[1:])
                 else:
-                    args = (f"{protocol}://{bucket}/", *args)
+                    args0 = upath_strip_protocol(args[0])
+                    args = (f"{protocol}://{bucket}/", args0, *args[1:])
                 break
         return super()._transform_init_args(args, protocol, storage_options)
 

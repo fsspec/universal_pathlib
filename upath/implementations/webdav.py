@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from typing import Mapping
 from urllib.parse import urlsplit
 
 from fsspec.registry import known_implementations
@@ -51,6 +52,18 @@ class WebdavPath(UPath):
                 f"must provide `base_url` storage option for args: {args!r}"
             )
         return super()._transform_init_args(args, "webdav", storage_options)
+
+    @classmethod
+    def _parse_storage_options(
+        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        so = dict(storage_options)
+        if urlpath.startswith(("webdav+http:", "webdav+https:")):
+            url = urlsplit(str(urlpath))
+            base = url._replace(scheme=url.scheme.split("+")[1], path="").geturl()
+            urlpath = url._replace(scheme="", netloc="").geturl() or "/"
+            so.setdefault("base_url", base)
+        return super()._parse_storage_options(urlpath, "webdav", so)
 
     @property
     def path(self) -> str:

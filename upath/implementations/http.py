@@ -8,7 +8,6 @@ from typing import Any
 from fsspec.asyn import sync
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath._stat import UPathStatResult
 from upath.core import UPath
 
@@ -19,13 +18,14 @@ _HTTPAccessor = _FSSpecAccessorShim
 
 
 class HTTPPath(UPath):
-    _flavour = _FSSpecFlavour(
-        join_like_urljoin=True,
-        supports_empty_parts=True,
-        supports_netloc=True,
-        supports_query_parameters=True,
-        supports_fragments=True,
-    )
+    # _flavour = _FSSpecFlavour(
+    #    join_like_urljoin=True,
+    #    supports_empty_parts=True,
+    #    supports_netloc=True,
+    #    supports_query_parameters=True,
+    #    supports_fragments=True,
+    # )
+    # _flavour = LazyFlavourDescriptor(_FSSpecFlavour)
 
     @classmethod
     def _transform_init_args(

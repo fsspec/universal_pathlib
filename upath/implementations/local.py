@@ -11,7 +11,6 @@ from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
-from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath.core import UPath
 
 __all__ = [
@@ -40,9 +39,9 @@ def _check_listdir_works_on_files() -> bool:
 
 class LocalPath(UPath):
     __slots__ = ()
-    _flavour = _FSSpecFlavour(
-        posixpath_only=False,
-    )
+    # _flavour = _FSSpecFlavour(
+    #    posixpath_only=False,
+    # )
 
     @property
     def path(self):
