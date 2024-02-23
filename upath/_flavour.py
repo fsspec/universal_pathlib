@@ -24,6 +24,7 @@ from fsspec.registry import registry as class_registry
 from fsspec.spec import AbstractFileSystem
 
 from upath._compat import str_remove_prefix
+from upath._compat import str_remove_suffix
 from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
@@ -238,6 +239,10 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             out = str(pth)
         return normalize_empty_netloc(out)
 
+    def empty_part_join(self, path: str, *paths: str) -> str:
+        sep = self.sep
+        return sep.join([str_remove_suffix(path, sep), *paths])
+
     def strip_protocol(self, pth: PathOrStr) -> str:
         pth = self.stringify_path(pth)
         return self._spec._strip_protocol(pth)
@@ -267,17 +272,21 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         return self.strip_protocol(path).startswith(self.root_marker)
 
     def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
+        if self.supports_empty_parts:
+            _join = self.empty_part_join
+        else:
+            _join = posixpath.join
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
-            pN = map(self.stringify_path, paths)
+            pN = list(map(self.stringify_path, paths))
             if not drv and not p0:
                 path, *pN = pN
                 drv, p0 = self.splitdrive(path)
-            return drv + posixpath.join(p0 or self.sep, *pN)
+            return drv + _join(p0 or self.sep, *pN)
         else:
             p0 = str(self.strip_protocol(path))
             pN = map(self.stringify_path, paths)
-            return posixpath.join(p0, *pN)
+            return _join(p0, *pN)
 
     def split(self, path: PathOrStr):
         stripped_path = self.strip_protocol(path)
