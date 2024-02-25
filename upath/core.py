@@ -737,8 +737,9 @@ class UPath(PathlibPathShim, Path):
     def glob(self, pattern: str, *, case_sensitive=None):
         path_pattern = self.joinpath(pattern).path
         sep = self._flavour.sep
+        base = self.fs._strip_protocol(self.path)
         for name in self.fs.glob(path_pattern):
-            name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
+            name = str_remove_prefix(str_remove_prefix(name, base), sep)
             yield self.joinpath(name)
 
     def rglob(self, pattern: str, *, case_sensitive=None):
@@ -748,18 +749,20 @@ class UPath(PathlibPathShim, Path):
         if _FSSPEC_HAS_WORKING_GLOB:
             r_path_pattern = self.joinpath("**", pattern).path
             sep = self._flavour.sep
+            base = self.fs._strip_protocol(self.path)
             for name in self.fs.glob(r_path_pattern):
-                name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
+                name = str_remove_prefix(str_remove_prefix(name, base), sep)
                 yield self.joinpath(name)
 
         else:
             path_pattern = self.joinpath(pattern).path
             r_path_pattern = self.joinpath("**", pattern).path
             sep = self._flavour.sep
+            base = self.fs._strip_protocol(self.path)
             seen = set()
             for p in (path_pattern, r_path_pattern):
                 for name in self.fs.glob(p):
-                    name = str_remove_prefix(str_remove_prefix(name, self.path), sep)
+                    name = str_remove_prefix(str_remove_prefix(name, base), sep)
                     if name in seen:
                         continue
                     else:
