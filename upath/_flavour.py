@@ -301,6 +301,8 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
                 return drive, root + tail
         else:
             # all other cases don't have a drive
+            if {"file", "local"}.intersection(self.protocol):
+                return os.path.splitdrive(path)
             return "", path
 
     def normcase(self, path: PathOrStr) -> str:
