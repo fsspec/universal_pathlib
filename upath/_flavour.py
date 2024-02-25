@@ -242,7 +242,11 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         return None
 
     def isabs(self, path: PathOrStr) -> bool:
-        return self.strip_protocol(path).startswith(self.root_marker)
+        path = self.strip_protocol(path)
+        if self.local_file:
+            return os.path.isabs(path)
+        else:
+            return path.startswith(self.root_marker)
 
     def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
         if self.supports_empty_parts:
