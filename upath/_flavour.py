@@ -282,10 +282,10 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
                 # cases like: "bucket/some/special/key
                 drive, root, tail = path.partition(self.sep)
                 return drive, root + tail
+        elif self.local_file:
+            return os.path.splitdrive(path)
         else:
             # all other cases don't have a drive
-            if {"file", "local"}.intersection(self.protocol):
-                return os.path.splitdrive(path)
             return "", path
 
     def normcase(self, path: PathOrStr) -> str:
