@@ -5,7 +5,6 @@ import posixpath
 import sys
 import warnings
 from functools import lru_cache
-from functools import wraps
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
@@ -22,6 +21,7 @@ from fsspec.registry import known_implementations
 from fsspec.registry import registry as class_registry
 from fsspec.spec import AbstractFileSystem
 
+from upath._compat import deprecated
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour_sources import FileSystemFlavourBase
@@ -41,23 +41,6 @@ __all__ = [
 
 class_registry: Mapping[str, type[AbstractFileSystem]]
 PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
-
-
-def _deprecated(func):
-    if sys.version_info >= (3, 12):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            warnings.warn(
-                f"{func.__name__} is deprecated on py3.12",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            return func(*args, **kwargs)
-
-        return wrapper
-    else:
-        return func
 
 
 class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
@@ -323,14 +306,14 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
 
     # === deprecated backwards compatibility ===========================
 
-    @_deprecated
+    @deprecated(python_version=(3, 12))
     def casefold(self, s: str) -> str:
         if self.local_file:
             return s
         else:
             return s.lower()
 
-    @_deprecated
+    @deprecated(python_version=(3, 12))
     def parse_parts(self, parts: Sequence[str]) -> tuple[str, str, list[str]]:
         parsed = []
         sep = self.sep
@@ -347,7 +330,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         parsed.reverse()
         return drv, root, parsed
 
-    @_deprecated
+    @deprecated(python_version=(3, 12))
     def join_parsed_parts(
         self,
         drv: str,
