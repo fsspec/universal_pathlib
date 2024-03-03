@@ -16,7 +16,7 @@ Register custom UPath subclasses in one of two ways:
 
 ```toml
 # pyproject.toml
-[project.entry-points."unversal_pathlib.implementations"]
+[project.entry-points."universal_pathlib.implementations"]
 myproto = "my_module.submodule:MyPath"
 ```
 
