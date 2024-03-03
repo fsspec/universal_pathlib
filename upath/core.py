@@ -738,10 +738,6 @@ class UPath(PathlibPathShim, Path):
         return self.fs.open(self.path, mode)  # fixme
 
     def iterdir(self):
-        if self._flavour.supports_empty_parts and self.parts[-1:] == ("",):
-            base = self.parent
-        else:
-            base = self
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -751,7 +747,7 @@ class UPath(PathlibPathShim, Path):
                 continue
             # only want the path name with iterdir
             _, _, name = str_remove_suffix(name, "/").rpartition(self._flavour.sep)
-            yield base._make_child_relpath(name)
+            yield self._make_child_relpath(name)
 
     def _scandir(self):
         raise NotImplementedError  # todo
@@ -822,13 +818,10 @@ class UPath(PathlibPathShim, Path):
 
         resolved: list[str] = []
         resolvable_parts = _parts[1:]
-        last_idx = len(resolvable_parts) - 1
-        for idx, part in enumerate(resolvable_parts):
+        for part in resolvable_parts:
             if part == "..":
                 if resolved:
                     resolved.pop()
-                if self._flavour.has_meaningful_trailing_slash and idx == last_idx:
-                    resolved.append("")
             elif part != ".":
                 resolved.append(part)
 

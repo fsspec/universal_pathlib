@@ -72,15 +72,18 @@ class HTTPPath(UPath):
         return UPathStatResult.from_info(info)
 
     def iterdir(self):
-        it = iter(super().iterdir())
-        try:
-            item0 = next(it)
-        except (StopIteration, NotADirectoryError):
-            raise NotADirectoryError(str(self))
-        except FileNotFoundError:
-            raise FileNotFoundError(str(self))
+        if self.parts[-1:] == ("",):
+            yield from self.parent.iterdir()
         else:
-            yield from chain([item0], it)
+            it = iter(super().iterdir())
+            try:
+                item0 = next(it)
+            except (StopIteration, NotADirectoryError):
+                raise NotADirectoryError(str(self))
+            except FileNotFoundError:
+                raise FileNotFoundError(str(self))
+            else:
+                yield from chain([item0], it)
 
     def resolve(
         self: HTTPPath,
@@ -90,6 +93,9 @@ class HTTPPath(UPath):
         """Normalize the path and resolve redirects."""
         # Normalise the path
         resolved_path = super().resolve(strict=strict)
+        # if the last part is "..", then it's a directory
+        if self.parts[-1:] == ("..",):
+            resolved_path = resolved_path.joinpath("")
 
         if follow_redirects:
             # Get the fsspec fs

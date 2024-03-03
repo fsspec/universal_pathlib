@@ -152,13 +152,11 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         # supports empty parts, influences:
         #   - join
         #   - UPath._parse_path
-        #   - UPath.iterdir
         self.supports_empty_parts = bool(supports_empty_parts)
 
         # meaningful trailing slash, influences:
         #   - join
         #   - UPath._parse_path
-        #   - UPath.resolve
         self.has_meaningful_trailing_slash = bool(meaningful_trailing_slash)
 
     @classmethod

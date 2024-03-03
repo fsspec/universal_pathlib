@@ -50,7 +50,10 @@ class CloudPath(UPath):
     def iterdir(self):
         if self.is_file():
             raise NotADirectoryError(str(self))
-        yield from super().iterdir()
+        if self.parts[-1:] == ("",):
+            yield from self.parent.iterdir()
+        else:
+            yield from super().iterdir()
 
     def relative_to(self, other, /, *_deprecated, walk_up=False):
         # use the parent implementation for the ValueError logic
