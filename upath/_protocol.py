@@ -5,12 +5,9 @@ import re
 from pathlib import PurePath
 from typing import Any
 
-from fsspec.core import strip_protocol as strip_fsspec_protocol
-from fsspec.spec import AbstractFileSystem
-
 __all__ = [
     "get_upath_protocol",
-    "strip_upath_protocol",
+    "normalize_empty_netloc",
 ]
 
 # Regular expression to match fsspec style protocols.
@@ -42,6 +39,8 @@ def get_upath_protocol(
         pth_protocol = _match_protocol(pth)
     elif isinstance(pth, PurePath):
         pth_protocol = getattr(pth, "protocol", "")
+    elif hasattr(pth, "__fspath__"):
+        pth_protocol = _match_protocol(pth.__fspath__())
     else:
         pth_protocol = _match_protocol(str(pth))
     # if storage_options and not protocol and not pth_protocol:
@@ -53,27 +52,10 @@ def get_upath_protocol(
     return protocol or pth_protocol or ""
 
 
-def strip_upath_protocol(
-    pth: str | os.PathLike[str],
-    *,
-    allow_unknown: bool = False,
-) -> str:
-    """strip protocol from path"""
-    if isinstance(pth, PurePath):
-        pth = str(pth)
-    elif not isinstance(pth, str):
-        pth = os.fspath(pth)
+def normalize_empty_netloc(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
         if len(m.group("slashes")) == 1:
             protocol = m.group("protocol")
             path = m.group("path")
             pth = f"{protocol}:///{path}"
-        try:
-            return strip_fsspec_protocol(pth)
-        except ValueError as err:
-            if allow_unknown and str(err).endswith(m.group("protocol")):
-                # fsspec raised ValueError because the protocol is not registered
-                return AbstractFileSystem._strip_protocol(pth)
-            raise
-    else:
-        return pth
+    return pth

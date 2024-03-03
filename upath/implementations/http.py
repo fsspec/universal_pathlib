@@ -8,7 +8,6 @@ from typing import Any
 from fsspec.asyn import sync
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._flavour import FSSpecFlavour as _FSSpecFlavour
 from upath._stat import UPathStatResult
 from upath.core import UPath
 
@@ -19,13 +18,6 @@ _HTTPAccessor = _FSSpecAccessorShim
 
 
 class HTTPPath(UPath):
-    _flavour = _FSSpecFlavour(
-        join_like_urljoin=True,
-        supports_empty_parts=True,
-        supports_netloc=True,
-        supports_query_parameters=True,
-        supports_fragments=True,
-    )
 
     @classmethod
     def _transform_init_args(
@@ -80,15 +72,18 @@ class HTTPPath(UPath):
         return UPathStatResult.from_info(info)
 
     def iterdir(self):
-        it = iter(super().iterdir())
-        try:
-            item0 = next(it)
-        except (StopIteration, NotADirectoryError):
-            raise NotADirectoryError(str(self))
-        except FileNotFoundError:
-            raise FileNotFoundError(str(self))
+        if self.parts[-1:] == ("",):
+            yield from self.parent.iterdir()
         else:
-            yield from chain([item0], it)
+            it = iter(super().iterdir())
+            try:
+                item0 = next(it)
+            except (StopIteration, NotADirectoryError):
+                raise NotADirectoryError(str(self))
+            except FileNotFoundError:
+                raise FileNotFoundError(str(self))
+            else:
+                yield from chain([item0], it)
 
     def resolve(
         self: HTTPPath,
@@ -98,6 +93,9 @@ class HTTPPath(UPath):
         """Normalize the path and resolve redirects."""
         # Normalise the path
         resolved_path = super().resolve(strict=strict)
+        # if the last part is "..", then it's a directory
+        if self.parts[-1:] == ("..",):
+            resolved_path = resolved_path.joinpath("")
 
         if follow_redirects:
             # Get the fsspec fs

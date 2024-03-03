@@ -43,6 +43,8 @@ def _get_stat_result_extra_fields() -> tuple[str, ...]:
     #  named fields of the stat_result class as keys and the internal
     #  index of the field as value.
     sr = os.stat_result(range(os.stat_result.n_fields))
+    rd = sr.__reduce__()
+    assert isinstance(rd, tuple), "unexpected return os.stat_result.__reduce__"
     _, (_, extra) = sr.__reduce__()
     extra_fields = sorted(extra, key=extra.__getitem__)
     return tuple(extra_fields)

@@ -1,6 +1,6 @@
 default_language_version:
   python: python3
-exclude: ^upath/tests/pathlib/test_pathlib.*\.py|^upath/tests/pathlib/_test_support\.py
+exclude: ^upath/tests/pathlib/test_pathlib.*\.py|^upath/tests/pathlib/_test_support\.py|^upath/_flavour_sources\.py
 repos:
   - repo: https://github.com/psf/black
     rev: 24.1.1

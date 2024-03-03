@@ -6,10 +6,13 @@ import posixpath
 import sys
 import warnings
 from collections.abc import Sequence
+from functools import wraps
 from pathlib import Path
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
+from typing import TypeVar
 from urllib.parse import SplitResult
 
 from fsspec import get_filesystem_class
@@ -22,6 +25,7 @@ __all__ = [
     "str_remove_prefix",
     "str_remove_suffix",
     "FSSpecAccessorShim",
+    "deprecated",
 ]
 
 
@@ -484,3 +488,42 @@ class FSSpecAccessorShim:
             maxdepth=maxdepth,
             **kwargs,
         )
+
+
+F = TypeVar("F")
+
+
+def deprecated(*, python_version: tuple[int, ...]) -> Callable[[F], F]:
+    """marks function as deprecated"""
+    pyver_str = ".".join(map(str, python_version))
+
+    def deprecated_decorator(func: F) -> F:
+        if sys.version_info >= python_version:
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                warnings.warn(
+                    f"{func.__name__} is deprecated on py>={pyver_str}",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                return func(*args, **kwargs)
+
+            return wrapper
+
+        else:
+            return func
+
+    return deprecated_decorator
+
+
+class method_and_classmethod:
+    """Allow a method to be used as both a method and a classmethod"""
+
+    def __init__(self, method):
+        self.method = method
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.method.__get__(owner)
+        return self.method.__get__(instance)

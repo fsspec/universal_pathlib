@@ -255,6 +255,19 @@ def test_compare_to_pathlib_path_ne():
     assert pathlib.Path("/bucket/folder") == UPath("/bucket/folder")
 
 
+def test_handle_fspath_args(tmp_path):
+    f = tmp_path.joinpath("file.txt").as_posix()
+
+    class X:
+        def __str__(self):
+            raise ValueError("should not be called")
+
+        def __fspath__(self):
+            return f
+
+    assert UPath(X()).path == f
+
+
 @pytest.mark.parametrize(
     "urlpath",
     [
@@ -376,10 +389,12 @@ NORMALIZATIONS = (
 @pytest.mark.parametrize(*NORMALIZATIONS)
 def test_normalize(unnormalized, normalized):
     expected = UPath(normalized)
-    # Normalise only, do not attempt to follow redirects for http:// paths here
-    result = UPath.resolve(UPath(unnormalized))
-    if expected.protocol == "memory":
-        pass
+    pth = UPath(unnormalized)
+    if pth.protocol in {"http", "https"}:
+        # Normalise only, do not attempt to follow redirects for http:// paths here
+        result = pth.resolve(strict=True, follow_redirects=False)
+    else:
+        result = pth.resolve(strict=True)
     assert expected == result
     assert str(expected) == str(result)
 
