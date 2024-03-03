@@ -204,8 +204,12 @@ class UPath(PathlibPathShim, Path):
             if isinstance(args0, UPath):
                 self._storage_options = {**args0.storage_options, **storage_options}
             else:
+                if hasattr(args0, "__fspath__"):
+                    _args0 = args0.__fspath__()
+                else:
+                    _args0 = str(args0)
                 self._storage_options = type(self)._parse_storage_options(
-                    str(args0), protocol, storage_options
+                    _args0, protocol, storage_options
                 )
         else:
             self._storage_options = storage_options.copy()

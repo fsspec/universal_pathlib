@@ -255,6 +255,17 @@ def test_compare_to_pathlib_path_ne():
     assert pathlib.Path("/bucket/folder") == UPath("/bucket/folder")
 
 
+def test_handle_fspath_args():
+    class X:
+        def __str__(self):
+            raise ValueError("should not be called")
+
+        def __fspath__(self):
+            return "/some/path"
+
+    assert UPath(X()).path == "/some/path"
+
+
 @pytest.mark.parametrize(
     "urlpath",
     [
