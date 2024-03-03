@@ -516,6 +516,11 @@ class UPath(PathlibPathShim, Path):
     def _parts(self, value):
         self.__parts = value
 
+    @property
+    def _cparts(self):
+        # required for pathlib.Path.__eq__ compatibility on Python <3.12
+        return self.parts
+
     # === pathlib.PurePath ============================================
 
     def __reduce__(self):
