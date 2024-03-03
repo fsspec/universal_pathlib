@@ -6,6 +6,7 @@ from inspect import ismemberdescriptor
 from pathlib import Path
 from pathlib import PosixPath
 from pathlib import WindowsPath
+from typing import IO
 from typing import Any
 from typing import Collection
 from typing import MutableMapping
@@ -110,6 +111,27 @@ class PosixUPath(PosixPath, LocalPath):
     # assign all PosixPath methods/attrs to prevent multi inheritance issues
     _set_class_attributes(locals(), src=PosixPath)
 
+    def open(
+        self,
+        mode="r",
+        buffering=-1,
+        encoding=None,
+        errors=None,
+        newline=None,
+        **fsspec_kwargs,
+    ) -> IO[Any]:
+        if fsspec_kwargs:
+            return super(LocalPath, self).open(
+                mode=mode,
+                buffering=buffering,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+                **fsspec_kwargs,
+            )
+        else:
+            return PosixPath.open(self, mode, buffering, encoding, errors, newline)
+
     if sys.version_info < (3, 12):
 
         def __new__(
@@ -152,6 +174,27 @@ class WindowsUPath(WindowsPath, LocalPath):
 
     # assign all WindowsPath methods/attrs to prevent multi inheritance issues
     _set_class_attributes(locals(), src=WindowsPath)
+
+    def open(
+        self,
+        mode="r",
+        buffering=-1,
+        encoding=None,
+        errors=None,
+        newline=None,
+        **fsspec_kwargs,
+    ) -> IO[Any]:
+        if fsspec_kwargs:
+            return super(LocalPath, self).open(
+                mode=mode,
+                buffering=buffering,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+                **fsspec_kwargs,
+            )
+        else:
+            return WindowsPath.open(self, mode, buffering, encoding, errors, newline)
 
     if sys.version_info < (3, 12):
 

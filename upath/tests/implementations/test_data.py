@@ -92,6 +92,26 @@ class TestUPathDataPath(BaseTests):
     def test_mkdir_parents_true_exists_ok_false(self):
         pass
 
+    def test_open(self):
+        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
+        with p.open(mode="r") as f:
+            assert f.read() == "hello world"
+        with p.open(mode="rb") as f:
+            assert f.read() == b"hello world"
+
+    def test_open_buffering(self):
+        self.path.open(buffering=-1)
+
+    def test_open_block_size(self):
+        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
+        with p.open(mode="r", block_size=8192) as f:
+            assert f.read() == "hello world"
+
+    def test_open_errors(self):
+        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
+        with p.open(mode="r", encoding="ascii", errors="strict") as f:
+            assert f.read() == "hello world"
+
     def test_read_bytes(self, pathlib_base):
         assert len(self.path.read_bytes()) == 69
 
