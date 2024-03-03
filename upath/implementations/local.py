@@ -185,6 +185,6 @@ class WindowsUPath(WindowsPath, LocalPath):
             _upath_init(obj)
             return obj
 
-        @property
-        def path(self) -> str:
-            return WindowsPath.as_posix(self)
+    @property
+    def path(self) -> str:
+        return WindowsPath.as_posix(self)
