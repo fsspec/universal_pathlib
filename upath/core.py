@@ -314,7 +314,10 @@ class UPath(PathlibPathShim, Path):
         """provide a clean migration path for custom user subclasses"""
 
         # Check if the user subclass has a custom `__new__` method
-        has_custom_new_method = cls.__new__ is not UPath.__new__
+        has_custom_new_method = (
+            cls.__new__ is not UPath.__new__
+            and cls.__name__ not in {"PosixUPath", "WindowsUPath"}
+        )
 
         if has_custom_new_method and cls._protocol_dispatch is None:
             warnings.warn(
