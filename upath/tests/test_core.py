@@ -376,10 +376,12 @@ NORMALIZATIONS = (
 @pytest.mark.parametrize(*NORMALIZATIONS)
 def test_normalize(unnormalized, normalized):
     expected = UPath(normalized)
-    # Normalise only, do not attempt to follow redirects for http:// paths here
-    result = UPath.resolve(UPath(unnormalized))
-    if expected.protocol == "memory":
-        pass
+    pth = UPath(unnormalized)
+    if pth.protocol in {"http", "https"}:
+        # Normalise only, do not attempt to follow redirects for http:// paths here
+        result = pth.resolve(strict=True, follow_redirects=False)
+    else:
+        result = pth.resolve(strict=True)
     assert expected == result
     assert str(expected) == str(result)
 
