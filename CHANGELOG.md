@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.2] - 2024-03-04
+### Fixed
+- upath: fixed comparison with pathlib.Path on py<3.12 (#203)
+- upath: imports of filesystem classes are now lazy (#200)
+- upath: open() now passes fsspec options through to fsspec (#204)
+- upath: fixed regression for args that implement `__fspath__` different from `__str__` (#200)
+- docs: fixed entrypoint examples for UPath subclass registration (#196)
+
 ## [0.2.1] - 2024-02-18
 ### Added
 - upath: added `UPath.joinuri()` (#189)
@@ -118,8 +126,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...HEAD
-[0.2.0]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fsspec/universal_pathlib/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/fsspec/universal_pathlib/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/fsspec/universal_pathlib/compare/v0.1.2...v0.1.3
