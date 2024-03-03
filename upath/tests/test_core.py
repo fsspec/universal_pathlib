@@ -256,7 +256,7 @@ def test_compare_to_pathlib_path_ne():
 
 
 def test_handle_fspath_args(tmp_path):
-    f = os.fspath(tmp_path.joinpath("file.txt"))
+    f = tmp_path.joinpath("file.txt").as_posix()
 
     class X:
         def __str__(self):

@@ -187,4 +187,4 @@ class WindowsUPath(WindowsPath, LocalPath):
 
         @property
         def path(self) -> str:
-            return WindowsPath.__str__(self)
+            return WindowsPath.as_posix(self)
