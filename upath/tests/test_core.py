@@ -248,6 +248,13 @@ def test_copy_path_append():
     assert str(path / "folder2" / "folder3") == str(copy_path)
 
 
+def test_compare_to_pathlib_path_ne():
+    assert UPath("gcs://bucket/folder") != pathlib.Path("gcs://bucket/folder")
+    assert pathlib.Path("gcs://bucket/folder") != UPath("gcs://bucket/folder")
+    assert UPath("/bucket/folder") == pathlib.Path("/bucket/folder")
+    assert pathlib.Path("/bucket/folder") == UPath("/bucket/folder")
+
+
 @pytest.mark.parametrize(
     "urlpath",
     [
