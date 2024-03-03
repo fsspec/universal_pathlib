@@ -120,7 +120,17 @@ class PosixUPath(PosixPath, LocalPath):
         newline=None,
         **fsspec_kwargs,
     ) -> IO[Any]:
-        return PosixPath.open(self, mode, buffering, encoding, errors, newline)
+        if fsspec_kwargs:
+            return super(LocalPath, self).open(
+                mode=mode,
+                buffering=buffering,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+                **fsspec_kwargs,
+            )
+        else:
+            return PosixPath.open(self, mode, buffering, encoding, errors, newline)
 
     if sys.version_info < (3, 12):
 
@@ -174,7 +184,17 @@ class WindowsUPath(WindowsPath, LocalPath):
         newline=None,
         **fsspec_kwargs,
     ) -> IO[Any]:
-        return WindowsPath.open(self, mode, buffering, encoding, errors, newline)
+        if fsspec_kwargs:
+            return super(LocalPath, self).open(
+                mode=mode,
+                buffering=buffering,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+                **fsspec_kwargs,
+            )
+        else:
+            return WindowsPath.open(self, mode, buffering, encoding, errors, newline)
 
     if sys.version_info < (3, 12):
 
