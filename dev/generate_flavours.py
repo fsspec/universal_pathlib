@@ -226,7 +226,7 @@ def get_subclass_methods(cls: type) -> list[str]:  # noqa: C901
     else:
         if isinstance(cls_strip_protocol, staticmethod):
             warnings.warn(
-                f"{cls.__name__}: {cls_strip_protocol!r} is not a classmethod",
+                f"{cls.__name__}: {cls_strip_protocol.__name__!r} is not a classmethod",
                 UserWarning,
                 stacklevel=2,
             )
@@ -234,7 +234,9 @@ def get_subclass_methods(cls: type) -> list[str]:  # noqa: C901
         elif isinstance(cls_strip_protocol, classmethod):
             sp = cls_strip_protocol.__func__ is base_strip_protocol.__func__
         else:
-            errors.append(f"{cls.__name__}: {cls_strip_protocol!r} not a classmethod")
+            errors.append(
+                f"{cls.__name__}: {cls_strip_protocol.__name__!r} not a classmethod"
+            )
 
     # _parent
     pt = None

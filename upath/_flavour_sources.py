@@ -26,7 +26,7 @@ without a direct dependency on the underlying filesystem package.
 #   - simplecache
 # protocol import errors:
 #   - gdrive (Please install gdrivefs for access to Google Drive)
-#   - generic (GenericFileSystem: <function GenericFileSystem._strip_protocol at 0x1179c0400> not a classmethod)
+#   - generic (GenericFileSystem: '_strip_protocol' not a classmethod)
 #
 from __future__ import annotations
 
