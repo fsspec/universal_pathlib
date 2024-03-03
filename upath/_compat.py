@@ -515,3 +515,15 @@ def deprecated(*, python_version: tuple[int, ...]) -> Callable[[F], F]:
             return func
 
     return deprecated_decorator
+
+
+class method_and_classmethod:
+    """Allow a method to be used as both a method and a classmethod"""
+
+    def __init__(self, method):
+        self.method = method
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.method.__get__(owner)
+        return self.method.__get__(instance)

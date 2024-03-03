@@ -17,6 +17,7 @@ from fsspec import get_filesystem_class
 
 from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
+from upath._compat import method_and_classmethod
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath._flavour import LazyFlavourDescriptor
@@ -95,7 +96,6 @@ class UPath(PathlibPathShim, Path):
         _fs_cached: AbstractFileSystem
 
     _protocol_dispatch: bool | None = None
-    # _flavour = FSSpecFlavour()
     _flavour = LazyFlavourDescriptor()
 
     # === upath.UPath constructor =====================================
@@ -526,31 +526,42 @@ class UPath(PathlibPathShim, Path):
 
     # === upath.UPath non-standard changes ============================
 
-    # FIXME:
+    # NOTE:
     #  this is a classmethod on the parent class, but we need to
     #  override it here to make it possible to provide the _flavour
     #  with the correct protocol...
     #  pathlib 3.12 never calls this on the class. Only on the instance.
-    def _parse_path(self, path):
-        if self._flavour.supports_empty_parts:
-            drv, root, rel = self._flavour.splitroot(path)
+    @method_and_classmethod
+    def _parse_path(self_or_cls, path):  # noqa: B902
+        if isinstance(self_or_cls, type):
+            warnings.warn(
+                "UPath._parse_path should not be used as a classmethod."
+                " Please file an issue on the universal_pathlib issue tracker"
+                " and describe your use case.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        flavour = self_or_cls._flavour
+
+        if flavour.supports_empty_parts:
+            drv, root, rel = flavour.splitroot(path)
             if not root:
                 parsed = []
             else:
-                parsed = list(map(sys.intern, rel.split(self._flavour.sep)))
+                parsed = list(map(sys.intern, rel.split(flavour.sep)))
                 if parsed[-1] == ".":
                     parsed[-1] = ""
                 parsed = [x for x in parsed if x != "."]
-                if not self._flavour.has_meaningful_trailing_slash and parsed[-1] == "":
+                if not flavour.has_meaningful_trailing_slash and parsed[-1] == "":
                     parsed.pop()
             return drv, root, parsed
         if not path:
             return "", "", []
-        sep = self._flavour.sep
-        altsep = self._flavour.altsep
+        sep = flavour.sep
+        altsep = flavour.altsep
         if altsep:
             path = path.replace(altsep, sep)
-        drv, root, rel = self._flavour.splitroot(path)
+        drv, root, rel = flavour.splitroot(path)
         if not root and drv.startswith(sep) and not drv.endswith(sep):
             drv_parts = drv.split(sep)
             if len(drv_parts) == 4 and drv_parts[2] not in "?.":
@@ -562,7 +573,18 @@ class UPath(PathlibPathShim, Path):
         parsed = [sys.intern(str(x)) for x in rel.split(sep) if x and x != "."]
         return drv, root, parsed
 
-    def _format_parsed_parts(self, drv, root, tail, **kwargs):
+    @method_and_classmethod
+    def _format_parsed_parts(self_or_cls, drv, root, tail, **kwargs):  # noqa: B902
+        if isinstance(self_or_cls, type):
+            warnings.warn(
+                "UPath._format_parsed_path should not be used as a classmethod."
+                " Please file an issue on the universal_pathlib issue tracker"
+                " and describe your use case.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        flavour = self_or_cls._flavour
+
         if kwargs:
             warnings.warn(
                 "UPath._format_parsed_parts should not be used with"
@@ -579,10 +601,10 @@ class UPath(PathlibPathShim, Path):
                 tail = tail[1:]
 
         if drv or root:
-            return drv + root + self._flavour.sep.join(tail)
-        elif tail and self._flavour.splitdrive(tail[0])[0]:
+            return drv + root + flavour.sep.join(tail)
+        elif tail and flavour.splitdrive(tail[0])[0]:
             tail = ["."] + tail
-        return self._flavour.sep.join(tail)
+        return flavour.sep.join(tail)
 
     # === upath.UPath changes =========================================
 
