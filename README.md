@@ -346,7 +346,7 @@ If you distribute your implementation in your own Python package, you can inform
 
 ```
 # pyproject.toml
-[project.entry-points."unversal_pathlib.implementations"]
+[project.entry-points."universal_pathlib.implementations"]
 myproto = "my_module.submodule:MyPath"
 ```
 
