@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Mapping
 from typing import Sequence
+from typing import TypedDict
 from typing import Union
 from urllib.parse import urlsplit
 
@@ -72,6 +73,12 @@ class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
             return cls.root_marker
 
 
+class ProtocolConfig(TypedDict):
+    netloc_is_anchor: set[str]
+    supports_empty_parts: set[str]
+    meaningful_trailing_slash: set[str]
+
+
 class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     """flavour class for universal_pathlib
 
@@ -95,42 +102,64 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     #   workaround to be able to implement the flavour correctly.
     # TODO:
     #   These settings should be configured on the UPath class?!?
-    #
-    _protocols_with_netloc_anchor = {
-        "http",
-        "https",
-        "s3",
-        "s3a",
-        "gs",
-        "gcs",
-        "az",
-        "adl",
-        "abfs",
-        "webdav+http",
-        "webdav+https",
-    }
-    _protocols_with_empty_parts = {
-        "http",
-        "https",
-        "s3",
-        "s3a",
-        "gs",
-        "gcs",
-        "az",
-        "adl",
-        "abfs",
-    }
-    _protocols_with_meaningful_trailing_slash = {
-        "http",
-        "https",
+    protocol_config: ProtocolConfig = {
+        "netloc_is_anchor": {
+            "http",
+            "https",
+            "s3",
+            "s3a",
+            "gs",
+            "gcs",
+            "az",
+            "adl",
+            "abfs",
+            "webdav+http",
+            "webdav+https",
+        },
+        "supports_empty_parts": {
+            "http",
+            "https",
+            "s3",
+            "s3a",
+            "gs",
+            "gcs",
+            "az",
+            "adl",
+            "abfs",
+        },
+        "meaningful_trailing_slash": {
+            "http",
+            "https",
+        },
     }
 
     def __init__(
         self,
         spec: type[AbstractFileSystem | FileSystemFlavourBase] | AbstractFileSystem,
+        *,
+        netloc_is_anchor: bool = False,
+        supports_empty_parts: bool = False,
+        meaningful_trailing_slash: bool = False,
     ) -> None:
         """initialize the flavour with the given fsspec"""
         self._spec = spec
+
+        # netloc is considered an anchor, influences:
+        #   - splitdrive
+        #   - join
+        self.netloc_is_anchor = bool(netloc_is_anchor)
+
+        # supports empty parts, influences:
+        #   - join
+        #   - UPath._parse_path
+        #   - UPath.iterdir
+        self.supports_empty_parts = bool(supports_empty_parts)
+
+        # meaningful trailing slash, influences:
+        #   - join
+        #   - UPath._parse_path
+        #   - UPath.resolve
+        self.has_meaningful_trailing_slash = bool(meaningful_trailing_slash)
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -139,15 +168,22 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         protocol: str,
     ) -> WrappedFileSystemFlavour:
         """return the fsspec flavour for the given protocol"""
+
+        config = {
+            key: True
+            for key, protocols in cls.protocol_config.items()
+            if protocol in protocols
+        }
+
         # first try to get an already imported fsspec filesystem class
         try:
-            return cls(class_registry[protocol])
+            return cls(class_registry[protocol], **config)
         except KeyError:
             pass
         # next try to get the flavour from the generated flavour registry
         # to avoid imports
         try:
-            return cls(flavour_registry[protocol])
+            return cls(flavour_registry[protocol], **config)
         except KeyError:
             pass
         # finally fallback to a default flavour for the protocol
@@ -159,7 +195,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
                 UserWarning,
                 stacklevel=2,
             )
-        return cls(AnyProtocolFileSystemFlavour)
+        return cls(AnyProtocolFileSystemFlavour, **config)
 
     def __repr__(self):
         if isinstance(self._spec, type):
@@ -179,20 +215,6 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     @property
     def root_marker(self) -> str:
         return self._spec.root_marker
-
-    @property
-    def netloc_is_anchor(self) -> bool:
-        return bool(self._protocols_with_netloc_anchor.intersection(self.protocol))
-
-    @property
-    def supports_empty_parts(self) -> bool:
-        return bool(self._protocols_with_empty_parts.intersection(self.protocol))
-
-    @property
-    def has_meaningful_trailing_slash(self) -> bool:
-        return bool(
-            self._protocols_with_meaningful_trailing_slash.intersection(self.protocol)
-        )
 
     @property
     def local_file(self) -> bool:
