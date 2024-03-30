@@ -1,0 +1,6 @@
+- case: upath_interface
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath("abc"))  # N: Revealed type is "upath.core.UPath"
