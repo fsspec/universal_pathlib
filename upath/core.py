@@ -693,7 +693,7 @@ class UPath(PathlibPathShim, Path):
 
     # === pathlib.Path ================================================
 
-    def stat(self, *, follow_symlinks=True) -> UPathStatResult:
+    def stat(self, *, follow_symlinks=True) -> UPathStatResult:  # type: ignore[override]
         if not follow_symlinks:
             warnings.warn(
                 "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
@@ -746,10 +746,10 @@ class UPath(PathlibPathShim, Path):
     def samefile(self, other_path):
         raise NotImplementedError
 
-    @overload
+    @overload  # type: ignore[override]
     def open(
         self,
-        mode: Literal["r", "w", "a"] = ...,
+        mode: Literal["r", "w", "a"] = "r",
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -760,13 +760,13 @@ class UPath(PathlibPathShim, Path):
     @overload
     def open(
         self,
-        mode: Literal["rb", "wb", "ab"] = ...,
+        mode: Literal["rb", "wb", "ab"],
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
         newline: str = ...,
         **fsspec_kwargs: Any,
-    ) -> BinaryIO: ...
+    ) -> BinaryIO: ...  # type: ignore[override]
 
     def open(
         self,

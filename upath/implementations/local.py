@@ -105,13 +105,13 @@ def _upath_init(inst: PosixUPath | WindowsUPath) -> None:
         inst._init()
 
 
-class PosixUPath(PosixPath, LocalPath):
+class PosixUPath(PosixPath, LocalPath):  # type: ignore[misc]
     __slots__ = ()
 
     # assign all PosixPath methods/attrs to prevent multi inheritance issues
     _set_class_attributes(locals(), src=PosixPath)
 
-    def open(
+    def open(  # type: ignore[override]
         self,
         mode="r",
         buffering=-1,
@@ -136,14 +136,14 @@ class PosixUPath(PosixPath, LocalPath):
 
         def __new__(
             cls, *args, protocol: str | None = None, **storage_options: Any
-        ) -> UPath:
+        ) -> PosixUPath:
             if os.name == "nt":
                 raise NotImplementedError(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
             obj = super().__new__(cls, *args)
             obj._protocol = ""
-            return obj
+            return obj  # type: ignore[return-value]
 
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
@@ -169,13 +169,13 @@ class PosixUPath(PosixPath, LocalPath):
             return PosixPath.__str__(self)
 
 
-class WindowsUPath(WindowsPath, LocalPath):
+class WindowsUPath(WindowsPath, LocalPath):  # type: ignore[misc]
     __slots__ = ()
 
     # assign all WindowsPath methods/attrs to prevent multi inheritance issues
     _set_class_attributes(locals(), src=WindowsPath)
 
-    def open(
+    def open(  # type: ignore[override]
         self,
         mode="r",
         buffering=-1,
@@ -200,14 +200,14 @@ class WindowsUPath(WindowsPath, LocalPath):
 
         def __new__(
             cls, *args, protocol: str | None = None, **storage_options: Any
-        ) -> UPath:
+        ) -> WindowsUPath:
             if os.name != "nt":
                 raise NotImplementedError(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
             obj = super().__new__(cls, *args)
             obj._protocol = ""
-            return obj
+            return obj  # type: ignore[return-value]
 
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any

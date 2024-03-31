@@ -45,7 +45,7 @@ def _get_stat_result_extra_fields() -> tuple[str, ...]:
     sr = os.stat_result(range(os.stat_result.n_fields))
     rd = sr.__reduce__()
     assert isinstance(rd, tuple), "unexpected return os.stat_result.__reduce__"
-    _, (_, extra) = sr.__reduce__()
+    _, (_, extra) = rd
     extra_fields = sorted(extra, key=extra.__getitem__)
     return tuple(extra_fields)
 
@@ -317,7 +317,7 @@ class UPathStatResult:
         for field in self._fields:
             yield int(getattr(self, field))
 
-    def index(self, value: int, start: int = 0, stop: int = None, /) -> int:
+    def index(self, value: int, start: int = 0, stop: int | None = None, /) -> int:
         """the sequence interface index method."""
         if stop is None:
             stop = len(self._seq)

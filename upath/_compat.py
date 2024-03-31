@@ -490,7 +490,8 @@ class FSSpecAccessorShim:
         )
 
 
-F = TypeVar("F")
+RT = TypeVar("RT")
+F = Callable[..., RT]
 
 
 def deprecated(*, python_version: tuple[int, ...]) -> Callable[[F], F]:

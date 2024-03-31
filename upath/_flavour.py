@@ -19,7 +19,7 @@ else:
     TypeAlias = Any
 
 from fsspec.registry import known_implementations
-from fsspec.registry import registry as class_registry
+from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
 
 from upath._compat import deprecated
@@ -40,14 +40,14 @@ __all__ = [
     "upath_get_kwargs_from_url",
 ]
 
-class_registry: Mapping[str, type[AbstractFileSystem]]
+class_registry: Mapping[str, type[AbstractFileSystem]] = _class_registry
 PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
 
 
 class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
-    sep: str = "/"
-    protocol: tuple[str, ...] = ()
-    root_marker: str = "/"
+    sep = "/"
+    protocol = ()
+    root_marker = "/"
 
     @classmethod
     def _strip_protocol(cls, path: str) -> str:
@@ -167,10 +167,11 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     ) -> WrappedFileSystemFlavour:
         """return the fsspec flavour for the given protocol"""
 
+        _c = cls.protocol_config
         config = {
-            key: True
-            for key, protocols in cls.protocol_config.items()
-            if protocol in protocols
+            "netloc_is_anchor": protocol in _c["netloc_is_anchor"],
+            "supports_empty_parts": protocol in _c["supports_empty_parts"],
+            "meaningful_trailing_slash": protocol in _c["meaningful_trailing_slash"],
         }
 
         # first try to get an already imported fsspec filesystem class
@@ -232,10 +233,6 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             out = str(pth)
         return normalize_empty_netloc(out)
 
-    def empty_part_join(self, path: str, *paths: str) -> str:
-        sep = self.sep
-        return sep.join([str_remove_suffix(path, sep), *paths])
-
     def strip_protocol(self, pth: PathOrStr) -> str:
         pth = self.stringify_path(pth)
         return self._spec._strip_protocol(pth)
@@ -269,21 +266,23 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             return path.startswith(self.root_marker)
 
     def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
-        if self.supports_empty_parts:
-            _join = self.empty_part_join
-        else:
-            _join = posixpath.join
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))
             if not drv and not p0:
                 path, *pN = pN
                 drv, p0 = self.splitdrive(path)
-            return drv + _join(p0 or self.sep, *pN)
+            p0 = p0 or self.sep
         else:
             p0 = str(self.strip_protocol(path))
-            pN = map(self.stringify_path, paths)
-            return _join(p0, *pN)
+            pN = list(map(self.stringify_path, paths))
+            drv = ""
+        if self.supports_empty_parts:
+            return drv + self.sep.join(
+                [str_remove_suffix(p0, self.sep), *pN]
+            )
+        else:
+            return drv + posixpath.join(p0, *pN)
 
     def split(self, path: PathOrStr):
         stripped_path = self.strip_protocol(path)
@@ -384,20 +383,21 @@ class LazyFlavourDescriptor:
     """descriptor to lazily get the flavour for a given protocol"""
 
     def __init__(self) -> None:
-        self._owner = None
+        self._owner: type[UPath] | None = None
 
     def __set_name__(self, owner: type[UPath], name: str) -> None:
         # helper to provide a more informative repr
         self._owner = owner
+        self._default_protocol: str | None
         try:
-            self._default_protocol = self._owner.protocols[0]
+            self._default_protocol = self._owner.protocols[0]  # type: ignore
         except (AttributeError, IndexError):
             self._default_protocol = None
 
     def __get__(self, instance: UPath, owner: type[UPath]) -> WrappedFileSystemFlavour:
         if instance is not None:
             return WrappedFileSystemFlavour.from_protocol(instance.protocol)
-        elif self._default_protocol:
+        elif self._default_protocol:  # type: ignore
             return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
         else:
             return default_flavour
@@ -464,7 +464,7 @@ def upath_urijoin(base: str, uri: str) -> str:
         segments = base_parts + us.path.split("/")
         segments[1:-1] = filter(None, segments[1:-1])
 
-    resolved_path = []
+    resolved_path: list[str] = []
 
     for seg in segments:
         if seg == "..":
