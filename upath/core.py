@@ -17,6 +17,12 @@ from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
+
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
@@ -529,12 +535,27 @@ class UPath(PathlibPathShim, Path):
         }
         return _make_instance, (type(self), args, kwargs)
 
-    def with_segments(self, *pathsegments):
+    def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
             *pathsegments,
             protocol=self._protocol,
             **self._storage_options,
         )
+
+    def joinpath(self, *pathsegments: str | os.PathLike[str]) -> Self:
+        return self.with_segments(self, *pathsegments)
+
+    def __truediv__(self, key: str | os.PathLike[str]) -> Self:
+        try:
+            return self.joinpath(key)
+        except TypeError:
+            return NotImplemented
+
+    def __rtruediv__(self, key: str | os.PathLike[str]) -> Self:
+        try:
+            return self.with_segments(key, self)
+        except TypeError:
+            return NotImplemented
 
     # === upath.UPath non-standard changes ============================
 
@@ -642,13 +663,13 @@ class UPath(PathlibPathShim, Path):
         warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
         return os.fsencode(self)
 
-    def as_uri(self):
+    def as_uri(self) -> str:
         return str(self)
 
-    def is_reserved(self):
+    def is_reserved(self) -> bool:
         return False
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """UPaths are considered equal if their protocol, path and
         storage_options are equal."""
         if not isinstance(other, UPath):
@@ -659,7 +680,7 @@ class UPath(PathlibPathShim, Path):
             and self.storage_options == other.storage_options
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """The returned hash is based on the protocol and path only.
 
         Note: in the future, if hash collisions become an issue, we
@@ -681,7 +702,7 @@ class UPath(PathlibPathShim, Path):
         return super().is_relative_to(other, *_deprecated)
 
     @property
-    def name(self):
+    def name(self) -> str:
         tail = self._tail
         if not tail:
             return ""

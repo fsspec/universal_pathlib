@@ -304,21 +304,6 @@ else:
             else:
                 return tuple(self._tail)
 
-        def joinpath(self, *pathsegments):
-            return self.with_segments(self, *pathsegments)
-
-        def __truediv__(self, key):
-            try:
-                return self.joinpath(key)
-            except TypeError:
-                return NotImplemented
-
-        def __rtruediv__(self, key):
-            try:
-                return self.with_segments(key, self)
-            except TypeError:
-                return NotImplemented
-
         @property
         def parent(self):
             drv = self.drive
