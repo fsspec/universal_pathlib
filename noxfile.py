@@ -97,6 +97,7 @@ def typesafety(session):
     session.run(
         "python",
         "-m", "pytest",
+        "-v",
         "-p", "pytest-mypy-plugins",
         "--mypy-pyproject-toml-file", "pyproject.toml",
         "typesafety",

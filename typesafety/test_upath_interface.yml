@@ -1,6 +1,38 @@
-- case: upath_interface
+- case: upath_new
   disable_cache: true
   main: |
     from upath import UPath
 
     reveal_type(UPath("abc"))  # N: Revealed type is "upath.core.UPath"
+- case: upath_joinpath
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath("abc").joinpath("efg"))  # N: Revealed type is "upath.core.UPath"
+- case: upath_truediv
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    a = UPath("abc") / "efg"
+    reveal_type(a)  # N: Revealed type is "upath.core.UPath"
+- case: upath_rtruediv
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    a = "efg" / UPath("abc")
+    reveal_type(a)  # N: Revealed type is "upath.core.UPath"
+- case: upath_as_uri
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath("a").as_uri())  # N: Revealed type is "builtins.str"
+- case: upath_as_posix
+  disable_cache: true
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath("a").as_posix())  # N: Revealed type is "builtins.str"
