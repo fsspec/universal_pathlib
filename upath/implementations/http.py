@@ -32,7 +32,7 @@ class HTTPPath(UPath):
         return args, protocol, storage_options
 
     @property
-    def root(self) -> str:
+    def root(self) -> str:  # type: ignore[override]
         return super().root or "/"
 
     def __str__(self):
