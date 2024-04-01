@@ -24,7 +24,7 @@ class DummyTestFS(LocalFileSystem):
     root_marker = "/"
 
     @classmethod
-    def _strip_protocol(cls, path, **_):
+    def _strip_protocol(cls, path):
         path = stringify_path(path)
         if path.startswith("mock://"):
             path = path[7:]
