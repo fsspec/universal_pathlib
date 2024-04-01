@@ -714,7 +714,11 @@ class UPath(PathlibPathShim, Path):
 
     # === pathlib.Path ================================================
 
-    def stat(self, *, follow_symlinks=True) -> UPathStatResult:  # type: ignore[override]
+    def stat(  # type: ignore[override]
+        self,
+        *,
+        follow_symlinks=True,
+    ) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
                 "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
