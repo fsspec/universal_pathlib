@@ -54,7 +54,7 @@
     from upath import UPath
 
     p = UPath("abc")
-    reveal_type(p._url)  # N: Revealed type is "tuple[builtins.str, builtins.str, builtins.str, builtins.str, builtins.str, fallback=urllib.parse.SplitResult]"
+    reveal_type(p._url)  # NR: Revealed type is "[Tt]uple\[builtins.str, builtins.str, builtins.str, builtins.str, builtins.str, fallback=urllib.parse.SplitResult\]"
 
 # === upath pathlib.PurePath interface ================================
 
