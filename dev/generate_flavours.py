@@ -118,27 +118,17 @@ FIX_METHODS = {
 
 def _fix_abstract_file_system(x: str) -> str:
     x = re.sub(
-        "protocol = 'abstract'",
-        "protocol: str | tuple[str, ...] = 'abstract'",
-        x
+        "protocol = 'abstract'", "protocol: str | tuple[str, ...] = 'abstract'", x
     )
-    x = re.sub(
-        "root_marker = ''",
-        "root_marker: Literal['', '/'] = ''",
-        x
-    )
-    x = re.sub(
-        "sep = '/'",
-        "sep: Literal['/'] = '/'",
-        x
-    )
+    x = re.sub("root_marker = ''", "root_marker: Literal['', '/'] = ''", x)
+    x = re.sub("sep = '/'", "sep: Literal['/'] = '/'", x)
     return x
 
 
 def _fix_azure_blob_file_system(x: str) -> str:
     x = re.sub(
         r"if isinstance\(path, list\):",
-        'if isinstance(path, list):  # type: ignore[unreachable]',
+        "if isinstance(path, list):  # type: ignore[unreachable]",
         x,
     )
     x = re.sub(

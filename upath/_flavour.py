@@ -278,9 +278,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             pN = list(map(self.stringify_path, paths))
             drv = ""
         if self.supports_empty_parts:
-            return drv + self.sep.join(
-                [str_remove_suffix(p0, self.sep), *pN]
-            )
+            return drv + self.sep.join([str_remove_suffix(p0, self.sep), *pN])
         else:
             return drv + posixpath.join(p0, *pN)
 

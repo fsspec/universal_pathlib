@@ -96,10 +96,13 @@ def typesafety(session):
     session.install("-e", ".[tests]")
     session.run(
         "python",
-        "-m", "pytest",
+        "-m",
+        "pytest",
         "-v",
-        "-p", "pytest-mypy-plugins",
-        "--mypy-pyproject-toml-file", "pyproject.toml",
+        "-p",
+        "pytest-mypy-plugins",
+        "--mypy-pyproject-toml-file",
+        "pyproject.toml",
         "typesafety",
     )
 
