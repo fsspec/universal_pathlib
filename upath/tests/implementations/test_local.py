@@ -18,7 +18,7 @@ class TestFSSpecLocal(BaseTests):
         assert isinstance(self.path, LocalPath)
 
     def test_relative_to(self):
-        assert '/file.txt' == UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket")).path 
+        assert 'file.txt' == UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket")).path 
 
 
 @skip_on_windows
