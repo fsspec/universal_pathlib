@@ -318,9 +318,7 @@ def test_relative_to():
     with pytest.raises(ValueError):
         UPath("s3://test_bucket/file.txt", anon=True).relative_to(
             UPath("s3://test_bucket", anon=False)
-        )
-
-    assert '/file.txt' == UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket")).path    
+        )   
 
 
 def test_uri_parsing():

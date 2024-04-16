@@ -17,6 +17,9 @@ class TestFSSpecLocal(BaseTests):
     def test_is_LocalPath(self):
         assert isinstance(self.path, LocalPath)
 
+    def test_relative_to(self):
+        assert '/file.txt' == UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket")).path 
+
 
 @skip_on_windows
 @xfail_if_version("fsspec", lt="2023.10.0", reason="requires fsspec>=2023.10.0")
