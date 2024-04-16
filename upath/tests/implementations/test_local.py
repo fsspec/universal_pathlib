@@ -1,7 +1,7 @@
 import pytest
 
 from upath import UPath
-from upath.implementations.local import LocalPath
+from upath.implementations.local import LocalPath, PosixUPath
 from upath.tests.cases import BaseTests
 from upath.tests.utils import skip_on_windows
 from upath.tests.utils import xfail_if_version
@@ -18,7 +18,14 @@ class TestFSSpecLocal(BaseTests):
         assert isinstance(self.path, LocalPath)
 
     def test_relative_to(self):
-        assert 'file.txt' == UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket")).path 
+        rel_path = UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket"))
+
+        assert isinstance(rel_path, PosixUPath)
+        assert not rel_path.is_absolute()
+        assert 'file.txt' == rel_path.path 
+
+        with pytest.raises(ValueError):
+            UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///prod_bucket"))
 
 
 @skip_on_windows
