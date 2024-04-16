@@ -91,14 +91,7 @@ class FilePath(LocalPath):
                     f"{str(self)!r} and {str(other)!r} have different anchors"
                 )
             parts = [".."] * step + self._tail[len(path._tail) :]
-            return self.with_segments(*parts, protocol="")
-
-    def with_segments(self, *pathsegments, protocol: str | None = None):
-        return type(self)(
-            *pathsegments,
-            protocol=self.protocol if protocol is None else protocol,
-            **self._storage_options,
-        )
+            return UPath(*parts, **self._storage_options)
 
 
 _pathlib_py312_ignore = {
