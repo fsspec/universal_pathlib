@@ -27,6 +27,9 @@ class TestFSSpecLocal(BaseTests):
         with pytest.raises(ValueError):
             UPath("file:///test_bucket/file.txt").relative_to(UPath("file:///prod_bucket"))
 
+        with pytest.raises(ValueError):
+            UPath("file:///test_bucket/file.txt").relative_to(UPath("s3:///test_bucket"))
+
 
 @skip_on_windows
 @xfail_if_version("fsspec", lt="2023.10.0", reason="requires fsspec>=2023.10.0")
