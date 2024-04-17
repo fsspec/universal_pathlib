@@ -65,10 +65,14 @@ class TestAzurePath(BaseTests):
 
     def test_relative_to(self):
         rel_path = UPath("az:///test_bucket/file.txt").relative_to(UPath("az:///test_bucket"))
-
         assert isinstance(rel_path, PosixUPath)
         assert not rel_path.is_absolute()
         assert 'file.txt' == rel_path.path 
+
+        walk_path = UPath("az:///test_bucket/file.txt").relative_to(UPath("az:///other_test_bucket"), walk_up=True)
+        assert isinstance(walk_path, PosixUPath)
+        assert not walk_path.is_absolute()
+        assert '../test_bucket/file.txt' == walk_path.path
 
         with pytest.raises(ValueError):
             UPath("az:///test_bucket/file.txt").relative_to(UPath("az:///prod_bucket"))
