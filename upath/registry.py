@@ -80,6 +80,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "webdav+http": "upath.implementations.webdav.WebdavPath",
         "webdav+https": "upath.implementations.webdav.WebdavPath",
         "github": "upath.implementations.github.GitHubPath",
+        "smb": "upath.implementations.smb.SMBPath",
     }
 
     if TYPE_CHECKING:

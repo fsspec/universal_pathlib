@@ -17,6 +17,7 @@ each of the known filesystems. This will allow us to provide a
 without a direct dependency on the underlying filesystem package.
 
 """
+
 #
 # skipping protocols:
 #   - blockcache
@@ -66,10 +67,10 @@ class FileSystemFlavourBase:
 
 
 class AbstractFileSystemFlavour(FileSystemFlavourBase):
-    __orig_class__ = 'fsspec.spec.AbstractFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = 'abstract'
-    root_marker = ''
+    __orig_class__ = "fsspec.spec.AbstractFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = "abstract"
+    root_marker = ""
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -114,11 +115,11 @@ class AbstractFileSystemFlavour(FileSystemFlavourBase):
 
 
 class AsyncLocalFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'morefs.asyn_local.AsyncLocalFileSystem'
-    __orig_version__ = '0.2.0'
+    __orig_class__ = "morefs.asyn_local.AsyncLocalFileSystem"
+    __orig_version__ = "0.2.0"
     protocol = ()
-    root_marker = '/'
-    sep = '/'
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -143,11 +144,11 @@ class AsyncLocalFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'adlfs.spec.AzureBlobFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('abfs', 'az', 'abfss')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "adlfs.spec.AzureBlobFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("abfs", "az", "abfss")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path: str):
@@ -216,11 +217,11 @@ class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class AzureDatalakeFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'adlfs.gen1.AzureDatalakeFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('adl',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "adlfs.gen1.AzureDatalakeFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("adl",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -238,11 +239,11 @@ class AzureDatalakeFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class BoxFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'boxfs.boxfs.BoxFileSystem'
-    __orig_version__ = '0.2.1'
-    protocol = ('box',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "boxfs.boxfs.BoxFileSystem"
+    __orig_version__ = "0.2.1"
+    protocol = ("box",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path) -> str:
@@ -252,11 +253,11 @@ class BoxFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class DaskWorkerFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.dask.DaskWorkerFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('dask',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.dask.DaskWorkerFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("dask",)
+    root_marker = ""
+    sep = "/"
 
     @staticmethod
     def _get_kwargs_from_urls(path):
@@ -268,27 +269,27 @@ class DaskWorkerFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class DataFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.data.DataFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('data',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.data.DataFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("data",)
+    root_marker = ""
+    sep = "/"
 
 
 class DatabricksFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.dbfs.DatabricksFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('dbfs',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.dbfs.DatabricksFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("dbfs",)
+    root_marker = ""
+    sep = "/"
 
 
 class DictFSFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'morefs.dict.DictFS'
-    __orig_version__ = '0.2.0'
-    protocol = ('dictfs',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "morefs.dict.DictFS"
+    __orig_version__ = "0.2.0"
+    protocol = ("dictfs",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path: str) -> str:
@@ -301,19 +302,19 @@ class DictFSFlavour(AbstractFileSystemFlavour):
 
 
 class DropboxDriveFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'dropboxdrivefs.core.DropboxDriveFileSystem'
-    __orig_version__ = '1.3.1'
-    protocol = ('dropbox',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "dropboxdrivefs.core.DropboxDriveFileSystem"
+    __orig_version__ = "1.3.1"
+    protocol = ("dropbox",)
+    root_marker = ""
+    sep = "/"
 
 
 class FTPFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.ftp.FTPFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('ftp',)
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.ftp.FTPFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("ftp",)
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -328,11 +329,11 @@ class FTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class GCSFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'gcsfs.core.GCSFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('gcs', 'gs')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "gcsfs.core.GCSFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("gcs", "gs")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -405,11 +406,11 @@ class GCSFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class GitFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.git.GitFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('git',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.git.GitFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("git",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -433,11 +434,11 @@ class GitFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class GithubFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.github.GithubFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('github',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.github.GithubFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("github",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -458,11 +459,11 @@ class GithubFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class HTTPFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.http.HTTPFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('http', 'https')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.http.HTTPFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("http", "https")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -479,11 +480,11 @@ class HTTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.arrow.HadoopFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('hdfs', 'arrow_hdfs')
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.arrow.HadoopFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("hdfs", "arrow_hdfs")
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -512,27 +513,27 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.20.3'
-    protocol = ('hf',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "huggingface_hub.hf_file_system.HfFileSystem"
+    __orig_version__ = "0.20.3"
+    protocol = ("hf",)
+    root_marker = ""
+    sep = "/"
 
 
 class JupyterFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.jupyter.JupyterFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('jupyter', 'jlab')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.jupyter.JupyterFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("jupyter", "jlab")
+    root_marker = ""
+    sep = "/"
 
 
 class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'lakefs_spec.spec.LakeFSFileSystem'
-    __orig_version__ = '0.7.0'
-    protocol = ('lakefs',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "lakefs_spec.spec.LakeFSFileSystem"
+    __orig_version__ = "0.7.0"
+    protocol = ("lakefs",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -546,11 +547,11 @@ class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class LibArchiveFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.libarchive.LibArchiveFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('libarchive',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.libarchive.LibArchiveFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("libarchive",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -559,11 +560,11 @@ class LibArchiveFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class LocalFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.local.LocalFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('file', 'local')
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.local.LocalFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("file", "local")
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -588,25 +589,27 @@ class LocalFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class MemFSFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'morefs.memory.MemFS'
-    __orig_version__ = '0.2.0'
-    protocol = ('memfs',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "morefs.memory.MemFS"
+    __orig_version__ = "0.2.0"
+    protocol = ("memfs",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
         if path.startswith("memfs://"):
             path = path[len("memfs://") :]
-        return MemoryFileSystemFlavour._strip_protocol(path)  # pylint: disable=protected-access
+        return MemoryFileSystemFlavour._strip_protocol(
+            path
+        )  # pylint: disable=protected-access
 
 
 class MemoryFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.memory.MemoryFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('memory',)
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.memory.MemoryFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("memory",)
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -619,11 +622,11 @@ class MemoryFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class OCIFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'ocifs.core.OCIFileSystem'
-    __orig_version__ = '1.3.1'
-    protocol = ('oci', 'ocilake')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "ocifs.core.OCIFileSystem"
+    __orig_version__ = "1.3.1"
+    protocol = ("oci", "ocilake")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -647,11 +650,11 @@ class OCIFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class OSSFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'ossfs.core.OSSFileSystem'
-    __orig_version__ = '2023.12.0'
-    protocol = ('oss',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "ossfs.core.OSSFileSystem"
+    __orig_version__ = "2023.12.0"
+    protocol = ("oss",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -687,27 +690,27 @@ class OSSFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class OverlayFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'morefs.overlay.OverlayFileSystem'
-    __orig_version__ = '0.2.0'
-    protocol = ('overlayfs',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "morefs.overlay.OverlayFileSystem"
+    __orig_version__ = "0.2.0"
+    protocol = ("overlayfs",)
+    root_marker = ""
+    sep = "/"
 
 
 class ReferenceFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.reference.ReferenceFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('reference',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.reference.ReferenceFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("reference",)
+    root_marker = ""
+    sep = "/"
 
 
 class S3FileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 's3fs.core.S3FileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('s3', 's3a')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "s3fs.core.S3FileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("s3", "s3a")
+    root_marker = ""
+    sep = "/"
 
     @staticmethod
     def _get_kwargs_from_urls(urlpath):
@@ -730,11 +733,11 @@ class S3FileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class SFTPFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.sftp.SFTPFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('sftp', 'ssh')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.sftp.SFTPFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("sftp", "ssh")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -749,11 +752,11 @@ class SFTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class SMBFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.smb.SMBFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('smb',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.smb.SMBFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("smb",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -769,27 +772,27 @@ class SMBFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class TarFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.tar.TarFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('tar',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.tar.TarFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("tar",)
+    root_marker = ""
+    sep = "/"
 
 
 class WandbFSFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'wandbfs._wandbfs.WandbFS'
-    __orig_version__ = '0.0.2'
-    protocol = ('wandb',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "wandbfs._wandbfs.WandbFS"
+    __orig_version__ = "0.0.2"
+    protocol = ("wandb",)
+    root_marker = ""
+    sep = "/"
 
 
 class WebHDFSFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.webhdfs.WebHDFS'
-    __orig_version__ = '2024.2.0'
-    protocol = ('webhdfs', 'webHDFS')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.webhdfs.WebHDFS"
+    __orig_version__ = "2024.2.0"
+    protocol = ("webhdfs", "webHDFS")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -806,11 +809,11 @@ class WebHDFSFlavour(AbstractFileSystemFlavour):
 
 
 class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'webdav4.fsspec.WebdavFileSystem'
-    __orig_version__ = '0.9.8'
-    protocol = ('webdav', 'dav')
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "webdav4.fsspec.WebdavFileSystem"
+    __orig_version__ = "0.9.8"
+    protocol = ("webdav", "dav")
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path: str) -> str:
@@ -820,11 +823,11 @@ class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec_xrootd.xrootd.XRootDFileSystem'
-    __orig_version__ = '0.2.4'
-    protocol = ('root',)
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "fsspec_xrootd.xrootd.XRootDFileSystem"
+    __orig_version__ = "0.2.4"
+    protocol = ("root",)
+    root_marker = "/"
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path: str | list[str]) -> Any:
@@ -846,11 +849,11 @@ class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class ZipFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'fsspec.implementations.zip.ZipFileSystem'
-    __orig_version__ = '2024.2.0'
-    protocol = ('zip',)
-    root_marker = ''
-    sep = '/'
+    __orig_class__ = "fsspec.implementations.zip.ZipFileSystem"
+    __orig_version__ = "2024.2.0"
+    protocol = ("zip",)
+    root_marker = ""
+    sep = "/"
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -859,8 +862,8 @@ class ZipFileSystemFlavour(AbstractFileSystemFlavour):
 
 
 class _DVCFileSystemFlavour(AbstractFileSystemFlavour):
-    __orig_class__ = 'dvc.fs.dvc._DVCFileSystem'
-    __orig_version__ = '3.47.0'
-    protocol = ('dvc',)
-    root_marker = '/'
-    sep = '/'
+    __orig_class__ = "dvc.fs.dvc._DVCFileSystem"
+    __orig_version__ = "3.47.0"
+    protocol = ("dvc",)
+    root_marker = "/"
+    sep = "/"
