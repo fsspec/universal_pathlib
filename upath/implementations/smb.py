@@ -6,10 +6,6 @@ from upath import UPath
 class SMBPath(UPath):
     __slots__ = ()
 
-    @property
-    def path(self):
-        return "/" + super().path
-
     def mkdir(self, mode=0o777, parents=False, exist_ok=False):
         # smbclient does not support setting mode externally
         if parents and not exist_ok and self.exists():

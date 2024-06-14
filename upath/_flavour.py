@@ -108,6 +108,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             "https",
             "s3",
             "s3a",
+            "smb",
             "gs",
             "gcs",
             "az",
