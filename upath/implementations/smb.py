@@ -1,3 +1,5 @@
+import warnings
+
 import smbprotocol.exceptions
 
 from upath import UPath
@@ -26,3 +28,25 @@ class SMBPath(UPath):
             raise NotADirectoryError(str(self))
         else:
             return super().iterdir()
+
+    def rename(self, target, **kwargs):
+        if "recursive" in kwargs:
+            warnings.warn(
+                "SMBPath.rename(): recursive is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if "maxdepth" in kwargs:
+            warnings.warn(
+                "SMBPath.rename(): maxdepth is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if not isinstance(target, UPath):
+            target = self.parent.joinpath(target).resolve()
+        self.fs.mv(
+            self.path,
+            target.path,
+            **kwargs,
+        )
+        return target
