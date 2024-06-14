@@ -12,6 +12,7 @@ import fsspec
 import pytest
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.local import make_path_posix
+from fsspec.implementations.smb import SMBFileSystem
 from fsspec.registry import _registry
 from fsspec.registry import register_implementation
 from fsspec.utils import stringify_path
@@ -409,3 +410,57 @@ def azure_fixture(azurite_credentials, azure_container):
     finally:
         for blob in client.list_blobs():
             client.delete_blob(blob["name"])
+
+
+@pytest.fixture(scope="module")
+def smb_container():
+    try:
+        pchk = ["docker", "run", "--name", "fsspec_test_smb", "hello-world"]
+        subprocess.check_call(pchk)
+        stop_docker("fsspec_test_smb")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pytest.skip("docker run not available")
+
+    # requires docker
+    container = "fsspec_smb"
+    stop_docker(container)
+    cfg = "-p -u 'testuser;testpass' -s 'home;/share;no;no;no;testuser'"
+    port = 445
+    img = f"docker run --name {container} --detach -p 139:139 -p {port}:445 dperson/samba"  # noqa: E231 E501
+    cmd = f"{img} {cfg}"
+    try:
+        subprocess.check_output(shlex.split(cmd)).strip().decode()
+        time.sleep(2)
+        yield {
+            "host": "localhost",
+            "port": port,
+            "username": "testuser",
+            "password": "testpass",
+            "register_session_retries": 100,  # max ~= 10 seconds
+        }
+    finally:
+        import smbclient  # pylint: disable=import-outside-toplevel
+
+        smbclient.reset_connection_cache()
+        stop_docker(container)
+
+
+@pytest.fixture
+def smb_url(smb_container):
+    smb_url = "smb://{username}:{password}@{host}/home/"
+    smb_url = smb_url.format(**smb_container)
+    return smb_url
+
+
+@pytest.fixture
+def smb_fixture(local_testdir, smb_url, smb_container):
+    smb = SMBFileSystem(
+        host=smb_container["host"],
+        port=smb_container["port"],
+        username=smb_container["username"],
+        password=smb_container["password"],
+    )
+    url = smb_url + "testdir/"
+    smb.put(local_testdir, "/home/testdir", recursive=True)
+    yield url
+    smb.delete("/home/testdir", recursive=True)
