@@ -4,8 +4,10 @@ from packaging.version import Version
 
 from upath import UPath
 from upath.tests.cases import BaseTests
+from upath.tests.utils import skip_on_windows
 
 
+@skip_on_windows
 class TestUPathSMB(BaseTests):
 
     @pytest.fixture(autouse=True)
