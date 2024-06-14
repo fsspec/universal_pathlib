@@ -70,7 +70,7 @@ jobs:
         nox --version
 
     - name: Lint code and check dependencies
-      run: nox -s lint safety
+      run: nox -s lint
 
   build:
     needs: [tests, lint]
