@@ -49,6 +49,24 @@ jobs:
     - name: Run tests
       run: nox -s tests-${{ matrix.fsspec || matrix.pyv }} -- --cov-report=xml
 
+  typesafety:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.pyv }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install nox
+        run: python -m pip install --upgrade nox
+
+      - name: Run typesafety checks
+        run: nox -s typesafety
+
   lint:
     runs-on: ubuntu-latest
 

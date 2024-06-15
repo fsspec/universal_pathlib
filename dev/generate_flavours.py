@@ -43,6 +43,7 @@ from __future__ import annotations
 import logging
 import re
 from typing import Any
+from typing import Literal
 from typing import cast
 from urllib.parse import parse_qs
 from urllib.parse import urlsplit
@@ -66,6 +67,22 @@ flavour_registry: dict[str, type[FileSystemFlavourBase]] = {}
 
 class FileSystemFlavourBase:
     """base class for the fsspec flavours"""
+
+    protocol: str | tuple[str, ...]
+    root_marker: Literal["/", ""]
+    sep: Literal["/"]
+
+    @classmethod
+    def _strip_protocol(cls, path):
+        raise NotImplementedError
+
+    @staticmethod
+    def _get_kwargs_from_urls(path):
+        raise NotImplementedError
+
+    @classmethod
+    def _parent(cls, path):
+        raise NotImplementedError
 
     def __init_subclass__(cls: Any, **kwargs):
         if isinstance(cls.protocol, str):
@@ -99,12 +116,27 @@ FIX_METHODS = {
 }
 
 
+def _fix_abstract_file_system(x: str) -> str:
+    x = re.sub(
+        "protocol = 'abstract'", "protocol: str | tuple[str, ...] = 'abstract'", x
+    )
+    x = re.sub("root_marker = ''", "root_marker: Literal['', '/'] = ''", x)
+    x = re.sub("sep = '/'", "sep: Literal['/'] = '/'", x)
+    return x
+
+
 def _fix_azure_blob_file_system(x: str) -> str:
-    return re.sub(
-        r"host = ops.get\(\"host\", None\)",
-        'host: str | None = ops.get("host", None)',
+    x = re.sub(
+        r"if isinstance\(path, list\):",
+        "if isinstance(path, list):  # type: ignore[unreachable]",
         x,
     )
+    x = re.sub(
+        r"(return \[.*\])",
+        r"\1  # type: ignore[unreachable]",
+        x,
+    )
+    return x
 
 
 def _fix_memfs_file_system(x: str) -> str:
@@ -113,6 +145,15 @@ def _fix_memfs_file_system(x: str) -> str:
         "MemoryFileSystemFlavour",
         x,
     )
+
+
+def _fix_oss_file_system(x: str) -> str:
+    x = re.sub(
+        r"path_string: str = stringify_path\(path\)",
+        "path_string = stringify_path(path)",
+        x,
+    )
+    return x
 
 
 def _fix_xrootd_file_system(x: str) -> str:
@@ -129,8 +170,10 @@ def _fix_xrootd_file_system(x: str) -> str:
 
 
 FIX_SOURCE = {
+    "AbstractFileSystem": _fix_abstract_file_system,
     "AzureBlobFileSystem": _fix_azure_blob_file_system,
     "MemFS": _fix_memfs_file_system,
+    "OSSFileSystem": _fix_oss_file_system,
     "XRootDFileSystem": _fix_xrootd_file_system,
 }
 
@@ -303,7 +346,7 @@ def create_source() -> str:
             AbstractFileSystem,
             ["_strip_protocol", "_get_kwargs_from_urls", "_parent"],
             {},
-            ["protocol", "root_marker"],
+            ["protocol", "root_marker", "sep"],
             cls_suffix=BASE_CLASS_NAME_SUFFIX,
             base_cls="FileSystemFlavourBase",
         )

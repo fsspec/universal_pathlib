@@ -91,6 +91,22 @@ def type_checking(session):
     session.run("python", "-m", "mypy")
 
 
+@nox.session
+def typesafety(session):
+    session.install("-e", ".[tests]")
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "-v",
+        "-p",
+        "pytest-mypy-plugins",
+        "--mypy-pyproject-toml-file",
+        "pyproject.toml",
+        "typesafety",
+    )
+
+
 @nox.session()
 def smoke(session):
     print("please tun `nox -s tests` instead")

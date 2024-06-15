@@ -28,11 +28,11 @@ class HTTPPath(UPath):
     ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
         # allow initialization via a path argument and protocol keyword
         if args and not str(args[0]).startswith(protocol):
-            args = (f"{protocol}://{args[0].lstrip('/')}", *args[1:])
+            args = (f"{protocol}://{str(args[0]).lstrip('/')}", *args[1:])
         return args, protocol, storage_options
 
     @property
-    def root(self) -> str:
+    def root(self) -> str:  # type: ignore[override]
         return super().root or "/"
 
     def __str__(self):

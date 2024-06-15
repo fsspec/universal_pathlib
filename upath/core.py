@@ -10,12 +10,19 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
+from typing import Generator
 from typing import Literal
 from typing import Mapping
+from typing import Sequence
 from typing import TextIO
 from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
@@ -31,6 +38,9 @@ from upath._flavour import upath_urijoin
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
+
+if TYPE_CHECKING:
+    from urllib.parse import SplitResult
 
 __all__ = ["UPath"]
 
@@ -95,10 +105,28 @@ class UPath(PathlibPathShim, Path):
         "__root",
         "__parts",
     )
+
     if TYPE_CHECKING:
+        # public
+        anchor: str
+        drive: str
+        parent: Self
+        parents: Sequence[Self]
+        parts: tuple[str, ...]
+        root: str
+        stem: str
+        suffix: str
+        suffixes: list[str]
+
+        def with_name(self, name: str) -> Self: ...
+        def with_stem(self, stem: str) -> Self: ...
+        def with_suffix(self, suffix: str) -> Self: ...
+
+        # private attributes
         _protocol: str
         _storage_options: dict[str, Any]
         _fs_cached: AbstractFileSystem
+        _tail: str
 
     _protocol_dispatch: bool | None = None
     _flavour = LazyFlavourDescriptor()
@@ -410,30 +438,33 @@ class UPath(PathlibPathShim, Path):
         return self.storage_options
 
     @property
-    def _url(self):
+    def _url(self) -> SplitResult:
         # TODO:
         #   _url should be deprecated, but for now there is no good way of
         #   accessing query parameters from urlpaths...
         return urlsplit(self.as_posix())
 
-    def __getattr__(self, item):
-        if item == "_accessor":
-            warnings.warn(
-                "UPath._accessor is deprecated. Please use"
-                " UPath.fs instead. Follow the"
-                " universal_pathlib==0.2.0 migration guide at"
-                " https://github.com/fsspec/universal_pathlib for more"
-                " information.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            if hasattr(self, "_default_accessor"):
-                accessor_cls = self._default_accessor
+    if not TYPE_CHECKING:
+        # allow mypy to catch missing attributes
+
+        def __getattr__(self, item):
+            if item == "_accessor":
+                warnings.warn(
+                    "UPath._accessor is deprecated. Please use"
+                    " UPath.fs instead. Follow the"
+                    " universal_pathlib==0.2.0 migration guide at"
+                    " https://github.com/fsspec/universal_pathlib for more"
+                    " information.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                if hasattr(self, "_default_accessor"):
+                    accessor_cls = self._default_accessor
+                else:
+                    accessor_cls = FSSpecAccessorShim
+                return accessor_cls.from_path(self)
             else:
-                accessor_cls = FSSpecAccessorShim
-            return accessor_cls.from_path(self)
-        else:
-            raise AttributeError(item)
+                raise AttributeError(item)
 
     @classmethod
     def _from_parts(cls, parts, **kwargs):
@@ -529,12 +560,27 @@ class UPath(PathlibPathShim, Path):
         }
         return _make_instance, (type(self), args, kwargs)
 
-    def with_segments(self, *pathsegments):
+    def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
             *pathsegments,
             protocol=self._protocol,
             **self._storage_options,
         )
+
+    def joinpath(self, *pathsegments: str | os.PathLike[str]) -> Self:
+        return self.with_segments(self, *pathsegments)
+
+    def __truediv__(self, key: str | os.PathLike[str]) -> Self:
+        try:
+            return self.joinpath(key)
+        except TypeError:
+            return NotImplemented
+
+    def __rtruediv__(self, key: str | os.PathLike[str]) -> Self:
+        try:
+            return self.with_segments(key, self)
+        except TypeError:
+            return NotImplemented
 
     # === upath.UPath non-standard changes ============================
 
@@ -642,13 +688,13 @@ class UPath(PathlibPathShim, Path):
         warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
         return os.fsencode(self)
 
-    def as_uri(self):
+    def as_uri(self) -> str:
         return str(self)
 
-    def is_reserved(self):
+    def is_reserved(self) -> bool:
         return False
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """UPaths are considered equal if their protocol, path and
         storage_options are equal."""
         if not isinstance(other, UPath):
@@ -659,7 +705,7 @@ class UPath(PathlibPathShim, Path):
             and self.storage_options == other.storage_options
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """The returned hash is based on the protocol and path only.
 
         Note: in the future, if hash collisions become an issue, we
@@ -667,7 +713,13 @@ class UPath(PathlibPathShim, Path):
         """
         return hash((self.protocol, self.path))
 
-    def relative_to(self, other, /, *_deprecated, walk_up=False):
+    def relative_to(  # type: ignore[override]
+        self,
+        other,
+        /,
+        *_deprecated,
+        walk_up=False,
+    ) -> Self:
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             raise ValueError(
                 "paths have different storage_options:"
@@ -675,13 +727,13 @@ class UPath(PathlibPathShim, Path):
             )
         return super().relative_to(other, *_deprecated, walk_up=walk_up)
 
-    def is_relative_to(self, other, /, *_deprecated):
+    def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             return False
         return super().is_relative_to(other, *_deprecated)
 
     @property
-    def name(self):
+    def name(self) -> str:
         tail = self._tail
         if not tail:
             return ""
@@ -693,7 +745,11 @@ class UPath(PathlibPathShim, Path):
 
     # === pathlib.Path ================================================
 
-    def stat(self, *, follow_symlinks=True) -> UPathStatResult:
+    def stat(  # type: ignore[override]
+        self,
+        *,
+        follow_symlinks=True,
+    ) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
                 "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
@@ -703,23 +759,23 @@ class UPath(PathlibPathShim, Path):
             )
         return UPathStatResult.from_info(self.fs.stat(self.path))
 
-    def lstat(self):
+    def lstat(self) -> UPathStatResult:  # type: ignore[override]
         # return self.stat(follow_symlinks=False)
         raise NotImplementedError
 
-    def exists(self, *, follow_symlinks=True):
+    def exists(self, *, follow_symlinks=True) -> bool:
         return self.fs.exists(self.path)
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         return self.fs.isdir(self.path)
 
-    def is_file(self):
+    def is_file(self) -> bool:
         return self.fs.isfile(self.path)
 
-    def is_mount(self):
+    def is_mount(self) -> bool:
         return False
 
-    def is_symlink(self):
+    def is_symlink(self) -> bool:
         try:
             info = self.fs.info(self.path)
             if "islink" in info:
@@ -728,28 +784,28 @@ class UPath(PathlibPathShim, Path):
             return False
         return False
 
-    def is_junction(self):
+    def is_junction(self) -> bool:
         return False
 
-    def is_block_device(self):
+    def is_block_device(self) -> bool:
         return False
 
-    def is_char_device(self):
+    def is_char_device(self) -> bool:
         return False
 
-    def is_fifo(self):
+    def is_fifo(self) -> bool:
         return False
 
-    def is_socket(self):
+    def is_socket(self) -> bool:
         return False
 
-    def samefile(self, other_path):
+    def samefile(self, other_path) -> bool:
         raise NotImplementedError
 
-    @overload
+    @overload  # type: ignore[override]
     def open(
         self,
-        mode: Literal["r", "w", "a"] = ...,
+        mode: Literal["r", "w", "a"] = "r",
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -758,9 +814,9 @@ class UPath(PathlibPathShim, Path):
     ) -> TextIO: ...
 
     @overload
-    def open(
+    def open(  # type: ignore[override]
         self,
-        mode: Literal["rb", "wb", "ab"] = ...,
+        mode: Literal["rb", "wb", "ab"],
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -805,7 +861,7 @@ class UPath(PathlibPathShim, Path):
             fsspec_kwargs.setdefault("block_size", fsspec_kwargs.pop("buffering"))
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
-    def iterdir(self):
+    def iterdir(self) -> Generator[UPath, None, None]:
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -825,7 +881,9 @@ class UPath(PathlibPathShim, Path):
         del path._str  # fix _str = str(self) assignment
         return path
 
-    def glob(self, pattern: str, *, case_sensitive=None):
+    def glob(
+        self, pattern: str, *, case_sensitive=None
+    ) -> Generator[UPath, None, None]:
         path_pattern = self.joinpath(pattern).path
         sep = self._flavour.sep
         base = self.fs._strip_protocol(self.path)
@@ -833,7 +891,9 @@ class UPath(PathlibPathShim, Path):
             name = str_remove_prefix(str_remove_prefix(name, base), sep)
             yield self.joinpath(name)
 
-    def rglob(self, pattern: str, *, case_sensitive=None):
+    def rglob(
+        self, pattern: str, *, case_sensitive=None
+    ) -> Generator[UPath, None, None]:
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
@@ -861,23 +921,23 @@ class UPath(PathlibPathShim, Path):
                         yield self.joinpath(name)
 
     @classmethod
-    def cwd(cls):
+    def cwd(cls) -> UPath:
         if cls is UPath:
-            return get_upath_class("").cwd()
+            return get_upath_class("").cwd()  # type: ignore[union-attr]
         else:
             raise NotImplementedError
 
     @classmethod
-    def home(cls):
+    def home(cls) -> UPath:
         if cls is UPath:
-            return get_upath_class("").home()
+            return get_upath_class("").home()  # type: ignore[union-attr]
         else:
             raise NotImplementedError
 
-    def absolute(self):
+    def absolute(self) -> Self:
         return self
 
-    def resolve(self, strict: bool = False):
+    def resolve(self, strict: bool = False) -> Self:
         _parts = self.parts
 
         # Do not attempt to normalize path if no parts are dots
@@ -895,19 +955,19 @@ class UPath(PathlibPathShim, Path):
 
         return self.with_segments(*_parts[:1], *resolved)
 
-    def owner(self):
+    def owner(self) -> str:
         raise NotImplementedError
 
-    def group(self):
+    def group(self) -> str:
         raise NotImplementedError
 
-    def readlink(self):
+    def readlink(self) -> Self:
         raise NotImplementedError
 
-    def touch(self, mode=0o666, exist_ok=True):
+    def touch(self, mode=0o666, exist_ok=True) -> None:
         self.fs.touch(self.path, truncate=not exist_ok)
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False) -> None:
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -922,45 +982,63 @@ class UPath(PathlibPathShim, Path):
             if not self.is_dir():
                 raise FileExistsError(str(self))
 
-    def chmod(self, mode, *, follow_symlinks=True):
+    def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:
         raise NotImplementedError
 
-    def unlink(self, missing_ok=False):
+    def lchmod(self, mode: int) -> None:
+        raise NotImplementedError
+
+    def unlink(self, missing_ok: bool = False) -> None:
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError(str(self))
             return
         self.fs.rm(self.path, recursive=False)
 
-    def rmdir(self, recursive: bool = True):  # fixme: non-standard
+    def rmdir(self, recursive: bool = True) -> None:  # fixme: non-standard
         if not self.is_dir():
             raise NotADirectoryError(str(self))
-        if not recursive and next(self.iterdir()):
+        if not recursive and next(self.iterdir()):  # type: ignore[arg-type]
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
     def rename(
-        self, target, *, recursive=False, maxdepth=None, **kwargs
-    ):  # fixme: non-standard
+        self,
+        target: str | os.PathLike[str] | UPath,
+        *,
+        recursive: bool = False,
+        maxdepth: int | None = None,
+        **kwargs: Any,
+    ) -> UPath:  # fixme: non-standard
+        target_: UPath
         if not isinstance(target, UPath):
-            target = self.parent.joinpath(target).resolve()
+            target_ = self.parent.joinpath(target).resolve()
+        else:
+            target_ = target
         self.fs.mv(
             self.path,
-            target.path,
+            target_.path,
             recursive=recursive,
             maxdepth=maxdepth,
             **kwargs,
         )
-        return target
+        return target_
 
-    def replace(self, target):
+    def replace(self, target: str | os.PathLike[str] | UPath) -> UPath:
         raise NotImplementedError  # todo
 
-    def symlink_to(self, target, target_is_directory=False):
+    def symlink_to(  # type: ignore[override]
+        self,
+        target: str | os.PathLike[str] | UPath,
+        target_is_directory: bool = False,
+    ) -> None:
         raise NotImplementedError
 
-    def hardlink_to(self, target):
+    def hardlink_to(  # type: ignore[override]
+        self,
+        target: str | os.PathLike[str] | UPath,
+    ) -> None:
         raise NotImplementedError
 
-    def expanduser(self):
+    def expanduser(self) -> Self:
         raise NotImplementedError

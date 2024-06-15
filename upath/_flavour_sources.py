@@ -33,6 +33,7 @@ from __future__ import annotations
 import logging
 import re
 from typing import Any
+from typing import Literal
 from typing import cast
 from urllib.parse import parse_qs
 from urllib.parse import urlsplit
@@ -54,7 +55,24 @@ flavour_registry: dict[str, type[FileSystemFlavourBase]] = {}
 class FileSystemFlavourBase:
     """base class for the fsspec flavours"""
 
+    protocol: str | tuple[str, ...]
+    root_marker: Literal["/", ""]
+    sep: Literal["/"]
+
+    @classmethod
+    def _strip_protocol(cls, path):
+        raise NotImplementedError
+
+    @staticmethod
+    def _get_kwargs_from_urls(path):
+        raise NotImplementedError
+
+    @classmethod
+    def _parent(cls, path):
+        raise NotImplementedError
+
     def __init_subclass__(cls: Any, **kwargs):
+        protocols: tuple[str, ...]
         if isinstance(cls.protocol, str):
             protocols = (cls.protocol,)
         else:
@@ -68,8 +86,9 @@ class FileSystemFlavourBase:
 class AbstractFileSystemFlavour(FileSystemFlavourBase):
     __orig_class__ = 'fsspec.spec.AbstractFileSystem'
     __orig_version__ = '2024.2.0'
-    protocol = 'abstract'
-    root_marker = ''
+    protocol: str | tuple[str, ...] = 'abstract'
+    root_marker: Literal['', '/'] = ''
+    sep: Literal['/'] = '/'
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -164,8 +183,8 @@ class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
         str
             Returns a path without the protocol
         """
-        if isinstance(path, list):
-            return [cls._strip_protocol(p) for p in path]
+        if isinstance(path, list):  # type: ignore[unreachable]
+            return [cls._strip_protocol(p) for p in path]  # type: ignore[unreachable]
 
         STORE_SUFFIX = ".dfs.core.windows.net"
         logger.debug(f"_strip_protocol for {path}")
@@ -197,7 +216,7 @@ class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
         """Get the account_name from the urlpath and pass to storage_options"""
         ops = infer_storage_options(urlpath)
         out = {}
-        host: str | None = ops.get("host", None)
+        host = ops.get("host", None)
         if host:
             match = re.match(
                 r"(?P<account_name>.+)\.(dfs|blob)\.core\.windows\.net", host
@@ -675,7 +694,7 @@ class OSSFileSystemFlavour(AbstractFileSystemFlavour):
         """
         if isinstance(path, list):
             return [cls._strip_protocol(p) for p in path]
-        path_string: str = stringify_path(path)
+        path_string = stringify_path(path)
         if path_string.startswith("oss://"):
             path_string = path_string[5:]
 
