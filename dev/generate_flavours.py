@@ -41,7 +41,10 @@ IMPORTS = """\
 from __future__ import annotations
 
 import logging
+import os
 import re
+from pathlib import PurePath
+from pathlib import PureWindowsPath
 from typing import Any
 from typing import Literal
 from typing import cast
@@ -147,6 +150,14 @@ def _fix_memfs_file_system(x: str) -> str:
     )
 
 
+def _fix_memory_file_system(x: str) -> str:
+    return re.sub(
+        "LocalFileSystem",
+        "LocalFileSystemFlavour",
+        x,
+    )
+
+
 def _fix_oss_file_system(x: str) -> str:
     x = re.sub(
         r"path_string: str = stringify_path\(path\)",
@@ -173,6 +184,7 @@ FIX_SOURCE = {
     "AbstractFileSystem": _fix_abstract_file_system,
     "AzureBlobFileSystem": _fix_azure_blob_file_system,
     "MemFS": _fix_memfs_file_system,
+    "MemoryFileSystem": _fix_memory_file_system,
     "OSSFileSystem": _fix_oss_file_system,
     "XRootDFileSystem": _fix_xrootd_file_system,
 }
