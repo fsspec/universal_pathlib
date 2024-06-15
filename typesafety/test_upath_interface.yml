@@ -534,5 +534,34 @@
 
     reveal_type(UPath("abc").write_text("efg"))  # N: Revealed type is "builtins.int"
 
-# link_to
-# walk
+- case: upath_link_to_py38
+  disable_cache: false
+  mypy_config: python_version = 3.8
+  main: |
+    from upath import UPath
+
+    UPath("abc").link_to
+
+- case: upath_link_to_py312plus
+  disable_cache: false
+  mypy_config: python_version = 3.12
+  main: |
+    from upath import UPath
+
+    UPath("abc").link_to  # E: "UPath" has no attribute "link_to"  [attr-defined]
+
+- case: upath_walk_py38
+  disable_cache: false
+  mypy_config: python_version = 3.8
+  main: |
+    from upath import UPath
+
+    UPath("abc").walk  # E: "UPath" has no attribute "walk"  [attr-defined]
+
+- case: upath_walk_py312plus
+  disable_cache: false
+  mypy_config: python_version = 3.12
+  main: |
+      from upath import UPath
+
+      reveal_type(UPath("abc").walk())  # N: Revealed type is "typing.Iterator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]]]"

@@ -126,6 +126,7 @@ class UPath(PathlibPathShim, Path):
         _protocol: str
         _storage_options: dict[str, Any]
         _fs_cached: AbstractFileSystem
+        _tail: str
 
     _protocol_dispatch: bool | None = None
     _flavour = LazyFlavourDescriptor()
@@ -443,24 +444,27 @@ class UPath(PathlibPathShim, Path):
         #   accessing query parameters from urlpaths...
         return urlsplit(self.as_posix())
 
-    def __getattr__(self, item):
-        if item == "_accessor":
-            warnings.warn(
-                "UPath._accessor is deprecated. Please use"
-                " UPath.fs instead. Follow the"
-                " universal_pathlib==0.2.0 migration guide at"
-                " https://github.com/fsspec/universal_pathlib for more"
-                " information.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            if hasattr(self, "_default_accessor"):
-                accessor_cls = self._default_accessor
+    if not TYPE_CHECKING:
+        # allow mypy to catch missing attributes
+
+        def __getattr__(self, item):
+            if item == "_accessor":
+                warnings.warn(
+                    "UPath._accessor is deprecated. Please use"
+                    " UPath.fs instead. Follow the"
+                    " universal_pathlib==0.2.0 migration guide at"
+                    " https://github.com/fsspec/universal_pathlib for more"
+                    " information.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                if hasattr(self, "_default_accessor"):
+                    accessor_cls = self._default_accessor
+                else:
+                    accessor_cls = FSSpecAccessorShim
+                return accessor_cls.from_path(self)
             else:
-                accessor_cls = FSSpecAccessorShim
-            return accessor_cls.from_path(self)
-        else:
-            raise AttributeError(item)
+                raise AttributeError(item)
 
     @classmethod
     def _from_parts(cls, parts, **kwargs):

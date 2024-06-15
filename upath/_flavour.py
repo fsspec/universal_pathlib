@@ -228,7 +228,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             out = pth.__fspath__()
         elif isinstance(pth, os.PathLike):
             out = str(pth)
-        elif hasattr(pth, "path"):
+        elif hasattr(pth, "path"):  # type: ignore[unreachable]
             out = pth.path
         else:
             out = str(pth)

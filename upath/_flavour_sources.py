@@ -72,6 +72,7 @@ class FileSystemFlavourBase:
         raise NotImplementedError
 
     def __init_subclass__(cls: Any, **kwargs):
+        protocols: tuple[str, ...]
         if isinstance(cls.protocol, str):
             protocols = (cls.protocol,)
         else:

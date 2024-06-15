@@ -101,7 +101,7 @@ def _upath_init(inst: PosixUPath | WindowsUPath) -> None:
     """helper to initialize the PosixPath/WindowsPath instance with UPath attrs"""
     inst._protocol = ""
     inst._storage_options = {}
-    if sys.version_info < (3, 10):
+    if sys.version_info < (3, 10) and hasattr(inst, "_init"):
         inst._init()
 
 
