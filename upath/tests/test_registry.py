@@ -22,6 +22,7 @@ IMPLEMENTATIONS = {
     "memory",
     "s3",
     "s3a",
+    "smb",
     "webdav",
     "webdav+http",
     "webdav+https",
