@@ -7,7 +7,7 @@ dropboxdrivefs==1.4.1
 gcsfs==2024.6.0
 s3fs==2024.6.0
 ocifs==1.3.1
-webdav4[fsspec]==0.9.8
+webdav4[fsspec]==0.10.0
 # gfrivefs @ git+https://github.com/fsspec/gdrivefs@master broken ...
 morefs[asynclocalfs]==0.2.1
 dvc==3.51.2
