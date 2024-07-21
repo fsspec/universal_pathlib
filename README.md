@@ -51,11 +51,11 @@ dependencies = [
 ]
 ```
 
-See [filesystem_spec/setup.py][fsspec-setup-py] for an overview of the available
+See [filesystem_spec/pyproject.toml][fsspec-pyproject-toml] for an overview of the available
 fsspec extras.
 
-[fsspec-setup-py]:
-  https://github.com/fsspec/filesystem_spec/blob/master/setup.py#L12
+[fsspec-pyproject-toml]:
+  https://github.com/fsspec/filesystem_spec/blob/master/pyproject.toml#L26
 
 
 ## Basic Usage
