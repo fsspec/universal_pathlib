@@ -11,6 +11,7 @@ from typing import Mapping
 from typing import Sequence
 from typing import TypedDict
 from typing import Union
+from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 12):
@@ -299,6 +300,12 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
                 # cases like: "http://example.com/foo/bar"
                 drive = u._replace(path="", query="", fragment="").geturl()
                 rest = u._replace(scheme="", netloc="").geturl()
+                if (
+                    u.path.startswith("//")
+                    and SplitResult("", "", "//", "", "").geturl() == "////"
+                ):
+                    # see: fsspec/universal_pathlib#233
+                    rest = rest[2:]
                 return drive, rest or self.root_marker or self.sep
             else:
                 # cases like: "bucket/some/special/key
