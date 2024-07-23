@@ -1010,11 +1010,25 @@ class UPath(PathlibPathShim, Path):
         maxdepth: int | None = None,
         **kwargs: Any,
     ) -> UPath:  # fixme: non-standard
-        target_: UPath
-        if not isinstance(target, UPath):
-            target_ = self.parent.joinpath(target).resolve()
+        target_protocol = get_upath_protocol(target)
+        if target_protocol:
+            if target_protocol != self.protocol:
+                raise ValueError(
+                    f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
+                )
+            if not isinstance(target, UPath):
+                target_ = UPath(target, **self.storage_options)
+            else:
+                target_ = target
+            # avoid calling .resolve for subclasses of UPath
+            if ".." in target_.parts or "." in target_.parts:
+                target_ = target_.resolve()
         else:
-            target_ = target
+            parent = self.parent
+            # avoid calling .resolve for subclasses of UPath
+            if ".." in parent.parts or "." in parent.parts:
+                parent = parent.resolve()
+            target_ = parent.joinpath(os.path.normpath(target))
         self.fs.mv(
             self.path,
             target_.path,
