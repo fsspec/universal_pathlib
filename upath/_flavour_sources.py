@@ -199,7 +199,7 @@ class AsyncLocalFileSystemFlavour(AbstractFileSystemFlavour):
 
 class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'adlfs.spec.AzureBlobFileSystem'
-    __orig_version__ = '2024.4.1'
+    __orig_version__ = '2024.7.0'
     protocol = ('abfs', 'az', 'abfss')
     root_marker = ''
     sep = '/'
@@ -272,7 +272,7 @@ class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
 
 class AzureDatalakeFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'adlfs.gen1.AzureDatalakeFileSystem'
-    __orig_version__ = '2024.4.1'
+    __orig_version__ = '2024.7.0'
     protocol = ('adl',)
     root_marker = ''
     sep = '/'
@@ -571,7 +571,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.23.4'
+    __orig_version__ = '0.23.5'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -587,7 +587,7 @@ class JupyterFileSystemFlavour(AbstractFileSystemFlavour):
 
 class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'lakefs_spec.spec.LakeFSFileSystem'
-    __orig_version__ = '0.9.0'
+    __orig_version__ = '0.10.0'
     protocol = ('lakefs',)
     root_marker = ''
     sep = '/'
@@ -958,7 +958,7 @@ class ZipFileSystemFlavour(AbstractFileSystemFlavour):
 
 class _DVCFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'dvc.fs.dvc._DVCFileSystem'
-    __orig_version__ = '3.51.2'
+    __orig_version__ = '3.53.1'
     protocol = ('dvc',)
     root_marker = '/'
     sep = '/'

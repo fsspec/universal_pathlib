@@ -107,7 +107,8 @@ def typesafety(session):
     )
 
 
-@nox.session()
-def smoke(session):
-    print("please tun `nox -s tests` instead")
-    raise SystemExit(1)
+@nox.session(python="3.12")
+def generate_flavours(session):
+    session.install("-r", "dev/requirements.txt")
+    with open("upath/_flavour_sources.py", "w") as target:
+        session.run("python", "dev/generate_flavours.py", stdout=target)
