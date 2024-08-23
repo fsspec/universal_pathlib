@@ -1010,6 +1010,8 @@ class UPath(PathlibPathShim, Path):
         maxdepth: int | None = None,
         **kwargs: Any,
     ) -> UPath:  # fixme: non-standard
+        if isinstance(target, str) and self.storage_options:
+            target = UPath(target, **self.storage_options)
         target_protocol = get_upath_protocol(target)
         if target_protocol:
             if target_protocol != self.protocol:
