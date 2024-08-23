@@ -281,28 +281,32 @@ class UPathStatResult:
                 pass
         return self._seq[9]
 
+    @property
+    def st_birthtime(self) -> int | float:
+        """time of creation"""
+        for key in [
+            "birthtime",
+            "created",
+            "creation_time",
+            "timeCreated",
+            "created_at"
+        ]:
+            try:
+                raw_value = self._info[key]
+            except KeyError:
+                continue
+            try:
+                return _convert_value_to_timestamp(raw_value)
+            except (TypeError, ValueError):
+                pass
+        raise AttributeError("birthtime")
+
     # --- extra fields ------------------------------------------------
 
     def __getattr__(self, item):
         if item in self._fields_extra:
             return 0  # fallback default value
         raise AttributeError(item)
-
-    if "st_birthtime" in _fields_extra:
-
-        @property
-        def st_birthtime(self) -> int | float:
-            """time of creation"""
-            for key in ["created", "creation_time", "timeCreated", "created_at"]:
-                try:
-                    raw_value = self._info[key]
-                except KeyError:
-                    continue
-                try:
-                    return _convert_value_to_timestamp(raw_value)
-                except (TypeError, ValueError):
-                    pass
-            return 0
 
     # --- os.stat_result tuple interface ------------------------------
 
