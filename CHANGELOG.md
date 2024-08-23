@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.3] - 2024-08-23
+### Added
+- upath: add st_birthtime as standard field (#254)
+- upath: added SMBPath and tests (#219)
+- ci: added typesafety checks (#212)
+
+### Fixed
+- upath: fix UPath.is_absolute on <3.12 (#256)
+- upath: fix UPath.rename for absolute paths (#225)
+- upath._flavour: fix path parsing due to change in urllib.parse.SplitResult behavior (#236)
+- upath: fixed typing regressions (#212)
+- upath: update flavour sources (#224, #237, #252)
+- docs: fix link to filesystem spec optional dependencies (#232)
+
 ## [0.2.2] - 2024-03-04
 ### Fixed
 - upath: fixed comparison with pathlib.Path on py<3.12 (#203)
@@ -126,7 +140,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fsspec/universal_pathlib/compare/v0.1.4...v0.2.0
