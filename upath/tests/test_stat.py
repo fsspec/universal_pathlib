@@ -56,6 +56,16 @@ def test_stat_ctime_value(pth_file):
     assert ctime > 0
 
 
+def test_stat_birthtime(pth_file):
+    birthtime = pth_file.stat().st_birthtime
+    assert isinstance(birthtime, (float, int))
+
+
+def test_stat_birthtime_value(pth_file):
+    birthtime = pth_file.stat().st_birthtime
+    assert birthtime > 0
+
+
 def test_stat_seq_interface(pth_file):
     assert len(tuple(pth_file.stat())) == os.stat_result.n_sequence_fields
     assert isinstance(pth_file.stat().index(0), int)
