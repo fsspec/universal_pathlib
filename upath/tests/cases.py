@@ -115,6 +115,9 @@ class BaseTests:
 
         assert not (self.path / "not-existing-file.txt").is_file()
 
+    def test_is_absolute(self):
+        assert self.path.is_absolute() is True
+
     def test_is_mount(self):
         assert self.path.is_mount() is False
 
