@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci: added typesafety checks (#212)
 
 ### Fixed
+- upath: fix UPath.is_absolute on <3.12 (#256)
 - upath: fix UPath.rename for absolute paths (#225)
 - upath._flavour: fix path parsing due to change in urllib.parse.SplitResult behavior (#236)
 - upath: fixed typing regressions (#212)
