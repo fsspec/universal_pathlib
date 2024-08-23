@@ -25,15 +25,35 @@ def test_stat_as_info(pth_file):
 
 
 def test_stat_atime(pth_file):
-    assert isinstance(pth_file.stat().st_atime, (float, int))
+    atime = pth_file.stat().st_atime
+    assert isinstance(atime, (float, int))
+
+
+@pytest.mark.xfail(reason="fsspec does not return 'atime'")
+def test_stat_atime_value(pth_file):
+    atime = pth_file.stat().st_atime
+    assert atime > 0
 
 
 def test_stat_mtime(pth_file):
-    assert isinstance(pth_file.stat().st_mtime, (float, int))
+    mtime = pth_file.stat().st_mtime
+    assert isinstance(mtime, (float, int))
+
+
+def test_stat_mtime_value(pth_file):
+    mtime = pth_file.stat().st_mtime
+    assert mtime > 0
 
 
 def test_stat_ctime(pth_file):
-    assert isinstance(pth_file.stat().st_ctime, (float, int))
+    ctime = pth_file.stat().st_ctime
+    assert isinstance(ctime, (float, int))
+
+
+@pytest.mark.xfail(reason="fsspec returns 'created' but not 'ctime'")
+def test_stat_ctime_value(pth_file):
+    ctime = pth_file.stat().st_ctime
+    assert ctime > 0
 
 
 def test_stat_seq_interface(pth_file):
