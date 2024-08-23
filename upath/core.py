@@ -945,6 +945,9 @@ class UPath(PathlibPathShim, Path):
     def absolute(self) -> Self:
         return self
 
+    def is_absolute(self) -> bool:
+        return self._flavour.isabs(str(self))
+
     def resolve(self, strict: bool = False) -> Self:
         _parts = self.parts
 
