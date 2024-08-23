@@ -289,7 +289,7 @@ class UPathStatResult:
             "created",
             "creation_time",
             "timeCreated",
-            "created_at"
+            "created_at",
         ]:
             try:
                 raw_value = self._info[key]
