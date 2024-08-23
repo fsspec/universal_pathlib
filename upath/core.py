@@ -1036,6 +1036,7 @@ class UPath(PathlibPathShim, Path):
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
             target_ = parent.joinpath(os.path.normpath(target))
+        assert isinstance(target_, type(self)), "identical protocols enforced above"
         self.fs.mv(
             self.path,
             target_.path,
