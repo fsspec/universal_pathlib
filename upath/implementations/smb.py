@@ -42,11 +42,4 @@ class SMBPath(UPath):
                 UserWarning,
                 stacklevel=2,
             )
-        if not isinstance(target, UPath):
-            target = self.parent.joinpath(target).resolve()
-        self.fs.mv(
-            self.path,
-            target.path,
-            **kwargs,
-        )
-        return target
+        return super().rename(target)
