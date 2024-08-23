@@ -15,14 +15,17 @@ from typing import Literal
 from typing import Mapping
 from typing import Sequence
 from typing import TextIO
+from typing import TypedDict
 from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 11):
     from typing import Self
+    from typing import Unpack
 else:
     from typing_extensions import Self
+    from typing_extensions import Unpack
 
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
@@ -89,6 +92,11 @@ def _check_fsspec_has_working_glob():
 def _make_instance(cls, args, kwargs):
     """helper for pickling UPath instances"""
     return cls(*args, **kwargs)
+
+
+class _UPathRenameParams(TypedDict, total=False):
+    recursive: bool
+    maxdepth: int | None
 
 
 # accessors are deprecated
@@ -1005,21 +1013,33 @@ class UPath(PathlibPathShim, Path):
     def rename(
         self,
         target: str | os.PathLike[str] | UPath,
-        *,
-        recursive: bool = False,
-        maxdepth: int | None = None,
-        **kwargs: Any,
-    ) -> UPath:  # fixme: non-standard
-        target_: UPath
-        if not isinstance(target, UPath):
-            target_ = self.parent.joinpath(target).resolve()
+        **kwargs: Unpack[_UPathRenameParams],  # note: non-standard compared to pathlib
+    ) -> Self:
+        if isinstance(target, str) and self.storage_options:
+            target = UPath(target, **self.storage_options)
+        target_protocol = get_upath_protocol(target)
+        if target_protocol:
+            if target_protocol != self.protocol:
+                raise ValueError(
+                    f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
+                )
+            if not isinstance(target, UPath):
+                target_ = UPath(target, **self.storage_options)
+            else:
+                target_ = target
+            # avoid calling .resolve for subclasses of UPath
+            if ".." in target_.parts or "." in target_.parts:
+                target_ = target_.resolve()
         else:
-            target_ = target
+            parent = self.parent
+            # avoid calling .resolve for subclasses of UPath
+            if ".." in parent.parts or "." in parent.parts:
+                parent = parent.resolve()
+            target_ = parent.joinpath(os.path.normpath(target))
+        assert isinstance(target_, type(self)), "identical protocols enforced above"
         self.fs.mv(
             self.path,
             target_.path,
-            recursive=recursive,
-            maxdepth=maxdepth,
             **kwargs,
         )
         return target_

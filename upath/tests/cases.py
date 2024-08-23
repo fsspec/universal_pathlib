@@ -282,6 +282,11 @@ class BaseTests:
         assert target == moved
         assert not upath.exists()
         assert moved.exists()
+        # reverse with an absolute path as str
+        back = moved.rename(str(upath))
+        assert back == upath
+        assert not moved.exists()
+        assert back.exists()
 
     def test_rename2(self):
         upath = self.path.joinpath("folder1/file2.txt")
@@ -291,6 +296,11 @@ class BaseTests:
         assert target_path == moved
         assert not upath.exists()
         assert moved.exists()
+        # reverse with a relative path as UPath
+        back = moved.rename(UPath("file2.txt"))
+        assert back == upath
+        assert not moved.exists()
+        assert back.exists()
 
     def test_replace(self):
         pass

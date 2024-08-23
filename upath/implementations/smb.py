@@ -1,8 +1,20 @@
+from __future__ import annotations
+
+import os
+import sys
 import warnings
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+    from typing import Unpack
+else:
+    from typing_extensions import Self
+    from typing_extensions import Unpack
 
 import smbprotocol.exceptions
 
 from upath import UPath
+from upath.core import _UPathRenameParams
 
 
 class SMBPath(UPath):
@@ -29,24 +41,21 @@ class SMBPath(UPath):
         else:
             return super().iterdir()
 
-    def rename(self, target, **kwargs):
-        if "recursive" in kwargs:
+    def rename(
+        self,
+        target: str | os.PathLike[str] | UPath,
+        **kwargs: Unpack[_UPathRenameParams],  # note: non-standard compared to pathlib
+    ) -> Self:
+        if kwargs.pop("recursive", None) is not None:
             warnings.warn(
                 "SMBPath.rename(): recursive is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if "maxdepth" in kwargs:
+        if kwargs.pop("maxdepth", None) is not None:
             warnings.warn(
                 "SMBPath.rename(): maxdepth is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if not isinstance(target, UPath):
-            target = self.parent.joinpath(target).resolve()
-        self.fs.mv(
-            self.path,
-            target.path,
-            **kwargs,
-        )
-        return target
+        return super().rename(target, **kwargs)
