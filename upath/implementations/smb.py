@@ -3,18 +3,18 @@ from __future__ import annotations
 import os
 import sys
 import warnings
+from typing import Any
 
 if sys.version_info >= (3, 11):
     from typing import Self
-    from typing import Unpack
 else:
     from typing_extensions import Self
-    from typing_extensions import Unpack
 
 import smbprotocol.exceptions
 
 from upath import UPath
-from upath.core import _UPathRenameParams
+
+_unset: Any = object()
 
 
 class SMBPath(UPath):
@@ -44,7 +44,10 @@ class SMBPath(UPath):
     def rename(
         self,
         target: str | os.PathLike[str] | UPath,
-        **kwargs: Unpack[_UPathRenameParams],  # note: non-standard compared to pathlib
+        *,
+        recursive: bool = _unset,
+        maxdepth: int | None = _unset,
+        **kwargs: Any,
     ) -> Self:
         if kwargs.pop("recursive", None) is not None:
             warnings.warn(
