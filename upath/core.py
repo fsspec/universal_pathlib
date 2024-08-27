@@ -15,17 +15,14 @@ from typing import Literal
 from typing import Mapping
 from typing import Sequence
 from typing import TextIO
-from typing import TypedDict
 from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 11):
     from typing import Self
-    from typing import Unpack
 else:
     from typing_extensions import Self
-    from typing_extensions import Unpack
 
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
@@ -94,9 +91,7 @@ def _make_instance(cls, args, kwargs):
     return cls(*args, **kwargs)
 
 
-class _UPathRenameParams(TypedDict, total=False):
-    recursive: bool
-    maxdepth: int | None
+_unset: Any = object()
 
 
 # accessors are deprecated
@@ -1016,7 +1011,10 @@ class UPath(PathlibPathShim, Path):
     def rename(
         self,
         target: str | os.PathLike[str] | UPath,
-        **kwargs: Unpack[_UPathRenameParams],  # note: non-standard compared to pathlib
+        *,  # note: non-standard compared to pathlib
+        recursive: bool = _unset,
+        maxdepth: int | None = _unset,
+        **kwargs: Any,
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
             target = UPath(target, **self.storage_options)
@@ -1040,6 +1038,10 @@ class UPath(PathlibPathShim, Path):
                 parent = parent.resolve()
             target_ = parent.joinpath(os.path.normpath(target))
         assert isinstance(target_, type(self)), "identical protocols enforced above"
+        if recursive is not _unset:
+            kwargs["recursive"] = recursive
+        if maxdepth is not _unset:
+            kwargs["maxdepth"] = maxdepth
         self.fs.mv(
             self.path,
             target_.path,

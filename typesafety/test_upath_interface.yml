@@ -565,3 +565,13 @@
       from upath import UPath
 
       reveal_type(UPath("abc").walk())  # N: Revealed type is "typing.Iterator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+
+- case: upath_rename_extra_kwargs
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    UPath("abc").rename("efg")
+    UPath("recursive bool").rename("efg", recursive=True)
+    UPath("maxdepth int").rename("efg", maxdepth=1)
+    UPath("untyped extras").rename("efg", overwrite=True, something="else")
