@@ -49,13 +49,13 @@ class SMBPath(UPath):
         maxdepth: int | None = _unset,
         **kwargs: Any,
     ) -> Self:
-        if kwargs.pop("recursive", None) is not None:
+        if recursive is not _unset:
             warnings.warn(
                 "SMBPath.rename(): recursive is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if kwargs.pop("maxdepth", None) is not None:
+        if maxdepth is not _unset:
             warnings.warn(
                 "SMBPath.rename(): maxdepth is currently ignored.",
                 UserWarning,
