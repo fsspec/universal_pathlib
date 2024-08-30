@@ -1,6 +1,81 @@
 [build-system]
-requires = ["setuptools>=48", "setuptools_scm[toml]>=6.3.1"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "universal_pathlib"
+license = {text = "MIT License"}
+authors = [
+    {name = "Andrew Fulton", email = "andrewfulton9@gmail.com"},
+]
+description = "pathlib api extended to use fsspec backends"
+maintainers = [
+    {name = "Andreas Poehlmann", email = "andreas@poehlmann.io"},
+    {name = "Norman Rzepka"},
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fsspec >=2022.1.0,!=2024.3.1",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Development Status :: 4 - Beta",
+]
+keywords = ["filesystem-spec", "pathlib"]
+dynamic = ["version", "readme"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[project.optional-dependencies]
+tests = [
+    "pytest >=8",
+    "pytest-sugar >=0.9.7",
+    "pytest-cov >=4.1.0",
+    "pytest-mock >=3.12.0",
+    "pylint >=2.17.4",
+    "mypy >=1.10.0",
+    "pytest-mypy-plugins >=3.1.2",
+    "packaging",
+]
+dev = [
+    "adlfs",
+    "aiohttp",
+    "requests",
+    "gcsfs",
+    "s3fs",
+    "moto[s3,server]",
+    "webdav4[fsspec]",
+    "wsgidav",
+    "cheroot",
+    # "hadoop-test-cluster",
+    # "pyarrow",
+    "pydantic",
+    "pydantic-settings",
+    "smbprotocol",
+]
+
+[project.urls]
+Homepage = "https://github.com/fsspec/universal_pathlib"
+Changelog = "https://github.com/fsspec/universal_pathlib/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.package-data]
+upath = ["py.typed"]
+
+[tool.setuptools.packages.find]
+exclude = [
+    "upath.tests",
+    "upath.tests.*",
+]
+namespaces = false
 
 [tool.setuptools_scm]
 write_to = "upath/_version.py"

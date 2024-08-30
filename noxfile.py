@@ -14,7 +14,7 @@ locations = ("upath",)
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.install(".[dev]")
+    session.install(".[tests,dev]")
     session.run(
         "pytest",
         "-m",
@@ -28,7 +28,7 @@ def tests(session: nox.Session) -> None:
 
 @nox.session(python="3.8", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
-    session.install("fsspec==2022.1.0", ".[dev]")
+    session.install("fsspec==2022.1.0", ".[tests,dev]")
     session.run(
         "pytest",
         "-m",
@@ -76,7 +76,7 @@ def develop(session: nox.Session) -> None:
     session.run("virtualenv", venv_dir, silent=True)
 
     python = os.path.join(venv_dir, "bin/python")
-    session.run(python, "-m", "pip", "install", "-e", ".[dev]", external=True)
+    session.run(python, "-m", "pip", "install", "-e", ".[tests,dev]", external=True)
 
 
 @nox.session
