@@ -320,6 +320,19 @@ class BaseTests:
     def test_symlink_to(self):
         pass
 
+    def test_touch_exists_ok_false(self):
+        f = self.path.joinpath("file1.txt")
+        assert f.exists()
+        with pytest.raises(FileExistsError):
+            f.touch(exist_ok=False)
+
+    def test_touch_exists_ok_true(self):
+        f = self.path.joinpath("file1.txt")
+        assert f.exists()
+        data = f.read_text()
+        f.touch(exist_ok=True)
+        assert f.read_text() == data
+
     def test_touch_unlink(self):
         path = self.path.joinpath("test_touch.txt")
         path.touch()
