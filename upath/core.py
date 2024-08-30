@@ -976,7 +976,16 @@ class UPath(PathlibPathShim, Path):
         raise NotImplementedError
 
     def touch(self, mode=0o666, exist_ok=True) -> None:
-        self.fs.touch(self.path, truncate=not exist_ok)
+        exists = self.fs.exists(self.path)
+        if exists and not exist_ok:
+            raise FileExistsError(str(self))
+        if not exists:
+            self.fs.touch(self.path, truncate=True)
+        else:
+            try:
+                self.fs.touch(self.path, truncate=False)
+            except (NotImplementedError, ValueError):
+                pass  # unsupported by filesystem
 
     def mkdir(self, mode=0o777, parents=False, exist_ok=False) -> None:
         if parents and not exist_ok and self.exists():
