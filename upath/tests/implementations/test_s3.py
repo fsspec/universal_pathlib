@@ -53,20 +53,6 @@ class TestUPathS3(BaseTests):
             assert x.name != ""
             assert x.exists()
 
-    def test_touch_unlink(self):
-        path = self.path.joinpath("test_touch.txt")
-        path.touch()
-        assert path.exists()
-        path.unlink()
-        assert not path.exists()
-
-        # should raise FileNotFoundError since file is missing
-        with pytest.raises(FileNotFoundError):
-            path.unlink()
-
-        # file doesn't exists, but missing_ok is True
-        path.unlink(missing_ok=True)
-
     @pytest.mark.parametrize(
         "joiner", [["bucket", "path", "file"], ["bucket/path/file"]]
     )
