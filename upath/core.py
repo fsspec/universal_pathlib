@@ -803,7 +803,12 @@ class UPath(PathlibPathShim, Path):
         return False
 
     def samefile(self, other_path) -> bool:
-        raise NotImplementedError
+        st = self.stat()
+        if isinstance(other_path, UPath):
+            other_st = other_path.stat()
+        else:
+            other_st = self.with_segments(other_path).stat()
+        return st == other_st
 
     @overload  # type: ignore[override]
     def open(

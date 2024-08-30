@@ -142,6 +142,12 @@ class UPathStatResult:
         seq_attrs = ", ".join(map("{0[0]}={0[1]}".format, zip(self._fields, self)))
         return f"{cls_name}({seq_attrs}, info={self._info!r})"
 
+    def __eq__(self, other):
+        if not isinstance(other, UPathStatResult):
+            return NotImplemented
+        else:
+            return self._info == other._info
+
     # --- access to the fsspec info dict ------------------------------
 
     @classmethod
