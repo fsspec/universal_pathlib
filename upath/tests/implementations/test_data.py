@@ -199,3 +199,8 @@ class TestUPathDataPath(BaseTests):
     def test_rmdir_not_empty(self):
         with pytest.raises(NotADirectoryError):
             self.path.rmdir()
+
+    def test_samefile(self):
+        f1 = self.path
+
+        assert f1.samefile(f1) is True
