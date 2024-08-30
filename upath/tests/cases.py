@@ -317,9 +317,6 @@ class BaseTests:
         expected = [*pathlib_base.rglob(pattern)]
         assert len(result) == len(expected)
 
-    def test_samefile(self):
-        pass
-
     def test_symlink_to(self):
         pass
 
@@ -545,3 +542,12 @@ class BaseTests:
         assert p0 == p1
         assert p0 != p2
         assert p1 != p2
+
+    def test_samefile(self):
+        f1 = self.path.joinpath("file1.txt")
+        f2 = self.path.joinpath("file2.txt")
+
+        assert f1.samefile(f2) is False
+        assert f1.samefile(f2.path) is False
+        assert f1.samefile(f1) is True
+        assert f1.samefile(f1.path) is True
