@@ -51,6 +51,7 @@ dev = [
     "s3fs",
     "moto[s3,server]",
     "webdav4[fsspec]",
+    "paramiko",
     "wsgidav",
     "cheroot",
     # "hadoop-test-cluster",

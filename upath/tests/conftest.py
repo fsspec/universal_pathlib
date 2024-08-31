@@ -16,6 +16,7 @@ from fsspec.implementations.smb import SMBFileSystem
 from fsspec.registry import _registry
 from fsspec.registry import register_implementation
 from fsspec.utils import stringify_path
+from packaging.version import Version
 
 from .utils import posixify
 
@@ -464,3 +465,61 @@ def smb_fixture(local_testdir, smb_url, smb_container):
     smb.put(local_testdir, "/home/testdir", recursive=True)
     yield url
     smb.delete("/home/testdir", recursive=True)
+
+
+@pytest.fixture(scope="module")
+def ssh_container():
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
+
+    name = "fsspec_test_ssh"
+    stop_docker(name)
+    cmd = (
+        "docker run"
+        " -d"
+        f" --name {name}"
+        " -e USER_NAME=user"
+        " -e PASSWORD_ACCESS=true"
+        " -e USER_PASSWORD=pass"
+        " -p 2222:2222"
+        " linuxserver/openssh-server:latest"
+    )
+    try:
+        subprocess.run(shlex.split(cmd))
+        time.sleep(1)
+        yield {
+            "host": "localhost",
+            "port": 2222,
+            "username": "user",
+            "password": "pass",
+        }
+    finally:
+        stop_docker(name)
+
+
+@pytest.fixture
+def ssh_fixture(ssh_container, local_testdir, monkeypatch):
+    pytest.importorskip("paramiko", reason="sftp tests require paramiko")
+
+    cls = fsspec.get_filesystem_class("ssh")
+    if cls.put != fsspec.AbstractFileSystem.put:
+        monkeypatch.setattr(cls, "put", fsspec.AbstractFileSystem.put)
+    if Version(fsspec.__version__) < Version("2022.10.0"):
+        from fsspec.callbacks import _DEFAULT_CALLBACK
+
+        monkeypatch.setattr(_DEFAULT_CALLBACK, "relative_update", lambda *args: None)
+
+    fs = fsspec.filesystem(
+        "ssh",
+        host=ssh_container["host"],
+        port=ssh_container["port"],
+        username=ssh_container["username"],
+        password=ssh_container["password"],
+    )
+    fs.put(local_testdir, "/app/testdir", recursive=True)
+    try:
+        yield "ssh://{username}:{password}@{host}:{port}/app/testdir/".format(
+            **ssh_container
+        )
+    finally:
+        fs.delete("/app/testdir", recursive=True)
