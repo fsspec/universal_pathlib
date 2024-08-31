@@ -37,6 +37,7 @@ class TestGCSPath(BaseTests):
         pass
 
 
+@skip_on_windows
 def test_mkdir_in_empty_bucket(docker_gcs):
     fs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
     fs.mkdir("my-fresh-bucket")
