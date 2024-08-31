@@ -257,7 +257,7 @@ class UPath(PathlibPathShim, Path):
                 continue
             # protocols: only identical (or empty "") protocols can combine
             if arg.protocol and arg.protocol != self._protocol:
-                raise TypeError("can't combine different UPath protocols as parts")
+                raise ValueError("can't combine different UPath protocols as parts")
             # storage_options: args may not define other storage_options
             if any(
                 self._storage_options.get(key) != value
