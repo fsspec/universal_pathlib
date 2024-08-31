@@ -35,6 +35,7 @@ from upath._compat import str_remove_suffix
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
+from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
@@ -251,23 +252,12 @@ class UPath(PathlibPathShim, Path):
             self._storage_options = storage_options.copy()
 
         # check that UPath subclasses in args are compatible
-        # --> ensures items in _raw_paths are compatible
-        for arg in args:
-            if not isinstance(arg, UPath):
-                continue
-            # protocols: only identical (or empty "") protocols can combine
-            if arg.protocol and arg.protocol != self._protocol:
-                raise ValueError("can't combine different UPath protocols as parts")
-            # storage_options: args may not define other storage_options
-            if any(
-                self._storage_options.get(key) != value
-                for key, value in arg.storage_options.items()
-            ):
-                # TODO:
-                #   Future versions of UPath could verify that storage_options
-                #   can be combined between UPath instances. Not sure if this
-                #   is really necessary though. A warning might be enough...
-                pass
+        # TODO:
+        #   Future versions of UPath could verify that storage_options
+        #   can be combined between UPath instances. Not sure if this
+        #   is really necessary though. A warning might be enough...
+        if not compatible_protocol(self._protocol, *args):
+            raise ValueError("can't combine incompatible UPath protocols")
 
         # fill ._raw_paths
         if hasattr(self, "_raw_paths"):

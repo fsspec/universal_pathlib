@@ -3,11 +3,16 @@ from __future__ import annotations
 import os
 import re
 from pathlib import PurePath
+from typing import TYPE_CHECKING
 from typing import Any
+
+if TYPE_CHECKING:
+    from upath.core import UPath
 
 __all__ = [
     "get_upath_protocol",
     "normalize_empty_netloc",
+    "compatible_protocol",
 ]
 
 # Regular expression to match fsspec style protocols.
@@ -59,3 +64,15 @@ def normalize_empty_netloc(pth: str) -> str:
             path = m.group("path")
             pth = f"{protocol}:///{path}"
     return pth
+
+
+def compatible_protocol(protocol: str, *args: str | os.PathLike[str] | UPath) -> bool:
+    """check if UPath protocols are compatible"""
+    for arg in args:
+        other_protocol = get_upath_protocol(arg)
+        # consider protocols equivalent if they match up to the first "+"
+        other_protocol = other_protocol.partition("+")[0]
+        # protocols: only identical (or empty "") protocols can combine
+        if other_protocol and other_protocol != protocol:
+            return False
+    return True
