@@ -6,7 +6,6 @@ import sys
 import threading
 import time
 import uuid
-import warnings
 from pathlib import Path
 
 import fsspec
@@ -17,6 +16,7 @@ from fsspec.implementations.smb import SMBFileSystem
 from fsspec.registry import _registry
 from fsspec.registry import register_implementation
 from fsspec.utils import stringify_path
+from packaging.version import Version
 
 from .utils import posixify
 
@@ -498,16 +498,16 @@ def ssh_container():
 
 
 @pytest.fixture
-def ssh_fixture(ssh_container, local_testdir):
+def ssh_fixture(ssh_container, local_testdir, monkeypatch):
     pytest.importorskip("paramiko", reason="sftp tests require paramiko")
 
     cls = fsspec.get_filesystem_class("ssh")
     if cls.put != fsspec.AbstractFileSystem.put:
-        warnings.warn(
-            "monkey-patching ssh put method for tests",
-            stacklevel=2,
-        )
-        cls.put = fsspec.AbstractFileSystem.put
+        monkeypatch.setattr(cls, "put", fsspec.AbstractFileSystem.put)
+    if Version(fsspec.__version__) < Version("2022.10.0"):
+        from fsspec.callbacks import _DEFAULT_CALLBACK
+
+        monkeypatch.setattr(_DEFAULT_CALLBACK, "relative_update", lambda *args: None)
 
     fs = fsspec.filesystem(
         "ssh",
