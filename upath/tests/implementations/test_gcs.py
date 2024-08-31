@@ -1,3 +1,4 @@
+import fsspec
 import pytest
 
 from upath import UPath
@@ -34,3 +35,16 @@ class TestGCSPath(BaseTests):
     @pytest.mark.skip
     def test_makedirs_exist_ok_false(self):
         pass
+
+
+def test_mkdir_in_empty_bucket(docker_gcs):
+    fs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
+    fs.mkdir("my-fresh-bucket")
+    assert "my-fresh-bucket/" in fs.buckets
+    fs.invalidate_cache()
+    del fs
+
+    UPath(
+        "gs://my-fresh-bucket/some-dir/another-dir/file",
+        endpoint_url=docker_gcs,
+    ).parent.mkdir(parents=True, exist_ok=True)
