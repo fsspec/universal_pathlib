@@ -410,3 +410,32 @@ def test_query_string(uri, query_str):
     p = UPath(uri)
     assert str(p).endswith(query_str)
     assert p.path.endswith(query_str)
+
+
+@pytest.mark.parametrize(
+    "base,join",
+    [
+        ("/a", "s3://bucket/b"),
+        ("s3://bucket/a", "gs://b/c"),
+        ("gs://bucket/a", "memory://b/c"),
+        ("memory://bucket/a", "s3://b/c"),
+    ],
+)
+def test_joinpath_on_protocol_mismatch(base, join):
+    with pytest.raises(ValueError):
+        UPath(base).joinpath(UPath(join))
+    with pytest.raises(ValueError):
+        UPath(base) / UPath(join)
+
+
+@pytest.mark.parametrize(
+    "base,join",
+    [
+        ("/a", "s3://bucket/b"),
+        ("s3://bucket/a", "gs://b/c"),
+        ("gs://bucket/a", "memory://b/c"),
+        ("memory://bucket/a", "s3://b/c"),
+    ],
+)
+def test_joinuri_on_protocol_mismatch(base, join):
+    assert UPath(base).joinuri(UPath(join)) == UPath(join)

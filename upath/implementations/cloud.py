@@ -22,6 +22,13 @@ _CloudAccessor = _FSSpecAccessorShim
 class CloudPath(UPath):
     __slots__ = ()
 
+    def __init__(
+        self, *args, protocol: str | None = None, **storage_options: Any
+    ) -> None:
+        super().__init__(*args, protocol=protocol, **storage_options)
+        if not self.drive and len(self.parts) > 1:
+            raise ValueError("non key-like path provided (bucket/container missing)")
+
     @classmethod
     def _transform_init_args(
         cls,

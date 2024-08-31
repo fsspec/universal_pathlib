@@ -12,6 +12,7 @@ from typing import Collection
 from typing import MutableMapping
 from urllib.parse import SplitResult
 
+from upath._protocol import compatible_protocol
 from upath.core import UPath
 
 __all__ = [
@@ -141,6 +142,8 @@ class PosixUPath(PosixPath, LocalPath):  # type: ignore[misc]
                 raise NotImplementedError(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
+            if not compatible_protocol("", *args):
+                raise ValueError("can't combine incompatible UPath protocols")
             obj = super().__new__(cls, *args)
             obj._protocol = ""
             return obj  # type: ignore[return-value]
@@ -151,6 +154,11 @@ class PosixUPath(PosixPath, LocalPath):  # type: ignore[misc]
             super(Path, self).__init__()
             self._drv, self._root, self._parts = type(self)._parse_args(args)
             _upath_init(self)
+
+        def _make_child(self, args):
+            if not compatible_protocol(self._protocol, *args):
+                raise ValueError("can't combine incompatible UPath protocols")
+            return super()._make_child(args)
 
         @classmethod
         def _from_parts(cls, *args, **kwargs):
@@ -205,6 +213,8 @@ class WindowsUPath(WindowsPath, LocalPath):  # type: ignore[misc]
                 raise NotImplementedError(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
+            if not compatible_protocol("", *args):
+                raise ValueError("can't combine incompatible UPath protocols")
             obj = super().__new__(cls, *args)
             obj._protocol = ""
             return obj  # type: ignore[return-value]
@@ -215,6 +225,11 @@ class WindowsUPath(WindowsPath, LocalPath):  # type: ignore[misc]
             super(Path, self).__init__()
             self._drv, self._root, self._parts = self._parse_args(args)
             _upath_init(self)
+
+        def _make_child(self, args):
+            if not compatible_protocol(self._protocol, *args):
+                raise ValueError("can't combine incompatible UPath protocols")
+            return super()._make_child(args)
 
         @classmethod
         def _from_parts(cls, *args, **kwargs):
