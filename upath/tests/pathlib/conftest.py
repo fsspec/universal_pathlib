@@ -14,7 +14,7 @@ TEST_FILES = {
 }
 
 
-def pytest_ignore_collect(collection_path, path, config):
+def pytest_ignore_collect(collection_path):
     """prevents pathlib tests from other python version than the current to be collected
 
     (otherwise we see a lot of skipped tests in the pytest output)

@@ -1,6 +1,8 @@
 """see upath/tests/conftest.py for fixtures
 """
 
+import sys
+
 import fsspec
 import pytest  # noqa: F401
 
@@ -10,6 +12,20 @@ from upath.implementations.cloud import S3Path
 from ..cases import BaseTests
 
 
+def silence_botocore_datetime_deprecation(cls):
+    # botocore uses datetime.datetime.utcnow in 3.12 which is deprecated
+    # see: https://github.com/boto/boto3/issues/3889#issuecomment-1751296363
+    if sys.version_info >= (3, 12):
+        return pytest.mark.filterwarnings(
+            "ignore"
+            r":datetime.datetime.utcnow\(\) is deprecated"
+            ":DeprecationWarning"
+        )(cls)
+    else:
+        return cls
+
+
+@silence_botocore_datetime_deprecation
 class TestUPathS3(BaseTests):
     SUPPORTS_EMPTY_DIRS = False
 
@@ -42,9 +58,9 @@ class TestUPathS3(BaseTests):
         )
 
     def test_iterdir_root(self):
-        client_kwargs = self.path._kwargs["client_kwargs"]
+        client_kwargs = self.path.storage_options["client_kwargs"]
         bucket_path = UPath("s3://other_test_bucket", client_kwargs=client_kwargs)
-        bucket_path.mkdir(mode="private")
+        bucket_path.mkdir()
 
         (bucket_path / "test1.txt").touch()
         (bucket_path / "test2.txt").touch()

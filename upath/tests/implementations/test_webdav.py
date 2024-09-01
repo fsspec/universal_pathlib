@@ -1,10 +1,25 @@
-import pytest  # noqa: F401
+import sys
+
+import pytest
 
 from upath import UPath
 
 from ..cases import BaseTests
 
 
+def silence_wsigdav_deprecation(cls):
+    # wsgidav deprecated python 3.8 while still shipping versions supporting it?
+    if sys.version_info < (3, 9):
+        return pytest.mark.filterwarnings(
+            "ignore"
+            ":Support for Python version less than `3.9` is deprecated"
+            ":DeprecationWarning"
+        )(cls)
+    else:
+        return cls
+
+
+@silence_wsigdav_deprecation
 class TestUPathWebdav(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, webdav_fixture):
