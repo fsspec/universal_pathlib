@@ -37,6 +37,8 @@ jobs:
 
     - name: Set up Python ${{ matrix.pyv }}
       uses: actions/setup-python@v5
+      env:
+        PIP_DISABLE_PIP_VERSION_CHECK: ${{ matrix.pyv == '3.8' && matrix.os == 'macos-latest' }}
       with:
         python-version: ${{ matrix.pyv }}
 
