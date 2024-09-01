@@ -49,10 +49,11 @@ class TestUPathHttp(BaseTests):
             "*.txt",
             pytest.param(
                 "*",
-                marks=(
-                    pytest.mark.xfail(reason="requires fsspec<=2023.10.0")
-                    if Version(fsspec_version) > Version("2023.10.0")
-                    else ()
+                marks=xfail_if_version(
+                    "fsspec",
+                    gt="2023.10.0",
+                    lt="2024.5.0",
+                    reason="requires fsspec>=2024.5.0",
                 ),
             ),
             pytest.param(
