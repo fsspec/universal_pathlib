@@ -42,9 +42,9 @@ class TestUPathS3(BaseTests):
         )
 
     def test_iterdir_root(self):
-        client_kwargs = self.path._kwargs["client_kwargs"]
+        client_kwargs = self.path.storage_options["client_kwargs"]
         bucket_path = UPath("s3://other_test_bucket", client_kwargs=client_kwargs)
-        bucket_path.mkdir(mode="private")
+        bucket_path.mkdir()
 
         (bucket_path / "test1.txt").touch()
         (bucket_path / "test2.txt").touch()

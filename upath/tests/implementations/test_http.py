@@ -171,8 +171,8 @@ def test_query_parameters_passthrough():
         ),
         (
             "http://www.example.com/a/b/index.html",
-            "ftp://other.com/image.png",
-            "ftp://other.com/image.png",
+            "sftp://other.com/image.png",
+            "sftp://other.com/image.png",
         ),
         (
             "http://www.example.com/a/b/index.html",
