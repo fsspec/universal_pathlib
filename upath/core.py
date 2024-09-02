@@ -29,6 +29,7 @@ from fsspec.spec import AbstractFileSystem
 
 from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
+from upath._compat import make_instance
 from upath._compat import method_and_classmethod
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
@@ -85,11 +86,6 @@ def _check_fsspec_has_working_glob():
     m.touch("f/b.txt")
     g = _FSSPEC_HAS_WORKING_GLOB = len(m.glob("**/*.txt")) == 2
     return g
-
-
-def _make_instance(cls, args, kwargs):
-    """helper for pickling UPath instances"""
-    return cls(*args, **kwargs)
 
 
 _unset: Any = object()
@@ -551,7 +547,7 @@ class UPath(PathlibPathShim, Path):
             "protocol": self._protocol,
             **self._storage_options,
         }
-        return _make_instance, (type(self), args, kwargs)
+        return make_instance, (type(self), args, kwargs)
 
     def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(

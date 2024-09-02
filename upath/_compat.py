@@ -26,6 +26,7 @@ __all__ = [
     "str_remove_suffix",
     "FSSpecAccessorShim",
     "deprecated",
+    "make_instance",
 ]
 
 
@@ -475,8 +476,14 @@ class FSSpecAccessorShim:
         )
 
 
+C = TypeVar("C")
 RT = TypeVar("RT")
 F = Callable[..., RT]
+
+
+def make_instance(cls: type[C], args: Any, kwargs: Any) -> C:
+    """helper for pickling UPath instances"""
+    return cls(*args, **kwargs)
 
 
 def deprecated(*, python_version: tuple[int, ...]) -> Callable[[F], F]:
