@@ -13,7 +13,47 @@ from typing import Sequence
 
 __all__ = [
     "UPathStatResult",
+    "_StatResultType",
 ]
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # noqa: C901
+
+    class _StatResultType:
+        @property
+        def st_mode(self) -> int: ...
+        @property
+        def st_ino(self) -> int: ...
+        @property
+        def st_dev(self) -> int: ...
+        @property
+        def st_nlink(self) -> int: ...
+        @property
+        def st_uid(self) -> int: ...
+        @property
+        def st_gid(self) -> int: ...
+        @property
+        def st_size(self) -> int: ...
+        @property
+        def st_atime(self) -> float: ...
+        @property
+        def st_mtime(self) -> float: ...
+        @property
+        def st_ctime(self) -> float: ...
+        @property
+        def st_atime_ns(self) -> int: ...
+        @property
+        def st_mtime_ns(self) -> int: ...
+        @property
+        def st_ctime_ns(self) -> int: ...
+        @property
+        def st_birthtime(self) -> float: ...
+        @property
+        def st_birthtime_ns(self) -> int: ...
+
+else:
+    _StatResultType = object
 
 
 def _convert_value_to_timestamp(value: Any) -> int | float:
@@ -50,7 +90,7 @@ def _get_stat_result_extra_fields() -> tuple[str, ...]:
     return tuple(extra_fields)
 
 
-class UPathStatResult:
+class UPathStatResult(_StatResultType):
     """A stat_result compatible class wrapping fsspec info dicts.
 
     **Note**: It is unlikely that you will ever have to instantiate

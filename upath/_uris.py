@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import os
 import re
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 from typing import Any
+from urllib.parse import urlsplit
 
 if TYPE_CHECKING:
-    from upath.core import UPath
+    from upath.core import UPathLike
 
 __all__ = [
     "get_upath_protocol",
     "normalize_empty_netloc",
     "compatible_protocol",
+    "upath_urijoin",
 ]
 
 # Regular expression to match fsspec style protocols.
@@ -34,7 +35,7 @@ def _match_protocol(pth: str) -> str:
 
 
 def get_upath_protocol(
-    pth: str | PurePath | os.PathLike,
+    pth: UPathLike,
     *,
     protocol: str | None = None,
     storage_options: dict[str, Any] | None = None,
@@ -66,7 +67,7 @@ def normalize_empty_netloc(pth: str) -> str:
     return pth
 
 
-def compatible_protocol(protocol: str, *args: str | os.PathLike[str] | UPath) -> bool:
+def compatible_protocol(protocol: str, *args: UPathLike) -> bool:
     """check if UPath protocols are compatible"""
     for arg in args:
         other_protocol = get_upath_protocol(arg)
@@ -76,3 +77,64 @@ def compatible_protocol(protocol: str, *args: str | os.PathLike[str] | UPath) ->
         if other_protocol and other_protocol != protocol:
             return False
     return True
+
+
+def upath_urijoin(base: str, uri: str) -> str:
+    """Join a base URI and a possibly relative URI to form an absolute
+    interpretation of the latter."""
+    # see:
+    #   https://github.com/python/cpython/blob/ae6c01d9d2/Lib/urllib/parse.py#L539-L605
+    # modifications:
+    #   - removed allow_fragments parameter
+    #   - all schemes are considered to allow relative paths
+    #   - all schemes are considered to allow netloc (revisit this)
+    #   - no bytes support (removes encoding and decoding)
+    if not base:
+        return uri
+    if not uri:
+        return base
+
+    bs = urlsplit(base, scheme="")
+    us = urlsplit(uri, scheme=bs.scheme)
+
+    if us.scheme != bs.scheme:  # or us.scheme not in uses_relative:
+        return uri
+    # if us.scheme in uses_netloc:
+    if us.netloc:
+        return us.geturl()
+    else:
+        us = us._replace(netloc=bs.netloc)
+    # end if
+    if not us.path and not us.fragment:
+        us = us._replace(path=bs.path, fragment=bs.fragment)
+        if not us.query:
+            us = us._replace(query=bs.query)
+        return us.geturl()
+
+    base_parts = bs.path.split("/")
+    if base_parts[-1] != "":
+        del base_parts[-1]
+
+    if us.path[:1] == "/":
+        segments = us.path.split("/")
+    else:
+        segments = base_parts + us.path.split("/")
+        segments[1:-1] = filter(None, segments[1:-1])
+
+    resolved_path: list[str] = []
+
+    for seg in segments:
+        if seg == "..":
+            try:
+                resolved_path.pop()
+            except IndexError:
+                pass
+        elif seg == ".":
+            continue
+        else:
+            resolved_path.append(seg)
+
+    if segments[-1] in (".", ".."):
+        resolved_path.append("")
+
+    return us._replace(path="/".join(resolved_path) or "/").geturl()
