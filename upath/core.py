@@ -308,10 +308,15 @@ class UPath(PathBase, PureUPath):
             upath_cls = cls
 
         # create a new instance
-        if cls is UPath:
+        if upath_cls.__new__ != UPath.__new__:
+            # if the upath_cls has a custom __new__ method, we need to
+            # call it directly to avoid recursion
+            obj: UPath = upath_cls(*args, protocol=pth_protocol, **storage_options)
+
+        elif cls is UPath:
             # we called UPath() directly, and want an instance based on the
             # provided or detected protocol (i.e. upath_cls)
-            obj: UPath = object.__new__(upath_cls)
+            obj = object.__new__(upath_cls)
             obj._protocol = pth_protocol
 
         elif issubclass(cls, upath_cls):

@@ -3,8 +3,10 @@ from __future__ import annotations
 from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
+from typing import Self
 from urllib.parse import SplitResult
 
+from upath._uris import compatible_protocol
 from upath.core import UPath
 
 __all__ = [
@@ -66,6 +68,17 @@ class PosixUPath(PosixPath):
         "_fs_cached",
     )
 
+    def __new__(
+        cls,
+        path: UPathLike,
+        *paths: UPathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
+    ) -> Self:
+        if not compatible_protocol("", path, *paths):
+            raise ValueError("can't combine incompatible UPath protocols")
+        return super().__new__(cls, str(path), *map(str, paths))
+
     def __init__(
         self,
         path: UPathLike,
@@ -73,20 +86,20 @@ class PosixUPath(PosixPath):
         protocol: str | None = None,
         **storage_options: Any,
     ) -> None:
-        super().__init__(path, *paths)
+        super().__init__(self, str(path), *map(str, paths))
         self._protocol = ""
         self._storage_options = {}
 
     protocol = UPath.protocol
     storage_options = UPath.storage_options
+    joinuri = UPath.joinuri
+    fs = UPath.fs
+    _fs_factory = UPath._fs_factory
+    _url = UPath._url
 
     @property
     def path(self) -> str:
         return PosixPath.__str__(self)
-
-    joinuri = UPath.joinuri
-    _url = UPath._url
-    fs = UPath.fs
 
 
 class WindowsUPath(WindowsPath):
@@ -96,6 +109,17 @@ class WindowsUPath(WindowsPath):
         "_fs_cached",
     )
 
+    def __new__(
+        cls,
+        path: UPathLike,
+        *paths: UPathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
+    ) -> Self:
+        if not compatible_protocol("", path, *paths):
+            raise ValueError("can't combine incompatible UPath protocols")
+        return super().__new__(cls, str(path), *map(str, paths))
+
     def __init__(
         self,
         path: UPathLike,
@@ -103,23 +127,23 @@ class WindowsUPath(WindowsPath):
         protocol: str | None = None,
         **storage_options: Any,
     ) -> None:
-        super().__init__(path, *paths)
+        super().__init__(self, str(path), *map(str, paths))
         self._protocol = ""
         self._storage_options = {}
 
     protocol = UPath.protocol
     storage_options = UPath.storage_options
+    joinuri = UPath.joinuri
+    fs = UPath.fs
+    _fs_factory = UPath._fs_factory
+    _url = UPath._url
 
     @property
     def path(self) -> str:
-        return PosixPath.__str__(self)
-
-    joinuri = UPath.joinuri
-    _url = UPath._url
-    fs = UPath.fs
+        return WindowsPath.__str__(self)
 
 
-UPath.register(PosixUPath)
-UPath.register(WindowsUPath)
-LocalPath.register(PosixUPath)
-LocalPath.register(WindowsUPath)
+UPath.register(PosixUPath)  # type: ignore[attr-defined]
+UPath.register(WindowsUPath)  # type: ignore[attr-defined]
+LocalPath.register(PosixUPath)  # type: ignore[attr-defined]
+LocalPath.register(WindowsUPath)  # type: ignore[attr-defined]
