@@ -4,11 +4,16 @@ import sys
 from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
-from typing import Self
 from urllib.parse import SplitResult
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from upath._uris import compatible_protocol
 from upath.core import UPath
+from upath.core import UPathLike
 
 __all__ = [
     "LocalPath",
@@ -16,8 +21,6 @@ __all__ = [
     "PosixUPath",
     "WindowsUPath",
 ]
-
-from upath.core import UPathLike
 
 _LISTDIR_WORKS_ON_FILES: bool | None = None
 
