@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 
 __all__ = [
@@ -15,10 +13,6 @@ __all__ = [
 ]
 
 
-# accessors are deprecated
-_CloudAccessor = _FSSpecAccessorShim
-
-
 class CloudPath(UPath):
     __slots__ = ()
 
@@ -26,8 +20,10 @@ class CloudPath(UPath):
         self, *args, protocol: str | None = None, **storage_options: Any
     ) -> None:
         super().__init__(*args, protocol=protocol, **storage_options)
-        if not self.drive and len(self.parts) > 1:
-            raise ValueError("non key-like path provided (bucket/container missing)")
+        # fixme:
+        #   this was intended to catch UPath("s3:///abc") early...
+        # if not self.drive and len(self.parts) > 1:
+        #     raise ValueError("non key-like path provided (bucket/container missing)")
 
     @classmethod
     def _transform_init_args(
@@ -42,7 +38,7 @@ class CloudPath(UPath):
                 if str(args[0]).startswith("/"):
                     args = (f"{protocol}://{bucket}{args[0]}", *args[1:])
                 else:
-                    args0 = upath_strip_protocol(args[0])
+                    args0 = cls.parser.strip_protocol(args[0])
                     args = (f"{protocol}://{bucket}/", args0, *args[1:])
                 break
         return super()._transform_init_args(args, protocol, storage_options)
@@ -70,6 +66,7 @@ class CloudPath(UPath):
 
 class GCSPath(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("gcs", "gs")
 
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
@@ -83,7 +80,9 @@ class GCSPath(CloudPath):
 
 class S3Path(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("s3", "s3a")
 
 
 class AzurePath(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("abfs", "abfss", "adl", "az")

@@ -1,8 +1,14 @@
+from pathlib import Path
+from pathlib import PosixPath
+
 import pytest
 
 from upath import UPath
 from upath.implementations.local import LocalPath
+from upath.implementations.local import PosixUPath
+from upath.implementations.local import WindowsUPath
 from upath.tests.cases import BaseTests
+from upath.tests.utils import only_on_windows
 from upath.tests.utils import skip_on_windows
 from upath.tests.utils import xfail_if_version
 
@@ -28,3 +34,23 @@ class TestRayIOFSSpecLocal(BaseTests):
 
     def test_is_LocalPath(self):
         assert isinstance(self.path, LocalPath)
+
+
+@skip_on_windows
+def test_posix_upath():
+    path = PosixUPath("/tmp")
+    assert isinstance(path, PosixUPath)
+    assert isinstance(path, LocalPath)
+    assert isinstance(path, UPath)
+    assert isinstance(path, PosixPath)
+    assert isinstance(path, Path)
+
+
+@only_on_windows
+def test_windows_upath():
+    path = WindowsUPath("/tmp")
+    assert isinstance(path, WindowsUPath)
+    assert isinstance(path, LocalPath)
+    assert isinstance(path, UPath)
+    assert isinstance(path, PosixPath)
+    assert isinstance(path, Path)

@@ -55,6 +55,14 @@ class TestUPathGitHubPath(BaseTests):
         pass
 
     @pytest.mark.skip(reason="GitHub filesystem is read-only")
+    def test_rename_target_exists(self):
+        pass
+
+    @pytest.mark.skip(reason="GitHub filesystem is read-only")
+    def test_replace(self):
+        pass
+
+    @pytest.mark.skip(reason="GitHub filesystem is read-only")
     def test_touch_unlink(self):
         pass
 

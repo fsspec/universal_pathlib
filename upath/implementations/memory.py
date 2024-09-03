@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath.core import UPath
 
 __all__ = ["MemoryPath"]
-
-# accessors are deprecated
-_MemoryAccessor = _FSSpecAccessorShim
 
 
 class MemoryPath(UPath):
