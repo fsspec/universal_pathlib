@@ -42,8 +42,12 @@ def xfail_if_no_ssl_connection(func):
     except ImportError:
         return pytest.mark.skip(reason="requests not installed")(func)
     try:
-        requests.get("https://example.com")
-    except (requests.exceptions.ConnectionError, requests.exceptions.SSLError):
+        requests.get("https://example.com", timeout=2)
+    except (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.SSLError,
+        requests.exceptions.Timeout,
+    ):
         return pytest.mark.xfail(reason="No SSL connection")(func)
     else:
         return func

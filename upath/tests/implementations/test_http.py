@@ -1,4 +1,5 @@
 import pytest  # noqa: F401
+from aiohttp import ClientTimeout
 from fsspec import __version__ as fsspec_version
 from fsspec import get_filesystem_class
 from packaging.version import Version
@@ -18,14 +19,18 @@ except ImportError:
 
 
 def test_httppath():
-    path = UPath("http://example.com")
+    path = UPath(
+        "http://example.com", client_kwargs={"timeout": ClientTimeout(total=2)}
+    )
     assert isinstance(path, HTTPPath)
     assert path.exists()
 
 
 @xfail_if_no_ssl_connection
 def test_httpspath():
-    path = UPath("https://example.com")
+    path = UPath(
+        "https://example.com", client_kwargs={"timeout": ClientTimeout(total=2)}
+    )
     assert isinstance(path, HTTPPath)
     assert path.exists()
 
@@ -34,7 +39,9 @@ def test_httpspath():
 class TestUPathHttp(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, http_fixture):
-        self.path = UPath(http_fixture)
+        self.path = UPath(
+            http_fixture, client_kwargs={"timeout": ClientTimeout(total=2)}
+        )
 
     def test_work_at_root(self):
         assert "folder" in (f.name for f in self.path.parent.iterdir())
