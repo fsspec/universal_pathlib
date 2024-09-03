@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import Any
@@ -77,18 +78,21 @@ class PosixUPath(PosixPath):
     ) -> Self:
         if not compatible_protocol("", path, *paths):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__new__(cls, str(path), *map(str, paths))
+        obj = super().__new__(cls, str(path), *map(str, paths))
+        obj._protocol = ""
+        obj._storage_options = {}
+        return obj
 
-    def __init__(
-        self,
-        path: UPathLike,
-        *paths: UPathLike,
-        protocol: str | None = None,
-        **storage_options: Any,
-    ) -> None:
-        super().__init__(self, str(path), *map(str, paths))
-        self._protocol = ""
-        self._storage_options = {}
+    if sys.version_info >= (3, 12):
+
+        def __init__(
+            self,
+            path: UPathLike,
+            *paths: UPathLike,
+            protocol: str | None = None,
+            **storage_options: Any,
+        ) -> None:
+            super().__init__(str(path), *map(str, paths))
 
     protocol = UPath.protocol
     storage_options = UPath.storage_options
@@ -118,18 +122,21 @@ class WindowsUPath(WindowsPath):
     ) -> Self:
         if not compatible_protocol("", path, *paths):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__new__(cls, str(path), *map(str, paths))
+        obj = super().__new__(cls, str(path), *map(str, paths))
+        obj._protocol = ""
+        obj._storage_options = {}
+        return obj
 
-    def __init__(
-        self,
-        path: UPathLike,
-        *paths: UPathLike,
-        protocol: str | None = None,
-        **storage_options: Any,
-    ) -> None:
-        super().__init__(self, str(path), *map(str, paths))
-        self._protocol = ""
-        self._storage_options = {}
+    if sys.version_info >= (3, 12):
+
+        def __init__(
+            self,
+            path: UPathLike,
+            *paths: UPathLike,
+            protocol: str | None = None,
+            **storage_options: Any,
+        ) -> None:
+            super().__init__(str(path), *map(str, paths))
 
     protocol = UPath.protocol
     storage_options = UPath.storage_options
