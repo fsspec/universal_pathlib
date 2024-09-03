@@ -7,14 +7,10 @@ from typing import Any
 
 from fsspec.asyn import sync
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath._stat import UPathStatResult
 from upath.core import UPath
 
 __all__ = ["HTTPPath"]
-
-# accessors are deprecated
-_HTTPAccessor = _FSSpecAccessorShim
 
 
 class HTTPPath(UPath):
