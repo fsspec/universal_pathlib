@@ -8,7 +8,6 @@ from urllib.parse import urlsplit
 from fsspec.registry import known_implementations
 from fsspec.registry import register_implementation
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath._compat import str_remove_prefix
 from upath._compat import str_remove_suffix
 from upath.core import UPath
@@ -22,10 +21,6 @@ if "webdav" not in known_implementations:
     import webdav4.fsspec
 
     register_implementation("webdav", webdav4.fsspec.WebdavFileSystem)
-
-
-# accessors are deprecated
-_WebdavAccessor = _FSSpecAccessorShim
 
 
 class WebdavPath(UPath):
