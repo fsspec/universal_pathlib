@@ -109,8 +109,15 @@ class TestUPathDataPath(BaseTests):
 
     def test_open_errors(self):
         p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        with p.open(mode="r", encoding="ascii", errors="strict") as f:
-            assert f.read() == "hello world"
+        with pytest.warns(UserWarning, match=r"UPath.open\(errors=.*"):
+            with p.open(mode="r", errors="strict") as f:
+                assert f.read() == "hello world"
+
+    def test_open_encoding(self):
+        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
+        with pytest.warns(UserWarning, match=r"UPath.open\(encoding=.*"):
+            with p.open(mode="r", encoding="ascii") as f:
+                assert f.read() == "hello world"
 
     def test_read_bytes(self, pathlib_base):
         assert len(self.path.read_bytes()) == 69
@@ -127,7 +134,16 @@ class TestUPathDataPath(BaseTests):
             self.path.rename("newname")
 
     def test_rename2(self):
-        self.path.rename(self.path)
+        with pytest.raises(NotImplementedError):
+            self.path.rename(UPath("data:base64,SGVsbG8gV29ybGQ="))
+
+    def test_rename_target_exists(self):
+        with pytest.raises(NotImplementedError):
+            self.path.rename("newname")
+
+    def test_replace(self):
+        with pytest.raises(NotImplementedError):
+            self.path.replace("newname")
 
     def test_rglob(self, pathlib_base):
         with pytest.raises(NotImplementedError):
