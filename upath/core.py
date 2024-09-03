@@ -559,6 +559,35 @@ class UPath(PathBase, PureUPath):
                 )
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
+    def read_bytes(
+        self,
+        encoding: str | None = _UNSET,
+        errors: str | None = _UNSET,
+        newline: str | None = _UNSET,
+    ) -> bytes:
+        with self.open("rb", encoding=encoding, errors=errors, newline=newline) as f:
+            return f.read()
+
+    def read_text(
+        self,
+        encoding: str | None = _UNSET,
+        errors: str | None = _UNSET,
+        newline: str | None = _UNSET,
+    ) -> str:
+        with self.open("r", encoding=encoding, errors=errors, newline=newline) as f:
+            return f.read()
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = _UNSET,
+        errors: str | None = _UNSET,
+        newline: str | None = _UNSET,
+    ) -> int:
+        return super().write_text(
+            data, encoding=encoding, errors=errors, newline=newline
+        )
+
     def iterdir(self) -> Generator[Self, None, None]:
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
@@ -643,7 +672,7 @@ class UPath(PathBase, PureUPath):
         maxdepth: int | None = _UNSET,
         **kwargs: Any,
     ) -> Self:
-        if self.with_segments(target).exists():
+        if os.name == "nt" and self.with_segments(self, target).exists():
             raise FileExistsError(str(target))
         return self.replace(target, recursive=recursive, maxdepth=maxdepth, **kwargs)
 
