@@ -133,7 +133,7 @@ class PureUPath(PurePathBase):
         #   support checking if there is a UPath subclass for the protocol
         #   and use its _parse_storage_options method to parse the storage_options
         self._storage_options = self._parse_storage_options(
-            str(self), self._protocol, storage_options
+            str(_paths[0]), self._protocol, storage_options
         )
 
     @classmethod
