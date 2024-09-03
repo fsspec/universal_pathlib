@@ -4,6 +4,7 @@ import re
 import stat
 import sys
 import warnings
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -255,10 +256,17 @@ class BaseTests:
         with p.open(mode="r", block_size=8192) as f:
             assert f.read() == "hello world"
 
+    def test_open_encoding(self):
+        p = self.path.joinpath("file1.txt")
+        with pytest.warns(UserWarning, match=r"UPath.open\(encoding=.*"):
+            with p.open(mode="r", encoding="ascii") as f:
+                assert f.read() == "hello world"
+
     def test_open_errors(self):
         p = self.path.joinpath("file1.txt")
-        with p.open(mode="r", encoding="ascii", errors="strict") as f:
-            assert f.read() == "hello world"
+        with pytest.warns(UserWarning, match=r"UPath.open\(errors=.*"):
+            with p.open(mode="r", errors="strict") as f:
+                assert f.read() == "hello world"
 
     def test_owner(self):
         with pytest.raises(NotImplementedError):
@@ -306,8 +314,28 @@ class BaseTests:
         assert not moved.exists()
         assert back.exists()
 
+    def test_rename_target_exists(self):
+        upath = self.path.joinpath("file1.txt")
+        target = self.path.joinpath("file2.txt")
+        assert upath.exists()
+        assert target.exists()
+        if os.name == "nt":
+            cm = pytest.raises(FileExistsError)
+        else:
+            cm = nullcontext()
+        with cm:
+            upath.rename(target)
+
     def test_replace(self):
-        pass
+        upath = self.path.joinpath("file1.txt")
+        content = upath.read_text()
+        target = self.path.joinpath("file2.txt")
+        assert upath.exists()
+        assert target.exists()
+        x = upath.replace(target)
+        assert x == target
+        assert not upath.exists()
+        assert content == target.read_text()
 
     def test_resolve(self):
         pass
