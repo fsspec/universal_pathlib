@@ -37,7 +37,7 @@ else:
 C = TypeVar("C")
 
 
-def make_instance(cls: type[C], args: tuple[Any], kwargs: dict[str, Any]) -> C:
+def make_instance(cls: type[C], args: tuple[Any, ...], kwargs: dict[str, Any]) -> C:
     """helper for pickling UPath instances"""
     return cls(*args, **kwargs)
 
