@@ -571,7 +571,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.23.5'
+    __orig_version__ = '0.24.6'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -958,7 +958,7 @@ class ZipFileSystemFlavour(AbstractFileSystemFlavour):
 
 class _DVCFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'dvc.fs.dvc._DVCFileSystem'
-    __orig_version__ = '3.53.1'
+    __orig_version__ = '3.55.1'
     protocol = ('dvc',)
     root_marker = '/'
     sep = '/'
