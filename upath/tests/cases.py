@@ -181,8 +181,9 @@ class BaseTests:
             self.path.lchmod(mode=77)
 
     def test_lstat(self):
-        with pytest.raises(NotImplementedError):
-            self.path.lstat()
+        with pytest.warns(UserWarning, match=r"[A-Za-z]+.stat"):
+            st = self.path.lstat()
+            assert st is not None
 
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")

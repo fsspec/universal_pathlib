@@ -745,16 +745,15 @@ class UPath(PathlibPathShim, Path):
     ) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
-                "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
-                " currently ignored.",
+                f"{type(self).__name__}.stat(follow_symlinks=False):"
+                " is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
         return UPathStatResult.from_info(self.fs.stat(self.path))
 
     def lstat(self) -> UPathStatResult:  # type: ignore[override]
-        # return self.stat(follow_symlinks=False)
-        raise NotImplementedError
+        return self.stat(follow_symlinks=False)
 
     def exists(self, *, follow_symlinks=True) -> bool:
         return self.fs.exists(self.path)
