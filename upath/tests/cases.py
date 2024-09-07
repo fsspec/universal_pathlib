@@ -181,7 +181,7 @@ class BaseTests:
             self.path.lchmod(mode=77)
 
     def test_lstat(self):
-        with pytest.warns(UserWarning, match="UPath.stat"):
+        with pytest.warns(UserWarning, match=r"[A-Za-z]+.stat"):
             st = self.path.lstat()
             assert st is not None
 
