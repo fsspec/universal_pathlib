@@ -135,6 +135,9 @@ class UPath(PathlibPathShim, Path):
     _protocol_dispatch: bool | None = None
     _flavour = LazyFlavourDescriptor()
 
+    if sys.version_info >= (3, 13):
+        parser = _flavour
+
     # === upath.UPath constructor =====================================
 
     def __new__(
@@ -868,7 +871,7 @@ class UPath(PathlibPathShim, Path):
                 continue
             # only want the path name with iterdir
             _, _, name = str_remove_suffix(name, "/").rpartition(self._flavour.sep)
-            yield self._make_child_relpath(name)
+            yield self.with_segments(*self.parts, name)
 
     def _scandir(self):
         raise NotImplementedError  # todo
