@@ -46,7 +46,7 @@ project as a dependency if you want to use it with `s3` and `http` filesystems:
 name = "myproject"
 requires-python = ">=3.8"
 dependencies = [
-    "universal_pathlib>=0.2.0",
+    "universal_pathlib>=0.2.5",
     "fsspec[s3,http]",
 ]
 ```
@@ -83,7 +83,7 @@ For more examples, see the [example notebook here][example-notebook].
 
 ### Currently supported filesystems (and protocols)
 
-- `file:` Local filesystem
+- `file:` and `local:` Local filesystem
 - `memory:` Ephemeral filesystem in RAM
 - `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage _(requires `adlfs`)_
 - `data:` RFC 2397 style data URLs _(requires `fsspec>=2023.12.2`)_
@@ -92,6 +92,8 @@ For more examples, see the [example notebook here][example-notebook].
 - `hdfs:` Hadoop distributed filesystem
 - `gs:` and `gcs:` Google Cloud Storage _(requires `gcsfs`)_
 - `s3:` and `s3a:` AWS S3 _(requires `s3fs` to be installed)_
+- `sftp:` and `ssh:` SFTP and SSH filesystems _(requires `paramiko`)_
+- `smb:` SMB filesystems _(requires `smbprotocol`)_
 - `webdav`, `webdav+http:` and `webdav+https:` WebDAV-based filesystem on top of
   HTTP(S) _(requires `webdav4[fsspec]`)_
 
