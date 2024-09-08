@@ -50,7 +50,8 @@ dev = [
     "requests",
     "gcsfs",
     "s3fs",
-    "moto[s3,server]",
+    # exclude moto installation on 3.13 windows until pywin32 wheels are available:
+    "moto[s3,server]; python_version<='3.12' or (python_version>'3.12' and os_name!='nt') ",
     "webdav4[fsspec]",
     "paramiko",
     "wsgidav",
