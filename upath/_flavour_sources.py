@@ -140,6 +140,7 @@ class AsyncLocalFileSystemFlavour(AbstractFileSystemFlavour):
     protocol = ()
     root_marker = '/'
     sep = '/'
+    local_file = True
 
     @classmethod
     def _strip_protocol(cls, path):
@@ -622,6 +623,7 @@ class LocalFileSystemFlavour(AbstractFileSystemFlavour):
     protocol = ('file', 'local')
     root_marker = '/'
     sep = '/'
+    local_file = True
 
     @classmethod
     def _strip_protocol(cls, path):
