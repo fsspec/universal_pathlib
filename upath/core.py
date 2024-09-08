@@ -135,6 +135,9 @@ class UPath(PathlibPathShim, Path):
     _protocol_dispatch: bool | None = None
     _flavour = LazyFlavourDescriptor()
 
+    if sys.version_info >= (3, 13):
+        parser = _flavour
+
     # === upath.UPath constructor =====================================
 
     def __new__(
