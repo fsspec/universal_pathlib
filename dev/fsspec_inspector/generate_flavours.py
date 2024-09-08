@@ -336,6 +336,8 @@ def generate_class_source_code(
         s.append(f"    {attr} = {value!r}")
     for attr in attributes:
         s.append(f"    {attr} = {getattr(cls, attr)!r}")
+    if getattr(cls, "local_file", False):
+        s.append("    local_file = True")
     s.append("")
     for method in methods:
         s.append(inspect.getsource(getattr(cls, method)))
