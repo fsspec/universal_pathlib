@@ -45,7 +45,7 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs",
+    "adlfs; python_version<='3.12' or (python_version>'3.12' and os_name!='nt') ",
     "aiohttp",
     "requests",
     "gcsfs",
