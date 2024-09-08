@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-latest]
-        pyv: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        pyv: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         fsspec: ['']
 
         include:
@@ -41,6 +41,7 @@ jobs:
         PIP_DISABLE_PIP_VERSION_CHECK: ${{ matrix.pyv == '3.8' && matrix.os == 'macos-latest' }}
       with:
         python-version: ${{ matrix.pyv }}
+        allow-prereleases: true
 
     - name: Upgrade pip and nox
       run: |
