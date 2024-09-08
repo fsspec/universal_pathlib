@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.5] - 2024-09-08
+### Fixed
+- upath.implementations.cloud: move bucket check to subclasses (#277)
+- upath: enable local tests on windows and fix is_absolute (#278)
+- upath: updated flavour sources (#273)
+
+### Added
+- upath: adds support for python-3.13 (#275)
+
 ## [0.2.4] - 2024-09-07
 ### Fixed
 - upath: fix UPath.rename type signature (#258)
@@ -160,7 +169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...v0.2.2
