@@ -16,6 +16,7 @@ maintainers = [
 requires-python = ">=3.8"
 dependencies = [
     "fsspec >=2022.1.0,!=2024.3.1",
+    "typing_extensions; python_version<'3.11'",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
