@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import sys
 import warnings
-from typing import Any
 from typing import TYPE_CHECKING
+from typing import Any
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
