@@ -19,11 +19,6 @@ from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
-
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
@@ -42,6 +37,11 @@ from upath.registry import get_upath_class
 
 if TYPE_CHECKING:
     from urllib.parse import SplitResult
+
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __all__ = ["UPath"]
 
