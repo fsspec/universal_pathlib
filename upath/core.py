@@ -1072,4 +1072,4 @@ class UPath(PathlibPathShim, Path):
         raise NotImplementedError
 
     def expanduser(self) -> Self:
-        raise NotImplementedError
+        return self
