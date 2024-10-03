@@ -61,6 +61,7 @@ dev = [
     "pydantic",
     "pydantic-settings",
     "smbprotocol",
+    "typing_extensions; python_version<'3.11'",
 ]
 
 [project.urls]
