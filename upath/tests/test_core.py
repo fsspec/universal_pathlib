@@ -99,7 +99,9 @@ def test_subclass(local_testdir):
     class MyPath(UPath):
         pass
 
-    with pytest.warns(DeprecationWarning, match=r"MyPath\(...\) detected protocol '' .*"):
+    with pytest.warns(
+        DeprecationWarning, match=r"MyPath\(...\) detected protocol '' .*"
+    ):
         path = MyPath(local_testdir)
     assert str(path) == str(pathlib.Path(local_testdir))
     assert issubclass(MyPath, UPath)
@@ -326,7 +328,9 @@ def test_relative_to():
 
 
 def test_uri_parsing():
-    assert str(UPath("http://www.example.com//a//b/")) == "http://www.example.com//a//b/"
+    assert (
+        str(UPath("http://www.example.com//a//b/")) == "http://www.example.com//a//b/"
+    )
 
 
 NORMALIZATIONS = (
