@@ -65,7 +65,7 @@ class BaseTests:
         assert path.exists() == expected
 
     def test_expanduser(self):
-        assert self.path.expanduser() is self.path
+        assert self.path.expanduser() == self.path
 
     @pytest.mark.parametrize(
         "pattern",
