@@ -45,13 +45,12 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs; python_version<='3.12' or (python_version>'3.12' and os_name!='nt') ",
+    "adlfs",
     "aiohttp",
     "requests",
     "gcsfs",
     "s3fs",
-    # exclude moto installation on 3.13 windows until pywin32 wheels are available:
-    "moto[s3,server]; python_version<='3.12' or (python_version>'3.12' and os_name!='nt') ",
+    "moto[s3,server]",
     "webdav4[fsspec]",
     "paramiko",
     "wsgidav",
