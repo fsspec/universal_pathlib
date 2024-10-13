@@ -46,6 +46,8 @@ class TestUPathSFTP(BaseTests):
         (("sftp://user@host",), ("/",)),
         (("sftp://user@host/",), ("/",)),
         (("sftp://user@host", ""), ("/",)),
+        (("sftp://user@host/", ""), ("/",)),
+        (("sftp://user@host", "/"), ("/",)),
         (("sftp://user@host/", "/"), ("/",)),
         (("sftp://user@host/abc",), ("/", "abc")),
         (("sftp://user@host", "abc"), ("/", "abc")),
