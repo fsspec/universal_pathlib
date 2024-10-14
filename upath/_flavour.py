@@ -182,7 +182,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         """return the fsspec flavour for the given protocol"""
 
         _c = cls.protocol_config
-        config = {
+        config: dict[str, Any] = {
             "netloc_is_anchor": protocol in _c["netloc_is_anchor"],
             "supports_empty_parts": protocol in _c["supports_empty_parts"],
             "meaningful_trailing_slash": protocol in _c["meaningful_trailing_slash"],
