@@ -572,7 +572,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.24.6'
+    __orig_version__ = '0.25.2'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -588,7 +588,7 @@ class JupyterFileSystemFlavour(AbstractFileSystemFlavour):
 
 class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'lakefs_spec.spec.LakeFSFileSystem'
-    __orig_version__ = '0.10.0'
+    __orig_version__ = '0.11.0'
     protocol = ('lakefs',)
     root_marker = ''
     sep = '/'
