@@ -10,7 +10,7 @@ nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 
 
-@nox.session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3.8", "pypy3.9"])
+@nox.session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
@@ -111,4 +111,6 @@ def typesafety(session):
 def generate_flavours(session):
     session.install("-r", "dev/requirements.txt")
     with open("upath/_flavour_sources.py", "w") as target:
-        session.run("python", "dev/generate_flavours.py", stdout=target)
+        session.run(
+            "python", "dev/fsspec_inspector/generate_flavours.py", stdout=target
+        )

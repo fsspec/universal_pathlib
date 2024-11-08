@@ -57,8 +57,8 @@ class HTTPPath(UPath):
     def stat(self, follow_symlinks: bool = True):
         if not follow_symlinks:
             warnings.warn(
-                "HTTPPath.stat(follow_symlinks=False): follow_symlinks=False is"
-                " currently ignored.",
+                f"{type(self).__name__}.stat(follow_symlinks=False):"
+                " is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )

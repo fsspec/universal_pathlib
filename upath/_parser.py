@@ -69,6 +69,7 @@ class ProtocolConfig(TypedDict):
     netloc_is_anchor: set[str]
     supports_empty_parts: set[str]
     meaningful_trailing_slash: set[str]
+    root_marker_override: dict[str, str]
 
 
 # === registries of fsspec filesystems for uri parsing ==================
@@ -164,6 +165,10 @@ class FSSpecParser(ParserBase):
             "http",
             "https",
         },
+        "root_marker_override": {
+            "ssh": "/",
+            "sftp": "/",
+        },
     }
 
     def __init__(
@@ -173,6 +178,7 @@ class FSSpecParser(ParserBase):
         netloc_is_anchor: bool = False,
         supports_empty_parts: bool = False,
         meaningful_trailing_slash: bool = False,
+        root_marker_override: str | None = None,
     ) -> None:
         """initialize the parser with the given fsspec filesystem"""
         self._spec = spec
@@ -190,6 +196,12 @@ class FSSpecParser(ParserBase):
         #   - join
         self.has_meaningful_trailing_slash = bool(meaningful_trailing_slash)
 
+        # some filesystems require UPath to enforce a specific root marker
+        if root_marker_override is None:
+            self.root_marker_override = None
+        else:
+            self.root_marker_override = str(root_marker_override)
+
     @classmethod
     @lru_cache(maxsize=None)
     def from_protocol(cls, protocol: str) -> Self:
@@ -200,6 +212,7 @@ class FSSpecParser(ParserBase):
             "netloc_is_anchor": protocol in _c["netloc_is_anchor"],
             "supports_empty_parts": protocol in _c["supports_empty_parts"],
             "meaningful_trailing_slash": protocol in _c["meaningful_trailing_slash"],
+            "root_marker_override": _c["root_marker_override"].get(protocol),
         }
 
         # first try to get an already imported fsspec filesystem class
@@ -246,7 +259,10 @@ class FSSpecParser(ParserBase):
 
     @property
     def root_marker(self) -> str:
-        return self._spec.root_marker
+        if self.root_marker_override is not None:
+            return self.root_marker_override
+        else:
+            return self._spec.root_marker
 
     @property
     def local_file(self) -> bool:
@@ -296,7 +312,7 @@ class FSSpecParser(ParserBase):
                 drv, p0 = self.splitdrive(path)
             p0 = p0 or self.sep
         else:
-            p0 = str(self.strip_protocol(path))
+            p0 = str(self.strip_protocol(path)) or self.root_marker
             pN = list(map(self.stringify_path, paths))
             drv = ""
         if self.supports_empty_parts:

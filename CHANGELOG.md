@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.5] - 2024-09-08
+### Fixed
+- upath.implementations.cloud: move bucket check to subclasses (#277)
+- upath: enable local tests on windows and fix is_absolute (#278)
+- upath: updated flavour sources (#273)
+
+### Added
+- upath: adds support for python-3.13 (#275)
+
+## [0.2.4] - 2024-09-07
+### Fixed
+- upath: fix UPath.rename type signature (#258)
+- upath: prevent SMBPath.rename warnings (#259)
+- upath: implement UPath.samefile (#261)
+- upath: fix UPath.touch(exists_ok=False) if file exists (#262)
+- upath: UPath.joinpath() raise error on protocol mismatch (#264)
+- tests: silence test warnings (#267)
+- tests: fix http xpass test (#266)
+- tests: use newer moto server (#248)
+- tests: mkdir test on existing gcs bucket (#263)
+
+### Added
+- upath: add SFTPPath implementation (#265)
+
+### Changed
+- upath: move setup.cfg to pyproject.toml (#260)
+- upath: UPath.lstat now returns but raises a warning (#271)
+- upath: updated flavours to the newest versions (#272)
+
 ## [0.2.3] - 2024-08-23
 ### Added
 - upath: add st_birthtime as standard field (#254)
@@ -140,7 +169,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/fsspec/universal_pathlib/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/fsspec/universal_pathlib/compare/v0.2.0...v0.2.1

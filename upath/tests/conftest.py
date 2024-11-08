@@ -486,7 +486,6 @@ def ssh_container():
     )
     try:
         subprocess.run(shlex.split(cmd))
-        time.sleep(1)
         yield {
             "host": "localhost",
             "port": 2222,
@@ -499,7 +498,7 @@ def ssh_container():
 
 @pytest.fixture
 def ssh_fixture(ssh_container, local_testdir, monkeypatch):
-    pytest.importorskip("paramiko", reason="sftp tests require paramiko")
+    paramiko = pytest.importorskip("paramiko", reason="sftp tests require paramiko")
 
     cls = fsspec.get_filesystem_class("ssh")
     if cls.put != fsspec.AbstractFileSystem.put:
@@ -509,13 +508,28 @@ def ssh_fixture(ssh_container, local_testdir, monkeypatch):
 
         monkeypatch.setattr(_DEFAULT_CALLBACK, "relative_update", lambda *args: None)
 
-    fs = fsspec.filesystem(
-        "ssh",
-        host=ssh_container["host"],
-        port=ssh_container["port"],
-        username=ssh_container["username"],
-        password=ssh_container["password"],
-    )
+    for _ in range(100):
+        try:
+            fs = fsspec.filesystem(
+                "ssh",
+                host=ssh_container["host"],
+                port=ssh_container["port"],
+                username=ssh_container["username"],
+                password=ssh_container["password"],
+                timeout=10.0,
+                banner_timeout=30.0,
+                skip_instance_cache=True,
+            )
+        except (
+            paramiko.ssh_exception.NoValidConnectionsError,
+            paramiko.ssh_exception.SSHException,
+        ):
+            time.sleep(0.1)
+            continue
+        break
+    else:
+        raise RuntimeError("issue with openssh-container startup")
+
     fs.put(local_testdir, "/app/testdir", recursive=True)
     try:
         yield "ssh://{username}:{password}@{host}:{port}/app/testdir/".format(

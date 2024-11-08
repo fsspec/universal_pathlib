@@ -1,18 +1,18 @@
-fsspec[git,hdfs,dask,http,sftp,smb]==2024.6.1
+fsspec[git,hdfs,dask,http,sftp,smb]==2024.9.0
 
 # these dependencies define their own filesystems
 adlfs==2024.7.0
 boxfs==0.3.0
 dropboxdrivefs==1.4.1
-gcsfs==2024.6.1
-s3fs==2024.6.1
+gcsfs==2024.9.0.post1
+s3fs==2024.9.0
 ocifs==1.3.1
 webdav4[fsspec]==0.10.0
 # gfrivefs @ git+https://github.com/fsspec/gdrivefs@master broken ...
 morefs[asynclocalfs]==0.2.2
-dvc==3.53.1
-huggingface_hub==0.23.5
-lakefs-spec==0.10.0
+dvc==3.55.2
+huggingface_hub==0.25.2
+lakefs-spec==0.11.0
 ossfs==2023.12.0
-fsspec-xrootd==0.3.0
+fsspec-xrootd==0.4.0
 wandbfs==0.0.2

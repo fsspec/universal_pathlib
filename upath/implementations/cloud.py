@@ -16,15 +16,6 @@ __all__ = [
 class CloudPath(UPath):
     __slots__ = ()
 
-    def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
-    ) -> None:
-        super().__init__(*args, protocol=protocol, **storage_options)
-        # fixme:
-        #   this was intended to catch UPath("s3:///abc") early...
-        # if not self.drive and len(self.parts) > 1:
-        #     raise ValueError("non key-like path provided (bucket/container missing)")
-
     @classmethod
     def _transform_init_args(
         cls,
@@ -68,6 +59,13 @@ class GCSPath(CloudPath):
     __slots__ = ()
     _supported_protocols = ("gcs", "gs")
 
+    def __init__(
+        self, *args, protocol: str | None = None, **storage_options: Any
+    ) -> None:
+        super().__init__(*args, protocol=protocol, **storage_options)
+        if not self.drive and len(self.parts) > 1:
+            raise ValueError("non key-like path provided (bucket/container missing)")
+
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
     ) -> None:
@@ -82,7 +80,21 @@ class S3Path(CloudPath):
     __slots__ = ()
     _supported_protocols = ("s3", "s3a")
 
+    def __init__(
+        self, *args, protocol: str | None = None, **storage_options: Any
+    ) -> None:
+        super().__init__(*args, protocol=protocol, **storage_options)
+        if not self.drive and len(self.parts) > 1:
+            raise ValueError("non key-like path provided (bucket/container missing)")
+
 
 class AzurePath(CloudPath):
     __slots__ = ()
     _supported_protocols = ("abfs", "abfss", "adl", "az")
+
+    def __init__(
+        self, *args, protocol: str | None = None, **storage_options: Any
+    ) -> None:
+        super().__init__(*args, protocol=protocol, **storage_options)
+        if not self.drive and len(self.parts) > 1:
+            raise ValueError("non key-like path provided (bucket/container missing)")

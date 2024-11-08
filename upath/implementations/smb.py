@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import sys
 import warnings
+from typing import TYPE_CHECKING
 from typing import Any
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 import smbprotocol.exceptions
 

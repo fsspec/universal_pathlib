@@ -21,13 +21,6 @@ from typing import TextIO
 from typing import overload
 from urllib.parse import urlsplit
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-    from typing import TypeAlias
-else:
-    from typing_extensions import Self
-    from typing_extensions import TypeAlias
-
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
@@ -45,6 +38,14 @@ from upath.registry import get_upath_class
 
 if TYPE_CHECKING:
     from urllib.parse import SplitResult
+
+    if sys.version_info >= (3, 11):
+        from typing import Self
+        from typing import TypeAlias
+    else:
+        from typing_extensions import Self
+        from typing_extensions import TypeAlias
+
 
 __all__ = [
     "PureUPath",
@@ -411,8 +412,8 @@ class UPath(PathBase, PureUPath):
     ) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
-                "UPath.stat(follow_symlinks=False): follow_symlinks=False is"
-                " currently ignored.",
+                f"{type(self).__name__}.stat(follow_symlinks=False):"
+                " is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -736,6 +737,9 @@ class UPath(PathBase, PureUPath):
 
     def is_reserved(self) -> bool:
         return False
+
+    def expanduser(self) -> Self:
+        return self
 
     # === compatibility methods =======================================
 

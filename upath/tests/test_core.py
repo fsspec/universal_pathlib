@@ -445,3 +445,8 @@ def test_joinpath_on_protocol_mismatch(base, join):
 )
 def test_joinuri_on_protocol_mismatch(base, join):
     assert UPath(base).joinuri(UPath(join)) == UPath(join)
+
+
+def test_upath_expanduser():
+    assert UPath("~").expanduser() == UPath(os.path.expanduser("~"))
+    assert UPath("~") != UPath("~").expanduser()
