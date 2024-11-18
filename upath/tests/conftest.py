@@ -141,7 +141,7 @@ def s3_server():
     port = 5555
     endpoint_uri = f"http://127.0.0.1:{port}/"
     proc = subprocess.Popen(
-        shlex.split(f"moto_server -p {port}"),
+        [sys.executable, *shlex.split(f"-m moto.server -p {port}")],
         stderr=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
     )
