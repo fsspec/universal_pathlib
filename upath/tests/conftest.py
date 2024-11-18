@@ -231,7 +231,7 @@ def docker_gcs():
 @pytest.fixture
 def gcs_fixture(docker_gcs, local_testdir):
     pytest.importorskip("gcsfs")
-    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
+    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs, token="anon")
     bucket_name = "test_bucket"
     if gcs.exists(bucket_name):
         for dir, _, keys in gcs.walk(bucket_name):

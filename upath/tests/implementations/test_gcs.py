@@ -16,8 +16,7 @@ class TestGCSPath(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, gcs_fixture):
         path, endpoint_url = gcs_fixture
-        self.path = UPath(path, endpoint_url=endpoint_url)
-        self.endpoint_url = endpoint_url
+        self.path = UPath(path, endpoint_url=endpoint_url, token="anon")
 
     def test_is_GCSPath(self):
         assert isinstance(self.path, GCSPath)
@@ -39,7 +38,7 @@ class TestGCSPath(BaseTests):
 
 @skip_on_windows
 def test_mkdir_in_empty_bucket(docker_gcs):
-    fs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
+    fs = fsspec.filesystem("gcs", endpoint_url=docker_gcs, token="anon")
     fs.mkdir("my-fresh-bucket")
     assert "my-fresh-bucket/" in fs.buckets
     fs.invalidate_cache()
@@ -48,4 +47,5 @@ def test_mkdir_in_empty_bucket(docker_gcs):
     UPath(
         "gs://my-fresh-bucket/some-dir/another-dir/file",
         endpoint_url=docker_gcs,
+        token="anon",
     ).parent.mkdir(parents=True, exist_ok=True)
