@@ -542,15 +542,11 @@ class BaseTests:
         with fs.open(path) as f:
             assert f.read() == b"hello world"
 
-    @pytest.mark.xfail(reason="obsolete with UPath>=0.3.0")
     def test_access_to_private_api(self):
-        # DO NOT access these private attributes in your code
         p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._drv, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._root, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._parts, (list, tuple))
+        assert not hasattr(p, "_drv")
+        assert not hasattr(p, "_root")
+        assert not hasattr(p, "_parts")
 
     def test_hashable(self):
         assert hash(self.path)
