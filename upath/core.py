@@ -257,6 +257,35 @@ class PureUPath(PurePathBase):
         else:
             return self.path
 
+    @property
+    def _stack(self):
+        """
+        Split the path into a 2-tuple (anchor, parts), where *anchor* is the
+        uppermost parent of the path (equivalent to path.parents[-1]), and
+        *parts* is a reversed list of parts following the anchor.
+        """
+        split = self.parser.split
+        path = self.parser.strip_protocol(self._raw_path)
+        parent, name = split(path)
+        names = []
+        while path != parent:
+            names.append(name)
+            path = parent
+            parent, name = split(path)
+        return path, names
+
+    @property
+    def name(self):
+        """The final path component, if any."""
+        remainder, stack = self._stack
+        return next(filter(None, (*stack, *[remainder])), "")
+
+    def with_name(self, name):
+        """Return a new path with the file name changed."""
+        if self.parser.sep in name:
+            raise ValueError(f"Invalid name {name!r}")
+        return self.with_segments(self.parser.split(self._raw_path)[0], name)
+
 
 class UPath(PathBase, PureUPath):
     """a concrete version of UPath with filesystem access"""
@@ -599,6 +628,41 @@ class UPath(PathBase, PureUPath):
                 continue
             # only want the path name with iterdir
             yield self.with_segments(name)
+
+    def glob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = _UNSET,
+    ) -> Generator[UPath, None, None]:
+        path_pattern = self.joinpath(pattern).path
+        sep = self.parser.sep
+        base = self.fs._strip_protocol(self.path)
+        for name in self.fs.glob(path_pattern):
+            name = name.removeprefix(base).removeprefix(sep)
+            yield self.joinpath(name)
+
+    def rglob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = _UNSET,
+    ) -> Generator[UPath, None, None]:
+        path_pattern = self.joinpath(pattern).path
+        r_path_pattern = self.joinpath("**", pattern).path
+        sep = self.parser.sep
+        base = self.fs._strip_protocol(self.path)
+        seen = set()
+        for p in (path_pattern, r_path_pattern):
+            for name in self.fs.glob(p):
+                name = name.removeprefix(base).removeprefix(sep)
+                if name in seen:
+                    continue
+                else:
+                    seen.add(name)
+                    yield self.joinpath(name)
 
     def absolute(self) -> Self:
         return self

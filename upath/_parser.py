@@ -324,7 +324,10 @@ class FSSpecParser(ParserBase):
         stripped_path = self.strip_protocol(path)
         head = self.parent(stripped_path) or self.root_marker
         if head:
-            return head, stripped_path[len(head) + 1 :]
+            tail = stripped_path[len(head) + 1 :]
+            return head, tail
+        elif not head and self.netloc_is_anchor:
+            return stripped_path, ""
         else:
             return "", stripped_path
 
