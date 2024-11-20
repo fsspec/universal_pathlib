@@ -38,13 +38,6 @@ class TestAzurePath(BaseTests):
         with pytest.raises(NotADirectoryError):
             (self.path / "a" / "file.txt").rmdir()
 
-    @pytest.mark.skip
-    def test_makedirs_exist_ok_false(self):
-        pass
-
-    def test_rglob(self, pathlib_base):
-        return super().test_rglob(pathlib_base)
-
     def test_protocol(self):
         # test all valid protocols for azure...
         protocol = self.path.protocol

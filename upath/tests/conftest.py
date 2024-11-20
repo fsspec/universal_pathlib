@@ -141,7 +141,7 @@ def s3_server():
     port = 5555
     endpoint_uri = f"http://127.0.0.1:{port}/"
     proc = subprocess.Popen(
-        shlex.split(f"moto_server -p {port}"),
+        [sys.executable, *shlex.split(f"-m moto.server -p {port}")],
         stderr=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
     )
@@ -231,7 +231,7 @@ def docker_gcs():
 @pytest.fixture
 def gcs_fixture(docker_gcs, local_testdir):
     pytest.importorskip("gcsfs")
-    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs)
+    gcs = fsspec.filesystem("gcs", endpoint_url=docker_gcs, token="anon")
     bucket_name = "test_bucket"
     if gcs.exists(bucket_name):
         for dir, _, keys in gcs.walk(bucket_name):
