@@ -116,6 +116,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             "az",
             "adl",
             "abfs",
+            "abfss",
             "webdav+http",
             "webdav+https",
         },
