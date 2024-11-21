@@ -426,7 +426,7 @@ def smb_container():
     container = "fsspec_smb"
     stop_docker(container)
     cfg = "-p -u 'testuser;testpass' -s 'home;/share;no;no;no;testuser'"
-    port = 445
+    port = int(os.environ.get("UPATH_TESTS_SMB_PORT", "445"))
     img = f"docker run --name {container} --detach -p 139:139 -p {port}:445 dperson/samba"  # noqa: E231 E501
     cmd = f"{img} {cfg}"
     try:
@@ -448,7 +448,7 @@ def smb_container():
 
 @pytest.fixture
 def smb_url(smb_container):
-    smb_url = "smb://{username}:{password}@{host}/home/"
+    smb_url = "smb://{username}:{password}@{host}:{port}/home/"
     smb_url = smb_url.format(**smb_container)
     return smb_url
 
