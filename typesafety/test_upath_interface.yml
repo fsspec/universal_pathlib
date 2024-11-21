@@ -556,15 +556,15 @@
   main: |
     from upath import UPath
 
-    UPath("abc").walk  # E: "UPath" has no attribute "walk"  [attr-defined]
+    reveal_type(UPath("abc").walk())  # N: Revealed type is "typing.Generator[Tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]], None, None]"
 
 - case: upath_walk_py312plus
   disable_cache: false
   mypy_config: python_version = 3.12
   main: |
-      from upath import UPath
+    from upath import UPath
 
-      reveal_type(UPath("abc").walk())  # N: Revealed type is "typing.Iterator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+    reveal_type(UPath("abc").walk())  # N: Revealed type is "typing.Generator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]], None, None]"
 
 - case: upath_rename_extra_kwargs
   disable_cache: false
