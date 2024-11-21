@@ -721,7 +721,34 @@ class UPath(PathlibPathShim, Path):
                 "paths have different storage_options:"
                 f" {self.storage_options!r} != {other.storage_options!r}"
             )
-        return super().relative_to(other, *_deprecated, walk_up=walk_up)
+
+        if _deprecated:
+            msg = (
+                "support for supplying more than one positional argument "
+                "to pathlib.PurePath.relative_to() is deprecated and "
+                "scheduled for removal in Python 3.14"
+            )
+            warnings.warn(
+                f"pathlib.PurePath.relative_to(*args) {msg}",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        other = self.with_segments(other, *_deprecated)
+        for step, path in enumerate([other] + list(other.parents)):  # noqa: B007
+            if self.is_relative_to(path):
+                break
+            elif not walk_up:
+                raise ValueError(
+                    f"{str(self)!r} is not in the subpath of {str(other)!r}"
+                )
+            elif path.name == "..":
+                raise ValueError(f"'..' segment in {str(other)!r} cannot be walked")
+        else:
+            raise ValueError(
+                f"{str(self)!r} and {str(other)!r} have different anchors"
+            )
+        parts = [".."] * step + self._tail[len(path._tail) :]
+        return UPath(*parts, **self._storage_options)
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
         if isinstance(other, UPath) and self.storage_options != other.storage_options:

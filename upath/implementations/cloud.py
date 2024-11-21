@@ -57,8 +57,7 @@ class CloudPath(UPath):
 
     def relative_to(self, other, /, *_deprecated, walk_up=False):
         # use the parent implementation for the ValueError logic
-        super().relative_to(other, *_deprecated, walk_up=False)
-        return self
+        return super().relative_to(other, *_deprecated, walk_up=walk_up)
 
 
 class GCSPath(CloudPath):
