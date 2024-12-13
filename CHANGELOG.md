@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.2.6] - 2024-12-13
+### Fixed
+- upath: add support for 'abfss' protocol in WrappedFileSystemFlavour (#311)
+- upath: fixed sftp join issue for non-root prefixed paths (#294)
+- upath: fixed missing typing-extension dependency (#290)
+- upath: updated flavour sources (#285, #299, #313, #319)
+- tests: minor fixes for moto and gcs tests without internet connectivity (#312)
+
+### Changed
+- ci: switch to trusted publishing
+
+### Added
+- tests: allow configuring smb port via env var (#314)
+
 ## [0.2.5] - 2024-09-08
 ### Fixed
 - upath.implementations.cloud: move bucket check to subclasses (#277)
@@ -169,7 +183,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/fsspec/universal_pathlib/compare/v0.2.2...v0.2.3
