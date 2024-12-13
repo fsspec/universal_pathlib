@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 
 __all__ = [
@@ -13,10 +11,6 @@ __all__ = [
     "S3Path",
     "AzurePath",
 ]
-
-
-# accessors are deprecated
-_CloudAccessor = _FSSpecAccessorShim
 
 
 class CloudPath(UPath):
@@ -35,7 +29,7 @@ class CloudPath(UPath):
                 if str(args[0]).startswith("/"):
                     args = (f"{protocol}://{bucket}{args[0]}", *args[1:])
                 else:
-                    args0 = upath_strip_protocol(args[0])
+                    args0 = cls.parser.strip_protocol(args[0])
                     args = (f"{protocol}://{bucket}/", args0, *args[1:])
                 break
         return super()._transform_init_args(args, protocol, storage_options)
@@ -63,6 +57,7 @@ class CloudPath(UPath):
 
 class GCSPath(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("gcs", "gs")
 
     def __init__(
         self, *args, protocol: str | None = None, **storage_options: Any
@@ -83,6 +78,7 @@ class GCSPath(CloudPath):
 
 class S3Path(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("s3", "s3a")
 
     def __init__(
         self, *args, protocol: str | None = None, **storage_options: Any
@@ -94,6 +90,7 @@ class S3Path(CloudPath):
 
 class AzurePath(CloudPath):
     __slots__ = ()
+    _supported_protocols = ("abfs", "abfss", "adl", "az")
 
     def __init__(
         self, *args, protocol: str | None = None, **storage_options: Any

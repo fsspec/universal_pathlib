@@ -18,6 +18,7 @@ show_source = true
 count = true
 per-file-ignores =
     upath/__init__.py: F401
+    upath/_parser.py: E501
 exclude =
     .noxfile,
     .nox,
