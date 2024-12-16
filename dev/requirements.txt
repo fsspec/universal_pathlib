@@ -1,7 +1,7 @@
 fsspec[git,hdfs,dask,http,sftp,smb]==2024.10.0
 
 # these dependencies define their own filesystems
-adlfs==2024.7.0
+adlfs==2024.12.0
 boxfs==0.3.0
 dropboxdrivefs==1.4.1
 gcsfs==2024.10.0
