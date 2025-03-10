@@ -1,4 +1,4 @@
-fsspec[git,hdfs,dask,http,sftp,smb]==2024.10.0
+fsspec[git,hdfs,dask,http,sftp,smb]==2025.3.0
 
 # these dependencies define their own filesystems
 adlfs==2024.7.0
