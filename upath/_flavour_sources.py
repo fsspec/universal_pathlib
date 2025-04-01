@@ -25,8 +25,10 @@ without a direct dependency on the underlying filesystem package.
 #   - filecache
 #   - simplecache
 # protocol import errors:
+#   - async_wrapper (None)
 #   - gdrive (Please install gdrivefs for access to Google Drive)
 #   - generic (GenericFileSystem: '_strip_protocol' not a classmethod)
+#   - tosfs (Install tosfs to access ByteDance volcano engine Tinder Object Storage)
 #
 from __future__ import annotations
 
@@ -87,7 +89,7 @@ class FileSystemFlavourBase:
 
 class AbstractFileSystemFlavour(FileSystemFlavourBase):
     __orig_class__ = 'fsspec.spec.AbstractFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol: str | tuple[str, ...] = 'abstract'
     root_marker: Literal['', '/'] = ''
     sep: Literal['/'] = '/'
@@ -200,7 +202,7 @@ class AsyncLocalFileSystemFlavour(AbstractFileSystemFlavour):
 
 class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'adlfs.spec.AzureBlobFileSystem'
-    __orig_version__ = '2024.7.0'
+    __orig_version__ = '2024.12.0'
     protocol = ('abfs', 'az', 'abfss')
     root_marker = ''
     sep = '/'
@@ -273,7 +275,7 @@ class AzureBlobFileSystemFlavour(AbstractFileSystemFlavour):
 
 class AzureDatalakeFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'adlfs.gen1.AzureDatalakeFileSystem'
-    __orig_version__ = '2024.7.0'
+    __orig_version__ = '2024.12.0'
     protocol = ('adl',)
     root_marker = ''
     sep = '/'
@@ -312,7 +314,7 @@ class BoxFileSystemFlavour(AbstractFileSystemFlavour):
 
 class DaskWorkerFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.dask.DaskWorkerFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('dask',)
     root_marker = ''
     sep = '/'
@@ -328,7 +330,7 @@ class DaskWorkerFileSystemFlavour(AbstractFileSystemFlavour):
 
 class DataFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.data.DataFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('data',)
     root_marker = ''
     sep = '/'
@@ -336,7 +338,7 @@ class DataFileSystemFlavour(AbstractFileSystemFlavour):
 
 class DatabricksFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.dbfs.DatabricksFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('dbfs',)
     root_marker = ''
     sep = '/'
@@ -369,7 +371,7 @@ class DropboxDriveFileSystemFlavour(AbstractFileSystemFlavour):
 
 class FTPFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.ftp.FTPFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('ftp',)
     root_marker = '/'
     sep = '/'
@@ -388,7 +390,7 @@ class FTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 class GCSFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'gcsfs.core.GCSFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('gs', 'gcs')
     root_marker = ''
     sep = '/'
@@ -465,7 +467,7 @@ class GCSFileSystemFlavour(AbstractFileSystemFlavour):
 
 class GitFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.git.GitFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('git',)
     root_marker = ''
     sep = '/'
@@ -493,7 +495,7 @@ class GitFileSystemFlavour(AbstractFileSystemFlavour):
 
 class GithubFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.github.GithubFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('github',)
     root_marker = ''
     sep = '/'
@@ -518,7 +520,7 @@ class GithubFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HTTPFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.http.HTTPFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('http', 'https')
     root_marker = ''
     sep = '/'
@@ -539,7 +541,7 @@ class HTTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.arrow.HadoopFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('hdfs', 'arrow_hdfs')
     root_marker = '/'
     sep = '/'
@@ -572,7 +574,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.26.5'
+    __orig_version__ = '0.29.2'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -580,7 +582,7 @@ class HfFileSystemFlavour(AbstractFileSystemFlavour):
 
 class JupyterFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.jupyter.JupyterFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('jupyter', 'jlab')
     root_marker = ''
     sep = '/'
@@ -606,7 +608,7 @@ class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
 
 class LibArchiveFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.libarchive.LibArchiveFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('libarchive',)
     root_marker = ''
     sep = '/'
@@ -619,7 +621,7 @@ class LibArchiveFileSystemFlavour(AbstractFileSystemFlavour):
 
 class LocalFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.local.LocalFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('file', 'local')
     root_marker = '/'
     sep = '/'
@@ -697,7 +699,7 @@ class MemFSFlavour(AbstractFileSystemFlavour):
 
 class MemoryFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.memory.MemoryFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('memory',)
     root_marker = '/'
     sep = '/'
@@ -796,7 +798,7 @@ class OverlayFileSystemFlavour(AbstractFileSystemFlavour):
 
 class ReferenceFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.reference.ReferenceFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('reference',)
     root_marker = ''
     sep = '/'
@@ -804,7 +806,7 @@ class ReferenceFileSystemFlavour(AbstractFileSystemFlavour):
 
 class S3FileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 's3fs.core.S3FileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('s3', 's3a')
     root_marker = ''
     sep = '/'
@@ -817,8 +819,9 @@ class S3FileSystemFlavour(AbstractFileSystemFlavour):
         Assume that we want to use version_aware mode for
         the filesystem.
         """
-        url_storage_opts = infer_storage_options(urlpath)
-        url_query = url_storage_opts.get("url_query")
+        from urllib.parse import urlsplit
+
+        url_query = urlsplit(urlpath).query
         out = {}
         if url_query is not None:
             from urllib.parse import parse_qs
@@ -831,7 +834,7 @@ class S3FileSystemFlavour(AbstractFileSystemFlavour):
 
 class SFTPFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.sftp.SFTPFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('sftp', 'ssh')
     root_marker = ''
     sep = '/'
@@ -850,7 +853,7 @@ class SFTPFileSystemFlavour(AbstractFileSystemFlavour):
 
 class SMBFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.smb.SMBFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('smb',)
     root_marker = ''
     sep = '/'
@@ -870,7 +873,7 @@ class SMBFileSystemFlavour(AbstractFileSystemFlavour):
 
 class TarFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.tar.TarFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('tar',)
     root_marker = ''
     sep = '/'
@@ -886,7 +889,7 @@ class WandbFSFlavour(AbstractFileSystemFlavour):
 
 class WebHDFSFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.webhdfs.WebHDFS'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('webhdfs', 'webHDFS')
     root_marker = ''
     sep = '/'
@@ -947,7 +950,7 @@ class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
 
 class ZipFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec.implementations.zip.ZipFileSystem'
-    __orig_version__ = '2024.10.0'
+    __orig_version__ = '2025.3.1'
     protocol = ('zip',)
     root_marker = ''
     sep = '/'
