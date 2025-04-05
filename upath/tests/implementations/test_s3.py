@@ -6,7 +6,8 @@ import sys
 import fsspec
 import pytest  # noqa: F401
 
-from upath import UPath
+from upath.core import UPath
+from upath.implementations.local import PosixUPath
 from upath.implementations.cloud import S3Path
 
 from ..cases import BaseTests
@@ -53,9 +54,21 @@ class TestUPathS3(BaseTests):
             self.path.joinpath("file1.txt").rmdir()
 
     def test_relative_to(self):
-        assert "s3://test_bucket/file.txt" == str(
-            UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
-        )
+        rel_path = UPath("s3:///test_bucket/file.txt").relative_to(UPath("s3:///test_bucket"))
+        assert isinstance(rel_path, PosixUPath)
+        assert not rel_path.is_absolute()
+        assert 'file.txt' == rel_path.path 
+
+        walk_path = UPath("s3:///test_bucket/file.txt").relative_to(UPath("s3:///other_test_bucket"), walk_up=True)
+        assert isinstance(walk_path, PosixUPath)
+        assert not walk_path.is_absolute()
+        assert '../test_bucket/file.txt' == walk_path.path 
+
+        with pytest.raises(ValueError):
+            UPath("s3:///test_bucket/file.txt").relative_to(UPath("s3:///prod_bucket"))
+
+        with pytest.raises(ValueError):
+            UPath("s3:///test_bucket/file.txt").relative_to(UPath("file:///test_bucket"))
 
     def test_iterdir_root(self):
         client_kwargs = self.path.storage_options["client_kwargs"]
