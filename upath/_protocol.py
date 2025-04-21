@@ -59,7 +59,7 @@ def get_upath_protocol(
 
 def normalize_empty_netloc(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
-        if len(m.group("slashes")) == 1:
+        if m.group("slashes") == "/":
             protocol = m.group("protocol")
             path = m.group("path")
             pth = f"{protocol}:///{path}"
