@@ -13,7 +13,7 @@ maintainers = [
     {name = "Andreas Poehlmann", email = "andreas@poehlmann.io"},
     {name = "Norman Rzepka"},
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "fsspec >=2022.1.0,!=2024.3.1",
 ]
