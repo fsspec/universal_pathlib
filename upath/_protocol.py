@@ -18,7 +18,7 @@ __all__ = [
 # Regular expression to match fsspec style protocols.
 # Matches single slash usage too for compatibility.
 _PROTOCOL_RE = re.compile(
-    r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?P<slashes>//?)(?P<path>.*)"
+    r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?:(?P<slashes>//?)|:)(?P<path>.*)"
 )
 
 # Matches data URIs

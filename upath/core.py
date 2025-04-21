@@ -5,6 +5,7 @@ import sys
 import warnings
 from copy import copy
 from pathlib import Path
+from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
 from typing import TYPE_CHECKING
@@ -22,6 +23,9 @@ from urllib.parse import urlsplit
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
+from upath._chain import DEFAULT_CHAIN_PARSER
+from upath._chain import CurrentChainSegment
+from upath._chain import FSSpecChainParser
 from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
 from upath._compat import method_and_classmethod
@@ -101,8 +105,7 @@ _FSSpecAccessor = FSSpecAccessorShim
 
 class UPath(PathlibPathShim, Path):
     __slots__ = (
-        "_protocol",
-        "_storage_options",
+        "_chain",
         "_fs_cached",
         *PathlibPathShim.__missing_py312_slots__,
         "__drv",
@@ -127,8 +130,7 @@ class UPath(PathlibPathShim, Path):
         def with_suffix(self, suffix: str) -> Self: ...
 
         # private attributes
-        _protocol: str
-        _storage_options: dict[str, Any]
+        _chain: CurrentChainSegment
         _fs_cached: AbstractFileSystem
         _tail: str
 
@@ -141,7 +143,11 @@ class UPath(PathlibPathShim, Path):
     # === upath.UPath constructor =====================================
 
     def __new__(
-        cls, *args, protocol: str | None = None, **storage_options: Any
+        cls,
+        *args,
+        protocol: str | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+        **storage_options: Any,
     ) -> UPath:
         # fill empty arguments
         if not args:
@@ -180,19 +186,38 @@ class UPath(PathlibPathShim, Path):
             # for all supported user protocols.
             upath_cls = cls
 
+        # unparse fsspec chains
+        if (
+            not isinstance(part0, (str, PurePath))
+            and getattr(part0, "__fspath__", None) is not None
+        ):
+            _p0 = part0.__fspath__()
+        else:
+            _p0 = str(part0)
+        segments = chain_parser.unchain(
+            _p0, {"protocol": pth_protocol, **storage_options}
+        )
+        chain = CurrentChainSegment.from_list(segments)
+        if not (cp := chain.current.protocol) == pth_protocol:
+            warnings.warn(
+                f"Unexpected protocol mismatch {cp!r} != {pth_protocol!r}",
+                stacklevel=2,
+            )
+            chain = chain.replace(chain.current._replace(protocol=pth_protocol))
+
         # create a new instance
         if cls is UPath:
             # we called UPath() directly, and want an instance based on the
             # provided or detected protocol (i.e. upath_cls)
             obj: UPath = object.__new__(upath_cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
         elif issubclass(cls, upath_cls):
             # we called a sub- or sub-sub-class of UPath, i.e. S3Path() and the
             # corresponding upath_cls based on protocol is equal-to or a
             # parent-of the cls.
             obj = object.__new__(cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
         elif issubclass(cls, UPath):
             # we called a subclass of UPath directly, i.e. S3Path() but the
@@ -216,7 +241,7 @@ class UPath(PathlibPathShim, Path):
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
 
             obj = object.__new__(upath_cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
             upath_cls.__init__(
                 obj, *args, protocol=pth_protocol, **storage_options
@@ -227,8 +252,30 @@ class UPath(PathlibPathShim, Path):
 
         return obj
 
+    @property
+    def _protocol(self) -> str:
+        return self._chain.current.protocol
+
+    @_protocol.setter
+    def _protocol(self, value: str) -> None:
+        self._chain = self._chain.replace(self._chain.current._replace(protocol=value))
+
+    @property
+    def _storage_options(self) -> dict[str, Any]:
+        return self._chain.current.storage_options
+
+    @_storage_options.setter
+    def _storage_options(self, value: dict[str, Any]) -> None:
+        self._chain = self._chain.replace(
+            self._chain.current._replace(storage_options=value)
+        )
+
     def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
+        self,
+        *args,
+        protocol: str | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+        **storage_options: Any,
     ) -> None:
         # allow subclasses to customize __init__ arg parsing
         base_options = getattr(self, "_storage_options", {})
@@ -329,7 +376,10 @@ class UPath(PathlibPathShim, Path):
 
     @classmethod
     def _fs_factory(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
     ) -> AbstractFileSystem:
         """Instantiate the filesystem_spec filesystem class"""
         fs_cls = get_filesystem_class(protocol)

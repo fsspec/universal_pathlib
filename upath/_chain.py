@@ -6,14 +6,15 @@ from typing import NamedTuple
 from typing import Self
 
 from fsspec.core import get_filesystem_class
-from fsspec.core import split_protocol
-from fsspec.registry import known_implementations
-from fsspec.registry import registry
+
+from upath._protocol import get_upath_protocol
+from upath.registry import protocols
 
 __all__ = [
     "ChainSegment",
     "CurrentChainSegment",
     "FSSpecChainParser",
+    "DEFAULT_CHAIN_PARSER",
 ]
 
 
@@ -74,7 +75,7 @@ class CurrentChainSegment:
         return [*self._chain_source, self._current, *self._chain_target]
 
     @classmethod
-    def from_list(cls, segments: list[ChainSegment], index: int = -1) -> Self:
+    def from_list(cls, segments: list[ChainSegment], index: int = 0) -> Self:
         index = range(len(segments))[int(index)]
         return cls(
             segments[index],
@@ -82,15 +83,34 @@ class CurrentChainSegment:
             segments[index + 1 :],
         )
 
+    def nest(self) -> ChainSegment:
+        """return a nested target_* structure"""
+        # see: fsspec.core.url_to_fs
+        inkwargs: dict[str, Any] = {}
+        # Reverse iterate the chain, creating a nested target_* structure
+        chain = self.to_list()
+        _prev = chain[-1].path
+        for i, ch in enumerate(reversed(chain)):
+            urls, protocol, kw = ch
+            if urls is None:
+                urls = _prev
+            _prev = urls
+            if i == len(chain) - 1:
+                inkwargs = dict(**kw, **inkwargs)
+                continue
+            inkwargs["target_options"] = dict(**kw, **inkwargs)
+            inkwargs["target_protocol"] = protocol
+            inkwargs["fo"] = urls  # codespell:ignore fo
+        urlpath, protocol, _ = chain[0]
+        return ChainSegment(urlpath, protocol, inkwargs)
+
 
 class FSSpecChainParser:
     """parse an fsspec chained urlpath"""
 
     def __init__(self):
         self.link: str = "::"
-        # TODO: recompute when fsspec.registry._registry is updated
-        # TODO: add special upath protocols...
-        self.known_protocols: Set[str] = set(known_implementations).union(registry)
+        self.known_protocols: Set[str] = protocols
 
     def unchain(self, path: str, kwargs: dict[str, Any]) -> list[ChainSegment]:
         """implements same behavior as fsspec.core._un_chain
@@ -116,13 +136,19 @@ class FSSpecChainParser:
         previous_bit = None
         kwargs = kwargs.copy()
         for bit in reversed(bits):
-            protocol = kwargs.pop("protocol", None) or split_protocol(bit)[0] or "file"
-            cls = get_filesystem_class(protocol)
+            protocol = kwargs.pop("protocol", None) or get_upath_protocol(bit) or ""
+            if "+" in protocol:  # todo: deprecate the webdav+http(s) protocols
+                _p = protocol.partition("+")[0]
+                cls = get_filesystem_class(_p)
+                bit = bit.replace(protocol, _p) if bit.startswith(_p) else bit
+            else:
+                cls = get_filesystem_class(protocol)
             extra_kwargs = cls._get_kwargs_from_urls(bit)
             kws = kwargs.pop(protocol, {})
             if bit is bits[0]:
                 kws.update(kwargs)
-            kw = dict(**extra_kwargs, **kws)
+            kw = dict(**extra_kwargs)
+            kw.update(kws)
             bit = cls._strip_protocol(bit)
             if (
                 protocol in {"blockcache", "filecache", "simplecache"}
@@ -146,7 +172,13 @@ class FSSpecChainParser:
                 #   which crashes below for filesystems like zip,
                 #   tar, that require a fileobject via 'fo' keyword.
                 # filesystem(segment.protocol, **segment.storage_options))
-                fs_cls = get_filesystem_class(segment.protocol)
+                if (
+                    "+" in segment.protocol
+                ):  # todo: deprecate the webdav+http(s) protocols
+                    _p = segment.protocol.partition("+")[0]
+                    fs_cls = get_filesystem_class(_p)
+                else:
+                    fs_cls = get_filesystem_class(segment.protocol)
                 fs = object.__new__(fs_cls)
                 super(fs_cls, fs).__init__(**segment.storage_options)
                 urlpath = fs.unstrip_protocol(segment.path)
@@ -156,6 +188,9 @@ class FSSpecChainParser:
             # TODO: ensure roundtrip with unchain behavior
             kwargs[segment.protocol] = segment.storage_options
         return self.link.join(urlpaths), kwargs
+
+
+DEFAULT_CHAIN_PARSER = FSSpecChainParser()
 
 
 if __name__ == "__main__":
@@ -178,7 +213,7 @@ if __name__ == "__main__":
     # UPath should store segments and access the path to operate on
     # through segments.current.path
     segments = CurrentChainSegment.from_list(segments=out1)
-    segments0 = segments.lshift()
+    segments0 = segments.rshift()
     assert segments0.current.protocol == "zip"
 
     # try to switch out zip path
