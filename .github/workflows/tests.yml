@@ -37,8 +37,6 @@ jobs:
 
     - name: Set up Python ${{ matrix.pyv }}
       uses: actions/setup-python@v5
-      env:
-        PIP_DISABLE_PIP_VERSION_CHECK: ${{ matrix.pyv == '3.8' && matrix.os == 'macos-latest' }}
       with:
         python-version: ${{ matrix.pyv }}
         allow-prereleases: true
@@ -59,10 +57,10 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.pyv }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.9'
 
       - name: Install nox
         run: python -m pip install --upgrade nox
