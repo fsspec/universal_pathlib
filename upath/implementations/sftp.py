@@ -19,7 +19,7 @@ _unset: Any = object()
 class SFTPPath(UPath):
     __slots__ = ()
 
-    def iterdir(self) -> Generator[Self, None, None]:
+    def iterdir(self) -> Generator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))
         else:

@@ -861,7 +861,7 @@ class UPath(PathlibPathShim, Path):
             fsspec_kwargs.setdefault("block_size", fsspec_kwargs.pop("buffering"))
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
-    def iterdir(self) -> Generator[UPath, None, None]:
+    def iterdir(self) -> Generator[UPath]:
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -881,9 +881,7 @@ class UPath(PathlibPathShim, Path):
         del path._str  # fix _str = str(self) assignment
         return path
 
-    def glob(
-        self, pattern: str, *, case_sensitive=None
-    ) -> Generator[UPath, None, None]:
+    def glob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
         path_pattern = self.joinpath(pattern).path
         sep = self._flavour.sep
         base = self.fs._strip_protocol(self.path)
@@ -891,9 +889,7 @@ class UPath(PathlibPathShim, Path):
             name = str_remove_prefix(str_remove_prefix(name, base), sep)
             yield self.joinpath(name)
 
-    def rglob(
-        self, pattern: str, *, case_sensitive=None
-    ) -> Generator[UPath, None, None]:
+    def rglob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
