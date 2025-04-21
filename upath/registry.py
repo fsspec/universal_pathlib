@@ -44,6 +44,7 @@ from typing import MutableMapping
 
 from fsspec.core import get_filesystem_class
 from fsspec.registry import known_implementations as _fsspec_known_implementations
+from fsspec.registry import registry as _fsspec_registry
 
 import upath
 
@@ -148,11 +149,10 @@ def available_implementations(*, fallback: bool = False) -> list[str]:
         If True, also return protocols for fsspec filesystems without
         an implementation in universal_pathlib.
     """
-    impl = list(_registry)
     if not fallback:
-        return impl
+        return list(_registry)
     else:
-        return list({*impl, *list(_fsspec_known_implementations)})
+        return list({*_registry, *_fsspec_registry, *_fsspec_known_implementations})
 
 
 def register_implementation(
