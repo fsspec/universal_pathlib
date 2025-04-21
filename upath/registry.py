@@ -35,6 +35,7 @@ import re
 import sys
 import warnings
 from collections import ChainMap
+from collections.abc import Set
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
@@ -52,6 +53,7 @@ __all__ = [
     "get_upath_class",
     "available_implementations",
     "register_implementation",
+    "protocols",
 ]
 
 
@@ -153,6 +155,31 @@ def available_implementations(*, fallback: bool = False) -> list[str]:
         return list(_registry)
     else:
         return list({*_registry, *_fsspec_registry, *_fsspec_known_implementations})
+
+
+class _Protocols(Set[str]):
+    """set interface for protocol of all fsspec filesystem implementations"""
+
+    def __init__(self):
+        self._p = set()
+
+    def __contains__(self, x: str) -> bool:
+        contains = x in self._p
+        if not contains:
+            # on miss, update our set of protocols to handle late registrations
+            # usually, contains is False should be rare...
+            self._p = set(available_implementations(fallback=True))
+            contains = x in self._p
+        return contains
+
+    def __len__(self) -> int:
+        return len(self._p)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._p)
+
+
+protocols = _Protocols()
 
 
 def register_implementation(
