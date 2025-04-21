@@ -574,7 +574,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.29.2'
+    __orig_version__ = '0.30.2'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -590,7 +590,7 @@ class JupyterFileSystemFlavour(AbstractFileSystemFlavour):
 
 class LakeFSFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'lakefs_spec.spec.LakeFSFileSystem'
-    __orig_version__ = '0.11.0'
+    __orig_version__ = '0.11.3'
     protocol = ('lakefs',)
     root_marker = ''
     sep = '/'
@@ -722,7 +722,7 @@ class MemoryFileSystemFlavour(AbstractFileSystemFlavour):
 
 class OCIFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'ocifs.core.OCIFileSystem'
-    __orig_version__ = '1.3.1'
+    __orig_version__ = '1.3.2'
     protocol = ('oci', 'ocilake')
     root_marker = ''
     sep = '/'
@@ -924,7 +924,7 @@ class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
 
 class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec_xrootd.xrootd.XRootDFileSystem'
-    __orig_version__ = '0.4.0'
+    __orig_version__ = '0.5.1'
     protocol = ('root',)
     root_marker = '/'
     sep = '/'
@@ -963,7 +963,7 @@ class ZipFileSystemFlavour(AbstractFileSystemFlavour):
 
 class _DVCFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'dvc.fs.dvc._DVCFileSystem'
-    __orig_version__ = '3.58.0'
+    __orig_version__ = '3.59.1'
     protocol = ('dvc',)
     root_marker = '/'
     sep = '/'

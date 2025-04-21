@@ -6,13 +6,13 @@ boxfs==0.3.0
 dropboxdrivefs==1.4.1
 gcsfs==2025.3.2
 s3fs==2025.3.2
-ocifs==1.3.1
+ocifs==1.3.2
 webdav4[fsspec]==0.10.0
 # gfrivefs @ git+https://github.com/fsspec/gdrivefs@master broken ...
 morefs[asynclocalfs]==0.2.2
-dvc==3.58.0
-huggingface_hub==0.29.2
-lakefs-spec==0.11.0
+dvc==3.59.1
+huggingface_hub==0.30.2
+lakefs-spec==0.11.3
 ossfs==2023.12.0
-fsspec-xrootd==0.4.0
+fsspec-xrootd==0.5.1
 wandbfs==0.0.2
