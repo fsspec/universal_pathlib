@@ -1,5 +1,11 @@
+import random
+import string
+
 import pytest
+from fsspec.implementations.local import LocalFileSystem
+from fsspec.registry import _registry as fsspec_registry_private
 from fsspec.registry import known_implementations as fsspec_known_implementations
+from fsspec.registry import register_implementation as fsspec_register_implementation
 from fsspec.registry import registry as fsspec_registry
 
 from upath import UPath
@@ -70,8 +76,23 @@ def test_available_implementations():
     assert set(impl) == IMPLEMENTATIONS
 
 
-def test_available_implementations_with_fallback():
+@pytest.fixture
+def fake_registered_proto():
+    fake_proto = "".join(random.choices(string.ascii_lowercase, k=8))
+
+    class FakeRandomFS(LocalFileSystem):
+        protocol = fake_proto
+
+    fsspec_register_implementation(fake_proto, FakeRandomFS)
+    try:
+        yield fake_proto
+    finally:
+        fsspec_registry_private.pop(fake_proto, None)
+
+
+def test_available_implementations_with_fallback(fake_registered_proto):
     impl = available_implementations(fallback=True)
+    assert fake_registered_proto in impl
     assert set(impl) == IMPLEMENTATIONS.union(
         {
             *fsspec_known_implementations,
