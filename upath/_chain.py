@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Set
 from typing import Any
 from typing import NamedTuple
-from typing import Self
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from fsspec.core import get_filesystem_class
 
