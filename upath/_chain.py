@@ -8,7 +8,7 @@ from typing import Self
 from fsspec.core import get_filesystem_class
 
 from upath._protocol import get_upath_protocol
-from upath.registry import protocols
+from upath.registry import available_implementations
 
 __all__ = [
     "ChainSegment",
@@ -110,7 +110,7 @@ class FSSpecChainParser:
 
     def __init__(self):
         self.link: str = "::"
-        self.known_protocols: Set[str] = protocols
+        self.known_protocols: Set[str] = set()
 
     def unchain(self, path: str, kwargs: dict[str, Any]) -> list[ChainSegment]:
         """implements same behavior as fsspec.core._un_chain
@@ -126,7 +126,12 @@ class FSSpecChainParser:
         for p in path.split(self.link):
             if "://" in p:  # uri-like, fast-path
                 bits.append(p)
+            elif "/" in p:  # path-like, fast-path
+                bits.append(p)
             elif p in self.known_protocols:  # exact match a fsspec protocol
+                bits.append(f"{p}://")
+            elif p in (m := set(available_implementations(fallback=True))):
+                self.known_protocols = m
                 bits.append(f"{p}://")
             else:
                 bits.append(p)
