@@ -534,9 +534,9 @@
 
     reveal_type(UPath("abc").write_text("efg"))  # N: Revealed type is "builtins.int"
 
-- case: upath_link_to_py38
+- case: upath_link_to_py39
   disable_cache: false
-  mypy_config: python_version = 3.8
+  mypy_config: python_version = 3.9
   main: |
     from upath import UPath
 
@@ -550,9 +550,9 @@
 
     UPath("abc").link_to  # E: "UPath" has no attribute "link_to"  [attr-defined]
 
-- case: upath_walk_py38
+- case: upath_walk_py39
   disable_cache: false
-  mypy_config: python_version = 3.8
+  mypy_config: python_version = 3.9
   main: |
     from upath import UPath
 

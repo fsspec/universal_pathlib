@@ -1,5 +1,4 @@
-"""see upath/tests/conftest.py for fixtures
-"""
+"""see upath/tests/conftest.py for fixtures"""
 
 import sys
 

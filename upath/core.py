@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import sys
 import warnings
+from collections.abc import Generator
+from collections.abc import Mapping
+from collections.abc import Sequence
 from copy import copy
 from pathlib import Path
 from types import MappingProxyType
@@ -10,10 +13,7 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
-from typing import Generator
 from typing import Literal
-from typing import Mapping
-from typing import Sequence
 from typing import TextIO
 from typing import TypeVar
 from typing import overload
@@ -25,8 +25,6 @@ from fsspec.spec import AbstractFileSystem
 from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
 from upath._compat import method_and_classmethod
-from upath._compat import str_remove_prefix
-from upath._compat import str_remove_suffix
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
@@ -861,7 +859,7 @@ class UPath(PathlibPathShim, Path):
             fsspec_kwargs.setdefault("block_size", fsspec_kwargs.pop("buffering"))
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
-    def iterdir(self) -> Generator[UPath, None, None]:
+    def iterdir(self) -> Generator[UPath]:
         for name in self.fs.listdir(self.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
@@ -870,7 +868,7 @@ class UPath(PathlibPathShim, Path):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            _, _, name = str_remove_suffix(name, "/").rpartition(self._flavour.sep)
+            _, _, name = name.removesuffix("/").rpartition(self._flavour.sep)
             yield self.with_segments(*self.parts, name)
 
     def _scandir(self):
@@ -881,19 +879,15 @@ class UPath(PathlibPathShim, Path):
         del path._str  # fix _str = str(self) assignment
         return path
 
-    def glob(
-        self, pattern: str, *, case_sensitive=None
-    ) -> Generator[UPath, None, None]:
+    def glob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
         path_pattern = self.joinpath(pattern).path
         sep = self._flavour.sep
         base = self.fs._strip_protocol(self.path)
         for name in self.fs.glob(path_pattern):
-            name = str_remove_prefix(str_remove_prefix(name, base), sep)
+            name = name.removeprefix(base).removeprefix(sep)
             yield self.joinpath(name)
 
-    def rglob(
-        self, pattern: str, *, case_sensitive=None
-    ) -> Generator[UPath, None, None]:
+    def rglob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
@@ -902,7 +896,7 @@ class UPath(PathlibPathShim, Path):
             sep = self._flavour.sep
             base = self.fs._strip_protocol(self.path)
             for name in self.fs.glob(r_path_pattern):
-                name = str_remove_prefix(str_remove_prefix(name, base), sep)
+                name = name.removeprefix(base).removeprefix(sep)
                 yield self.joinpath(name)
 
         else:
@@ -913,7 +907,7 @@ class UPath(PathlibPathShim, Path):
             seen = set()
             for p in (path_pattern, r_path_pattern):
                 for name in self.fs.glob(p):
-                    name = str_remove_prefix(str_remove_prefix(name, base), sep)
+                    name = name.removeprefix(base).removeprefix(sep)
                     if name in seen:
                         continue
                     else:

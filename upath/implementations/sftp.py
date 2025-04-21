@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Generator
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
@@ -19,7 +19,7 @@ _unset: Any = object()
 class SFTPPath(UPath):
     __slots__ = ()
 
-    def iterdir(self) -> Generator[Self, None, None]:
+    def iterdir(self) -> Generator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))
         else:

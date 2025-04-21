@@ -3,7 +3,7 @@ import pathlib
 import pickle
 import sys
 import warnings
-from typing import Mapping
+from collections.abc import Mapping
 from urllib.parse import SplitResult
 
 import pytest

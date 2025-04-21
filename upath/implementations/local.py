@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Collection
+from collections.abc import MutableMapping
 from inspect import ismemberdescriptor
 from pathlib import Path
 from pathlib import PosixPath
 from pathlib import WindowsPath
 from typing import IO
 from typing import Any
-from typing import Collection
-from typing import MutableMapping
 from urllib.parse import SplitResult
 
 from upath._protocol import compatible_protocol

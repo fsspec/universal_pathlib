@@ -10,7 +10,7 @@ nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 
 
-@nox.session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
@@ -26,7 +26,7 @@ def tests(session: nox.Session) -> None:
     )
 
 
-@nox.session(python="3.8", name="tests-minversion")
+@nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
     session.install("fsspec==2022.1.0", ".[tests,dev]")
     session.run(
