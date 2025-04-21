@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "PathlibPathShim",
-    "str_remove_prefix",
-    "str_remove_suffix",
     "FSSpecAccessorShim",
     "deprecated",
 ]
@@ -366,25 +364,6 @@ else:
 
         def __repr__(self):
             return f"<{type(self._path).__name__}.parents>"
-
-
-if sys.version_info >= (3, 9):
-    str_remove_suffix = str.removesuffix
-    str_remove_prefix = str.removeprefix
-
-else:
-
-    def str_remove_suffix(s: str, suffix: str) -> str:
-        if s.endswith(suffix):
-            return s[: -len(suffix)]
-        else:
-            return s
-
-    def str_remove_prefix(s: str, prefix: str) -> str:
-        if s.startswith(prefix):
-            return s[len(prefix) :]
-        else:
-            return s
 
 
 class FSSpecAccessorShim:

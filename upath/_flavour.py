@@ -4,11 +4,11 @@ import os.path
 import posixpath
 import sys
 import warnings
+from collections.abc import Mapping
+from collections.abc import Sequence
 from functools import lru_cache
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Mapping
-from typing import Sequence
 from typing import TypedDict
 from typing import Union
 from urllib.parse import SplitResult
@@ -24,8 +24,6 @@ from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
 
 from upath._compat import deprecated
-from upath._compat import str_remove_prefix
-from upath._compat import str_remove_suffix
 from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
@@ -297,7 +295,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             pN = list(map(self.stringify_path, paths))
             drv = ""
         if self.supports_empty_parts:
-            return drv + self.sep.join([str_remove_suffix(p0, self.sep), *pN])
+            return drv + self.sep.join([p0.removesuffix(self.sep), *pN])
         else:
             return drv + posixpath.join(p0, *pN)
 
@@ -348,7 +346,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             root_marker = self.root_marker or self.sep
         else:
             root_marker = self.root_marker
-        return drive, root_marker, str_remove_prefix(tail, self.sep)
+        return drive, root_marker, tail.removeprefix(self.sep)
 
     # === deprecated backwards compatibility ===========================
 

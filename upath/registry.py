@@ -35,12 +35,12 @@ import re
 import sys
 import warnings
 from collections import ChainMap
+from collections.abc import Iterator
+from collections.abc import MutableMapping
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
-from typing import Iterator
-from typing import MutableMapping
 
 from fsspec.core import get_filesystem_class
 from fsspec.registry import known_implementations as _fsspec_known_implementations

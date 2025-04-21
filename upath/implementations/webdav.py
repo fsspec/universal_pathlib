@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from typing import Any
-from typing import Mapping
 from urllib.parse import urlsplit
 
 from fsspec.registry import known_implementations
 from fsspec.registry import register_implementation
 
 from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._compat import str_remove_prefix
-from upath._compat import str_remove_suffix
 from upath.core import UPath
 
 __all__ = [
@@ -68,8 +66,8 @@ class WebdavPath(UPath):
     @property
     def path(self) -> str:
         # webdav paths don't start at "/"
-        return str_remove_prefix(super().path, "/")
+        return super().path.removeprefix("/")
 
     def __str__(self):
-        base_url = str_remove_suffix(self.storage_options["base_url"], "/")
+        base_url = self.storage_options["base_url"].removesuffix("/")
         return super().__str__().replace("webdav://", f"webdav+{base_url}/", 1)

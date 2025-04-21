@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Generator
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
