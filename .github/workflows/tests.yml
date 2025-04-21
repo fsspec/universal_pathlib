@@ -28,6 +28,9 @@ jobs:
           - os: ubuntu-latest
             pyv: '3.9'
             fsspec: 'minversion'
+          - os: ubuntu-latest
+            pyv: '3.14'
+            fsspec: ''
 
     steps:
     - name: Check out the repository
