@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 
@@ -13,10 +12,6 @@ __all__ = [
     "S3Path",
     "AzurePath",
 ]
-
-
-# accessors are deprecated
-_CloudAccessor = _FSSpecAccessorShim
 
 
 class CloudPath(UPath):

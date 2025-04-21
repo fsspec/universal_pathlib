@@ -9,20 +9,11 @@ from collections.abc import Sequence
 from functools import wraps
 from pathlib import Path
 from pathlib import PurePath
-from typing import TYPE_CHECKING
-from typing import Any
 from typing import Callable
 from typing import TypeVar
-from urllib.parse import SplitResult
-
-from fsspec import get_filesystem_class
-
-if TYPE_CHECKING:
-    from upath import UPath
 
 __all__ = [
     "PathlibPathShim",
-    "FSSpecAccessorShim",
     "deprecated",
 ]
 
@@ -364,94 +355,6 @@ else:
 
         def __repr__(self):
             return f"<{type(self._path).__name__}.parents>"
-
-
-class FSSpecAccessorShim:
-    """this is a compatibility shim and will be removed"""
-
-    def __init__(self, parsed_url: SplitResult | None, **kwargs: Any) -> None:
-        if parsed_url and parsed_url.scheme:
-            cls = get_filesystem_class(parsed_url.scheme)
-            url_kwargs = cls._get_kwargs_from_urls(parsed_url.geturl())
-        else:
-            cls = get_filesystem_class(None)
-            url_kwargs = {}
-        url_kwargs.update(kwargs)
-        self._fs = cls(**url_kwargs)
-
-    def __init_subclass__(cls, **kwargs):
-        warnings.warn(
-            "All _FSSpecAccessor subclasses have been deprecated. "
-            " Please follow the universal_pathlib==0.2.0 migration guide at"
-            " https://github.com/fsspec/universal_pathlib for more"
-            " information.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    @classmethod
-    def from_path(cls, path: UPath) -> FSSpecAccessorShim:
-        """internal accessor for backwards compatibility"""
-        url = path._url._replace(scheme=path.protocol)
-        obj = cls(url, **path.storage_options)
-        obj.__dict__["_fs"] = path.fs
-        return obj
-
-    def _format_path(self, path: UPath) -> str:
-        return path.path
-
-    def open(self, path, mode="r", *args, **kwargs):
-        return path.fs.open(self._format_path(path), mode, *args, **kwargs)
-
-    def stat(self, path, **kwargs):
-        return path.fs.stat(self._format_path(path), **kwargs)
-
-    def listdir(self, path, **kwargs):
-        p_fmt = self._format_path(path)
-        contents = path.fs.listdir(p_fmt, **kwargs)
-        if len(contents) == 0 and not path.fs.isdir(p_fmt):
-            raise NotADirectoryError(str(self))
-        elif (
-            len(contents) == 1
-            and contents[0]["name"] == p_fmt
-            and contents[0]["type"] == "file"
-        ):
-            raise NotADirectoryError(str(self))
-        return contents
-
-    def glob(self, _path, path_pattern, **kwargs):
-        return _path.fs.glob(self._format_path(path_pattern), **kwargs)
-
-    def exists(self, path, **kwargs):
-        return path.fs.exists(self._format_path(path), **kwargs)
-
-    def info(self, path, **kwargs):
-        return path.fs.info(self._format_path(path), **kwargs)
-
-    def rm(self, path, recursive, **kwargs):
-        return path.fs.rm(self._format_path(path), recursive=recursive, **kwargs)
-
-    def mkdir(self, path, create_parents=True, **kwargs):
-        return path.fs.mkdir(
-            self._format_path(path), create_parents=create_parents, **kwargs
-        )
-
-    def makedirs(self, path, exist_ok=False, **kwargs):
-        return path.fs.makedirs(self._format_path(path), exist_ok=exist_ok, **kwargs)
-
-    def touch(self, path, **kwargs):
-        return path.fs.touch(self._format_path(path), **kwargs)
-
-    def mv(self, path, target, recursive=False, maxdepth=None, **kwargs):
-        if hasattr(target, "_accessor"):
-            target = target._accessor._format_path(target)
-        return path.fs.mv(
-            self._format_path(path),
-            target,
-            recursive=recursive,
-            maxdepth=maxdepth,
-            **kwargs,
-        )
 
 
 RT = TypeVar("RT")

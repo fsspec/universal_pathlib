@@ -15,14 +15,12 @@ from typing import Any
 from typing import BinaryIO
 from typing import Literal
 from typing import TextIO
-from typing import TypeVar
 from typing import overload
 from urllib.parse import urlsplit
 
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
-from upath._compat import FSSpecAccessorShim
 from upath._compat import PathlibPathShim
 from upath._compat import method_and_classmethod
 from upath._flavour import LazyFlavourDescriptor
@@ -45,30 +43,13 @@ __all__ = ["UPath"]
 
 
 def __getattr__(name):
-    if name == "_UriFlavour":
-        from upath._flavour import default_flavour
-
+    if name in {"_UriFlavour", "_FSSpecAccessor", "PT"}:
         warnings.warn(
-            "upath.core._UriFlavour should not be used anymore."
-            " Please follow the universal_pathlib==0.2.0 migration guide at"
-            " https://github.com/fsspec/universal_pathlib for more"
-            " information.",
-            DeprecationWarning,
+            f"upath.core.{name} has been removed.",
+            UserWarning,
             stacklevel=2,
         )
-        return default_flavour
-    elif name == "PT":
-        warnings.warn(
-            "upath.core.PT should not be used anymore."
-            " Please follow the universal_pathlib==0.2.0 migration guide at"
-            " https://github.com/fsspec/universal_pathlib for more"
-            " information.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return TypeVar("PT", bound="UPath")
-    else:
-        raise AttributeError(name)
+    raise AttributeError(name)
 
 
 _FSSPEC_HAS_WORKING_GLOB = None
@@ -91,10 +72,6 @@ def _make_instance(cls, args, kwargs):
 
 
 _unset: Any = object()
-
-
-# accessors are deprecated
-_FSSpecAccessor = FSSpecAccessorShim
 
 
 class UPath(PathlibPathShim, Path):
@@ -354,57 +331,10 @@ class UPath(PathlibPathShim, Path):
                 " universal_pathlib==0.2.0 migration guide at"
                 " https://github.com/fsspec/universal_pathlib for more"
                 " information.",
-                DeprecationWarning,
+                UserWarning,
                 stacklevel=2,
             )
             cls._protocol_dispatch = False
-
-        # Check if the user subclass has defined a custom accessor class
-        accessor_cls = getattr(cls, "_default_accessor", None)
-
-        has_custom_legacy_accessor = (
-            accessor_cls is not None
-            and issubclass(accessor_cls, FSSpecAccessorShim)
-            and accessor_cls is not FSSpecAccessorShim
-        )
-        has_customized_fs_instantiation = (
-            accessor_cls.__init__ is not FSSpecAccessorShim.__init__
-            or hasattr(accessor_cls, "_fs")
-        )
-
-        if has_custom_legacy_accessor and has_customized_fs_instantiation:
-            warnings.warn(
-                "Detected a customized `__init__` method or `_fs` attribute"
-                f" in the provided `_FSSpecAccessor` subclass of {cls.__name__!r}."
-                " It is recommended to instead override the `UPath._fs_factory`"
-                " classmethod to customize filesystem instantiation. Please follow"
-                " the universal_pathlib==0.2.0 migration guide at"
-                " https://github.com/fsspec/universal_pathlib for more"
-                " information.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-            def _fs_factory(
-                cls_, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
-            ) -> AbstractFileSystem:
-                url = urlsplit(urlpath)
-                if protocol:
-                    url = url._replace(scheme=protocol)
-                inst = cls_._default_accessor(url, **storage_options)
-                return inst._fs
-
-            def _parse_storage_options(
-                cls_, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
-            ) -> dict[str, Any]:
-                url = urlsplit(urlpath)
-                if protocol:
-                    url = url._replace(scheme=protocol)
-                inst = cls_._default_accessor(url, **storage_options)
-                return inst._fs.storage_options
-
-            cls._fs_factory = classmethod(_fs_factory)
-            cls._parse_storage_options = classmethod(_parse_storage_options)
 
     @property
     def _path(self):
@@ -444,21 +374,11 @@ class UPath(PathlibPathShim, Path):
         def __getattr__(self, item):
             if item == "_accessor":
                 warnings.warn(
-                    "UPath._accessor is deprecated. Please use"
-                    " UPath.fs instead. Follow the"
-                    " universal_pathlib==0.2.0 migration guide at"
-                    " https://github.com/fsspec/universal_pathlib for more"
-                    " information.",
-                    DeprecationWarning,
+                    "UPath._accessor has been removed.",
+                    UserWarning,
                     stacklevel=2,
                 )
-                if hasattr(self, "_default_accessor"):
-                    accessor_cls = self._default_accessor
-                else:
-                    accessor_cls = FSSpecAccessorShim
-                return accessor_cls.from_path(self)
-            else:
-                raise AttributeError(item)
+            raise AttributeError(item)
 
     @classmethod
     def _from_parts(cls, parts, **kwargs):
