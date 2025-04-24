@@ -44,7 +44,7 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs >=2022.1.0",
+    "adlfs >=2022.4.0",
     "aiohttp >=3.11",
     "requests >=2",
     "gcsfs >=2022.1.0",
