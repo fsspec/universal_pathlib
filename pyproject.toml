@@ -56,10 +56,12 @@ dev = [
     "cheroot",
     # "hadoop-test-cluster",
     # "pyarrow",
-    "pydantic",
-    "pydantic-settings",
     "smbprotocol",
     "typing_extensions; python_version<'3.11'",
+]
+dev-third-party = [
+    "pydantic",
+    "pydantic-settings",
 ]
 
 [project.urls]

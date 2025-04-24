@@ -13,9 +13,11 @@ locations = ("upath",)
 @nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
-    session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.env["PYO3_USE_ABI3_FORWARD_COMPATIBILITY"] = "1"
-    session.install(".[tests,dev]")
+    if session.python == "3.14":
+        session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
+        session.install(".[tests,dev]")
+    else:
+        session.install(".[tests,dev,dev-third-party]")
     session.run(
         "pytest",
         "-m",
