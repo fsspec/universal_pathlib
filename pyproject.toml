@@ -44,20 +44,25 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs",
-    "aiohttp",
-    "requests",
-    "gcsfs",
-    "s3fs",
+    "adlfs >=2022.1.0",
+    "aiohttp >=3.11",
+    "requests >=2",
+    "gcsfs >=2022.1.0",
+    "s3fs >=2022.1.0",
     "moto[s3,server]",
-    "aws-sam-translator<=1.55.0; python_version > '3.13'",
-    "webdav4[fsspec]",
-    "paramiko",
-    "wsgidav",
-    "cheroot",
+    # --- prevent pydantic to be pulled in by moto
+    "moto[s3,server] ==4.2.6; python_version == '3.14'",
+    "cfn-lint==0.72.6; python_version == '3.14'",
+    "aws-sam-translator==1.55.0; python_version == '3.14'",
+    "py-partiql-parser==0.4.0; python_version == '3.14'",
+    # --- end
+    "webdav4[fsspec] >=0.10.0",
+    "paramiko >=3.5.1",
+    "wsgidav >=4.3.3",
+    "cheroot >=10",
     # "hadoop-test-cluster",
     # "pyarrow",
-    "smbprotocol",
+    "smbprotocol >=1.15.0",
     "typing_extensions; python_version<'3.11'",
 ]
 dev-third-party = [
