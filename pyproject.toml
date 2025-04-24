@@ -50,6 +50,7 @@ dev = [
     "gcsfs",
     "s3fs",
     "moto[s3,server]",
+    "aws-sam-translator<=1.55.0; python_version > '3.13'",
     "webdav4[fsspec]",
     "paramiko",
     "wsgidav",
