@@ -11,6 +11,7 @@ from pathlib import WindowsPath
 from typing import IO
 from typing import Any
 from urllib.parse import SplitResult
+import warnings
 
 from upath._protocol import compatible_protocol
 from upath.core import UPath
