@@ -6,15 +6,23 @@ import os
 import nox
 
 nox.options.reuse_existing_virtualenvs = True
+nox.options.error_on_external_run = True
+
+nox.needs_version = ">=2024.3.2"
+nox.options.default_venv_backend = "uv|virtualenv"
+
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 
 
-@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
-    session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.install(".[tests,dev]")
+    if session.python == "3.14":
+        session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
+        session.install(".[tests,dev]")
+    else:
+        session.install(".[tests,dev,dev-third-party]")
     session.run(
         "pytest",
         "-m",
@@ -87,13 +95,13 @@ def black(session):
 
 @nox.session
 def type_checking(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[typechecking]")
     session.run("python", "-m", "mypy")
 
 
 @nox.session
 def typesafety(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[tests,typechecking]")
     session.run(
         "python",
         "-m",
