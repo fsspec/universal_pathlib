@@ -6,6 +6,11 @@ import os
 import nox
 
 nox.options.reuse_existing_virtualenvs = True
+nox.options.error_on_external_run = True
+
+nox.needs_version = ">=2024.3.2"
+nox.options.default_venv_backend = "uv|virtualenv"
+
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 

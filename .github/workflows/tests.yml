@@ -22,15 +22,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         pyv: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        fsspec: ['']
+        session: ['tests']
 
         include:
           - os: ubuntu-latest
             pyv: '3.9'
-            fsspec: 'minversion'
+            session: 'tests-minversion'
           - os: ubuntu-latest
             pyv: '3.14'
-            fsspec: ''
 
     steps:
     - name: Check out the repository
@@ -38,20 +37,13 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Python ${{ matrix.pyv }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.pyv }}
-        allow-prereleases: true
-
-    - name: Upgrade pip and nox
-      run: |
-        python -m pip install --upgrade pip nox
-        pip --version
-        nox --version
+    - uses: hynek/setup-cached-uv@v2
 
     - name: Run tests
-      run: nox -s tests-${{ matrix.fsspec || matrix.pyv }} -- --cov-report=xml
+      env:
+        SESSION: ${{ matrix.session }}
+        PYTHON: ${{ matrix.pyv }}
+      run: uvx nox --sessions $SESSION --python $PYTHON -- --cov-report=xml
 
   typesafety:
     runs-on: ubuntu-latest
