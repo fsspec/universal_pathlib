@@ -46,7 +46,7 @@ typechecking = [
     "pytest-mypy-plugins >=3.1.2",
 ]
 dev = [
-    "fsspec[adlfs,http,github,gcs,s3,ssh,smb]",
+    "fsspec[adl,http,github,gcs,s3,ssh,smb] >=2022.1.0,!=2024.3.1",
     "webdav4[fsspec]",
     # testing
     "moto[s3,server]",
