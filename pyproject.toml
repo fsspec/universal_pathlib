@@ -47,6 +47,9 @@ typechecking = [
 ]
 dev = [
     "fsspec[adl,http,github,gcs,s3,ssh,smb] >=2022.1.0,!=2024.3.1",
+    "s3fs >=2022.1.0",
+    "gcsfs >=2022.1.0",
+    "adlfs >=2022.1.0",
     "webdav4[fsspec]",
     # testing
     "moto[s3,server]",
