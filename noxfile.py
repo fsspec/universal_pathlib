@@ -90,13 +90,13 @@ def black(session):
 
 @nox.session
 def type_checking(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[typechecking]")
     session.run("python", "-m", "mypy")
 
 
 @nox.session
 def typesafety(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[tests,typechecking]")
     session.run(
         "python",
         "-m",

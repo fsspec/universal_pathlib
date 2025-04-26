@@ -39,31 +39,27 @@ tests = [
     "pytest-cov >=4.1.0",
     "pytest-mock >=3.12.0",
     "pylint >=2.17.4",
-    "mypy >=1.10.0",
-    "pytest-mypy-plugins >=3.1.2",
     "packaging",
 ]
+typechecking = [
+    "mypy >=1.10.0",
+    "pytest-mypy-plugins >=3.1.2",
+]
 dev = [
-    "adlfs >=2022.4.0",
-    "aiohttp >=3.11",
-    "requests >=2",
-    "fsspec ==2025.3.1",
-    "gcsfs ==2025.3.1",
-    "s3fs ==2025.3.1",
+    "fsspec[adlfs,http,github,gcs,s3,ssh,smb]",
+    "webdav4[fsspec]",
+    # testing
     "moto[s3,server]",
     # --- prevent pydantic to be pulled in by moto
-    "moto[s3,server] ==4.2.6; python_version == '3.14'",
-    "cfn-lint==0.72.6; python_version == '3.14'",
-    "aws-sam-translator==1.55.0; python_version == '3.14'",
-    "py-partiql-parser==0.4.0; python_version == '3.14'",
+    "moto[s3,server] ==4.2.6; python_version > '3.13'",
+    "cfn-lint<=0.72.6; python_version > '3.13'",
+    "aws-sam-translator==1.55.0; python_version > '3.13'",
+    "py-partiql-parser==0.4.0; python_version > '3.13'",
     # --- end
-    "webdav4[fsspec] >=0.10.0",
-    "paramiko >=3.5.1",
-    "wsgidav >=4.3.3",
-    "cheroot >=10",
+    "wsgidav",
+    "cheroot",
     # "hadoop-test-cluster",
     # "pyarrow",
-    "smbprotocol >=1.15.0",
     "typing_extensions; python_version<'3.11'",
 ]
 dev-third-party = [
