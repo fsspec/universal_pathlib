@@ -160,6 +160,10 @@ ignore_missing_imports = true
 module = "webdav4.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "pathlib_abc.*"
+ignore_missing_imports = true
+
 [tool.pylint.format]
 max-line-length = 88
 
