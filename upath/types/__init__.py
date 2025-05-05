@@ -150,7 +150,7 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
     def walk(
         self,
         top_down: bool = ...,
-        on_error: Callable[[Exception], ...] | None = ...,
+        on_error: Callable[[Exception], Any] | None = ...,
         follow_symlinks: bool = ...,
     ) -> Iterator[Self]: ...
 

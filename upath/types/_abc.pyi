@@ -50,7 +50,7 @@ class JoinablePath(ABC):
     def parents(self) -> Sequence[Self]: ...
     def full_match(self, pattern: str) -> bool: ...
 
-OnErrorCallable = Callable[[Exception], None]
+OnErrorCallable = Callable[[Exception], Any]
 T = TypeVar("T", bound="WritablePath")
 
 class ReadablePath(JoinablePath):
