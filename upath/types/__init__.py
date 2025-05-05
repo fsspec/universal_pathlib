@@ -19,6 +19,8 @@ if sys.version_info > (3, 11):
 else:
     from typing_extensions import Self
 
+from pathlib_abc import magic_open
+
 from upath.types._abc import JoinablePath
 from upath.types._abc import PathInfo
 from upath.types._abc import PathParser
@@ -42,7 +44,7 @@ __all__ = [
 
 
 class OpenablePath(ReadablePath, WritablePath):
-    """A path that can be read from and written to."""
+    """Helper class to annotate read/writable paths which have an .open() method."""
 
     __slots__ = ()
 
@@ -73,7 +75,8 @@ class OpenablePath(ReadablePath, WritablePath):
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> IO[Any]: ...
+    ) -> IO[Any]:
+        return magic_open(self, mode, buffering, encoding, errors, newline)
 
 
 if sys.version_info >= (3, 14):
