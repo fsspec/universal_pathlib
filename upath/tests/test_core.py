@@ -401,8 +401,10 @@ def test_normalize(unnormalized, normalized):
         result = pth.resolve(strict=True, follow_redirects=False)
     else:
         result = pth.resolve(strict=True)
+    str_expected = str(expected)
+    str_result = str(result)
     assert expected == result
-    assert str(expected) == str(result)
+    assert str_expected == str_result
 
 
 @pytest.mark.parametrize(
@@ -418,18 +420,22 @@ def test_query_string(uri, query_str):
     assert p.path.endswith(query_str)
 
 
-@pytest.mark.parametrize(
-    "base,join",
-    [
-        ("/a", "s3://bucket/b"),
-        ("s3://bucket/a", "gs://b/c"),
-        ("gs://bucket/a", "memory://b/c"),
-        ("memory://bucket/a", "s3://b/c"),
-    ],
-)
+PROTOCOL_MISMATCH = [
+    ("/a", "s3://bucket/b"),
+    ("s3://bucket/a", "gs://b/c"),
+    ("gs://bucket/a", "memory://b/c"),
+    ("memory://bucket/a", "s3://b/c"),
+]
+
+
+@pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
 def test_joinpath_on_protocol_mismatch(base, join):
     with pytest.raises(ValueError):
         UPath(base).joinpath(UPath(join))
+
+
+@pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
+def test_truediv_on_protocol_mismatch(base, join):
     with pytest.raises(ValueError):
         UPath(base) / UPath(join)
 
