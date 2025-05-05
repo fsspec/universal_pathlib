@@ -5,8 +5,13 @@ import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import IO
+from typing import Any
+from typing import BinaryIO
 from typing import Callable
+from typing import Literal
 from typing import Protocol
+from typing import TextIO
+from typing import overload
 from typing import runtime_checkable
 
 if sys.version_info > (3, 11):
@@ -41,6 +46,26 @@ class OpenablePath(ReadablePath, WritablePath):
 
     __slots__ = ()
 
+    @overload
+    def open(
+        self,
+        mode: Literal["r", "w", "a"] = "r",
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+    ) -> TextIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: Literal["rb", "wb", "ab"],
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+    ) -> BinaryIO: ...
+
     def open(
         self,
         mode: str = "r",
@@ -48,7 +73,7 @@ class OpenablePath(ReadablePath, WritablePath):
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> IO[str | bytes]: ...
+    ) -> IO[Any]: ...
 
 
 if sys.version_info >= (3, 14):
@@ -158,6 +183,26 @@ class CompatOpenablePath(CompatReadablePath, CompatWritablePath, Protocol):
 
     __slots__ = ()
 
+    @overload
+    def open(
+        self,
+        mode: Literal["r", "w", "a"] = "r",
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+    ) -> TextIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: Literal["rb", "wb", "ab"],
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+    ) -> BinaryIO: ...
+
     def open(
         self,
         mode: str = "r",
@@ -165,7 +210,7 @@ class CompatOpenablePath(CompatReadablePath, CompatWritablePath, Protocol):
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> IO[str | bytes]: ...
+    ) -> IO[Any]: ...
 
 
 class StatResultType(Protocol):
