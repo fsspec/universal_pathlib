@@ -8,13 +8,14 @@ import nox
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
+hide_pip_install = os.environ.get("CI", "") == ""
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.install(".[tests,dev]")
+    session.install(".[tests,dev]", silent=hide_pip_install)
     session.run(
         "pytest",
         "-m",
