@@ -31,9 +31,6 @@ class HTTPPath(UPath):
     def root(self) -> str:  # type: ignore[override]
         return super().root or "/"
 
-    def __str__(self):
-        return super(UPath, self).__str__()
-
     def is_file(self):
         try:
             next(super().iterdir())
