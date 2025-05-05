@@ -5,6 +5,7 @@ import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import IO
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
 from typing import Callable
@@ -14,10 +15,11 @@ from typing import TextIO
 from typing import overload
 from typing import runtime_checkable
 
-if sys.version_info > (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+if TYPE_CHECKING:
+    if sys.version_info > (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 from pathlib_abc import magic_open
 

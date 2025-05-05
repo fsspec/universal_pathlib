@@ -302,7 +302,9 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     def split(self, path: PathOrStr):
         stripped_path = self.strip_protocol(path)
         head = self.parent(stripped_path) or self.root_marker
-        if head:
+        if head == self.sep:
+            return head, stripped_path[1:]
+        elif head:
             return head, stripped_path[len(head) + 1 :]
         else:
             return "", stripped_path
@@ -337,6 +339,20 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             return os.path.normcase(self.stringify_path(path))
         else:
             return self.stringify_path(path)
+
+    def splitext(self, path: PathOrStr) -> tuple[str, str]:
+        path = self.stringify_path(path)
+        if self.local_file:
+            return os.path.splitext(path)
+        else:
+            path, sep, name = path.rpartition(self.sep)
+            if name:
+                stem, dot, ext = name.rpartition(".")
+                suffix = dot + ext
+            else:
+                stem = name
+                suffix = ""
+            return path + sep + stem, suffix
 
     # === Python3.12 pathlib flavour ==================================
 

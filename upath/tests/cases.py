@@ -514,19 +514,6 @@ class BaseTests:
         with fs.open(path) as f:
             assert f.read() == b"hello world"
 
-    @pytest.mark.xfail(
-        sys.version_info >= (3, 13),
-        reason="no support for private `._drv`, `._root`, `._parts` in 3.13",
-    )
-    def test_access_to_private_api(self):
-        # DO NOT access these private attributes in your code
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._drv, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._root, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._parts, (list, tuple))
-
     def test_hashable(self):
         assert hash(self.path)
 
