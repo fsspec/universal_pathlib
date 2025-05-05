@@ -440,15 +440,7 @@ def test_truediv_on_protocol_mismatch(base, join):
         UPath(base) / UPath(join)
 
 
-@pytest.mark.parametrize(
-    "base,join",
-    [
-        ("/a", "s3://bucket/b"),
-        ("s3://bucket/a", "gs://b/c"),
-        ("gs://bucket/a", "memory://b/c"),
-        ("memory://bucket/a", "s3://b/c"),
-    ],
-)
+@pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
 def test_joinuri_on_protocol_mismatch(base, join):
     assert UPath(base).joinuri(UPath(join)) == UPath(join)
 
