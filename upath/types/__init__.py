@@ -37,8 +37,8 @@ __all__ = [
     "CompatWritablePath",
     "CompatOpenablePath",
     "PathInfo",
-    "PathParser",
     "StatResultType",
+    "PathParser",
     "UPathParser",
 ]
 
