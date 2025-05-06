@@ -390,7 +390,11 @@ class UPath(_UPathMixin, OpenablePath):
             yield base.with_segments(*base.parts, name)
 
     def __open_rb__(self, buffering=-1) -> BinaryIO:
-        return self.open("rb", buffering=buffering)
+        block_size = _buffering2blocksize("wb", buffering)
+        kw = {}
+        if block_size is not _DefaultValue.UNSET:
+            kw["block_size"] = block_size
+        return self.fs.open(self.path, mode="rb", **kw)
 
     def readlink(self) -> Self:
         raise NotImplementedError
@@ -431,7 +435,11 @@ class UPath(_UPathMixin, OpenablePath):
                 raise FileExistsError(str(self))
 
     def __open_wb__(self, buffering=-1) -> BinaryIO:
-        return self.open("wb", buffering=buffering)
+        block_size = _buffering2blocksize("wb", buffering)
+        kw = {}
+        if block_size is not _DefaultValue.UNSET:
+            kw["block_size"] = block_size
+        return self.fs.open(self.path, mode="wb", **kw)
 
     # --- upath overrides ---------------------------------------------
 
