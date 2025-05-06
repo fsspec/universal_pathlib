@@ -369,6 +369,17 @@ class UPath(_UPathMixin, OpenablePath):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.path!r}, protocol={self._protocol!r})"
 
+    # === JoinablePath overrides ======================================
+
+    def with_name(self, name):
+        """Return a new path with the file name changed."""
+        split = self.parser.split
+        if self.parser.sep in name:  # `split(name)[0]`
+            raise ValueError(f"Invalid name {name!r}")
+        path = str(self)
+        path = path.removesuffix(split(path)[1]) + name
+        return self.with_segments(path)
+
     # === ReadablePath attributes =====================================
 
     def info(self) -> dict[str, Any]:
@@ -398,17 +409,6 @@ class UPath(_UPathMixin, OpenablePath):
 
     def readlink(self) -> Self:
         raise NotImplementedError
-
-    # === ReadablePath overrides ======================================
-
-    def with_name(self, name):
-        """Return a new path with the file name changed."""
-        split = self.parser.split
-        if self.parser.sep in name:  # `split(name)[0]`
-            raise ValueError(f"Invalid name {name!r}")
-        path = str(self)
-        path = path.removesuffix(split(path)[1]) + name
-        return self.with_segments(path)
 
     # --- WritablePath attributes -------------------------------------
 

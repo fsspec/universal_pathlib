@@ -284,7 +284,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
 
     def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
         if not paths:
-            return path
+            return self.strip_protocol(path)
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))
@@ -305,11 +305,18 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         stripped_path = self.strip_protocol(path)
         head = self.parent(stripped_path) or self.root_marker
         if head == self.sep:
-            return head, stripped_path[1:]
+            tail = stripped_path[1:]
         elif head:
-            return head, stripped_path[len(head) + 1 :]
+            tail = stripped_path[len(head) + 1 :]
         else:
-            return "", stripped_path
+            tail = stripped_path
+        if (
+            not tail
+            and not self.has_meaningful_trailing_slash
+            and head != stripped_path
+        ):
+            return self.split(head)
+        return head, tail
 
     def splitdrive(self, path: PathOrStr) -> tuple[str, str]:
         path = self.strip_protocol(path)

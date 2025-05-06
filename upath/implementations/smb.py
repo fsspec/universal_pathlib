@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 import smbprotocol.exceptions
 
-from upath import UPath
+from upath.core import UPath
 
 _unset: Any = object()
 
