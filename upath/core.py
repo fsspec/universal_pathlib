@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import os
 import sys
 import warnings
@@ -62,7 +63,21 @@ def _make_instance(cls, args, kwargs):
     return cls(*args, **kwargs)
 
 
-_unset: Any = object()
+class _DefaultValue(enum.Enum):
+    UNSET = enum.auto()
+
+
+def _buffering2blocksize(mode: str, buffering: int) -> int | _DefaultValue.UNSET:
+    if not isinstance(buffering, int):
+        raise TypeError("buffering must be an integer")
+    if buffering == 0:  # buffering disabled
+        if "b" not in mode:  # text mode
+            raise ValueError("can't have unbuffered text I/O")
+        return buffering
+    elif buffering == -1:
+        return _DefaultValue.UNSET
+    else:
+        return buffering
 
 
 if sys.version_info >= (3, 11):
@@ -468,7 +483,11 @@ class UPath(_UPathMixin, OpenablePath):
             fsspec_kwargs[key] = value
         # translate pathlib buffering to fs block_size
         if "buffering" in fsspec_kwargs:
-            fsspec_kwargs.setdefault("block_size", fsspec_kwargs.pop("buffering"))
+            if "block_size" in fsspec_kwargs:
+                raise TypeError("cannot specify both 'buffering' and 'block_size'")
+            block_size = _buffering2blocksize(mode, fsspec_kwargs.pop("buffering"))
+            if block_size is not _DefaultValue.UNSET:
+                fsspec_kwargs.setdefault("block_size", block_size)
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
     # === pathlib.Path ================================================
@@ -652,8 +671,8 @@ class UPath(_UPathMixin, OpenablePath):
         self,
         target: str | os.PathLike[str] | UPath,
         *,  # note: non-standard compared to pathlib
-        recursive: bool = _unset,
-        maxdepth: int | None = _unset,
+        recursive: bool = _DefaultValue.UNSET,
+        maxdepth: int | None = _DefaultValue.UNSET,
         **kwargs: Any,
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
@@ -678,9 +697,9 @@ class UPath(_UPathMixin, OpenablePath):
                 parent = parent.resolve()
             target_ = parent.joinpath(os.path.normpath(target))
         assert isinstance(target_, type(self)), "identical protocols enforced above"
-        if recursive is not _unset:
+        if recursive is not _DefaultValue.UNSET:
             kwargs["recursive"] = recursive
-        if maxdepth is not _unset:
+        if maxdepth is not _DefaultValue.UNSET:
             kwargs["maxdepth"] = maxdepth
         self.fs.mv(
             self.path,
