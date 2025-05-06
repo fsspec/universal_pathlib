@@ -8,14 +8,15 @@ import nox
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
-hide_pip_install = os.environ.get("CI", "") == ""
+running_in_ci = os.environ.get("CI", "") != ""
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.install(".[tests,dev]", silent=hide_pip_install)
+    session.install(".[tests,dev]")
+    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -30,6 +31,7 @@ def tests(session: nox.Session) -> None:
 @nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
     session.install("fsspec==2022.1.0", ".[tests,dev]")
+    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
