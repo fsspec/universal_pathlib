@@ -8,7 +8,6 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
-from typing import Callable
 from typing import Literal
 from typing import Protocol
 from typing import TextIO
@@ -131,9 +130,9 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
     # not available in Python 3.9.* pathlib:
     #   - `__open_rb__`
     #   - `info`
-    #   - `readlink`
     #   - `copy`
     #   - `copy_into`
+    #   - `walk`
     __slots__ = ()
 
     def read_bytes(self) -> bytes: ...
@@ -148,13 +147,6 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
     def iterdir(self) -> Iterator[Self]: ...
 
     def glob(self, pattern: str, *, recurse_symlinks: bool = ...) -> Iterator[Self]: ...
-
-    def walk(
-        self,
-        top_down: bool = ...,
-        on_error: Callable[[Exception], Any] | None = ...,
-        follow_symlinks: bool = ...,
-    ) -> Iterator[Self]: ...
 
     def readlink(self) -> Self: ...
 
