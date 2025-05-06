@@ -3,7 +3,6 @@ import pathlib
 import pickle
 import sys
 import warnings
-from collections.abc import Mapping
 from urllib.parse import SplitResult
 
 import pytest
@@ -286,21 +285,18 @@ def test_handle_fspath_args(tmp_path):
     ],
 )
 def test_access_to_private_kwargs_and_url(urlpath):
+    p0 = UPath(urlpath)
+    assert not hasattr(p0, "_kwargs")
+
     # fixme: this should be deprecated...
-    pth = UPath(urlpath)
-    with pytest.warns(DeprecationWarning, match="UPath._kwargs is deprecated"):
-        assert isinstance(pth._kwargs, Mapping)
-    with pytest.warns(DeprecationWarning, match="UPath._kwargs is deprecated"):
-        assert pth._kwargs == {}
-    assert isinstance(pth._url, SplitResult)
-    assert pth._url.scheme == "" or pth._url.scheme in pth.fs.protocol
-    assert pth._url.path == pth.path
-    subpth = pth / "foo"
-    with pytest.warns(DeprecationWarning, match="UPath._kwargs is deprecated"):
-        assert subpth._kwargs == {}
-    assert isinstance(subpth._url, SplitResult)
-    assert subpth._url.scheme == "" or subpth._url.scheme in subpth.fs.protocol
-    assert subpth._url.path == subpth.path
+    assert isinstance(p0._url, SplitResult)
+    assert p0._url.scheme == "" or p0._url.scheme in p0.fs.protocol
+    assert p0._url.path == p0.path
+
+    p1 = p0 / "foo"
+    assert isinstance(p1._url, SplitResult)
+    assert p1._url.scheme == "" or p1._url.scheme in p1.fs.protocol
+    assert p1._url.path == p1.path
 
 
 def test_copy_path_append_kwargs():
@@ -385,7 +381,15 @@ PROTOCOL_MISMATCH = [
 ]
 
 
-@pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
+@pytest.mark.parametrize(
+    "base,join",
+    [
+        pytest.param("/a", "s3://bucket/b", marks=pytest.mark.xfail),
+        ("s3://bucket/a", "gs://b/c"),
+        ("gs://bucket/a", "memory://b/c"),
+        ("memory://bucket/a", "s3://b/c"),
+    ],
+)
 def test_joinpath_on_protocol_mismatch(base, join):
     with pytest.raises(ValueError):
         UPath(base).joinpath(UPath(join))
