@@ -10,6 +10,12 @@ import pytest
 from upath import UPath
 from upath.implementations.cloud import GCSPath
 from upath.implementations.cloud import S3Path
+from upath.types import CompatOpenablePath
+from upath.types import CompatReadablePath
+from upath.types import CompatWritablePath
+from upath.types import OpenablePath
+from upath.types import ReadablePath
+from upath.types import WritablePath
 
 from .cases import BaseTests
 from .utils import only_on_windows
@@ -110,20 +116,41 @@ def test_subclass(local_testdir):
 def test_subclass_with_gcs():
     path = UPath("gcs://bucket", anon=True)
     assert isinstance(path, UPath)
-    assert isinstance(path, pathlib.Path)
+    assert isinstance(path, ReadablePath)
+    assert isinstance(path, WritablePath)
+    assert isinstance(path, OpenablePath)
+    assert isinstance(path, CompatReadablePath)
+    assert isinstance(path, CompatWritablePath)
+    assert isinstance(path, CompatOpenablePath)
+    assert not isinstance(path, os.PathLike)
+    assert not isinstance(path, pathlib.Path)
 
 
 def test_instance_check(local_testdir):
-    upath = UPath(local_testdir)
+    path = UPath(local_testdir)
     # test instance check passes
-    assert isinstance(upath, pathlib.Path)
-    assert isinstance(upath, UPath)
+    assert isinstance(path, UPath)
+    assert isinstance(path, ReadablePath)
+    assert isinstance(path, WritablePath)
+    assert isinstance(path, OpenablePath)
+    assert isinstance(path, CompatReadablePath)
+    assert isinstance(path, CompatWritablePath)
+    assert isinstance(path, CompatOpenablePath)
+    assert isinstance(path, os.PathLike)
+    assert isinstance(path, pathlib.Path)
 
 
 def test_instance_check_local_uri(local_testdir):
-    upath = UPath(f"file://{local_testdir}")
-    assert isinstance(upath, pathlib.Path)
-    assert isinstance(upath, UPath)
+    path = UPath(f"file://{local_testdir}")
+    assert isinstance(path, UPath)
+    assert isinstance(path, ReadablePath)
+    assert isinstance(path, WritablePath)
+    assert isinstance(path, OpenablePath)
+    assert isinstance(path, CompatReadablePath)
+    assert isinstance(path, CompatWritablePath)
+    assert isinstance(path, CompatOpenablePath)
+    assert isinstance(path, os.PathLike)
+    assert not isinstance(path, pathlib.Path)
 
 
 @pytest.mark.xfail(reason="unsupported on universal_pathlib>0.1.4")
