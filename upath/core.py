@@ -357,8 +357,13 @@ class UPath(_UPathMixin, OpenablePath):
 
     def __str__(self) -> str:
         path = self.parser.join(*self._raw_paths)
-        if self._protocol and not path.startswith(f"{self._protocol}://"):
-            return f"{self._protocol}://{path}"
+        if self._protocol:
+            if path.startswith(f"{self._protocol}://"):
+                return path
+            elif path.startswith(f"{self._protocol}:/"):
+                return path.replace(":/", "://", 1)
+            else:
+                return f"{self._protocol}://{path}"
         return path
 
     def __repr__(self) -> str:
