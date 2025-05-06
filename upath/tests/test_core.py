@@ -336,45 +336,6 @@ def test_uri_parsing():
 NORMALIZATIONS = (
     ("unnormalized", "normalized"),
     (
-        # Expected normalization results according to curl
-        ("http://example.com", "http://example.com/"),
-        ("http://example.com/", "http://example.com/"),
-        ("http://example.com/a", "http://example.com/a"),
-        ("http://example.com//a", "http://example.com//a"),
-        ("http://example.com///a", "http://example.com///a"),
-        ("http://example.com////a", "http://example.com////a"),
-        ("http://example.com/a/.", "http://example.com/a/"),
-        ("http://example.com/a/./", "http://example.com/a/"),
-        ("http://example.com/a/./b", "http://example.com/a/b"),
-        ("http://example.com/a/.//", "http://example.com/a//"),
-        ("http://example.com/a/.//b", "http://example.com/a//b"),
-        ("http://example.com/a//.", "http://example.com/a//"),
-        ("http://example.com/a//./", "http://example.com/a//"),
-        ("http://example.com/a//./b", "http://example.com/a//b"),
-        ("http://example.com/a//.//", "http://example.com/a///"),
-        ("http://example.com/a//.//b", "http://example.com/a///b"),
-        ("http://example.com/a/..", "http://example.com/"),
-        ("http://example.com/a/../", "http://example.com/"),
-        ("http://example.com/a/../.", "http://example.com/"),
-        ("http://example.com/a/../..", "http://example.com/"),
-        ("http://example.com/a/../../", "http://example.com/"),
-        ("http://example.com/a/../..//", "http://example.com//"),
-        ("http://example.com/a/..//", "http://example.com//"),
-        ("http://example.com/a/..//.", "http://example.com//"),
-        ("http://example.com/a/..//..", "http://example.com/"),
-        ("http://example.com/a/../b", "http://example.com/b"),
-        ("http://example.com/a/..//b", "http://example.com//b"),
-        ("http://example.com/a//..", "http://example.com/a/"),
-        ("http://example.com/a//../", "http://example.com/a/"),
-        ("http://example.com/a//../.", "http://example.com/a/"),
-        ("http://example.com/a//../..", "http://example.com/"),
-        ("http://example.com/a//../../", "http://example.com/"),
-        ("http://example.com/a//../..//", "http://example.com//"),
-        ("http://example.com/a//..//..", "http://example.com/a/"),
-        ("http://example.com/a//../b", "http://example.com/a/b"),
-        ("http://example.com/a//..//", "http://example.com/a//"),
-        ("http://example.com/a//..//.", "http://example.com/a//"),
-        ("http://example.com/a//..//b", "http://example.com/a//b"),
         # Normalization with and without an authority component
         ("memory:/a/b/..", "memory://a/"),
         ("memory:/a/b/.", "memory://a/b/"),
@@ -396,11 +357,7 @@ NORMALIZATIONS = (
 def test_normalize(unnormalized, normalized):
     expected = UPath(normalized)
     pth = UPath(unnormalized)
-    if pth.protocol in {"http", "https"}:
-        # Normalise only, do not attempt to follow redirects for http:// paths here
-        result = pth.resolve(strict=True, follow_redirects=False)
-    else:
-        result = pth.resolve(strict=True)
+    result = pth.resolve(strict=True)
     str_expected = str(expected)
     str_result = str(result)
     assert expected == result

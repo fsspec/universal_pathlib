@@ -186,3 +186,65 @@ def test_joinuri_behavior(base, rel, expected):
     pr = p0.joinuri(rel)
     pe = UPath(expected)
     assert pr == pe
+
+
+NORMALIZATIONS = (
+    ("unnormalized", "normalized"),
+    (
+        # Expected normalization results according to curl
+        ("http://example.com", "http://example.com/"),
+        ("http://example.com/", "http://example.com/"),
+        ("http://example.com/a", "http://example.com/a"),
+        ("http://example.com//a", "http://example.com//a"),
+        ("http://example.com///a", "http://example.com///a"),
+        ("http://example.com////a", "http://example.com////a"),
+        ("http://example.com/a/.", "http://example.com/a/"),
+        ("http://example.com/a/./", "http://example.com/a/"),
+        ("http://example.com/a/./b", "http://example.com/a/b"),
+        ("http://example.com/a/.//", "http://example.com/a//"),
+        ("http://example.com/a/.//b", "http://example.com/a//b"),
+        ("http://example.com/a//.", "http://example.com/a//"),
+        ("http://example.com/a//./", "http://example.com/a//"),
+        ("http://example.com/a//./b", "http://example.com/a//b"),
+        ("http://example.com/a//.//", "http://example.com/a///"),
+        ("http://example.com/a//.//b", "http://example.com/a///b"),
+        ("http://example.com/a/..", "http://example.com/"),
+        ("http://example.com/a/../", "http://example.com/"),
+        ("http://example.com/a/../.", "http://example.com/"),
+        ("http://example.com/a/../..", "http://example.com/"),
+        ("http://example.com/a/../../", "http://example.com/"),
+        ("http://example.com/a/../..//", "http://example.com//"),
+        ("http://example.com/a/..//", "http://example.com//"),
+        ("http://example.com/a/..//.", "http://example.com//"),
+        ("http://example.com/a/..//..", "http://example.com/"),
+        ("http://example.com/a/../b", "http://example.com/b"),
+        ("http://example.com/a/..//b", "http://example.com//b"),
+        ("http://example.com/a//..", "http://example.com/a/"),
+        ("http://example.com/a//../", "http://example.com/a/"),
+        ("http://example.com/a//../.", "http://example.com/a/"),
+        ("http://example.com/a//../..", "http://example.com/"),
+        ("http://example.com/a//../../", "http://example.com/"),
+        ("http://example.com/a//../..//", "http://example.com//"),
+        ("http://example.com/a//..//..", "http://example.com/a/"),
+        ("http://example.com/a//../b", "http://example.com/a/b"),
+        ("http://example.com/a//..//", "http://example.com/a//"),
+        ("http://example.com/a//..//.", "http://example.com/a//"),
+        ("http://example.com/a//..//b", "http://example.com/a//b"),
+    ),
+)
+
+
+@pytest.mark.parametrize(*NORMALIZATIONS)
+def test_normalize(unnormalized, normalized):
+    expected = HTTPPath(normalized, client_kwargs={""})
+    pth = HTTPPath(unnormalized)
+    assert expected.protocol in {"http", "https"}
+    assert pth.protocol in {"http", "https"}
+
+    # Normalise only, do not attempt to follow redirects for http:// paths here
+    result = pth.resolve(strict=True, follow_redirects=False)
+
+    str_expected = str(expected)
+    str_result = str(result)
+    assert expected == result
+    assert str_expected == str_result
