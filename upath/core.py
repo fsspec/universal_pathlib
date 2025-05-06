@@ -8,6 +8,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from collections.abc import Generator
 from collections.abc import Mapping
+from collections.abc import Sequence
 from copy import copy
 from types import MappingProxyType
 from typing import IO
@@ -61,6 +62,18 @@ def _check_fsspec_has_working_glob():
 def _make_instance(cls, args, kwargs):
     """helper for pickling UPath instances"""
     return cls(*args, **kwargs)
+
+
+def _explode_path(path, parser):
+    split = parser.split
+    path = parser.strip_protocol(path)
+    parent, name = parser.split(path)
+    names = []
+    while path != parent:
+        names.append(name)
+        path = parent
+        parent, name = split(path)
+    return path, names
 
 
 class _DefaultValue(enum.Enum):
@@ -370,6 +383,13 @@ class UPath(_UPathMixin, OpenablePath):
         return f"{type(self).__name__}({self.path!r}, protocol={self._protocol!r})"
 
     # === JoinablePath overrides ======================================
+
+    @property
+    def parts(self) -> Sequence[str]:
+        anchor, parts = _explode_path(str(self), self.parser)
+        if anchor:
+            parts.append(anchor)
+        return tuple(reversed(parts))
 
     def with_name(self, name):
         """Return a new path with the file name changed."""
