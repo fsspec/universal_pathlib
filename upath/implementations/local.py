@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+import warnings
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
@@ -42,6 +43,20 @@ def _check_listdir_works_on_files() -> bool:
     return w
 
 
+def _warn_protocol_storage_options(
+    cls: type,
+    protocol: str | None,
+    storage_options: dict[str, Any],
+) -> None:
+    if protocol in {"", None} and not storage_options:
+        return
+    warnings.warn(
+        f"{cls.__name__} on python <= (3, 11) ignores protocol and storage_options",
+        UserWarning,
+        stacklevel=3,
+    )
+
+
 class LocalPath(_UPathMixin, pathlib.Path):
     __slots__ = (
         "_protocol",
@@ -64,19 +79,38 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
-            self._protocol = protocol
-            self._storage_options = storage_options
+            _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)
+            self._protocol = ""
+            self._storage_options = {}
+
+        @classmethod
+        def _from_parts(cls, args):
+            obj = super()._from_parts(args)
+            obj._protocol = ""
+            obj._storage_options = {}
+            return obj
+
+        @classmethod
+        def _from_parsed_parts(cls, drv, root, parts):
+            obj = super()._from_parsed_parts(drv, root, parts)
+            obj._protocol = ""
+            obj._storage_options = {}
+            return obj
 
     else:
 
         def __init__(
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
-            self._protocol = protocol
-            self._storage_options = storage_options
+            _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)
             self._init()
+
+        def _init(self, **kwargs: Any) -> None:
+            super()._init(**kwargs)
+            self._protocol = ""
+            self._storage_options = {}
 
     def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
