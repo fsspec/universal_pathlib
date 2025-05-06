@@ -313,7 +313,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         if (
             not tail
             and not self.has_meaningful_trailing_slash
-            and head != stripped_path
+            and self.strip_protocol(head) != stripped_path
         ):
             return self.split(head)
         return head, tail
