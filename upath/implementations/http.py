@@ -5,6 +5,7 @@ import warnings
 from collections.abc import Sequence
 from itertools import chain
 from typing import Any
+from urllib.parse import urlsplit
 
 from fsspec.asyn import sync
 
@@ -29,17 +30,13 @@ class HTTPPath(UPath):
         return args, protocol, storage_options
 
     @property
-    def root(self) -> str:
-        return super().root or "/"
-
-    @property
-    def anchor(self) -> str:
-        return f"{super().anchor}/"
-
-    @property
     def parts(self) -> Sequence[str]:
         _parts = super().parts
         return f"{_parts[0]}/", *_parts[1:]
+
+    def __str__(self):
+        sr = urlsplit(super().__str__())
+        return sr._replace(path=sr.path or "/").geturl()
 
     def is_file(self):
         try:
@@ -75,18 +72,15 @@ class HTTPPath(UPath):
         return UPathStatResult.from_info(info)
 
     def iterdir(self):
-        if self.parts[-1:] == ("",):
-            yield from self.parent.iterdir()
+        it = iter(super().iterdir())
+        try:
+            item0 = next(it)
+        except (StopIteration, NotADirectoryError):
+            raise NotADirectoryError(str(self))
+        except FileNotFoundError:
+            raise FileNotFoundError(str(self))
         else:
-            it = iter(super().iterdir())
-            try:
-                item0 = next(it)
-            except (StopIteration, NotADirectoryError):
-                raise NotADirectoryError(str(self))
-            except FileNotFoundError:
-                raise FileNotFoundError(str(self))
-            else:
-                yield from chain([item0], it)
+            yield from chain([item0], it)
 
     def resolve(
         self: HTTPPath,
@@ -94,11 +88,14 @@ class HTTPPath(UPath):
         follow_redirects: bool = True,
     ) -> HTTPPath:
         """Normalize the path and resolve redirects."""
-        # Normalise the path
-        resolved_path = super().resolve(strict=strict)
-        # if the last part is "..", then it's a directory
-        if self.parts[-1:] == ("..",):
-            resolved_path = resolved_path.joinpath("")
+        # special handling of trailing slash behaviour
+        parts = list(self.parts)
+        if parts[-1:] == ["."]:
+            parts[-1:] = [""]
+        if parts[-2:] == ["", ".."]:
+            parts[-2:] = [""]
+        pth = self.with_segments(*parts)
+        resolved_path = super(HTTPPath, pth).resolve(strict=strict)
 
         if follow_redirects:
             # Get the fsspec fs

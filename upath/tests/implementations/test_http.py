@@ -236,7 +236,7 @@ NORMALIZATIONS = (
 
 @pytest.mark.parametrize(*NORMALIZATIONS)
 def test_normalize(unnormalized, normalized):
-    expected = HTTPPath(normalized, client_kwargs={""})
+    expected = HTTPPath(normalized)
     pth = HTTPPath(unnormalized)
     assert expected.protocol in {"http", "https"}
     assert pth.protocol in {"http", "https"}
