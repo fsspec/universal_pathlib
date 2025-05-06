@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import warnings
+from collections.abc import Sequence
 from itertools import chain
 from typing import Any
 
@@ -28,8 +29,17 @@ class HTTPPath(UPath):
         return args, protocol, storage_options
 
     @property
-    def root(self) -> str:  # type: ignore[override]
+    def root(self) -> str:
         return super().root or "/"
+
+    @property
+    def anchor(self) -> str:
+        return f"{super().anchor}/"
+
+    @property
+    def parts(self) -> Sequence[str]:
+        _parts = super().parts
+        return f"{_parts[0]}/", *_parts[1:]
 
     def is_file(self):
         try:
