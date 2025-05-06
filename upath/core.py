@@ -375,7 +375,10 @@ class UPath(_UPathMixin, OpenablePath):
         return self.fs.info(self.path)
 
     def iterdir(self) -> Generator[UPath]:
-        for name in self.fs.listdir(self.path):
+        base = self
+        if self.parts[-1:] == ("",):
+            base = self.parent
+        for name in base.fs.listdir(base.path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
                 name = name.get("name")
@@ -384,7 +387,7 @@ class UPath(_UPathMixin, OpenablePath):
                 continue
             # only want the path name with iterdir
             _, _, name = name.removesuffix("/").rpartition(self.parser.sep)
-            yield self.with_segments(*self.parts, name)
+            yield base.with_segments(*base.parts, name)
 
     def __open_rb__(self, buffering=-1) -> BinaryIO:
         return self.open("rb", buffering=buffering)
