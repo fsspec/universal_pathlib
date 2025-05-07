@@ -163,13 +163,6 @@ class FilePath(UPath):
     def __fspath__(self) -> str:
         return self.path
 
-    @property
-    def path(self) -> str:
-        sep = self.parser.sep
-        if self.drive:
-            return f"/{super().path}".replace(sep, "/")
-        return super().path.replace(sep, "/")
-
     def iterdir(self) -> Iterator[Self]:
         if _LISTDIR_WORKS_ON_FILES is None:
             _check_listdir_works_on_files()
