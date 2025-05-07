@@ -57,12 +57,3 @@ class WebdavPath(UPath):
             urlpath = url._replace(scheme="", netloc="").geturl() or "/"
             so.setdefault("base_url", base)
         return super()._parse_storage_options(urlpath, "webdav", so)
-
-    @property
-    def path(self) -> str:
-        # webdav paths don't start at "/"
-        return super().path.removeprefix("/")
-
-    def __str__(self):
-        base_url = self.storage_options["base_url"].removesuffix("/")
-        return super().__str__().replace("webdav://", f"webdav+{base_url}/", 1)

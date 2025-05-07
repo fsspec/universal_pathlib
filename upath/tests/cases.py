@@ -418,8 +418,8 @@ class BaseTests:
         assert path.storage_options == recovered_path.storage_options
 
     def test_child_path(self):
-        path_str = str(self.path).rstrip("/")
-        path_a = UPath(f"{path_str}/folder")
+        path_str = str(self.path)
+        path_a = UPath(path_str, "folder", **self.path.storage_options)
         path_b = self.path / "folder"
 
         assert str(path_a) == str(path_b)
