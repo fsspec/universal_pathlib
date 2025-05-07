@@ -30,7 +30,7 @@ def tests(session: nox.Session) -> None:
 
 @nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
-    session.install("fsspec==2022.1.0", ".[tests,dev]")
+    session.install("fsspec==2024.5.0", ".[tests,dev]")
     session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
