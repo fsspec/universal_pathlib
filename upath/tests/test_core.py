@@ -408,23 +408,15 @@ PROTOCOL_MISMATCH = [
 ]
 
 
-@pytest.mark.parametrize(
-    "base,join",
-    [
-        pytest.param("/a", "s3://bucket/b", marks=pytest.mark.xfail),
-        ("s3://bucket/a", "gs://b/c"),
-        ("gs://bucket/a", "memory://b/c"),
-        ("memory://bucket/a", "s3://b/c"),
-    ],
-)
+@pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
 def test_joinpath_on_protocol_mismatch(base, join):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="can't combine incompatible UPath protocols"):
         UPath(base).joinpath(UPath(join))
 
 
 @pytest.mark.parametrize("base,join", PROTOCOL_MISMATCH)
 def test_truediv_on_protocol_mismatch(base, join):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="can't combine incompatible UPath protocols"):
         UPath(base) / UPath(join)
 
 

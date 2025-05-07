@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 from urllib.parse import SplitResult
 
+from upath._protocol import compatible_protocol
+
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
@@ -126,6 +128,21 @@ class LocalPath(_UPathMixin, pathlib.Path):
     @property
     def _url(self) -> SplitResult:
         return SplitResult._make((self.protocol, "", self.path, "", ""))
+
+    def joinpath(self, *other) -> Self:
+        if not compatible_protocol("", *other):
+            raise ValueError("can't combine incompatible UPath protocols")
+        return super().joinpath(*other)
+
+    def __truediv__(self, other) -> Self:
+        if not compatible_protocol("", other):
+            raise ValueError("can't combine incompatible UPath protocols")
+        return super().__truediv__(other)
+
+    def __rtruediv__(self, other) -> Self:
+        if not compatible_protocol("", other):
+            raise ValueError("can't combine incompatible UPath protocols")
+        return super().__rtruediv__(other)
 
 
 UPath.register(LocalPath)
