@@ -406,6 +406,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.fs.info(self.path)
 
     def iterdir(self) -> Generator[UPath]:
+        sep = self.parser.sep
         base = self
         if self.parts[-1:] == ("",):
             base = self.parent
@@ -417,8 +418,8 @@ class UPath(_UPathMixin, OpenablePath):
                 # Yielding a path object for these makes little sense
                 continue
             # only want the path name with iterdir
-            _, _, name = name.removesuffix("/").rpartition(self.parser.sep)
-            yield base.with_segments(*base.parts, name)
+            _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
+            yield base.with_segments(str(base), name)
 
     def __open_rb__(self, buffering=-1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
