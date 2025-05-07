@@ -121,7 +121,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
     @property
     def path(self) -> str:
-        return str(self)
+        return self.as_posix()
 
     @property
     def _url(self) -> SplitResult:
@@ -169,6 +169,10 @@ class FilePath(UPath):
         elif _LISTDIR_WORKS_ON_FILES and self.is_file():
             raise NotADirectoryError(f"{self}")
         return super().iterdir()
+
+    @property
+    def _url(self) -> SplitResult:
+        return SplitResult._make((self.protocol, "", self.path, "", ""))
 
 
 LocalPath.register(FilePath)
