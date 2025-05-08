@@ -93,6 +93,25 @@ class TestUPathS3(BaseTests):
         (file,) = files
         assert file == p.joinpath("file.txt")
 
+    @pytest.mark.xfail(msg="fsspec/universal_pathlib#144")
+    def test_rglob_with_double_fwd_slash(self, s3_with_double_fwd_slash_files):
+        import boto3
+        import botocore.exceptions
+
+        bucket, anon, s3so = s3_with_double_fwd_slash_files
+
+        conn = boto3.resource("s3", **s3so["client_kwargs"])
+        # ensure there's no s3://bucket/key.txt object
+        with pytest.raises(botocore.exceptions.ClientError, match=".*Not Found.*"):
+            conn.Object(bucket, "key.txt").load()
+        # ensure there's a s3://bucket//key.txt object
+        assert conn.Object(bucket, "/key.txt").get()["Body"].read() == b"hello world"
+
+        p0 = UPath(f"s3://{bucket}//key.txt", **s3so)
+        assert p0.read_bytes() == b"hello world"
+        p1 = UPath(f"s3://{bucket}", **s3so)
+        assert list(p1.rglob("*.txt")) == [p0]
+
 
 @pytest.fixture
 def s3_with_plus_chr_name(s3_server):
@@ -109,7 +128,25 @@ def s3_with_plus_chr_name(s3_server):
         if s3.exists(bucket):
             for dir, _, keys in s3.walk(bucket):
                 for key in keys:
-                    s3.rm(f"{dir}/{key}")
+                    if key.rstrip("/"):
+                        s3.rm(f"{dir}/{key}")
+
+
+@pytest.fixture
+def s3_with_double_fwd_slash_files(s3_server):
+    anon, s3so = s3_server
+    s3 = fsspec.filesystem("s3", anon=False, **s3so)
+    bucket = "double_fwd_slash_bucket"
+    s3.mkdir(bucket + "/")
+    s3.pipe_file(f"{bucket}//key.txt", b"hello world")
+    try:
+        yield bucket, anon, s3so
+    finally:
+        if s3.exists(bucket):
+            for dir, _, keys in s3.walk(bucket):
+                for key in keys:
+                    if key.rstrip("/"):
+                        s3.rm(f"{dir}/{key}")
 
 
 def test_path_with_hash_and_space():
