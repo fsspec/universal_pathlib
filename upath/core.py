@@ -825,6 +825,8 @@ class UPath(_UPathMixin, OpenablePath):
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
             target = UPath(target, **self.storage_options)
+        if target == self:
+            return self
         target_protocol = get_upath_protocol(target)
         if target_protocol:
             if target_protocol != self.protocol:
