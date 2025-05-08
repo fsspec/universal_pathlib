@@ -98,7 +98,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
             _warn_protocol_storage_options(type(self), protocol, storage_options)
-            self._drv, self._root, self._parts = self._parse_args(args)
+            self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501
             self._protocol = ""
             self._storage_options = {}
 
@@ -122,11 +122,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
             _warn_protocol_storage_options(type(self), protocol, storage_options)
-            self._drv, self._root, self._parts = self._parse_args(args)
+            self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501
             self._init()
 
         def _init(self, **kwargs: Any) -> None:
-            super()._init(**kwargs)
+            super()._init(**kwargs)  # type: ignore[misc]
             self._protocol = ""
             self._storage_options = {}
 
