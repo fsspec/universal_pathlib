@@ -164,6 +164,10 @@ ignore_missing_imports = true
 module = "pathlib_abc.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "smbprotocol.*"
+ignore_missing_imports = true
+
 [tool.pylint.format]
 max-line-length = 88
 

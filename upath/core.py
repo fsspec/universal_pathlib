@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import enum
 import os
 import sys
 import warnings
 from abc import ABCMeta
 from abc import abstractmethod
-from collections.abc import Generator
+from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
@@ -31,9 +30,13 @@ from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
+from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePath
+from upath.types import JoinablePathLike
 from upath.types import OpenablePath
+from upath.types import PathInfo
 from upath.types import UPathParser
+from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
@@ -76,11 +79,7 @@ def _explode_path(path, parser):
     return path, names
 
 
-class _DefaultValue(enum.Enum):
-    UNSET = enum.auto()
-
-
-def _buffering2blocksize(mode: str, buffering: int) -> int | _DefaultValue.UNSET:
+def _buffering2blocksize(mode: str, buffering: int) -> int | None:
     if not isinstance(buffering, int):
         raise TypeError("buffering must be an integer")
     if buffering == 0:  # buffering disabled
@@ -88,7 +87,7 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | _DefaultValue.UNSET
             raise ValueError("can't have unbuffered text I/O")
         return buffering
     elif buffering == -1:
-        return _DefaultValue.UNSET
+        return None
     else:
         return buffering
 
@@ -118,9 +117,17 @@ class _UPathMixin(metaclass=_UPathMeta):
     def _protocol(self) -> str:
         raise NotImplementedError
 
+    @_protocol.setter
+    def _protocol(self, value: str) -> None:
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def _storage_options(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @_storage_options.setter
+    def _storage_options(self, value: dict[str, Any]) -> None:
         raise NotImplementedError
 
     @property
@@ -130,6 +137,17 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @_fs_cached.setter
     def _fs_cached(self, value: AbstractFileSystem):
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def _raw_paths(self) -> Sequence[str | os.PathLike[str] | JoinablePath]:
+        raise NotImplementedError
+
+    @_raw_paths.setter
+    def _raw_paths(
+        self, value: Sequence[str | os.PathLike[str] | JoinablePath]
+    ) -> None:
         raise NotImplementedError
 
     # === upath.UPath PUBLIC ADDITIONAL API ===========================
@@ -160,7 +178,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         """The path that a fsspec filesystem can use."""
         return self.parser.strip_protocol(self.__str__())
 
-    def joinuri(self, uri: str | os.PathLike[str] | JoinablePath) -> UPath:
+    def joinuri(self, uri: JoinablePathLike) -> UPath:
         """Join with urljoin behavior for UPath instances"""
         # short circuit if the new uri uses a different protocol
         other_protocol = get_upath_protocol(uri)
@@ -177,16 +195,19 @@ class _UPathMixin(metaclass=_UPathMeta):
     @classmethod
     def _transform_init_args(
         cls,
-        args: tuple[str | os.PathLike[str] | JoinablePath, ...],
+        args: tuple[JoinablePathLike, ...],
         protocol: str,
         storage_options: dict[str, Any],
-    ) -> tuple[tuple[str | os.PathLike[str] | JoinablePath, ...], str, dict[str, Any]]:
+    ) -> tuple[tuple[JoinablePathLike, ...], str, dict[str, Any]]:
         """allow customization of init args in subclasses"""
         return args, protocol, storage_options
 
     @classmethod
     def _parse_storage_options(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Parse storage_options from the urlpath"""
         pth_storage_options = upath_get_kwargs_from_url(urlpath)
@@ -194,7 +215,10 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @classmethod
     def _fs_factory(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
     ) -> AbstractFileSystem:
         """Instantiate the filesystem_spec filesystem class"""
         fs_cls = get_filesystem_class(protocol)
@@ -207,8 +231,14 @@ class _UPathMixin(metaclass=_UPathMeta):
     _protocol_dispatch: bool | None = None
 
     def __new__(
-        cls, *args, protocol: str | None = None, **storage_options: Any
+        cls,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
     ) -> UPath:
+        # narrow type
+        assert issubclass(cls, UPath), "_UPathMixin should never be instantiated"
+
         # fill empty arguments
         if not args:
             args = (".",)
@@ -299,7 +329,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         return obj
 
     def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
+        self,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
     ) -> None:
         # allow subclasses to customize __init__ arg parsing
         base_options = getattr(self, "_storage_options", {})
@@ -357,11 +390,17 @@ class UPath(_UPathMixin, OpenablePath):
         "_raw_paths",
     )
 
+    if TYPE_CHECKING:
+        _protocol: str
+        _storage_options: dict[str, Any]
+        _fs_cached: bool
+        _raw_paths: list[str | os.PathLike[str] | JoinablePath]
+
     # === JoinablePath attributes =====================================
 
-    parser = LazyFlavourDescriptor()
+    parser: UPathParser = LazyFlavourDescriptor()  # type: ignore[assignment]
 
-    def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
+    def with_segments(self, *pathsegments: JoinablePathLike) -> Self:
         return type(self)(
             *pathsegments,
             protocol=self._protocol,
@@ -402,10 +441,11 @@ class UPath(_UPathMixin, OpenablePath):
 
     # === ReadablePath attributes =====================================
 
-    def info(self) -> dict[str, Any]:
-        return self.fs.info(self.path)
+    @property
+    def info(self) -> PathInfo:
+        raise NotImplementedError("todo")
 
-    def iterdir(self) -> Generator[UPath]:
+    def iterdir(self) -> Iterator[Self]:
         sep = self.parser.sep
         base = self
         if self.parts[-1:] == ("",):
@@ -424,7 +464,7 @@ class UPath(_UPathMixin, OpenablePath):
     def __open_rb__(self, buffering=-1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
-        if block_size is not _DefaultValue.UNSET:
+        if block_size is not None:
             kw["block_size"] = block_size
         return self.fs.open(self.path, mode="rb", **kw)
 
@@ -458,7 +498,7 @@ class UPath(_UPathMixin, OpenablePath):
     def __open_wb__(self, buffering=-1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
-        if block_size is not _DefaultValue.UNSET:
+        if block_size is not None:
             kw["block_size"] = block_size
         return self.fs.open(self.path, mode="wb", **kw)
 
@@ -523,7 +563,7 @@ class UPath(_UPathMixin, OpenablePath):
             if "block_size" in fsspec_kwargs:
                 raise TypeError("cannot specify both 'buffering' and 'block_size'")
             block_size = _buffering2blocksize(mode, fsspec_kwargs.pop("buffering"))
-            if block_size is not _DefaultValue.UNSET:
+            if block_size is not None:
                 fsspec_kwargs.setdefault("block_size", block_size)
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
@@ -541,7 +581,7 @@ class UPath(_UPathMixin, OpenablePath):
                 UserWarning,
                 stacklevel=2,
             )
-        return UPathStatResult.from_info(self.info())
+        return UPathStatResult.from_info(self.fs.info(self.path))
 
     def lstat(self) -> UPathStatResult:
         return self.stat(follow_symlinks=False)
@@ -591,7 +631,25 @@ class UPath(_UPathMixin, OpenablePath):
     def expanduser(self) -> Self:
         return self
 
-    def glob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
+    def glob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool = UNSET_DEFAULT,
+        recurse_symlinks: bool = UNSET_DEFAULT,
+    ) -> Iterator[UPath]:
+        if case_sensitive is not UNSET_DEFAULT:
+            warnings.warn(
+                "UPath.glob(): case_sensitive is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if recurse_symlinks is not UNSET_DEFAULT:
+            warnings.warn(
+                "UPath.glob(): recurse_symlinks is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         path_pattern = self.joinpath(pattern).path
         sep = self.parser.sep
         base = self.fs._strip_protocol(self.path)
@@ -599,7 +657,25 @@ class UPath(_UPathMixin, OpenablePath):
             name = name.removeprefix(base).removeprefix(sep)
             yield self.joinpath(name)
 
-    def rglob(self, pattern: str, *, case_sensitive=None) -> Generator[UPath]:
+    def rglob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool = UNSET_DEFAULT,
+        recurse_symlinks: bool = UNSET_DEFAULT,
+    ) -> Iterator[UPath]:
+        if case_sensitive is not UNSET_DEFAULT:
+            warnings.warn(
+                "UPath.glob(): case_sensitive is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if recurse_symlinks is not UNSET_DEFAULT:
+            warnings.warn(
+                "UPath.glob(): recurse_symlinks is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
@@ -706,10 +782,10 @@ class UPath(_UPathMixin, OpenablePath):
 
     def rename(
         self,
-        target: str | os.PathLike[str] | UPath,
+        target: WritablePathLike,
         *,  # note: non-standard compared to pathlib
-        recursive: bool = _DefaultValue.UNSET,
-        maxdepth: int | None = _DefaultValue.UNSET,
+        recursive: bool = UNSET_DEFAULT,
+        maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
@@ -732,11 +808,11 @@ class UPath(_UPathMixin, OpenablePath):
             # avoid calling .resolve for subclasses of UPath
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
-            target_ = parent.joinpath(os.path.normpath(target))
+            target_ = parent.joinpath(os.path.normpath(str(target)))
         assert isinstance(target_, type(self)), "identical protocols enforced above"
-        if recursive is not _DefaultValue.UNSET:
+        if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
-        if maxdepth is not _DefaultValue.UNSET:
+        if maxdepth is not UNSET_DEFAULT:
             kwargs["maxdepth"] = maxdepth
         self.fs.mv(
             self.path,

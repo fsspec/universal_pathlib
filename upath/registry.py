@@ -206,11 +206,11 @@ def get_upath_class(
             if os.name == "nt":
                 from upath.implementations.local import WindowsUPath
 
-                return WindowsUPath
+                return WindowsUPath  # type: ignore[return-value]
             else:
                 from upath.implementations.local import PosixUPath
 
-                return PosixUPath
+                return PosixUPath  # type: ignore[return-value]
         if not fallback:
             return None
         try:

@@ -28,6 +28,8 @@ from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
 from upath._protocol import normalize_empty_netloc
+from upath.types import JoinablePath
+from upath.types import UPathParser
 
 if TYPE_CHECKING:
     from upath.core import UPath
@@ -37,10 +39,11 @@ __all__ = [
     "default_flavour",
     "upath_urijoin",
     "upath_get_kwargs_from_url",
+    "upath_strip_protocol",
 ]
 
 class_registry: Mapping[str, type[AbstractFileSystem]] = _class_registry
-PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
+PathOrStr: TypeAlias = Union[str, os.PathLike[str], JoinablePath]
 
 
 class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
@@ -79,7 +82,7 @@ class ProtocolConfig(TypedDict):
     root_marker_override: dict[str, str]
 
 
-class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
+class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
     """flavour class for universal_pathlib
 
     **INTERNAL AND VERY MUCH EXPERIMENTAL**
@@ -239,6 +242,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         if isinstance(pth, str):
             out = pth
         elif getattr(pth, "__fspath__", None) is not None:
+            assert hasattr(pth, "__fspath__")
             out = pth.__fspath__()
         elif isinstance(pth, os.PathLike):
             out = str(pth)
@@ -266,11 +270,11 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     # === pathlib_abc.FlavourBase =====================================
 
     @property
-    def sep(self) -> str:
+    def sep(self) -> str:  # type: ignore[override]
         return self._spec.sep
 
     @property
-    def altsep(self) -> str | None:
+    def altsep(self) -> str | None:  # type: ignore[override]
         return None
 
     def isabs(self, path: PathOrStr) -> bool:
@@ -284,7 +288,10 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         if not paths:
             return self.strip_protocol(path) or self.root_marker
         if self.local_file:
-            return os.path.join(self.strip_protocol(path), *paths)
+            return os.path.join(  # type: ignore[arg-type]
+                self.strip_protocol(path),
+                *paths,
+            )
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))
@@ -442,9 +449,11 @@ class LazyFlavourDescriptor:
         except (AttributeError, IndexError):
             self._default_protocol = None
 
-    def __get__(self, instance: UPath, owner: type[UPath]) -> WrappedFileSystemFlavour:
-        if instance is not None:
-            return WrappedFileSystemFlavour.from_protocol(instance.protocol)
+    def __get__(
+        self, obj: UPath | None, objtype: type[UPath] | None = None
+    ) -> WrappedFileSystemFlavour:
+        if obj is not None:
+            return WrappedFileSystemFlavour.from_protocol(obj.protocol)
         elif self._default_protocol:  # type: ignore
             return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
         else:

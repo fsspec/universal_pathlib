@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+import os
 import pathlib
 import sys
 from collections.abc import Iterator
@@ -11,6 +13,8 @@ from typing import BinaryIO
 from typing import Literal
 from typing import Protocol
 from typing import TextIO
+from typing import TypeAlias
+from typing import Union
 from typing import overload
 from typing import runtime_checkable
 
@@ -33,6 +37,9 @@ __all__ = [
     "ReadablePath",
     "WritablePath",
     "OpenablePath",
+    "JoinablePathLike",
+    "ReadablePathLike",
+    "WritablePathLike",
     "CompatJoinablePath",
     "CompatReadablePath",
     "CompatWritablePath",
@@ -41,7 +48,19 @@ __all__ = [
     "StatResultType",
     "PathParser",
     "UPathParser",
+    "UNSET_DEFAULT",
 ]
+
+JoinablePathLike: TypeAlias = Union[str, JoinablePath]
+ReadablePathLike: TypeAlias = Union[str, ReadablePath]
+WritablePathLike: TypeAlias = Union[str, WritablePath]
+
+
+class _DefaultValue(enum.Enum):
+    UNSET = enum.auto()
+
+
+UNSET_DEFAULT: Any = _DefaultValue.UNSET
 
 
 class OpenablePath(ReadablePath, WritablePath):
@@ -250,3 +269,19 @@ class UPathParser(PathParser, Protocol):
     """duck-type for upath.core.UPathParser"""
 
     def strip_protocol(self, path: JoinablePath | str) -> str: ...
+
+    def join(
+        self,
+        path: JoinablePath | os.PathLike[str] | str,
+        *paths: JoinablePath | os.PathLike[str] | str,
+    ) -> str: ...
+
+    def isabs(self, path: JoinablePath | os.PathLike[str] | str) -> bool: ...
+
+    def splitdrive(
+        self, path: JoinablePath | os.PathLike[str] | str
+    ) -> tuple[str, str]: ...
+
+    def splitroot(
+        self, path: JoinablePath | os.PathLike[str] | str
+    ) -> tuple[str, str, str]: ...

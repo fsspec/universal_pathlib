@@ -5,20 +5,22 @@ import pathlib
 import sys
 import warnings
 from collections.abc import Iterator
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
 from urllib.parse import SplitResult
 
+from fsspec import AbstractFileSystem
+
 from upath._protocol import compatible_protocol
+from upath.core import UPath
+from upath.core import _UPathMixin
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
         from typing_extensions import Self
-
-from upath.core import UPath
-from upath.core import _UPathMixin
 
 __all__ = [
     "LocalPath",
@@ -65,7 +67,13 @@ class LocalPath(_UPathMixin, pathlib.Path):
         "_storage_options",
         "_fs_cached",
     )
-    parser = os.path
+    if TYPE_CHECKING:
+        _protocol: str
+        _storage_options: dict[str, Any]
+        _fs_cached: AbstractFileSystem
+
+    parser = os.path  # type: ignore[misc,assignment]
+    _raw_paths: Sequence[str] = ()
 
     if sys.version_info >= (3, 12):
 
@@ -73,7 +81,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             self, *args, protocol: str | None = None, **storage_options: Any
         ) -> None:
             super(_UPathMixin, self).__init__(*args)
-            self._protocol = protocol
+            self._protocol = protocol or ""
             self._storage_options = storage_options
 
     elif sys.version_info >= (3, 10):

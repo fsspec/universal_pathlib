@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Generator
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -19,7 +19,7 @@ _unset: Any = object()
 class SFTPPath(UPath):
     __slots__ = ()
 
-    def iterdir(self) -> Generator[Self]:
+    def iterdir(self) -> Iterator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))
         else:

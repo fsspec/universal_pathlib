@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import os
+from collections.abc import Iterator
 from typing import Any
+from typing import Self
 
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
+from upath.types import JoinablePathLike
 
 __all__ = [
     "CloudPath",
@@ -20,10 +22,10 @@ class CloudPath(UPath):
     @classmethod
     def _transform_init_args(
         cls,
-        args: tuple[str | os.PathLike, ...],
+        args: tuple[JoinablePathLike, ...],
         protocol: str,
         storage_options: dict[str, Any],
-    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+    ) -> tuple[tuple[JoinablePathLike, ...], str, dict[str, Any]]:
         for key in ["bucket", "netloc"]:
             bucket = storage_options.pop(key, None)
             if bucket:
@@ -42,7 +44,7 @@ class CloudPath(UPath):
             raise FileExistsError(self.path)
         super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
 
-    def iterdir(self):
+    def iterdir(self) -> Iterator[Self]:
         if self.is_file():
             raise NotADirectoryError(str(self))
         yield from super().iterdir()
@@ -57,7 +59,10 @@ class GCSPath(CloudPath):
     __slots__ = ()
 
     def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
+        self,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
     ) -> None:
         super().__init__(*args, protocol=protocol, **storage_options)
         if not self.drive and len(self.parts) > 1:
@@ -77,7 +82,10 @@ class S3Path(CloudPath):
     __slots__ = ()
 
     def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
+        self,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
     ) -> None:
         super().__init__(*args, protocol=protocol, **storage_options)
         if not self.drive and len(self.parts) > 1:
@@ -88,7 +96,10 @@ class AzurePath(CloudPath):
     __slots__ = ()
 
     def __init__(
-        self, *args, protocol: str | None = None, **storage_options: Any
+        self,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
     ) -> None:
         super().__init__(*args, protocol=protocol, **storage_options)
         if not self.drive and len(self.parts) > 1:
