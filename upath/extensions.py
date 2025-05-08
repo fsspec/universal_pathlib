@@ -65,7 +65,7 @@ class ProxyUPath:
     @classmethod
     def _from_upath(cls, upath: UPath, /) -> Self:
         if isinstance(upath, cls):
-            return upath
+            return upath  # type: ignore[unreachable]
         else:
             obj = object.__new__(cls)
             obj.__wrapped__ = upath
@@ -148,13 +148,31 @@ class ProxyUPath:
         **fsspec_kwargs: Any,
     ) -> BinaryIO: ...
 
+    @overload
+    def open(
+        self,
+        mode: str,
+        *args: Any,
+        **fsspec_kwargs: Any,
+    ) -> IO[Any]: ...
+
     def open(
         self,
         mode: str = "r",
-        *args: Any,
+        buffering: int = UNSET_DEFAULT,
+        encoding: str | None = UNSET_DEFAULT,
+        errors: str | None = UNSET_DEFAULT,
+        newline: str | None = UNSET_DEFAULT,
         **fsspec_kwargs: Any,
     ) -> IO[Any]:
-        return self.__wrapped__.open(mode, *args, **fsspec_kwargs)
+        return self.__wrapped__.open(
+            mode,
+            buffering,
+            encoding,
+            errors,
+            newline,
+            **fsspec_kwargs,
+        )
 
     def stat(
         self,
@@ -439,10 +457,14 @@ class ProxyUPath:
         return self._from_upath(self.__wrapped__.joinpath(*pathsegments))
 
     def __truediv__(self, other: str | Self) -> Self:
-        return self._from_upath(self.__wrapped__.__truediv__(other))
+        return self._from_upath(
+            self.__wrapped__.__truediv__(other)  # type: ignore[operator]
+        )
 
     def __rtruediv__(self, other: str | Self) -> Self:
-        return self._from_upath(self.__wrapped__.__rtruediv__(other))
+        return self._from_upath(
+            self.__wrapped__.__rtruediv__(other)  # type: ignore[operator]
+        )
 
     @property
     def parent(self) -> Self:
