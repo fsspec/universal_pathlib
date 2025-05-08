@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 if TYPE_CHECKING:
-    from upath.core import UPath
+    from upath.types import JoinablePath
 
 __all__ = [
     "get_upath_protocol",
@@ -34,14 +34,18 @@ def _match_protocol(pth: str) -> str:
 
 
 def get_upath_protocol(
-    pth: str | PurePath | os.PathLike,
+    pth: str | os.PathLike[str] | PurePath | JoinablePath,
     *,
     protocol: str | None = None,
     storage_options: dict[str, Any] | None = None,
 ) -> str:
     """return the filesystem spec protocol"""
+    from upath.core import UPath
+
     if isinstance(pth, str):
         pth_protocol = _match_protocol(pth)
+    elif isinstance(pth, UPath):
+        pth_protocol = pth.protocol
     elif isinstance(pth, PurePath):
         pth_protocol = getattr(pth, "protocol", "")
     elif hasattr(pth, "__fspath__"):
@@ -66,7 +70,10 @@ def normalize_empty_netloc(pth: str) -> str:
     return pth
 
 
-def compatible_protocol(protocol: str, *args: str | os.PathLike[str] | UPath) -> bool:
+def compatible_protocol(
+    protocol: str,
+    *args: str | os.PathLike[str] | PurePath | JoinablePath,
+) -> bool:
     """check if UPath protocols are compatible"""
     for arg in args:
         other_protocol = get_upath_protocol(arg)

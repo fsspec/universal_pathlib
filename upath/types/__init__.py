@@ -1,23 +1,21 @@
 from __future__ import annotations
 
+import enum
+import os
 import pathlib
 import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import IO
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
-from typing import Callable
 from typing import Literal
 from typing import Protocol
 from typing import TextIO
+from typing import Union
 from typing import overload
 from typing import runtime_checkable
-
-if sys.version_info > (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 from pathlib_abc import magic_open
 
@@ -27,11 +25,25 @@ from upath.types._abc import PathParser
 from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
 
+if TYPE_CHECKING:
+    if sys.version_info > (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
+
+    if sys.version_info >= (3, 12):
+        from typing import TypeAlias
+    else:
+        TypeAlias = Any
+
 __all__ = [
     "JoinablePath",
     "ReadablePath",
     "WritablePath",
     "OpenablePath",
+    "JoinablePathLike",
+    "ReadablePathLike",
+    "WritablePathLike",
     "CompatJoinablePath",
     "CompatReadablePath",
     "CompatWritablePath",
@@ -40,7 +52,19 @@ __all__ = [
     "StatResultType",
     "PathParser",
     "UPathParser",
+    "UNSET_DEFAULT",
 ]
+
+JoinablePathLike: TypeAlias = Union[str, JoinablePath]
+ReadablePathLike: TypeAlias = Union[str, ReadablePath]
+WritablePathLike: TypeAlias = Union[str, WritablePath]
+
+
+class _DefaultValue(enum.Enum):
+    UNSET = enum.auto()
+
+
+UNSET_DEFAULT: Any = _DefaultValue.UNSET
 
 
 class OpenablePath(ReadablePath, WritablePath):
@@ -129,9 +153,9 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
     # not available in Python 3.9.* pathlib:
     #   - `__open_rb__`
     #   - `info`
-    #   - `readlink`
     #   - `copy`
     #   - `copy_into`
+    #   - `walk`
     __slots__ = ()
 
     def read_bytes(self) -> bytes: ...
@@ -146,13 +170,6 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
     def iterdir(self) -> Iterator[Self]: ...
 
     def glob(self, pattern: str, *, recurse_symlinks: bool = ...) -> Iterator[Self]: ...
-
-    def walk(
-        self,
-        top_down: bool = ...,
-        on_error: Callable[[Exception], Any] | None = ...,
-        follow_symlinks: bool = ...,
-    ) -> Iterator[Self]: ...
 
     def readlink(self) -> Self: ...
 
@@ -256,3 +273,19 @@ class UPathParser(PathParser, Protocol):
     """duck-type for upath.core.UPathParser"""
 
     def strip_protocol(self, path: JoinablePath | str) -> str: ...
+
+    def join(
+        self,
+        path: JoinablePath | os.PathLike[str] | str,
+        *paths: JoinablePath | os.PathLike[str] | str,
+    ) -> str: ...
+
+    def isabs(self, path: JoinablePath | os.PathLike[str] | str) -> bool: ...
+
+    def splitdrive(
+        self, path: JoinablePath | os.PathLike[str] | str
+    ) -> tuple[str, str]: ...
+
+    def splitroot(
+        self, path: JoinablePath | os.PathLike[str] | str
+    ) -> tuple[str, str, str]: ...

@@ -93,10 +93,6 @@ class TestUPathS3(BaseTests):
         (file,) = files
         assert file == p.joinpath("file.txt")
 
-    @pytest.mark.skip
-    def test_makedirs_exist_ok_false(self):
-        pass
-
 
 @pytest.fixture
 def s3_with_plus_chr_name(s3_server):

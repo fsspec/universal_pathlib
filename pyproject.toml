@@ -15,7 +15,7 @@ maintainers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "fsspec >=2022.1.0,!=2024.3.1",
+    "fsspec >=2024.5.0",
     "pathlib-abc ==0.4.3",
 ]
 classifiers = [
@@ -45,11 +45,11 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs",
+    "adlfs>=2024",
     "aiohttp",
     "requests",
-    "gcsfs>=2022.1.0",
-    "s3fs>=2022.1.0",
+    "gcsfs>=2024.5.0",
+    "s3fs>=2024.5.0",
     "moto[s3,server]",
     "webdav4[fsspec]",
     "paramiko",
@@ -162,6 +162,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "pathlib_abc.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "smbprotocol.*"
 ignore_missing_imports = true
 
 [tool.pylint.format]
