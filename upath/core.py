@@ -458,7 +458,7 @@ class UPath(_UPathMixin, OpenablePath):
             _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
             yield base.with_segments(str(base), name)
 
-    def __open_rb__(self, buffering=-1) -> BinaryIO:
+    def __open_rb__(self, buffering: int = -1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
         if block_size is not None:
@@ -470,14 +470,19 @@ class UPath(_UPathMixin, OpenablePath):
 
     # --- WritablePath attributes -------------------------------------
 
-    def symlink_to(  # type: ignore[override]
+    def symlink_to(
         self,
-        target: str | os.PathLike[str] | UPath,
+        target: ReadablePathLike,
         target_is_directory: bool = False,
     ) -> None:
         raise NotImplementedError
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False) -> None:
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -492,7 +497,7 @@ class UPath(_UPathMixin, OpenablePath):
             if not self.is_dir():
                 raise FileExistsError(str(self))
 
-    def __open_wb__(self, buffering=-1) -> BinaryIO:
+    def __open_wb__(self, buffering: int = -1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
         if block_size is not None:
@@ -838,7 +843,7 @@ class UPath(_UPathMixin, OpenablePath):
         )
         return target_
 
-    def replace(self, target: str | os.PathLike[str] | UPath) -> UPath:
+    def replace(self, target: WritablePathLike) -> Self:
         raise NotImplementedError  # todo
 
     @property
