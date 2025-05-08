@@ -5,7 +5,6 @@ import posixpath
 import sys
 import warnings
 from collections.abc import Mapping
-from collections.abc import Sequence
 from functools import lru_cache
 from typing import TYPE_CHECKING
 from typing import Any
@@ -18,7 +17,6 @@ from fsspec.registry import known_implementations
 from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
 
-from upath._compat import deprecated
 from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
@@ -381,54 +379,6 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         else:
             root_marker = self.root_marker
         return drive, root_marker, tail.removeprefix(self.sep)
-
-    # === deprecated backwards compatibility ===========================
-
-    @deprecated(python_version=(3, 12))
-    def casefold(self, s: str) -> str:
-        if self.local_file:
-            return s
-        else:
-            return s.lower()
-
-    @deprecated(python_version=(3, 12))
-    def parse_parts(self, parts: Sequence[str]) -> tuple[str, str, list[str]]:
-        parsed = []
-        sep = self.sep
-        drv = root = ""
-        it = reversed(parts)
-        for part in it:
-            if part:
-                drv, root, rel = self.splitroot(part)
-                if not root or root and rel:
-                    for x in reversed(rel.split(sep)):
-                        parsed.append(sys.intern(x))
-        if drv or root:
-            parsed.append(drv + root)
-        parsed.reverse()
-        return drv, root, parsed
-
-    @deprecated(python_version=(3, 12))
-    def join_parsed_parts(
-        self,
-        drv: str,
-        root: str,
-        parts: list[str],
-        drv2: str,
-        root2: str,
-        parts2: list[str],
-    ) -> tuple[str, str, list[str]]:
-        if root2:
-            if not drv2 and drv:
-                return drv, root2, [drv + root2] + parts2[1:]
-        elif drv2:
-            if drv2 == drv or self.casefold(drv2) == self.casefold(drv):
-                # Same drive => second path is relative to the first
-                return drv, root, parts + parts2[1:]
-        else:
-            # Second path is non-anchored (common case)
-            return drv, root, parts + parts2
-        return drv2, root2, parts2
 
 
 default_flavour = WrappedFileSystemFlavour(AnyProtocolFileSystemFlavour)
