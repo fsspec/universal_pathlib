@@ -15,6 +15,7 @@ from fsspec import AbstractFileSystem
 from upath._protocol import compatible_protocol
 from upath.core import UPath
 from upath.core import _UPathMixin
+from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
@@ -73,7 +74,14 @@ class LocalPath(_UPathMixin, pathlib.Path):
         _fs_cached: AbstractFileSystem
 
     parser = os.path  # type: ignore[misc,assignment]
-    _raw_paths: Sequence[str] = ()
+
+    @property
+    def _raw_urlpaths(self) -> Sequence[JoinablePathLike]:
+        return self.parts
+
+    @_raw_urlpaths.setter
+    def _raw_urlpaths(self, value: Sequence[JoinablePathLike]) -> None:
+        pass
 
     if sys.version_info >= (3, 12):
 

@@ -31,7 +31,6 @@ from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
-from upath.types import JoinablePath
 from upath.types import JoinablePathLike
 from upath.types import OpenablePath
 from upath.types import PathInfo
@@ -142,13 +141,11 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     @abstractmethod
-    def _raw_paths(self) -> Sequence[str | os.PathLike[str] | JoinablePath]:
+    def _raw_urlpaths(self) -> Sequence[JoinablePathLike]:
         raise NotImplementedError
 
-    @_raw_paths.setter
-    def _raw_paths(
-        self, value: Sequence[str | os.PathLike[str] | JoinablePath]
-    ) -> None:
+    @_raw_urlpaths.setter
+    def _raw_urlpaths(self, value: Sequence[JoinablePathLike]) -> None:
         raise NotImplementedError
 
     # === upath.UPath PUBLIC ADDITIONAL API ===========================
@@ -367,10 +364,9 @@ class _UPathMixin(metaclass=_UPathMeta):
         if not compatible_protocol(self._protocol, *args):
             raise ValueError("can't combine incompatible UPath protocols")
 
-        # fill ._raw_paths
-        if hasattr(self, "_raw_paths"):
+        if hasattr(self, "_raw_urlpaths"):
             return
-        self._raw_paths = args
+        self._raw_urlpaths = args
 
     # --- deprecated attributes ---------------------------------------
 
@@ -388,14 +384,14 @@ class UPath(_UPathMixin, OpenablePath):
         "_protocol",
         "_storage_options",
         "_fs_cached",
-        "_raw_paths",
+        "_raw_urlpaths",
     )
 
     if TYPE_CHECKING:
         _protocol: str
         _storage_options: dict[str, Any]
         _fs_cached: bool
-        _raw_paths: list[str | os.PathLike[str] | JoinablePath]
+        _raw_urlpaths: Sequence[JoinablePathLike]
 
     # === JoinablePath attributes =====================================
 
@@ -409,7 +405,7 @@ class UPath(_UPathMixin, OpenablePath):
         )
 
     def __str__(self) -> str:
-        path = self.parser.join(*self._raw_paths)
+        path = self.parser.join(*self._raw_urlpaths)
         if self._protocol:
             if path.startswith(f"{self._protocol}://"):
                 return path
@@ -854,7 +850,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.parser.splitroot(str(self))[1]
 
     def __reduce__(self):
-        args = tuple(self._raw_paths)
+        args = tuple(self._raw_urlpaths)
         kwargs = {
             "protocol": self._protocol,
             **self._storage_options,

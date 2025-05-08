@@ -10,7 +10,7 @@ class DataPath(UPath):
         return (self.path,)
 
     def __str__(self):
-        return self.parser.join(*self._raw_paths)
+        return self.parser.join(*self._raw_urlpaths)
 
     def with_segments(self, *pathsegments):
         raise NotImplementedError("path operation not supported by DataPath")

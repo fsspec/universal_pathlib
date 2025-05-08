@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 if TYPE_CHECKING:
-    from upath.core import UPath
     from upath.types import JoinablePath
 
 __all__ = [
@@ -41,6 +40,8 @@ def get_upath_protocol(
     storage_options: dict[str, Any] | None = None,
 ) -> str:
     """return the filesystem spec protocol"""
+    from upath.core import UPath
+
     if isinstance(pth, str):
         pth_protocol = _match_protocol(pth)
     elif isinstance(pth, UPath):
