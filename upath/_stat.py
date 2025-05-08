@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import os
 import warnings
+from collections.abc import Iterator
+from collections.abc import Mapping
+from collections.abc import Sequence
 from datetime import datetime
 from stat import S_IFDIR
 from stat import S_IFLNK
 from stat import S_IFREG
 from typing import Any
-from typing import Iterator
-from typing import Mapping
-from typing import Sequence
 
 __all__ = [
     "UPathStatResult",

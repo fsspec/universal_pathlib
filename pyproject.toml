@@ -13,13 +13,13 @@ maintainers = [
     {name = "Andreas Poehlmann", email = "andreas@poehlmann.io"},
     {name = "Norman Rzepka"},
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
-    "fsspec >=2022.1.0,!=2024.3.1",
+    "fsspec >=2024.5.0",
+    "pathlib-abc ==0.4.3",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -45,11 +45,11 @@ tests = [
     "packaging",
 ]
 dev = [
-    "adlfs",
+    "adlfs>=2024",
     "aiohttp",
     "requests",
-    "gcsfs",
-    "s3fs",
+    "gcsfs>=2024.5.0",
+    "s3fs>=2024.5.0",
     "moto[s3,server]",
     "webdav4[fsspec]",
     "paramiko",
@@ -158,6 +158,14 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "webdav4.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pathlib_abc.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "smbprotocol.*"
 ignore_missing_imports = true
 
 [tool.pylint.format]

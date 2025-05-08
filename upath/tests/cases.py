@@ -221,23 +221,6 @@ class BaseTests:
         with pytest.raises(FileExistsError):
             new_dir.mkdir(parents=True, exist_ok=False)
 
-    @pytest.mark.skip(reason="_accessor is unsupported in universal_pathlib>0.1.4")
-    def test_makedirs_exist_ok_true(self):
-        new_dir = self.path.joinpath("parent", "child", "dir_may_not_exist")
-        new_dir._accessor.makedirs(new_dir, exist_ok=True)
-        if not self.SUPPORTS_EMPTY_DIRS:
-            new_dir.joinpath(".file").touch()
-        new_dir._accessor.makedirs(new_dir, exist_ok=True)
-
-    @pytest.mark.skip(reason="_accessor is unsupported in universal_pathlib>0.1.4")
-    def test_makedirs_exist_ok_false(self):
-        new_dir = self.path.joinpath("parent", "child", "dir_may_exist")
-        new_dir._accessor.makedirs(new_dir, exist_ok=False)
-        if not self.SUPPORTS_EMPTY_DIRS:
-            new_dir.joinpath(".file").touch()
-        with pytest.raises(FileExistsError):
-            new_dir._accessor.makedirs(new_dir, exist_ok=False)
-
     def test_open(self):
         p = self.path.joinpath("file1.txt")
         with p.open(mode="r") as f:
@@ -435,8 +418,8 @@ class BaseTests:
         assert path.storage_options == recovered_path.storage_options
 
     def test_child_path(self):
-        path_str = str(self.path).rstrip("/")
-        path_a = UPath(f"{path_str}/folder")
+        path_str = str(self.path)
+        path_a = UPath(path_str, "folder", **self.path.storage_options)
         path_b = self.path / "folder"
 
         assert str(path_a) == str(path_b)
@@ -530,19 +513,6 @@ class BaseTests:
         fs = filesystem(protocol, **storage_options)
         with fs.open(path) as f:
             assert f.read() == b"hello world"
-
-    @pytest.mark.xfail(
-        sys.version_info >= (3, 13),
-        reason="no support for private `._drv`, `._root`, `._parts` in 3.13",
-    )
-    def test_access_to_private_api(self):
-        # DO NOT access these private attributes in your code
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._drv, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._root, str)
-        p = UPath(str(self.path), **self.path.storage_options)
-        assert isinstance(p._parts, (list, tuple))
 
     def test_hashable(self):
         assert hash(self.path)

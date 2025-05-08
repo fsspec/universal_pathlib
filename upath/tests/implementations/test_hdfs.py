@@ -1,5 +1,4 @@
-"""see upath/tests/conftest.py for fixtures
-"""
+"""see upath/tests/conftest.py for fixtures"""
 
 import pytest  # noqa: F401
 
@@ -19,7 +18,3 @@ class TestUPathHDFS(BaseTests):
 
     def test_is_HDFSPath(self):
         assert isinstance(self.path, HDFSPath)
-
-    @pytest.mark.skip
-    def test_makedirs_exist_ok_false(self):
-        pass

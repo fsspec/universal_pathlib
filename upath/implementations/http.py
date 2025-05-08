@@ -1,20 +1,27 @@
 from __future__ import annotations
 
-import os
+import sys
 import warnings
+from collections.abc import Iterator
+from collections.abc import Sequence
 from itertools import chain
+from typing import TYPE_CHECKING
 from typing import Any
+from urllib.parse import urlsplit
 
 from fsspec.asyn import sync
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
 from upath._stat import UPathStatResult
 from upath.core import UPath
+from upath.types import JoinablePathLike
+
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __all__ = ["HTTPPath"]
-
-# accessors are deprecated
-_HTTPAccessor = _FSSpecAccessorShim
 
 
 class HTTPPath(UPath):
@@ -22,23 +29,25 @@ class HTTPPath(UPath):
     @classmethod
     def _transform_init_args(
         cls,
-        args: tuple[str | os.PathLike, ...],
+        args: tuple[JoinablePathLike, ...],
         protocol: str,
         storage_options: dict[str, Any],
-    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+    ) -> tuple[tuple[JoinablePathLike, ...], str, dict[str, Any]]:
         # allow initialization via a path argument and protocol keyword
         if args and not str(args[0]).startswith(protocol):
             args = (f"{protocol}://{str(args[0]).lstrip('/')}", *args[1:])
         return args, protocol, storage_options
 
     @property
-    def root(self) -> str:  # type: ignore[override]
-        return super().root or "/"
+    def parts(self) -> Sequence[str]:
+        _parts = super().parts
+        return f"{_parts[0]}/", *_parts[1:]
 
-    def __str__(self):
-        return super(UPath, self).__str__()
+    def __str__(self) -> str:
+        sr = urlsplit(super().__str__())
+        return sr._replace(path=sr.path or "/").geturl()
 
-    def is_file(self):
+    def is_file(self) -> bool:
         try:
             next(super().iterdir())
         except (StopIteration, NotADirectoryError):
@@ -48,7 +57,7 @@ class HTTPPath(UPath):
         else:
             return False
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         try:
             next(super().iterdir())
         except (StopIteration, NotADirectoryError):
@@ -58,7 +67,7 @@ class HTTPPath(UPath):
         else:
             return True
 
-    def stat(self, follow_symlinks: bool = True):
+    def stat(self, follow_symlinks: bool = True) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
                 f"{type(self).__name__}.stat(follow_symlinks=False):"
@@ -71,33 +80,34 @@ class HTTPPath(UPath):
             info["type"] = "directory" if info["url"].endswith("/") else "file"
         return UPathStatResult.from_info(info)
 
-    def iterdir(self):
-        if self.parts[-1:] == ("",):
-            yield from self.parent.iterdir()
+    def iterdir(self) -> Iterator[Self]:
+        it = iter(super().iterdir())
+        try:
+            item0 = next(it)
+        except (StopIteration, NotADirectoryError):
+            raise NotADirectoryError(str(self))
+        except FileNotFoundError:
+            raise FileNotFoundError(str(self))
         else:
-            it = iter(super().iterdir())
-            try:
-                item0 = next(it)
-            except (StopIteration, NotADirectoryError):
-                raise NotADirectoryError(str(self))
-            except FileNotFoundError:
-                raise FileNotFoundError(str(self))
-            else:
-                yield from chain([item0], it)
+            yield from chain([item0], it)
 
     def resolve(
-        self: HTTPPath,
+        self,
         strict: bool = False,
         follow_redirects: bool = True,
-    ) -> HTTPPath:
+    ) -> Self:
         """Normalize the path and resolve redirects."""
-        # Normalise the path
-        resolved_path = super().resolve(strict=strict)
-        # if the last part is "..", then it's a directory
-        if self.parts[-1:] == ("..",):
-            resolved_path = resolved_path.joinpath("")
+        # special handling of trailing slash behaviour
+        parts = list(self.parts)
+        if parts[-1:] == ["."]:
+            parts[-1:] = [""]
+        if parts[-2:] == ["", ".."]:
+            parts[-2:] = [""]
+        pth = self.with_segments(*parts)
+        resolved_path = super(HTTPPath, pth).resolve(strict=strict)
 
         if follow_redirects:
+            cls = type(self)
             # Get the fsspec fs
             fs = self.fs
             url = str(self)
@@ -112,7 +122,7 @@ class HTTPPath(UPath):
                     if method == session.get:
                         raise FileNotFoundError(self) from exc
                 else:
-                    resolved_path = HTTPPath(str(r.url))
+                    resolved_path = cls(str(r.url))
                     break
 
         return resolved_path

@@ -10,7 +10,9 @@ from upath.tests.cases import BaseTests
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("CI")
-    and (sys.version_info not in {(3, 8), (3, 12)} and platform.system() != "Linux"),
+    and not (
+        platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
+    ),
     reason="Skipping GitHubPath tests to prevent rate limiting on GitHub API.",
 )
 

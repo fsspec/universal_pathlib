@@ -3,7 +3,7 @@ default_language_version:
 exclude: ^upath/tests/pathlib/test_pathlib.*\.py|^upath/tests/pathlib/_test_support\.py|^upath/_flavour_sources\.py
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 25.1.0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -25,21 +25,21 @@ repos:
       - id: sort-simple-yaml
       - id: trailing-whitespace
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies: ["tomli"]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
-        args: [--py38-plus]
+        args: [--py39-plus]
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
       - id: isort
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
+    rev: 7.2.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -48,7 +48,7 @@ repos:
           - flake8-debugger==4.1.2
           - flake8-string-format==0.3.0
   - repo: https://github.com/pycqa/bandit
-    rev: 1.7.9
+    rev: 1.8.3
     hooks:
       - id: bandit
         args: [-c, pyproject.toml]

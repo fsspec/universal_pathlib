@@ -122,8 +122,9 @@ def test_timestamps(timestamp):
 def test_bad_timestamp():
     from upath._stat import UPathStatResult
 
-    with pytest.raises(TypeError), pytest.warns(
-        RuntimeWarning, "universal_pathlib/issues"
+    with (
+        pytest.raises(TypeError),
+        pytest.warns(RuntimeWarning, "universal_pathlib/issues"),
     ):
         s = UPathStatResult([0] * 10, {"ctime": "bad"})
         _ = s.st_ctime

@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import os
+from collections.abc import Mapping
 from typing import Any
-from typing import Mapping
 from urllib.parse import urlsplit
 
 from fsspec.registry import known_implementations
 from fsspec.registry import register_implementation
 
-from upath._compat import FSSpecAccessorShim as _FSSpecAccessorShim
-from upath._compat import str_remove_prefix
-from upath._compat import str_remove_suffix
 from upath.core import UPath
+from upath.types import JoinablePathLike
 
 __all__ = [
     "WebdavPath",
@@ -24,20 +21,16 @@ if "webdav" not in known_implementations:
     register_implementation("webdav", webdav4.fsspec.WebdavFileSystem)
 
 
-# accessors are deprecated
-_WebdavAccessor = _FSSpecAccessorShim
-
-
 class WebdavPath(UPath):
     __slots__ = ()
 
     @classmethod
     def _transform_init_args(
         cls,
-        args: tuple[str | os.PathLike, ...],
+        args: tuple[JoinablePathLike, ...],
         protocol: str,
         storage_options: dict[str, Any],
-    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+    ) -> tuple[tuple[JoinablePathLike, ...], str, dict[str, Any]]:
         if not args:
             args = ("/",)
         elif args and protocol in {"webdav+http", "webdav+https"}:
@@ -55,7 +48,10 @@ class WebdavPath(UPath):
 
     @classmethod
     def _parse_storage_options(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
     ) -> dict[str, Any]:
         so = dict(storage_options)
         if urlpath.startswith(("webdav+http:", "webdav+https:")):
@@ -64,12 +60,3 @@ class WebdavPath(UPath):
             urlpath = url._replace(scheme="", netloc="").geturl() or "/"
             so.setdefault("base_url", base)
         return super()._parse_storage_options(urlpath, "webdav", so)
-
-    @property
-    def path(self) -> str:
-        # webdav paths don't start at "/"
-        return str_remove_prefix(super().path, "/")
-
-    def __str__(self):
-        base_url = str_remove_suffix(self.storage_options["base_url"], "/")
-        return super().__str__().replace("webdav://", f"webdav+{base_url}/", 1)
