@@ -64,7 +64,7 @@
     from upath import UPath
 
     p = UPath("abc")
-    reveal_type(p.parts)  # N: Revealed type is "builtins.tuple[builtins.str, ...]"
+    reveal_type(p.parts)  # N: Revealed type is "typing.Sequence[builtins.str]"
 
 - case: upath_drive
   disable_cache: false
@@ -294,14 +294,14 @@
   main: |
     from upath import UPath
 
-    reveal_type(UPath("abc").glob("efg"))  # N: Revealed type is "typing.Generator[upath.core.UPath, None, None]"
+    reveal_type(UPath("abc").glob("efg"))  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
 
 - case: upath_rglob
   disable_cache: false
   main: |
     from upath import UPath
 
-    reveal_type(UPath("abc").rglob("efg"))  # N: Revealed type is "typing.Generator[upath.core.UPath, None, None]"
+    reveal_type(UPath("abc").rglob("efg"))  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
 
 - case: upath_is_dir
   disable_cache: false
@@ -364,7 +364,7 @@
   main: |
     from upath import UPath
 
-    reveal_type(UPath("abc").iterdir())  # N: Revealed type is "typing.Generator[upath.core.UPath, None, None]"
+    reveal_type(UPath("abc").iterdir())  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
 
 - case: upath_lchmod
   disable_cache: false
@@ -534,33 +534,15 @@
 
     reveal_type(UPath("abc").write_text("efg"))  # N: Revealed type is "builtins.int"
 
-- case: upath_link_to_py39
+- case: upath_link_to
   disable_cache: false
-  mypy_config: python_version = 3.9
-  main: |
-    from upath import UPath
-
-    UPath("abc").link_to
-
-- case: upath_link_to_py312plus
-  disable_cache: false
-  mypy_config: python_version = 3.12
   main: |
     from upath import UPath
 
     UPath("abc").link_to  # E: "UPath" has no attribute "link_to"  [attr-defined]
 
-- case: upath_walk_py39
+- case: upath_walk
   disable_cache: false
-  mypy_config: python_version = 3.9
-  main: |
-    from upath import UPath
-
-    UPath("abc").walk  # E: "UPath" has no attribute "walk"  [attr-defined]
-
-- case: upath_walk_py312plus
-  disable_cache: false
-  mypy_config: python_version = 3.12
   main: |
       from upath import UPath
 
