@@ -428,3 +428,25 @@ def test_joinuri_on_protocol_mismatch(base, join):
 def test_upath_expanduser():
     assert UPath("~").expanduser() == UPath(os.path.expanduser("~"))
     assert UPath("~") != UPath("~").expanduser()
+
+
+def test_builtin_open_a_non_local_upath():
+    p = UPath("memory://a")
+    p.write_bytes(b"hello world")
+    with pytest.raises(TypeError, match="expected str, bytes or os.PathLike object.*"):
+        open(p, "rb")  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        pytest.param(None, id="empty protocol"),
+        pytest.param("file", id="file protocol"),
+    ],
+)
+def test_open_a_local_upath(tmp_path, protocol):
+    p = tmp_path.joinpath("file.txt")
+    p.write_bytes(b"hello world")
+    u = UPath(p, protocol=protocol)
+    with open(u, "rb") as f:
+        assert f.read() == b"hello world"
