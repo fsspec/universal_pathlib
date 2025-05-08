@@ -9,6 +9,7 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
+from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
 from typing import TYPE_CHECKING
@@ -23,6 +24,9 @@ from urllib.parse import urlsplit
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
+from upath._chain import DEFAULT_CHAIN_PARSER
+from upath._chain import CurrentChainSegment
+from upath._chain import FSSpecChainParser
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
@@ -113,21 +117,31 @@ class _UPathMixin(metaclass=_UPathMeta):
         raise NotImplementedError
 
     @property
-    @abstractmethod
     def _protocol(self) -> str:
-        raise NotImplementedError
+        return self._chain.current.protocol
 
     @_protocol.setter
     def _protocol(self, value: str) -> None:
-        raise NotImplementedError
+        self._chain = self._chain.replace(self._chain.current._replace(protocol=value))
 
     @property
-    @abstractmethod
     def _storage_options(self) -> dict[str, Any]:
-        raise NotImplementedError
+        return self._chain.current.storage_options
 
     @_storage_options.setter
     def _storage_options(self, value: dict[str, Any]) -> None:
+        self._chain = self._chain.replace(
+            self._chain.current._replace(storage_options=value)
+        )
+
+    @property
+    @abstractmethod
+    def _chain(self) -> CurrentChainSegment:
+        raise NotImplementedError
+
+    @_chain.setter
+    @abstractmethod
+    def _chain(self, value: CurrentChainSegment) -> None:
         raise NotImplementedError
 
     @property
@@ -232,6 +246,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         cls,
         *args: JoinablePathLike,
         protocol: str | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
         **storage_options: Any,
     ) -> UPath:
         # narrow type
@@ -274,12 +289,31 @@ class _UPathMixin(metaclass=_UPathMeta):
             # for all supported user protocols.
             upath_cls = cls
 
+        # unparse fsspec chains
+        if (
+            not isinstance(part0, (str, PurePath))
+            and getattr(part0, "__fspath__", None) is not None
+        ):
+            _p0 = part0.__fspath__()
+        else:
+            _p0 = str(part0)
+        segments = chain_parser.unchain(
+            _p0, {"protocol": pth_protocol, **storage_options}
+        )
+        chain = CurrentChainSegment.from_list(segments)
+        if not (cp := chain.current.protocol) == pth_protocol:
+            warnings.warn(
+                f"Unexpected protocol mismatch {cp!r} != {pth_protocol!r}",
+                stacklevel=2,
+            )
+            chain = chain.replace(chain.current._replace(protocol=pth_protocol))
+
         # create a new instance
         if cls is UPath:
             # we called UPath() directly, and want an instance based on the
             # provided or detected protocol (i.e. upath_cls)
             obj: UPath = object.__new__(upath_cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
             if cls not in upath_cls.mro():
                 # we are not in the upath_cls mro, so we need to
@@ -291,7 +325,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             # corresponding upath_cls based on protocol is equal-to or a
             # parent-of the cls.
             obj = object.__new__(cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
         elif issubclass(cls, UPath):
             # we called a subclass of UPath directly, i.e. S3Path() but the
@@ -315,7 +349,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
 
             obj = object.__new__(upath_cls)
-            obj._protocol = pth_protocol
+            obj._chain = chain
 
             upath_cls.__init__(
                 obj, *args, protocol=pth_protocol, **storage_options
@@ -330,6 +364,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         self,
         *args: JoinablePathLike,
         protocol: str | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
         **storage_options: Any,
     ) -> None:
         # allow subclasses to customize __init__ arg parsing
@@ -370,7 +405,6 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     # --- deprecated attributes ---------------------------------------
 
-    # deprecation
     @property
     def _url(self) -> SplitResult:
         # TODO:
@@ -381,15 +415,13 @@ class _UPathMixin(metaclass=_UPathMeta):
 
 class UPath(_UPathMixin, OpenablePath):
     __slots__ = (
-        "_protocol",
-        "_storage_options",
+        "_chain",
         "_fs_cached",
         "_raw_urlpaths",
     )
 
     if TYPE_CHECKING:
-        _protocol: str
-        _storage_options: dict[str, Any]
+        _chain: CurrentChainSegment
         _fs_cached: bool
         _raw_urlpaths: Sequence[JoinablePathLike]
 
