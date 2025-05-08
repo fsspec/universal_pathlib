@@ -12,6 +12,7 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import CurrentChainSegment
 from upath._protocol import compatible_protocol
 from upath.core import UPath
 from upath.core import _UPathMixin
@@ -64,13 +65,11 @@ def _warn_protocol_storage_options(
 
 class LocalPath(_UPathMixin, pathlib.Path):
     __slots__ = (
-        "_protocol",
-        "_storage_options",
+        "_chain",
         "_fs_cached",
     )
     if TYPE_CHECKING:
-        _protocol: str
-        _storage_options: dict[str, Any]
+        _chain: CurrentChainSegment
         _fs_cached: AbstractFileSystem
 
     parser = os.path  # type: ignore[misc,assignment]
