@@ -82,7 +82,10 @@ class ProxyUPath:
         return self.__wrapped__.__str__()
 
     def __repr__(self) -> str:
-        return f"Wrapped{self.__wrapped__.__repr__()}"
+        return (
+            f"{type(self).__name__}"
+            f"({self.__wrapped__.path!r}, protocol={self.protocol!r})"
+        )
 
     @property
     def parts(self) -> Sequence[str]:
@@ -310,11 +313,11 @@ class ProxyUPath:
 
     @classmethod
     def cwd(cls) -> Self:
-        return cls._from_upath(UPath.cwd())
+        raise NotImplementedError
 
     @classmethod
     def home(cls) -> Self:
-        return cls._from_upath(UPath.home())
+        raise NotImplementedError
 
     def relative_to(  # type: ignore[override]
         self,

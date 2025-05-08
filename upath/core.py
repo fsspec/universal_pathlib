@@ -831,7 +831,6 @@ class UPath(_UPathMixin, OpenablePath):
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
             target_ = parent.joinpath(os.path.normpath(str(target)))
-        assert isinstance(target_, type(self)), "identical protocols enforced above"
         if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
