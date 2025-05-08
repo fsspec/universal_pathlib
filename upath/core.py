@@ -458,7 +458,7 @@ class UPath(_UPathMixin, OpenablePath):
             _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
             yield base.with_segments(str(base), name)
 
-    def __open_rb__(self, buffering=-1) -> BinaryIO:
+    def __open_rb__(self, buffering: int = -1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
         if block_size is not None:
@@ -470,14 +470,19 @@ class UPath(_UPathMixin, OpenablePath):
 
     # --- WritablePath attributes -------------------------------------
 
-    def symlink_to(  # type: ignore[override]
+    def symlink_to(
         self,
-        target: str | os.PathLike[str] | UPath,
+        target: ReadablePathLike,
         target_is_directory: bool = False,
     ) -> None:
         raise NotImplementedError
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False) -> None:
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -492,7 +497,7 @@ class UPath(_UPathMixin, OpenablePath):
             if not self.is_dir():
                 raise FileExistsError(str(self))
 
-    def __open_wb__(self, buffering=-1) -> BinaryIO:
+    def __open_wb__(self, buffering: int = -1) -> BinaryIO:
         block_size = _buffering2blocksize("wb", buffering)
         kw = {}
         if block_size is not None:
@@ -504,7 +509,7 @@ class UPath(_UPathMixin, OpenablePath):
     @overload
     def open(
         self,
-        mode: Literal["r", "w", "a"] = "r",
+        mode: Literal["r", "w", "a"] = ...,
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -515,7 +520,7 @@ class UPath(_UPathMixin, OpenablePath):
     @overload
     def open(
         self,
-        mode: Literal["rb", "wb", "ab"],
+        mode: Literal["rb", "wb", "ab"] = ...,
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -523,10 +528,24 @@ class UPath(_UPathMixin, OpenablePath):
         **fsspec_kwargs: Any,
     ) -> BinaryIO: ...
 
+    @overload
+    def open(
+        self,
+        mode: str = ...,
+        buffering: int = ...,
+        encoding: str | None = ...,
+        errors: str | None = ...,
+        newline: str | None = ...,
+        **fsspec_kwargs: Any,
+    ) -> IO[Any]: ...
+
     def open(
         self,
         mode: str = "r",
-        *args: Any,
+        buffering: int = UNSET_DEFAULT,
+        encoding: str | None = UNSET_DEFAULT,
+        errors: str | None = UNSET_DEFAULT,
+        newline: str | None = UNSET_DEFAULT,
         **fsspec_kwargs: Any,
     ) -> IO[Any]:
         """
@@ -549,19 +568,18 @@ class UPath(_UPathMixin, OpenablePath):
             Additional options for the fsspec filesystem.
         """
         # match the signature of pathlib.Path.open()
-        for key, value in zip(["buffering", "encoding", "errors", "newline"], args):
-            if key in fsspec_kwargs:
-                raise TypeError(
-                    f"{type(self).__name__}.open() got multiple values for '{key}'"
-                )
-            fsspec_kwargs[key] = value
-        # translate pathlib buffering to fs block_size
-        if "buffering" in fsspec_kwargs:
+        if buffering is not UNSET_DEFAULT:
             if "block_size" in fsspec_kwargs:
                 raise TypeError("cannot specify both 'buffering' and 'block_size'")
-            block_size = _buffering2blocksize(mode, fsspec_kwargs.pop("buffering"))
+            block_size = _buffering2blocksize(mode, buffering)
             if block_size is not None:
                 fsspec_kwargs.setdefault("block_size", block_size)
+        if encoding is not UNSET_DEFAULT:
+            fsspec_kwargs["encoding"] = encoding
+        if errors is not UNSET_DEFAULT:
+            fsspec_kwargs["errors"] = errors
+        if newline is not UNSET_DEFAULT:
+            fsspec_kwargs["newline"] = newline
         return self.fs.open(self.path, mode=mode, **fsspec_kwargs)
 
     # === pathlib.Path ================================================
@@ -807,6 +825,8 @@ class UPath(_UPathMixin, OpenablePath):
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
             target = UPath(target, **self.storage_options)
+        if target == self:
+            return self
         target_protocol = get_upath_protocol(target)
         if target_protocol:
             if target_protocol != self.protocol:
@@ -826,7 +846,6 @@ class UPath(_UPathMixin, OpenablePath):
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
             target_ = parent.joinpath(os.path.normpath(str(target)))
-        assert isinstance(target_, type(self)), "identical protocols enforced above"
         if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
@@ -836,9 +855,9 @@ class UPath(_UPathMixin, OpenablePath):
             target_.path,
             **kwargs,
         )
-        return target_
+        return self.with_segments(target_)
 
-    def replace(self, target: str | os.PathLike[str] | UPath) -> UPath:
+    def replace(self, target: WritablePathLike) -> Self:
         raise NotImplementedError  # todo
 
     @property

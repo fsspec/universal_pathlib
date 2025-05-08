@@ -75,7 +75,7 @@ class OpenablePath(ReadablePath, WritablePath):
     @overload
     def open(
         self,
-        mode: Literal["r", "w", "a"] = "r",
+        mode: Literal["r", "w", "a"] = ...,
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
@@ -85,12 +85,22 @@ class OpenablePath(ReadablePath, WritablePath):
     @overload
     def open(
         self,
-        mode: Literal["rb", "wb", "ab"],
+        mode: Literal["rb", "wb", "ab"] = ...,
         buffering: int = ...,
         encoding: str = ...,
         errors: str = ...,
         newline: str = ...,
     ) -> BinaryIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: str = ...,
+        buffering: int = ...,
+        encoding: str | None = ...,
+        errors: str | None = ...,
+        newline: str | None = ...,
+    ) -> IO[Any]: ...
 
     def open(
         self,
