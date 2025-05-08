@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 from typing import Any
-from typing import Self
 
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 from upath.types import JoinablePathLike
+
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __all__ = [
     "CloudPath",

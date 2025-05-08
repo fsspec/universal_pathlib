@@ -1,7 +1,5 @@
 """Pathlib API extended to use fsspec backends."""
 
-import sys
-
 try:
     from upath._version import __version__
 except ImportError:

@@ -35,6 +35,7 @@ from upath.types import JoinablePath
 from upath.types import JoinablePathLike
 from upath.types import OpenablePath
 from upath.types import PathInfo
+from upath.types import ReadablePathLike
 from upath.types import UPathParser
 from upath.types import WritablePathLike
 
@@ -430,7 +431,7 @@ class UPath(_UPathMixin, OpenablePath):
             parts.append(anchor)
         return tuple(reversed(parts))
 
-    def with_name(self, name):
+    def with_name(self, name) -> Self:
         """Return a new path with the file name changed."""
         split = self.parser.split
         if self.parser.sep in name:  # `split(name)[0]`
@@ -733,6 +734,26 @@ class UPath(_UPathMixin, OpenablePath):
         """
         return hash((self.protocol, self.path))
 
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, UPath) or self.parser is not other.parser:
+            return NotImplemented
+        return self.path < other.path
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, UPath) or self.parser is not other.parser:
+            return NotImplemented
+        return self.path <= other.path
+
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, UPath) or self.parser is not other.parser:
+            return NotImplemented
+        return self.path > other.path
+
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, UPath) or self.parser is not other.parser:
+            return NotImplemented
+        return self.path >= other.path
+
     def resolve(self, strict: bool = False) -> Self:
         _parts = self.parts
 
@@ -889,3 +910,12 @@ class UPath(_UPathMixin, OpenablePath):
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             return False
         return self == other or other in self.parents
+
+    def hardlink_to(self, target: ReadablePathLike) -> None:
+        raise NotImplementedError
+
+    def match(self, pattern: str) -> bool:
+        # fixme: hacky emulation of match. needs tests...
+        if not pattern:
+            raise ValueError("pattern cannot be empty")
+        return self.full_match(pattern.replace("**", "*"))

@@ -13,16 +13,9 @@ from typing import BinaryIO
 from typing import Literal
 from typing import Protocol
 from typing import TextIO
-from typing import TypeAlias
 from typing import Union
 from typing import overload
 from typing import runtime_checkable
-
-if TYPE_CHECKING:
-    if sys.version_info > (3, 11):
-        from typing import Self
-    else:
-        from typing_extensions import Self
 
 from pathlib_abc import magic_open
 
@@ -31,6 +24,17 @@ from upath.types._abc import PathInfo
 from upath.types._abc import PathParser
 from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
+
+if TYPE_CHECKING:
+    if sys.version_info > (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
+
+    if sys.version_info >= (3, 12):
+        from typing import TypeAlias
+    else:
+        TypeAlias = Any
 
 __all__ = [
     "JoinablePath",

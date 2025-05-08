@@ -14,11 +14,6 @@ from typing import Union
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
-if sys.version_info >= (3, 12):
-    from typing import TypeAlias
-else:
-    TypeAlias = Any
-
 from fsspec.registry import known_implementations
 from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
@@ -32,6 +27,11 @@ from upath.types import JoinablePath
 from upath.types import UPathParser
 
 if TYPE_CHECKING:
+    if sys.version_info >= (3, 12):
+        from typing import TypeAlias
+    else:
+        TypeAlias = Any
+
     from upath.core import UPath
 
 __all__ = [
@@ -288,9 +288,9 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         if not paths:
             return self.strip_protocol(path) or self.root_marker
         if self.local_file:
-            return os.path.join(  # type: ignore[arg-type]
+            return os.path.join(
                 self.strip_protocol(path),
-                *paths,
+                *paths,  # type: ignore[arg-type]
             )
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
