@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import sys
 import warnings
 from collections.abc import Iterator
 from collections.abc import Sequence
 from itertools import chain
+from typing import TYPE_CHECKING
 from typing import Any
-from typing import Self
 from urllib.parse import urlsplit
 
 from fsspec.asyn import sync
@@ -13,6 +14,12 @@ from fsspec.asyn import sync
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import JoinablePathLike
+
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __all__ = ["HTTPPath"]
 
