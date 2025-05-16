@@ -1,22 +1,21 @@
 from __future__ import annotations
 
-import os
 import sys
 import warnings
 from typing import TYPE_CHECKING
 from typing import Any
+
+from smbprotocol.exceptions import SMBOSError
+
+from upath.core import UPath
+from upath.types import UNSET_DEFAULT
+from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
         from typing_extensions import Self
-
-import smbprotocol.exceptions
-
-from upath import UPath
-
-_unset: Any = object()
 
 
 class SMBPath(UPath):
@@ -31,7 +30,7 @@ class SMBPath(UPath):
                 self.path,
                 create_parents=parents,
             )
-        except smbprotocol.exceptions.SMBOSError:
+        except SMBOSError:
             if not exist_ok:
                 raise FileExistsError(str(self))
             if not self.is_dir():
@@ -45,19 +44,19 @@ class SMBPath(UPath):
 
     def rename(
         self,
-        target: str | os.PathLike[str] | UPath,
+        target: WritablePathLike,
         *,
-        recursive: bool = _unset,
-        maxdepth: int | None = _unset,
+        recursive: bool = UNSET_DEFAULT,
+        maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
-        if recursive is not _unset:
+        if recursive is not UNSET_DEFAULT:
             warnings.warn(
                 "SMBPath.rename(): recursive is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if maxdepth is not _unset:
+        if maxdepth is not UNSET_DEFAULT:
             warnings.warn(
                 "SMBPath.rename(): maxdepth is currently ignored.",
                 UserWarning,

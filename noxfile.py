@@ -13,6 +13,7 @@ nox.options.default_venv_backend = "uv|virtualenv"
 
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
+running_in_ci = os.environ.get("CI", "") != ""
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
@@ -23,6 +24,7 @@ def tests(session: nox.Session) -> None:
         session.install(".[tests,dev]")
     else:
         session.install(".[tests,dev,dev-third-party]")
+    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -36,7 +38,8 @@ def tests(session: nox.Session) -> None:
 
 @nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
-    session.install("fsspec==2022.1.0", ".[tests,dev]")
+    session.install("fsspec==2024.5.0", ".[tests,dev]")
+    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -99,7 +102,7 @@ def type_checking(session):
     session.run("python", "-m", "mypy")
 
 
-@nox.session
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
 def typesafety(session):
     session.install("-e", ".[tests,typechecking]")
     session.run(

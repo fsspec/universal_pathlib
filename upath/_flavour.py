@@ -5,7 +5,6 @@ import posixpath
 import sys
 import warnings
 from collections.abc import Mapping
-from collections.abc import Sequence
 from functools import lru_cache
 from typing import TYPE_CHECKING
 from typing import Any
@@ -14,22 +13,23 @@ from typing import Union
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
-if sys.version_info >= (3, 12):
-    from typing import TypeAlias
-else:
-    TypeAlias = Any
-
 from fsspec.registry import known_implementations
 from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
 
-from upath._compat import deprecated
 from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
 from upath._protocol import normalize_empty_netloc
+from upath.types import JoinablePath
+from upath.types import UPathParser
 
 if TYPE_CHECKING:
+    if sys.version_info >= (3, 12):
+        from typing import TypeAlias
+    else:
+        TypeAlias = Any
+
     from upath.core import UPath
 
 __all__ = [
@@ -37,10 +37,11 @@ __all__ = [
     "default_flavour",
     "upath_urijoin",
     "upath_get_kwargs_from_url",
+    "upath_strip_protocol",
 ]
 
 class_registry: Mapping[str, type[AbstractFileSystem]] = _class_registry
-PathOrStr: TypeAlias = Union[str, "os.PathLike[str]"]
+PathOrStr: TypeAlias = Union[str, os.PathLike[str], JoinablePath]
 
 
 class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
@@ -79,7 +80,7 @@ class ProtocolConfig(TypedDict):
     root_marker_override: dict[str, str]
 
 
-class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
+class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
     """flavour class for universal_pathlib
 
     **INTERNAL AND VERY MUCH EXPERIMENTAL**
@@ -115,8 +116,6 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             "adl",
             "abfs",
             "abfss",
-            "webdav+http",
-            "webdav+https",
         },
         "supports_empty_parts": {
             "http",
@@ -241,6 +240,7 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         if isinstance(pth, str):
             out = pth
         elif getattr(pth, "__fspath__", None) is not None:
+            assert hasattr(pth, "__fspath__")
             out = pth.__fspath__()
         elif isinstance(pth, os.PathLike):
             out = str(pth)
@@ -268,11 +268,11 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
     # === pathlib_abc.FlavourBase =====================================
 
     @property
-    def sep(self) -> str:
+    def sep(self) -> str:  # type: ignore[override]
         return self._spec.sep
 
     @property
-    def altsep(self) -> str | None:
+    def altsep(self) -> str | None:  # type: ignore[override]
         return None
 
     def isabs(self, path: PathOrStr) -> bool:
@@ -283,6 +283,13 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
             return path.startswith(self.root_marker)
 
     def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
+        if not paths:
+            return self.strip_protocol(path) or self.root_marker
+        if self.local_file:
+            return os.path.join(
+                self.strip_protocol(path),
+                *paths,  # type: ignore[arg-type]
+            )
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))
@@ -301,11 +308,22 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
 
     def split(self, path: PathOrStr):
         stripped_path = self.strip_protocol(path)
+        if self.local_file:
+            return os.path.split(stripped_path)
         head = self.parent(stripped_path) or self.root_marker
-        if head:
-            return head, stripped_path[len(head) + 1 :]
+        if head == self.sep:
+            tail = stripped_path[1:]
+        elif head:
+            tail = stripped_path[len(head) + 1 :]
         else:
-            return "", stripped_path
+            tail = stripped_path
+        if (
+            not tail
+            and not self.has_meaningful_trailing_slash
+            and self.strip_protocol(head) != stripped_path
+        ):
+            return self.split(head)
+        return head, tail
 
     def splitdrive(self, path: PathOrStr) -> tuple[str, str]:
         path = self.strip_protocol(path)
@@ -338,6 +356,20 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         else:
             return self.stringify_path(path)
 
+    def splitext(self, path: PathOrStr) -> tuple[str, str]:
+        path = self.stringify_path(path)
+        if self.local_file:
+            return os.path.splitext(path)
+        else:
+            path, sep, name = path.rpartition(self.sep)
+            if name:
+                stem, dot, ext = name.rpartition(".")
+                suffix = dot + ext
+            else:
+                stem = name
+                suffix = ""
+            return path + sep + stem, suffix
+
     # === Python3.12 pathlib flavour ==================================
 
     def splitroot(self, path: PathOrStr) -> tuple[str, str, str]:
@@ -347,54 +379,6 @@ class WrappedFileSystemFlavour:  # (pathlib_abc.FlavourBase)
         else:
             root_marker = self.root_marker
         return drive, root_marker, tail.removeprefix(self.sep)
-
-    # === deprecated backwards compatibility ===========================
-
-    @deprecated(python_version=(3, 12))
-    def casefold(self, s: str) -> str:
-        if self.local_file:
-            return s
-        else:
-            return s.lower()
-
-    @deprecated(python_version=(3, 12))
-    def parse_parts(self, parts: Sequence[str]) -> tuple[str, str, list[str]]:
-        parsed = []
-        sep = self.sep
-        drv = root = ""
-        it = reversed(parts)
-        for part in it:
-            if part:
-                drv, root, rel = self.splitroot(part)
-                if not root or root and rel:
-                    for x in reversed(rel.split(sep)):
-                        parsed.append(sys.intern(x))
-        if drv or root:
-            parsed.append(drv + root)
-        parsed.reverse()
-        return drv, root, parsed
-
-    @deprecated(python_version=(3, 12))
-    def join_parsed_parts(
-        self,
-        drv: str,
-        root: str,
-        parts: list[str],
-        drv2: str,
-        root2: str,
-        parts2: list[str],
-    ) -> tuple[str, str, list[str]]:
-        if root2:
-            if not drv2 and drv:
-                return drv, root2, [drv + root2] + parts2[1:]
-        elif drv2:
-            if drv2 == drv or self.casefold(drv2) == self.casefold(drv):
-                # Same drive => second path is relative to the first
-                return drv, root, parts + parts2[1:]
-        else:
-            # Second path is non-anchored (common case)
-            return drv, root, parts + parts2
-        return drv2, root2, parts2
 
 
 default_flavour = WrappedFileSystemFlavour(AnyProtocolFileSystemFlavour)
@@ -415,9 +399,11 @@ class LazyFlavourDescriptor:
         except (AttributeError, IndexError):
             self._default_protocol = None
 
-    def __get__(self, instance: UPath, owner: type[UPath]) -> WrappedFileSystemFlavour:
-        if instance is not None:
-            return WrappedFileSystemFlavour.from_protocol(instance.protocol)
+    def __get__(
+        self, obj: UPath | None, objtype: type[UPath] | None = None
+    ) -> WrappedFileSystemFlavour:
+        if obj is not None:
+            return WrappedFileSystemFlavour.from_protocol(obj.protocol)
         elif self._default_protocol:  # type: ignore
             return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
         else:

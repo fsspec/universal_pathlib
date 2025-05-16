@@ -645,15 +645,7 @@ installation of a newer version of its upstream dependencies. Below you can find
 a list of known issues and their solutions. We attempt to keep this list updated
 whenever we encounter more:
 
-- **UPath().glob()**:
-  `fsspec` fixed glob behavior when handling `**` patterns in `fsspec>=2023.9.0`
-- **GCSPath().mkdir()**:
-  a few mkdir quirks are solved by installing `gcsfs>=2022.7.1`
-- **fsspec.filesystem(WebdavPath().protocol)**
-  the webdav protocol was added to fsspec in version `fsspec>=2022.5.0`
-- **stat.S_ISDIR(HTTPPath().stat().st_mode)**
-  requires `fsspec>=2024.2.0` to correctly return `True` for directories
-
+- currently none :sparkles:
 
 ## Contributing
 

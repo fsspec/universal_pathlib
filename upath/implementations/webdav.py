@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping
 from typing import Any
 from urllib.parse import urlsplit
@@ -9,6 +8,7 @@ from fsspec.registry import known_implementations
 from fsspec.registry import register_implementation
 
 from upath.core import UPath
+from upath.types import JoinablePathLike
 
 __all__ = [
     "WebdavPath",
@@ -27,10 +27,10 @@ class WebdavPath(UPath):
     @classmethod
     def _transform_init_args(
         cls,
-        args: tuple[str | os.PathLike, ...],
+        args: tuple[JoinablePathLike, ...],
         protocol: str,
         storage_options: dict[str, Any],
-    ) -> tuple[tuple[str | os.PathLike, ...], str, dict[str, Any]]:
+    ) -> tuple[tuple[JoinablePathLike, ...], str, dict[str, Any]]:
         if not args:
             args = ("/",)
         elif args and protocol in {"webdav+http", "webdav+https"}:
@@ -48,7 +48,10 @@ class WebdavPath(UPath):
 
     @classmethod
     def _parse_storage_options(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
     ) -> dict[str, Any]:
         so = dict(storage_options)
         if urlpath.startswith(("webdav+http:", "webdav+https:")):
@@ -57,12 +60,3 @@ class WebdavPath(UPath):
             urlpath = url._replace(scheme="", netloc="").geturl() or "/"
             so.setdefault("base_url", base)
         return super()._parse_storage_options(urlpath, "webdav", so)
-
-    @property
-    def path(self) -> str:
-        # webdav paths don't start at "/"
-        return super().path.removeprefix("/")
-
-    def __str__(self):
-        base_url = self.storage_options["base_url"].removesuffix("/")
-        return super().__str__().replace("webdav://", f"webdav+{base_url}/", 1)
