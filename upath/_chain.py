@@ -145,8 +145,13 @@ class FSSpecChainParser:
         out: list[ChainSegment] = []
         previous_bit = None
         kwargs = kwargs.copy()
-        for bit in reversed(bits):
-            protocol = kwargs.pop("protocol", None) or get_upath_protocol(bit) or ""
+        first_bit_idx = len(bits) - 1
+        first_bit_protocol = kwargs.pop("protocol", None)
+        for idx, bit in enumerate(reversed(bits)):
+            if idx == first_bit_idx:
+                protocol = first_bit_protocol or get_upath_protocol(bit) or ""
+            else:
+                protocol = get_upath_protocol(bit) or ""
             if "+" in protocol:  # todo: deprecate the webdav+http(s) protocols
                 _p = protocol.partition("+")[0]
                 cls = get_filesystem_class(_p)
