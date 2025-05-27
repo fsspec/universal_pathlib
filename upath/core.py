@@ -118,7 +118,7 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     def _protocol(self) -> str:
-        return self._chain.current.protocol
+        return self._chain.nest().protocol
 
     @_protocol.setter
     def _protocol(self, value: str) -> None:
@@ -126,7 +126,7 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     def _storage_options(self) -> dict[str, Any]:
-        return self._chain.current.storage_options
+        return self._chain.nest().storage_options
 
     @_storage_options.setter
     def _storage_options(self, value: dict[str, Any]) -> None:
@@ -368,7 +368,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         **storage_options: Any,
     ) -> None:
         # allow subclasses to customize __init__ arg parsing
-        base_options = getattr(self, "_storage_options", {})
+        try:
+            base_options = self._chain.current.storage_options
+        except AttributeError:
+            base_options = {}
         args, protocol, storage_options = type(self)._transform_init_args(
             args, protocol or self._protocol, {**base_options, **storage_options}
         )
@@ -379,17 +382,37 @@ class _UPathMixin(metaclass=_UPathMeta):
         if args:
             args0 = args[0]
             if isinstance(args0, UPath):
-                self._storage_options = {**args0.storage_options, **storage_options}
+                base_chain = args0._chain
+
             else:
+                base_chain = self._chain
+
                 if hasattr(args0, "__fspath__"):
                     _args0 = args0.__fspath__()
                 else:
                     _args0 = str(args0)
-                self._storage_options = type(self)._parse_storage_options(
+                storage_options = type(self)._parse_storage_options(
                     _args0, protocol, storage_options
                 )
-        else:
-            self._storage_options = storage_options.copy()
+
+            self._chain = base_chain.replace(
+                base_chain.current._replace(
+                    storage_options={
+                        **base_chain.current.storage_options,
+                        **storage_options,
+                    }
+                )
+            )
+
+        elif storage_options:
+            self._chain = self._chain.replace(
+                self._chain.current._replace(
+                    storage_options={
+                        **self._chain.current.storage_options,
+                        **storage_options,
+                    }
+                )
+            )
 
         # check that UPath subclasses in args are compatible
         # TODO:
