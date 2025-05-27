@@ -1,0 +1,61 @@
+import pytest
+from fsspec.implementations.memory import MemoryFileSystem
+
+from upath import UPath
+
+
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
+        ("simplecache::file://tmp", "simplecache"),
+        ("zip://file.txt::file://tmp.zip", "zip"),
+    ],
+)
+def test_chaining_upath_protocol(urlpath, expected):
+    pth = UPath(urlpath)
+    assert pth.protocol == expected
+
+
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
+        (
+            "simplecache::file:///tmp",
+            {"target_protocol": "file", "fo": "/tmp", "target_options": {}},
+        ),
+    ],
+)
+def test_chaining_upath_storage_options(urlpath, expected):
+    pth = UPath(urlpath)
+    assert dict(pth.storage_options) == expected
+
+
+@pytest.fixture
+def clear_memory_fs():
+    fs = MemoryFileSystem()
+    store = fs.store
+    pseudo_dirs = fs.pseudo_dirs
+    try:
+        yield fs
+    finally:
+        fs.store.clear()
+        fs.store.update(store)
+        fs.pseudo_dirs[:] = pseudo_dirs
+
+
+@pytest.fixture
+def memory_file_urlpath(clear_memory_fs):
+    fs = clear_memory_fs
+    fs.pipe_file("/abc/file.txt", b"hello world")
+    yield fs.unstrip_protocol("/abc/file.txt")
+
+
+def test_read_file(memory_file_urlpath):
+    pth = UPath(f"simplecache::{memory_file_urlpath}")
+    assert pth.read_bytes() == b"hello world"
+
+
+def test_write_file(clear_memory_fs):
+    pth = UPath("simplecache::memory://abc.txt")
+    pth.write_bytes(b"hello world")
+    assert clear_memory_fs.cat_file("abc.txt") == b"hello world"
