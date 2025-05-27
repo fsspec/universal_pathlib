@@ -12,6 +12,7 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import ChainSegment
 from upath._chain import CurrentChainSegment
 from upath._protocol import compatible_protocol
 from upath.core import UPath
@@ -98,21 +99,18 @@ class LocalPath(_UPathMixin, pathlib.Path):
         ) -> None:
             _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501
-            self._protocol = ""
-            self._storage_options = {}
+            self._chain = CurrentChainSegment(ChainSegment(str(self), "", {}), [], [])
 
         @classmethod
         def _from_parts(cls, args):
             obj = super()._from_parts(args)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj._chain = CurrentChainSegment(ChainSegment(str(obj), "", {}), [], [])
             return obj
 
         @classmethod
         def _from_parsed_parts(cls, drv, root, parts):
             obj = super()._from_parsed_parts(drv, root, parts)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj._chain = CurrentChainSegment(ChainSegment(str(obj), "", {}), [], [])
             return obj
 
     else:
@@ -126,8 +124,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         def _init(self, **kwargs: Any) -> None:
             super()._init(**kwargs)  # type: ignore[misc]
-            self._protocol = ""
-            self._storage_options = {}
+            self._chain = CurrentChainSegment(ChainSegment(str(self), "", {}), [], [])
 
     def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
