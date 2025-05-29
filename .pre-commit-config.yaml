@@ -28,6 +28,7 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+        args: ['-L', 'fo']
         additional_dependencies: ["tomli"]
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.19.1
