@@ -9,7 +9,6 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
-from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
 from typing import TYPE_CHECKING
@@ -291,8 +290,9 @@ class _UPathMixin(metaclass=_UPathMeta):
 
         # unparse fsspec chains
         if (
-            not isinstance(part0, (str, PurePath))
-            and getattr(part0, "__fspath__", None) is not None
+            not isinstance(part0, str)
+            and hasattr(part0, "__fspath__")
+            and part0.__fspath__ is not None
         ):
             _p0 = part0.__fspath__()
         else:
