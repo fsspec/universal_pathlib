@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fsspec.implementations.memory import MemoryFileSystem
 
@@ -21,7 +23,11 @@ def test_chaining_upath_protocol(urlpath, expected):
     [
         (
             "simplecache::file:///tmp",
-            {"target_protocol": "file", "fo": "/tmp", "target_options": {}},
+            {
+                "target_protocol": "file",
+                "fo": Path("/tmp").absolute().as_posix(),
+                "target_options": {},
+            },
         ),
     ],
 )
