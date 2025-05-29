@@ -115,7 +115,7 @@ class CurrentChainSegment:
 class FSSpecChainParser:
     """parse an fsspec chained urlpath"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.link: str = "::"
         self.known_protocols: Set[str] = set()
 
@@ -145,7 +145,7 @@ class FSSpecChainParser:
 
         # [[url, protocol, kwargs], ...]
         out: list[ChainSegment] = []
-        previous_bit = None
+        previous_bit: str | None = None
         kwargs = kwargs.copy()
         first_bit_idx = len(bits) - 1
         first_bit_protocol = kwargs.pop("protocol", None)
@@ -181,7 +181,8 @@ class FSSpecChainParser:
                 and "target_protocol" not in kw
             ):
                 out.append(ChainSegment(None, protocol, kw))
-                bit = previous_bit
+                if previous_bit is not None:
+                    bit = previous_bit
             else:
                 out.append(ChainSegment(bit, protocol, kw))
             previous_bit = bit
