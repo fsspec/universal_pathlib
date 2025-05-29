@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os.path
 import sys
 from collections.abc import Set
 from typing import Any
@@ -11,6 +12,7 @@ else:
     from typing_extensions import Self
 
 from fsspec.core import get_filesystem_class
+from fsspec.implementations.local import LocalFileSystem
 
 from upath._protocol import get_upath_protocol
 from upath.registry import available_implementations
@@ -164,7 +166,16 @@ class FSSpecChainParser:
                 kws.update(kwargs)
             kw = dict(**extra_kwargs)
             kw.update(kws)
-            bit = cls._strip_protocol(bit)
+            if (
+                os.name == "nt"
+                and issubclass(cls, LocalFileSystem)
+                and bit.startswith("~")
+            ):
+                # workaround for an upstream edge case in
+                # fsspec.implementations.local.make_path_posix
+                bit = os.path.expanduser(bit).replace("\\", "/")
+            else:
+                bit = cls._strip_protocol(bit)
             if (
                 protocol in {"blockcache", "filecache", "simplecache"}
                 and "target_protocol" not in kw
