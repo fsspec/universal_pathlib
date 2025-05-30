@@ -3,13 +3,15 @@ from __future__ import annotations
 import os.path
 import sys
 from collections.abc import Set
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import NamedTuple
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 from fsspec.core import get_filesystem_class
 from fsspec.implementations.local import LocalFileSystem
