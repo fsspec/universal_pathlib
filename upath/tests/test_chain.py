@@ -36,6 +36,28 @@ def test_chaining_upath_storage_options(urlpath, expected):
     assert dict(pth.storage_options) == expected
 
 
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
+        ("simplecache::memory://tmp", ("/", "tmp")),
+    ],
+)
+def test_chaining_upath_parts(urlpath, expected):
+    pth = UPath(urlpath)
+    assert pth.parts == expected
+
+
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
+        ("simplecache::memory:///tmp", "simplecache::memory:///tmp"),
+    ],
+)
+def test_chaining_upath_str(urlpath, expected):
+    pth = UPath(urlpath)
+    assert str(pth) == expected
+
+
 @pytest.fixture
 def clear_memory_fs():
     fs = MemoryFileSystem()
