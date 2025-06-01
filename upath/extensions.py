@@ -16,8 +16,8 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import Chain
 from upath._chain import ChainSegment
-from upath._chain import CurrentChainSegment
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
@@ -72,7 +72,7 @@ class ProxyUPath:
         try:
             return self.__wrapped__._chain
         except AttributeError:
-            return CurrentChainSegment(
+            return Chain(
                 ChainSegment(
                     path=self.__wrapped__.path,
                     protocol=self.__wrapped__.protocol,

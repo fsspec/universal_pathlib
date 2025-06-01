@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os.path
 import sys
+from collections import defaultdict
+from collections.abc import Sequence
 from collections.abc import Set
 from typing import TYPE_CHECKING
 from typing import Any
@@ -21,7 +23,7 @@ from upath.registry import available_implementations
 
 __all__ = [
     "ChainSegment",
-    "CurrentChainSegment",
+    "Chain",
     "FSSpecChainParser",
     "DEFAULT_CHAIN_PARSER",
 ]
@@ -33,71 +35,86 @@ class ChainSegment(NamedTuple):
     storage_options: dict[str, Any]
 
 
-class CurrentChainSegment:
-    """holds current chain, source and target segments"""
+class Chain:
+    """holds current chain segments"""
 
     __slots__ = (
-        "_current",
-        "_chain_source",
-        "_chain_target",
+        "_segments",
+        "_index",
     )
 
     def __init__(
         self,
-        current: ChainSegment,
-        chain_source: list[ChainSegment],
-        chain_target: list[ChainSegment],
+        *segments: ChainSegment,
+        index: int = 0,
     ) -> None:
-        self._current = current
-        self._chain_source = chain_source
-        self._chain_target = chain_target
+        if not (0 <= index < len(segments)):
+            raise ValueError("index must be between 0 and len(segments)")
+        self._segments = segments
+        self._index = index
+
+    def __repr__(self) -> str:
+        args = ", ".join(map(repr, self._segments))
+        if self._index != 0:
+            args += f", index={self._index}"
+        return f"{type(self).__name__}({args})"
 
     @property
     def current(self) -> ChainSegment:
-        return self._current
+        return self._segments[self._index]
 
-    def replace(self, current: ChainSegment) -> Self:
+    @property
+    def _path_index(self) -> int:
+        for idx, segment in enumerate(self._segments[self._index :], start=self._index):
+            if segment.path is not None:
+                return idx
+        raise IndexError("No target path found")
+
+    @property
+    def active_path(self) -> str:
+        return self._segments[self._path_index].path
+
+    @property
+    def active_path_protocol(self) -> str:
+        return self._segments[self._path_index].protocol
+
+    def replace(
+        self,
+        *,
+        path: str | None = None,
+        protocol: str | None = None,
+        storage_options: dict[str, Any] | None = None,
+    ) -> Self:
         """replace the current chain segment keeping remaining chain segments"""
-        return type(self)(
-            current,
-            self._chain_source,
-            self._chain_target,
-        )
+        segments = self.to_list()
+        index = self._index
 
-    def lshift(self) -> Self:
-        """move one chain link towards the source"""
-        return type(self)(
-            self._chain_source[-1],
-            self._chain_source[:-1],
-            [self._current, *self._chain_target],
-        )
+        replacements = defaultdict(dict)
+        if protocol is not None:
+            replacements[index]["protocol"] = protocol
+        if storage_options is not None:
+            replacements[index]["storage_options"] = storage_options
+        if path is not None:
+            replacements[self._path_index]["path"] = path
 
-    def rshift(self) -> Self:
-        """move one chain link towards the target"""
-        return type(self)(
-            self._chain_target[0],
-            [*self._chain_source, self._current],
-            self._chain_target[1:],
-        )
+        for idx, items in replacements.items():
+            segments[idx] = segments[idx]._replace(**items)
 
-    def to_list(self) -> list[ChainSegment]:
-        return [*self._chain_source, self._current, *self._chain_target]
+        return type(self)(*segments, index=index)
+
+    def to_list(self) -> Sequence[ChainSegment]:
+        return list(self._segments)
 
     @classmethod
     def from_list(cls, segments: list[ChainSegment], index: int = 0) -> Self:
-        index = range(len(segments))[int(index)]
-        return cls(
-            segments[index],
-            segments[:index],
-            segments[index + 1 :],
-        )
+        return cls(*segments, index=index)
 
     def nest(self) -> ChainSegment:
         """return a nested target_* structure"""
         # see: fsspec.core.url_to_fs
         inkwargs: dict[str, Any] = {}
         # Reverse iterate the chain, creating a nested target_* structure
-        chain = self.to_list()
+        chain = self._segments
         _prev = chain[-1].path
         for i, ch in enumerate(reversed(chain)):
             urls, protocol, kw = ch
@@ -191,7 +208,7 @@ class FSSpecChainParser:
         out.reverse()
         return out
 
-    def chain(self, segments: list[ChainSegment]) -> tuple[str, dict[str, Any]]:
+    def chain(self, segments: Sequence[ChainSegment]) -> tuple[str, dict[str, Any]]:
         """returns a chained urlpath from the segments"""
         urlpaths = []
         kwargs = {}
@@ -241,11 +258,10 @@ if __name__ == "__main__":
 
     # UPath should store segments and access the path to operate on
     # through segments.current.path
-    segments = CurrentChainSegment.from_list(segments=out1)
-    segments0 = segments.rshift()
+    segments0 = Chain.from_list(segments=out1, index=1)
     assert segments0.current.protocol == "zip"
 
     # try to switch out zip path
-    segments1 = segments0.replace(segments0.current._replace(path="/newfile.csv"))
+    segments1 = segments0.replace(path="/newfile.csv")
     new_path, new_kw = FSSpecChainParser().chain(segments1.to_list())
     print(new_path, new_kw)

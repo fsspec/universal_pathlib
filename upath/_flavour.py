@@ -403,7 +403,9 @@ class LazyFlavourDescriptor:
         self, obj: UPath | None, objtype: type[UPath] | None = None
     ) -> WrappedFileSystemFlavour:
         if obj is not None:
-            return WrappedFileSystemFlavour.from_protocol(obj.protocol)
+            return WrappedFileSystemFlavour.from_protocol(
+                obj._chain.active_path_protocol
+            )
         elif self._default_protocol:  # type: ignore
             return WrappedFileSystemFlavour.from_protocol(self._default_protocol)
         else:

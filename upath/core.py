@@ -24,7 +24,7 @@ from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
 from upath._chain import DEFAULT_CHAIN_PARSER
-from upath._chain import CurrentChainSegment
+from upath._chain import Chain
 from upath._chain import FSSpecChainParser
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
@@ -121,7 +121,7 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @_protocol.setter
     def _protocol(self, value: str) -> None:
-        self._chain = self._chain.replace(self._chain.current._replace(protocol=value))
+        self._chain = self._chain.replace(protocol=value)
 
     @property
     def _storage_options(self) -> dict[str, Any]:
@@ -129,18 +129,16 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @_storage_options.setter
     def _storage_options(self, value: dict[str, Any]) -> None:
-        self._chain = self._chain.replace(
-            self._chain.current._replace(storage_options=value)
-        )
+        self._chain = self._chain.replace(storage_options=value)
 
     @property
     @abstractmethod
-    def _chain(self) -> CurrentChainSegment:
+    def _chain(self) -> Chain:
         raise NotImplementedError
 
     @_chain.setter
     @abstractmethod
-    def _chain(self, value: CurrentChainSegment) -> None:
+    def _chain(self, value: Chain) -> None:
         raise NotImplementedError
 
     @property
@@ -300,7 +298,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         segments = chain_parser.unchain(
             _p0, {"protocol": pth_protocol, **storage_options}
         )
-        chain = CurrentChainSegment.from_list(segments)
+        chain = Chain.from_list(segments)
         if not (cp := chain.current.protocol) == pth_protocol:
             warnings.warn(
                 f"Unexpected protocol mismatch {cp!r} != {pth_protocol!r}",
@@ -358,6 +356,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         else:
             raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
 
+        obj._chain_parser = chain_parser
         return obj
 
     def __init__(
@@ -396,22 +395,18 @@ class _UPathMixin(metaclass=_UPathMeta):
                 )
 
             self._chain = base_chain.replace(
-                base_chain.current._replace(
-                    storage_options={
-                        **base_chain.current.storage_options,
-                        **storage_options,
-                    }
-                )
+                storage_options={
+                    **base_chain.current.storage_options,
+                    **storage_options,
+                }
             )
 
         elif storage_options:
             self._chain = self._chain.replace(
-                self._chain.current._replace(
-                    storage_options={
-                        **self._chain.current.storage_options,
-                        **storage_options,
-                    }
-                )
+                storage_options={
+                    **self._chain.current.storage_options,
+                    **storage_options,
+                }
             )
 
         # check that UPath subclasses in args are compatible
@@ -439,12 +434,14 @@ class _UPathMixin(metaclass=_UPathMeta):
 class UPath(_UPathMixin, OpenablePath):
     __slots__ = (
         "_chain",
+        "_chain_parser",
         "_fs_cached",
         "_raw_urlpaths",
     )
 
     if TYPE_CHECKING:
-        _chain: CurrentChainSegment
+        _chain: Chain
+        _chain_parser: FSSpecChainParser
         _fs_cached: bool
         _raw_urlpaths: Sequence[JoinablePathLike]
 
@@ -460,15 +457,7 @@ class UPath(_UPathMixin, OpenablePath):
         )
 
     def __str__(self) -> str:
-        path = self.parser.join(*self._raw_urlpaths)
-        if self._protocol:
-            if path.startswith(f"{self._protocol}://"):
-                return path
-            elif path.startswith(f"{self._protocol}:/"):
-                return path.replace(":/", "://", 1)
-            else:
-                return f"{self._protocol}://{path}"
-        return path
+        return self._chain_parser.chain(self._chain.to_list())[0]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.path!r}, protocol={self._protocol!r})"
@@ -477,7 +466,7 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def parts(self) -> Sequence[str]:
-        anchor, parts = _explode_path(str(self), self.parser)
+        anchor, parts = _explode_path(self._chain.active_path, self.parser)
         if anchor:
             parts.append(anchor)
         return tuple(reversed(parts))
