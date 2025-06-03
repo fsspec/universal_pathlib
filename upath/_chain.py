@@ -227,6 +227,12 @@ class FSSpecChainParser:
                     fs_cls = get_filesystem_class(segment.protocol)
                 fs = object.__new__(fs_cls)
                 super(fs_cls, fs).__init__(**segment.storage_options)
+                # unstrip_protocol will not necessarily return the original
+                # protocol, so we apply this hack to ensure it does
+                if isinstance(fs.protocol, str):
+                    fs.protocol = segment.protocol
+                else:
+                    fs.protocol = (segment.protocol,)
                 urlpath = fs.unstrip_protocol(segment.path)
             else:
                 urlpath = segment.protocol
