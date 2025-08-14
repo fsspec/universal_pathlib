@@ -181,6 +181,10 @@ ignore_errors = true
 module = "typing_inspection.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "annotated_types.*"
+ignore_errors = true
+
 [tool.pylint.format]
 max-line-length = 88
 
