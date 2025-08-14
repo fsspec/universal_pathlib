@@ -1,4 +1,5 @@
 import json
+from os.path import abspath
 
 import pydantic
 import pydantic_core
@@ -9,7 +10,7 @@ from upath import UPath
 
 @pytest.mark.parametrize("source", ["json", "python"])
 def test_validate_from_str(source):
-    input = "file:///my/path"
+    input = f"file://{abspath('/my/path')}"
 
     ta = pydantic.TypeAdapter(UPath)
     if source == "json":
@@ -24,7 +25,7 @@ def test_validate_from_str(source):
 @pytest.mark.parametrize("source", ["json", "python"])
 def test_validate_from_dict(source):
     input = {
-        "path": "/my/path",
+        "path": abspath("/my/path"),
         "protocol": "file",
         "storage_options": {"foo": "bar", "baz": 3},
     }
@@ -41,7 +42,7 @@ def test_validate_from_dict(source):
 
 
 def test_validate_from_instance():
-    input = UPath("/my/path")
+    input = UPath(abspath("/my/path"))
 
     output = pydantic.TypeAdapter(UPath).validate_python(input)
 
@@ -50,7 +51,7 @@ def test_validate_from_instance():
 
 @pytest.mark.parametrize("mode", ["json", "python"])
 def test_dump(mode):
-    input = UPath("/my/path", protocol="file", foo="bar", baz=3)
+    input = UPath(abspath("/my/path"), protocol="file", foo="bar", baz=3)
 
     output = pydantic.TypeAdapter(UPath).dump_python(input, mode=mode)
 
@@ -60,7 +61,7 @@ def test_dump(mode):
 
 
 def test_dump_non_serializable_python():
-    input = UPath("/my/path", protocol="file", non_serializable=object())
+    input = UPath(abspath("/my/path"), protocol="file", non_serializable=object())
 
     output = pydantic.TypeAdapter(UPath).dump_python(input, mode="python")
 
@@ -71,7 +72,7 @@ def test_dump_non_serializable_python():
 
 
 def test_dump_non_serializable_json():
-    input = UPath("/my/path", protocol="file", non_serializable=object())
+    input = UPath(abspath("/my/path"), protocol="file", non_serializable=object())
 
     with pytest.raises(pydantic_core.PydanticSerializationError, match="unknown type"):
         pydantic.TypeAdapter(UPath).dump_python(input, mode="json")
