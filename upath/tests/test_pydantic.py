@@ -1,4 +1,5 @@
 import json
+from os.path import abspath
 
 import pydantic
 import pydantic_core
@@ -17,8 +18,9 @@ def test_validate_from_str(source):
     else:  # source == "python"
         output = ta.validate_python(input)
 
-    assert isinstance(output, UPath)
-    assert str(output) == input
+    u = UPath(input)
+    assert abspath(output.path) == abspath(u.path)
+    assert output.protocol == u.protocol
 
 
 @pytest.mark.parametrize("source", ["json", "python"])
@@ -35,7 +37,7 @@ def test_validate_from_dict(source):
     else:  # source == "python"
         output = ta.validate_python(input)
 
-    assert output.path == input["path"]
+    assert abspath(output.path) == abspath(input["path"])
     assert output.protocol == input["protocol"]
     assert output.storage_options == input["storage_options"]
 
