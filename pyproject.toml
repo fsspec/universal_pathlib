@@ -169,6 +169,18 @@ ignore_missing_imports = true
 module = "smbprotocol.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pydantic_core.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "typing_inspection.*"
+ignore_errors = true
+
 [tool.pylint.format]
 max-line-length = 88
 
