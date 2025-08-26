@@ -3,40 +3,33 @@ from __future__ import annotations
 import os
 import sys
 import warnings
-from abc import ABCMeta
-from abc import abstractmethod
-from collections.abc import Iterator
-from collections.abc import Mapping
-from collections.abc import Sequence
+from abc import ABCMeta, abstractmethod
+from collections.abc import Iterator, Mapping, Sequence
 from copy import copy
 from types import MappingProxyType
-from typing import IO
-from typing import TYPE_CHECKING
-from typing import Any
-from typing import BinaryIO
-from typing import Literal
-from typing import TextIO
-from typing import overload
-from urllib.parse import SplitResult
-from urllib.parse import urlsplit
+from typing import IO, TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, overload
+from urllib.parse import SplitResult, urlsplit
 
 from fsspec.registry import get_filesystem_class
 from fsspec.spec import AbstractFileSystem
 
-from upath._flavour import LazyFlavourDescriptor
-from upath._flavour import upath_get_kwargs_from_url
-from upath._flavour import upath_urijoin
-from upath._protocol import compatible_protocol
-from upath._protocol import get_upath_protocol
+from upath._flavour import (
+    LazyFlavourDescriptor,
+    upath_get_kwargs_from_url,
+    upath_urijoin,
+)
+from upath._protocol import compatible_protocol, get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
-from upath.types import UNSET_DEFAULT
-from upath.types import JoinablePathLike
-from upath.types import OpenablePath
-from upath.types import PathInfo
-from upath.types import ReadablePathLike
-from upath.types import UPathParser
-from upath.types import WritablePathLike
+from upath.types import (
+    UNSET_DEFAULT,
+    JoinablePathLike,
+    OpenablePath,
+    PathInfo,
+    ReadablePathLike,
+    UPathParser,
+    WritablePathLike,
+)
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
@@ -320,9 +313,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             obj = object.__new__(upath_cls)
             obj._protocol = pth_protocol
 
-            upath_cls.__init__(
-                obj, *args, protocol=pth_protocol, **storage_options
-            )  # type: ignore
+            upath_cls.__init__(obj, *args, protocol=pth_protocol, **storage_options)  # type: ignore
 
         else:
             raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
@@ -998,3 +989,29 @@ class UPath(_UPathMixin, OpenablePath):
             ),
             serialization=serialization_schema,
         )
+
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Callable]:
+        yield cls._validate_pydantic_v1
+
+    @classmethod
+    def _validate_pydantic_v1(cls, v: Any) -> UPath:
+        if isinstance(v, str):
+            return cls(v)
+        elif isinstance(v, UPath):
+            return v
+        elif isinstance(v, dict):
+            return cls(
+                path=v.pop("path"),
+                protocol=v.pop("protocol"),
+                **v.pop("storage_options"),
+            )
+        else:
+            raise ValueError(f"Invalid path: {v}")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "path": self.path,
+            "protocol": self.protocol,
+            "storage_options": dict(self.storage_options),
+        }
