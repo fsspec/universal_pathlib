@@ -16,11 +16,8 @@ from typing import TYPE_CHECKING, Any
 from typing import BinaryIO
 from typing import Callable
 from typing import Literal
-from typing import NotRequired
 from typing import TextIO
-from typing import TypeAlias
 from typing import TypedDict
-from typing import Union
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
@@ -45,8 +42,10 @@ from upath.types import WritablePathLike
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import NotRequired
     else:
         from typing_extensions import Self
+        from typing_extensions import NotRequired
 
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
@@ -117,10 +116,6 @@ class SerializedUPath(TypedDict):
     path: str
     protocol: NotRequired[str]
     storage_options: NotRequired[dict[str, Any]]
-
-
-# a pathlike object that can be turned into a UPath
-_PathLike: TypeAlias = Union[str, pathlib.Path, "UPath", SerializedUPath]
 
 
 class _UPathMixin(metaclass=_UPathMeta):
@@ -1019,18 +1014,24 @@ class UPath(_UPathMixin, OpenablePath):
         yield cls._validate
 
     @staticmethod
-    def _to_serialized_format(v: _PathLike) -> SerializedUPath:
-        if isinstance(v, UPath):
+    def _to_serialized_format(
+        v: str | pathlib.Path | _UPathMixin | dict[str, Any]
+    ) -> SerializedUPath:
+        if isinstance(v, _UPathMixin):
             return v.to_dict()
         if isinstance(v, dict):
-            return v
+            return {
+                "path": v["path"],
+                "protocol": v.get("protocol", ""),
+                "storage_options": v.get("storage_options", {}),
+            }
         if isinstance(v, pathlib.Path):
             return {"path": v.as_posix(), "protocol": ""}
         if isinstance(v, str):
             return {
                 "path": v,
             }
-        raise TypeError(f"Invalid path: {v}")
+        raise TypeError(f"Invalid path: {v!r}")
 
     @classmethod
     def _validate(cls, v: Any) -> UPath:
