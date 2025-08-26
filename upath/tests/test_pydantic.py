@@ -120,7 +120,7 @@ def test_dump(args, kwargs, mode, pydantic_version):
     u = UPath(*args, **kwargs)
 
     if pydantic_version == "v1":
-        output = u.to_json_serializable() if mode == "json" else u.to_dict()
+        output = u.to_dict()
     else:
         output = pydantic.TypeAdapter(UPath).dump_python(u, mode=mode)
 
