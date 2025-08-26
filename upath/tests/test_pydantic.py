@@ -1,5 +1,4 @@
 import json
-from functools import partial
 from os.path import abspath
 
 import pydantic

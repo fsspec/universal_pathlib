@@ -12,7 +12,8 @@ from collections.abc import Sequence
 from copy import copy
 from types import MappingProxyType
 from typing import IO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+from typing import Any
 from typing import BinaryIO
 from typing import Callable
 from typing import Literal
@@ -28,7 +29,8 @@ from fsspec.spec import AbstractFileSystem
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
-from upath._protocol import compatible_protocol, get_upath_protocol
+from upath._protocol import compatible_protocol
+from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
@@ -41,11 +43,11 @@ from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import NotRequired
+        from typing import Self
     else:
-        from typing_extensions import Self
         from typing_extensions import NotRequired
+        from typing_extensions import Self
 
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
