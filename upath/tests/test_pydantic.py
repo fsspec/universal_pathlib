@@ -25,9 +25,9 @@ def source(request):
 def parser(pydantic_version, source):
     if pydantic_version == "v1":
         if source == "json":
-            return partial(pydantic_v1.tools.parse_raw_as, type_=UPath)
+            return lambda x: pydantic_v1.tools.parse_raw_as(UPath, x)
         else:
-            return partial(pydantic_v1.tools.parse_obj_as, type_=UPath)
+            return lambda x: pydantic_v1.tools.parse_obj_as(UPath, x)
     else:
         ta = pydantic.TypeAdapter(UPath)
         if source == "json":

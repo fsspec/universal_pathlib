@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import sys
 import warnings
 from abc import ABCMeta
@@ -11,12 +12,15 @@ from collections.abc import Sequence
 from copy import copy
 from types import MappingProxyType
 from typing import IO
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from typing import BinaryIO
 from typing import Callable
 from typing import Literal
+from typing import NotRequired
 from typing import TextIO
+from typing import TypeAlias
+from typing import TypedDict
+from typing import Union
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
@@ -27,8 +31,7 @@ from fsspec.spec import AbstractFileSystem
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
-from upath._protocol import compatible_protocol
-from upath._protocol import get_upath_protocol
+from upath._protocol import compatible_protocol, get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
@@ -108,6 +111,18 @@ else:
             return cls
 
 
+class SerializedUPath(TypedDict):
+    """Serialized format for a UPath object"""
+
+    path: str
+    protocol: NotRequired[str]
+    storage_options: NotRequired[dict[str, Any]]
+
+
+# a pathlike object that can be turned into a UPath
+_PathLike: TypeAlias = Union[str, pathlib.Path, "UPath", SerializedUPath]
+
+
 class _UPathMixin(metaclass=_UPathMeta):
     __slots__ = ()
 
@@ -179,6 +194,13 @@ class _UPathMixin(metaclass=_UPathMeta):
     def path(self) -> str:
         """The path that a fsspec filesystem can use."""
         return self.parser.strip_protocol(self.__str__())
+
+    def to_dict(self) -> SerializedUPath:
+        return {
+            "path": self.path,
+            "protocol": self.protocol,
+            "storage_options": dict(self.storage_options),
+        }
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
         """Join with urljoin behavior for UPath instances"""
@@ -947,7 +969,7 @@ class UPath(_UPathMixin, OpenablePath):
 
         deserialization_schema = core_schema.chain_schema(
             [
-                core_schema.no_info_plain_validator_function(cls._validate),
+                core_schema.no_info_plain_validator_function(cls._to_serialized_format),
                 core_schema.typed_dict_schema(
                     {
                         "path": core_schema.typed_dict_field(
@@ -972,6 +994,7 @@ class UPath(_UPathMixin, OpenablePath):
                     },
                     extra_behavior="forbid",
                 ),
+                core_schema.no_info_plain_validator_function(cls._validate),
             ]
         )
 
@@ -995,24 +1018,28 @@ class UPath(_UPathMixin, OpenablePath):
     def __get_validators__(cls) -> Iterator[Callable]:
         yield cls._validate
 
+    @staticmethod
+    def _to_serialized_format(v: _PathLike) -> SerializedUPath:
+        if isinstance(v, UPath):
+            return v.to_dict()
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, pathlib.Path):
+            return {"path": v.as_posix(), "protocol": ""}
+        if isinstance(v, str):
+            return {
+                "path": v,
+            }
+        raise TypeError(f"Invalid path: {v}")
+
     @classmethod
     def _validate(cls, v: Any) -> UPath:
-        if isinstance(v, str):
-            return cls(v)
-        elif isinstance(v, UPath):
-            return v
-        elif isinstance(v, dict):
-            return cls(
-                path=v["path"],
-                protocol=v.get("protocol", ""),
-                **v.get("storage_options", {}),
-            )
-        else:
-            raise ValueError(f"Invalid path: {v}")
+        if not isinstance(v, UPath):
+            v = cls._to_serialized_format(v)
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "path": self.path,
-            "protocol": self.protocol,
-            "storage_options": dict(self.storage_options),
-        }
+            return cls(
+                v["path"],
+                protocol=v.get("protocol"),
+                **v.get("storage_options", {}),  # type: ignore[arg-type]
+            )
+        return v
