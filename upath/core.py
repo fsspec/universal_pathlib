@@ -937,9 +937,7 @@ class UPath(_UPathMixin, OpenablePath):
 
         deserialization_schema = core_schema.chain_schema(
             [
-                core_schema.no_info_plain_validator_function(
-                    lambda v: {"path": v} if isinstance(v, str) else v,
-                ),
+                core_schema.no_info_plain_validator_function(cls._validate),
                 core_schema.typed_dict_schema(
                     {
                         "path": core_schema.typed_dict_field(
@@ -964,13 +962,6 @@ class UPath(_UPathMixin, OpenablePath):
                     },
                     extra_behavior="forbid",
                 ),
-                core_schema.no_info_plain_validator_function(
-                    lambda dct: cls(
-                        dct.pop("path"),
-                        protocol=dct.pop("protocol"),
-                        **dct["storage_options"],
-                    )
-                ),
             ]
         )
 
@@ -992,19 +983,19 @@ class UPath(_UPathMixin, OpenablePath):
 
     @classmethod
     def __get_validators__(cls) -> Iterator[Callable]:
-        yield cls._validate_pydantic_v1
+        yield cls._validate
 
     @classmethod
-    def _validate_pydantic_v1(cls, v: Any) -> UPath:
+    def _validate(cls, v: Any) -> UPath:
         if isinstance(v, str):
             return cls(v)
         elif isinstance(v, UPath):
             return v
         elif isinstance(v, dict):
             return cls(
-                path=v.pop("path"),
-                protocol=v.pop("protocol"),
-                **v.pop("storage_options"),
+                path=v["path"],
+                protocol=v.get("protocol", ""),
+                **v.get("storage_options", {}),
             )
         else:
             raise ValueError(f"Invalid path: {v}")
