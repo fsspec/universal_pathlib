@@ -1017,7 +1017,7 @@ class UPath(_UPathMixin, OpenablePath):
 
     @staticmethod
     def _to_serialized_format(
-        v: str | pathlib.Path | _UPathMixin | dict[str, Any]
+        v: str | pathlib.Path | _UPathMixin | dict[str, Any],
     ) -> SerializedUPath:
         if isinstance(v, _UPathMixin):
             return v.to_dict()

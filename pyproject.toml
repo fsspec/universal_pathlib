@@ -41,7 +41,7 @@ tests = [
     "pytest-mock >=3.12.0",
     "pylint >=2.17.4",
     "mypy >=1.10.0",
-    "pydantic >=2,<3", # <3 required for testing pydantic v1 support, not for actual use
+    "pydantic >=2", # <3 required for testing pydantic v1 support, not for actual use
     "pytest-mypy-plugins >=3.1.2",
     "packaging",
 ]
