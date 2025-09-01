@@ -40,10 +40,7 @@ jobs:
     - uses: hynek/setup-cached-uv@v2
 
     - name: Run tests
-      env:
-        SESSION: ${{ matrix.session }}
-        PYTHON: ${{ matrix.pyv }}
-      run: uvx nox --sessions $SESSION --python $PYTHON -- --cov-report=xml
+      run: uvx nox --sessions ${{ matrix.session }} --python ${{ matrix.pyv }} -- --cov-report=xml
 
   typesafety:
     runs-on: ubuntu-latest
