@@ -289,6 +289,17 @@ def unlink(filename):
         pass
 
 
+def _force_run(path, func, *args):
+    try:
+        return func(*args)
+    except FileNotFoundError:
+        # chmod() won't fix a missing file.
+        raise
+    except OSError:
+        os.chmod(path, stat.S_IRWXU)
+        return func(*args)
+
+
 if sys.platform.startswith("win"):
     def _waitfor(func, pathname, waitall=False):
         # Perform the operation
@@ -330,8 +341,6 @@ if sys.platform.startswith("win"):
         _waitfor(os.rmdir, dirname)
 
     def _rmtree(path):
-        from test.support import _force_run
-
         def _rmtree_inner(path):
             for name in _force_run(path, os.listdir, path):
                 fullname = os.path.join(path, name)
@@ -376,7 +385,6 @@ else:
             pass
 
         def _rmtree_inner(path):
-            from test.support import _force_run
             for name in _force_run(path, os.listdir, path):
                 fullname = os.path.join(path, name)
                 try:

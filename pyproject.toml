@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 4 - Beta",
 ]
 keywords = ["filesystem-spec", "pathlib"]
@@ -45,23 +46,27 @@ tests = [
     "pytest-mypy-plugins >=3.1.2",
     "packaging",
 ]
+typechecking = [
+    "mypy >=1.10.0",
+    "pytest-mypy-plugins >=3.1.2",
+]
 dev = [
-    "adlfs>=2024",
-    "aiohttp",
-    "requests",
-    "gcsfs>=2024.5.0",
-    "s3fs>=2024.5.0",
-    "moto[s3,server]",
+    "fsspec[adl,http,github,gcs,s3,ssh,smb] >=2024.5.0",
+    "s3fs >=2024.5.0",
+    "gcsfs >=2024.5.0",
+    "adlfs >=2024",
     "webdav4[fsspec]",
-    "paramiko",
+    # testing
+    "moto[s3,server]",
     "wsgidav",
     "cheroot",
     # "hadoop-test-cluster",
     # "pyarrow",
+    "typing_extensions; python_version<'3.11'",
+]
+dev-third-party = [
     "pydantic",
     "pydantic-settings",
-    "smbprotocol",
-    "typing_extensions; python_version<'3.11'",
 ]
 
 [project.urls]

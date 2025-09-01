@@ -6,17 +6,25 @@ import os
 import nox
 
 nox.options.reuse_existing_virtualenvs = True
+nox.options.error_on_external_run = True
+
+nox.needs_version = ">=2024.3.2"
+nox.options.default_venv_backend = "uv|virtualenv"
+
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
 running_in_ci = os.environ.get("CI", "") != ""
 
 
-@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
-    session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-    session.install(".[tests,dev]")
-    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
+    if session.python == "3.14":
+        session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
+        session.install(".[tests,dev]", "pydantic>=2.12.0a1")
+    else:
+        session.install(".[tests,dev,dev-third-party]")
+    session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -31,7 +39,7 @@ def tests(session: nox.Session) -> None:
 @nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
     session.install("fsspec==2024.5.0", ".[tests,dev]")
-    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
+    session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -90,13 +98,13 @@ def black(session):
 
 @nox.session
 def type_checking(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[typechecking]")
     session.run("python", "-m", "mypy")
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
 def typesafety(session):
-    session.install("-e", ".[tests]")
+    session.install("-e", ".[tests,typechecking]")
     session.run(
         "python",
         "-m",
