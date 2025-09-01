@@ -24,7 +24,7 @@ def tests(session: nox.Session) -> None:
         session.install(".[tests,dev]")
     else:
         session.install(".[tests,dev,dev-third-party]")
-    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
+    session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
@@ -39,7 +39,7 @@ def tests(session: nox.Session) -> None:
 @nox.session(python="3.9", name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
     session.install("fsspec==2024.5.0", ".[tests,dev]")
-    session.run("python", "-m", "pip", "freeze", silent=not running_in_ci)
+    session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
         "-m",
