@@ -145,9 +145,8 @@ class FSSpecChainParser:
         1. it sets the urlpath to None for upstream filesystems that passthrough
         2. it checks against the known protocols for exact matches
 
-        TODO: upstream to fsspec
-
         """
+        # TODO: upstream to fsspec
         bits: list[str] = []
         for p in path.split(self.link):
             if "://" in p:  # uri-like, fast-path
@@ -193,6 +192,12 @@ class FSSpecChainParser:
                 # workaround for an upstream edge case in
                 # fsspec.implementations.local.make_path_posix
                 bit = os.path.expanduser(bit).replace("\\", "/")
+            elif (
+                protocol == "memory"
+                and bit.startswith("memory:/") and bit[8:9] != "/"
+            ):
+                # workaround due to memory:/path being valid in upath
+                bit = bit[7:]
             else:
                 bit = cls._strip_protocol(bit)
             if (

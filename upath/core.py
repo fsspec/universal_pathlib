@@ -27,6 +27,7 @@ from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._chain import Chain
 from upath._chain import FSSpecChainParser
 from upath._flavour import LazyFlavourDescriptor
+from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._protocol import compatible_protocol
@@ -98,16 +99,25 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
         return buffering
 
 
-if sys.version_info >= (3, 11):
-    _UPathMeta = ABCMeta
-
-else:
-
-    class _UPathMeta(ABCMeta):
+class _UPathMeta(ABCMeta):
+    if sys.version_info < (3, 11):
         # pathlib 3.9 and 3.10 supported `Path[str]` but
         # did not return a GenericAlias but the class itself?
         def __getitem__(cls, key):
             return cls
+
+    def __call__(cls, *args, **kwargs):
+        # create a copy if UPath class
+        try:
+            (arg0,) = args
+        except ValueError:
+            pass
+        else:
+            if isinstance(arg0, UPath) and not kwargs:
+                return copy(arg0)
+        inst = cls.__new__(cls, *args, **kwargs)
+        inst.__init__(*args, **kwargs)
+        return inst
 
 
 class _UPathMixin(metaclass=_UPathMeta):
@@ -252,15 +262,6 @@ class _UPathMixin(metaclass=_UPathMeta):
         # narrow type
         assert issubclass(cls, UPath), "_UPathMixin should never be instantiated"
 
-        # fill empty arguments
-        if not args:
-            args = (".",)
-
-        # create a copy if UPath class
-        part0, *parts = args
-        if not parts and not storage_options and isinstance(part0, cls):
-            return copy(part0)
-
         # deprecate 'scheme'
         if "scheme" in storage_options:
             warnings.warn(
@@ -272,7 +273,9 @@ class _UPathMixin(metaclass=_UPathMeta):
 
         # determine the protocol
         pth_protocol = get_upath_protocol(
-            part0, protocol=protocol, storage_options=storage_options
+            args[0] if args else "",
+            protocol=protocol,
+            storage_options=storage_options,
         )
         # determine which UPath subclass to dispatch to
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
@@ -289,50 +292,13 @@ class _UPathMixin(metaclass=_UPathMeta):
             # for all supported user protocols.
             upath_cls = cls
 
-        # unparse fsspec chains
-        if (
-            not isinstance(part0, str)
-            and hasattr(part0, "__fspath__")
-            and part0.__fspath__ is not None
-        ):
-            _p0 = part0.__fspath__()
+        if issubclass(upath_cls, cls):
+            pass
+
+        elif not issubclass(upath_cls, UPath):
+            raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
+
         else:
-            _p0 = str(part0)
-        segments = chain_parser.unchain(
-            _p0, {"protocol": pth_protocol, **storage_options}
-        )
-        chain = Chain.from_list(segments)
-        if not (cp := chain.current.protocol) == pth_protocol:
-            warnings.warn(
-                f"Unexpected protocol mismatch {cp!r} != {pth_protocol!r}",
-                stacklevel=2,
-            )
-            chain = chain.replace(chain.current._replace(protocol=pth_protocol))
-
-        # create a new instance
-        if cls is UPath:
-            # we called UPath() directly, and want an instance based on the
-            # provided or detected protocol (i.e. upath_cls)
-            obj: UPath = object.__new__(upath_cls)
-            obj._chain = chain
-
-            if cls not in upath_cls.mro():
-                # we are not in the upath_cls mro, so we need to
-                # call __init__ of the upath_cls
-                upath_cls.__init__(obj, *args, protocol=pth_protocol, **storage_options)
-
-        elif issubclass(cls, upath_cls):
-            # we called a sub- or sub-sub-class of UPath, i.e. S3Path() and the
-            # corresponding upath_cls based on protocol is equal-to or a
-            # parent-of the cls.
-            obj = object.__new__(cls)
-            obj._chain = chain
-
-        elif issubclass(cls, UPath):
-            # we called a subclass of UPath directly, i.e. S3Path() but the
-            # detected protocol would return a non-related UPath subclass, i.e.
-            # S3Path("file:///abc"). This behavior is going to raise an error
-            # in future versions
             msg_protocol = repr(pth_protocol)
             if not pth_protocol:
                 msg_protocol += " (empty string)"
@@ -347,20 +313,14 @@ class _UPathMixin(metaclass=_UPathMeta):
                 f" registering the {cls.__name__} implementation with protocol"
                 f" {msg_protocol!s} replacing the default implementation."
             )
-            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                msg,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            upath_cls = cls
 
-            obj = object.__new__(upath_cls)
-            obj._chain = chain
-
-            upath_cls.__init__(
-                obj, *args, protocol=pth_protocol, **storage_options
-            )  # type: ignore
-
-        else:
-            raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
-
-        obj._chain_parser = chain_parser
-        return obj
+        return object.__new__(upath_cls)
 
     def __init__(
         self,
@@ -369,59 +329,49 @@ class _UPathMixin(metaclass=_UPathMeta):
         chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
         **storage_options: Any,
     ) -> None:
-        # allow subclasses to customize __init__ arg parsing
-        try:
-            base_options = self._chain.current.storage_options
-        except AttributeError:
-            base_options = {}
-        args, protocol, storage_options = type(self)._transform_init_args(
-            args, protocol or self._protocol, {**base_options, **storage_options}
+
+        # todo: avoid duplicating this call from __new__
+        protocol = get_upath_protocol(
+            args[0] if args else "",
+            protocol=protocol,
+            storage_options=storage_options,
         )
-        if self._protocol != protocol and protocol:
-            self._protocol = protocol
-
-        # retrieve storage_options
-        if args:
-            args0 = args[0]
-            if isinstance(args0, UPath):
-                base_chain = args0._chain
-
-            else:
-                base_chain = self._chain
-
-                if hasattr(args0, "__fspath__"):
-                    _args0 = args0.__fspath__()
-                else:
-                    _args0 = str(args0)
-                storage_options = type(self)._parse_storage_options(
-                    _args0, protocol, storage_options
-                )
-
-            self._chain = base_chain.replace(
-                storage_options={
-                    **base_chain.current.storage_options,
-                    **storage_options,
-                }
-            )
-
-        elif storage_options:
-            self._chain = self._chain.replace(
-                storage_options={
-                    **self._chain.current.storage_options,
-                    **storage_options,
-                }
-            )
+        args, protocol, storage_options = type(self)._transform_init_args(
+            args, protocol, storage_options
+        )
 
         # check that UPath subclasses in args are compatible
         # TODO:
         #   Future versions of UPath could verify that storage_options
         #   can be combined between UPath instances. Not sure if this
         #   is really necessary though. A warning might be enough...
-        if not compatible_protocol(self._protocol, *args):
+        if not compatible_protocol(protocol, *args):
             raise ValueError("can't combine incompatible UPath protocols")
 
-        if hasattr(self, "_raw_urlpaths"):
-            return
+        if args:
+            args0 = args[0]
+            if isinstance(args0, UPath):
+                storage_options = args0._chain.nest().storage_options
+                str_args0 = str(args0)
+
+            else:
+                if hasattr(args0, "__fspath__") and args0.__fspath__ is not None:
+                    str_args0 = args0.__fspath__()
+                else:
+                    str_args0 = str(args0)
+                storage_options = type(self)._parse_storage_options(
+                    str_args0, protocol, storage_options
+                )
+            if len(args) > 1:
+                str_args0 = WrappedFileSystemFlavour.from_protocol(protocol).join(str_args0, *args[1:])
+        else:
+            str_args0 = "."
+
+        segments = chain_parser.unchain(
+            str_args0, {"protocol": protocol, **storage_options}
+        )
+        self._chain = Chain.from_list(segments)
+        self._chain_parser = chain_parser
         self._raw_urlpaths = args
 
     # --- deprecated attributes ---------------------------------------
