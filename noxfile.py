@@ -21,6 +21,7 @@ def tests(session: nox.Session) -> None:
     # workaround in case no aiohttp binary wheels are available
     if session.python == "3.14":
         session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
+        session.env["PYO3_USE_ABI3_FORWARD_COMPATIBILITY"] = "1"
         session.install(".[tests,dev]")
     else:
         session.install(".[tests,dev,dev-third-party]")
