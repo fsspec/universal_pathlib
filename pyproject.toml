@@ -41,6 +41,9 @@ tests = [
     "pytest-cov >=4.1.0",
     "pytest-mock >=3.12.0",
     "pylint >=2.17.4",
+    "mypy >=1.10.0",
+    "pydantic >=2",
+    "pytest-mypy-plugins >=3.1.2",
     "packaging",
 ]
 typechecking = [
@@ -170,6 +173,22 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "smbprotocol.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pydantic_core.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "typing_inspection.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "annotated_types.*"
+ignore_errors = true
 
 [tool.pylint.format]
 max-line-length = 88

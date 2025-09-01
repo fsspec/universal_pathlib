@@ -44,6 +44,9 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import Self
 
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core.core_schema import CoreSchema
+
 
 __all__ = ["UPath"]
 
@@ -934,3 +937,64 @@ class UPath(_UPathMixin, OpenablePath):
         if not pattern:
             raise ValueError("pattern cannot be empty")
         return self.full_match(pattern.replace("**", "*"))
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source_type: Any, _handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        from pydantic_core import core_schema
+
+        deserialization_schema = core_schema.chain_schema(
+            [
+                core_schema.no_info_plain_validator_function(
+                    lambda v: {"path": v} if isinstance(v, str) else v,
+                ),
+                core_schema.typed_dict_schema(
+                    {
+                        "path": core_schema.typed_dict_field(
+                            core_schema.str_schema(), required=True
+                        ),
+                        "protocol": core_schema.typed_dict_field(
+                            core_schema.with_default_schema(
+                                core_schema.str_schema(), default=""
+                            ),
+                            required=False,
+                        ),
+                        "storage_options": core_schema.typed_dict_field(
+                            core_schema.with_default_schema(
+                                core_schema.dict_schema(
+                                    core_schema.str_schema(),
+                                    core_schema.any_schema(),
+                                ),
+                                default_factory=dict,
+                            ),
+                            required=False,
+                        ),
+                    },
+                    extra_behavior="forbid",
+                ),
+                core_schema.no_info_plain_validator_function(
+                    lambda dct: cls(
+                        dct.pop("path"),
+                        protocol=dct.pop("protocol"),
+                        **dct["storage_options"],
+                    )
+                ),
+            ]
+        )
+
+        serialization_schema = core_schema.plain_serializer_function_ser_schema(
+            lambda u: {
+                "path": u.path,
+                "protocol": u.protocol,
+                "storage_options": dict(u.storage_options),
+            }
+        )
+
+        return core_schema.json_or_python_schema(
+            json_schema=deserialization_schema,
+            python_schema=core_schema.union_schema(
+                [core_schema.is_instance_schema(UPath), deserialization_schema]
+            ),
+            serialization=serialization_schema,
+        )
