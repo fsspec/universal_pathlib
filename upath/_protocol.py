@@ -6,6 +6,8 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING
 from typing import Any
 
+from fsspec import get_filesystem_class
+
 if TYPE_CHECKING:
     from upath.types import JoinablePath
 
@@ -33,6 +35,15 @@ def _match_protocol(pth: str) -> str:
     return ""
 
 
+def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
+    """check if two fsspec protocols are equivalent"""
+    # FIXME: this triggers an import. We have to compare the fqns if possible!
+    return (
+        p0 == p1
+        or get_filesystem_class(p0) == get_filesystem_class(p1)
+    )
+
+
 def get_upath_protocol(
     pth: str | os.PathLike[str] | PurePath | JoinablePath,
     *,
@@ -54,7 +65,7 @@ def get_upath_protocol(
         pth_protocol = _match_protocol(str(pth))
     # if storage_options and not protocol and not pth_protocol:
     #     protocol = "file"
-    if protocol and pth_protocol and not pth_protocol.startswith(protocol):
+    if protocol and pth_protocol and not _fsspec_protocol_equals(pth_protocol, protocol):
         raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
         )
@@ -80,6 +91,6 @@ def compatible_protocol(
         # consider protocols equivalent if they match up to the first "+"
         other_protocol = other_protocol.partition("+")[0]
         # protocols: only identical (or empty "") protocols can combine
-        if other_protocol and other_protocol != protocol:
+        if other_protocol and not _fsspec_protocol_equals(other_protocol, protocol):
             return False
     return True
