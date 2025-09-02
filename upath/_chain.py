@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os.path
 import sys
+import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from collections.abc import Set
@@ -218,7 +219,7 @@ class FSSpecChainParser:
         urlpaths = []
         kwargs = {}
         for segment in segments:
-            if segment.path is not None:
+            if segment.protocol and segment.path is not None:
                 # FIXME: unstrip_protocol requires a fs instance,
                 #   which crashes below for filesystems like zip,
                 #   tar, that require a fileobject via 'fo' keyword.
@@ -243,8 +244,17 @@ class FSSpecChainParser:
                 if urlpath.startswith(tuple(f"{p}:" for p in protos)):
                     _, _, _path = urlpath.partition(":")
                     urlpath = f"{segment.protocol}:{_path}"
-            else:
+            elif segment.protocol:
                 urlpath = segment.protocol
+            elif segment.path is not None:
+                urlpath = segment.path
+            else:
+                warnings.warn(
+                    f"skipping invalid segment {segment}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                continue
             urlpaths.append(urlpath)
             # TODO: ensure roundtrip with unchain behavior
             kwargs[segment.protocol] = segment.storage_options
