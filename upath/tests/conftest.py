@@ -34,6 +34,9 @@ class DummyTestFS(LocalFileSystem):
             path = path[5:]
         return make_path_posix(path).rstrip("/") or cls.root_marker
 
+    def unstrip_protocol(self, path):
+        return f"mock://{self._strip_protocol(path)}"
+
 
 @pytest.fixture(scope="session")
 def clear_registry():
