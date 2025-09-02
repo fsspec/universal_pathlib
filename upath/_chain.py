@@ -17,9 +17,10 @@ if TYPE_CHECKING:
         from typing_extensions import Self
 
 from fsspec.core import get_filesystem_class
-from fsspec.implementations.local import LocalFileSystem
 
+from upath._flavour import WrappedFileSystemFlavour
 from upath._protocol import get_upath_protocol
+from upath._protocol import _fsspec_protocol_equals
 from upath.registry import available_implementations
 
 __all__ = [
@@ -148,7 +149,7 @@ class FSSpecChainParser:
 
         """
         # TODO: upstream to fsspec
-        first_bit_protocol = kwargs.pop("protocol", None)
+        first_bit_protocol: str | None = kwargs.pop("protocol", None)
         it_bits = iter(path.split(self.link))
         bits: list[str]
         if first_bit_protocol is not None:
@@ -178,34 +179,14 @@ class FSSpecChainParser:
                 protocol = first_bit_protocol or get_upath_protocol(bit) or ""
             else:
                 protocol = get_upath_protocol(bit) or ""
-            if "+" in protocol:  # todo: deprecate the webdav+http(s) protocols
-                _p = protocol.partition("+")[0]
-                cls = get_filesystem_class(_p)
-                bit = bit.replace(protocol, _p) if bit.startswith(_p) else bit
-            else:
-                cls = get_filesystem_class(protocol)
-            extra_kwargs = cls._get_kwargs_from_urls(bit)
+            flavour = WrappedFileSystemFlavour.from_protocol(protocol)
+            extra_kwargs = flavour.get_kwargs_from_url(bit)
             kws = kwargs.pop(protocol, {})
             if bit is bits[0]:
                 kws.update(kwargs)
             kw = dict(**extra_kwargs)
             kw.update(kws)
-            if (
-                os.name == "nt"
-                and issubclass(cls, LocalFileSystem)
-                and bit.startswith("~")
-            ):
-                # workaround for an upstream edge case in
-                # fsspec.implementations.local.make_path_posix
-                bit = os.path.expanduser(bit).replace("\\", "/")
-            elif (
-                protocol == "memory"
-                and bit.startswith("memory:/") and bit[8:9] != "/"
-            ):
-                # workaround due to memory:/path being valid in upath
-                bit = bit[7:]
-            else:
-                bit = cls._strip_protocol(bit)
+            bit = flavour.strip_protocol(bit) or flavour.root_marker
             if (
                 protocol in {"blockcache", "filecache", "simplecache"}
                 and "target_protocol" not in kw
