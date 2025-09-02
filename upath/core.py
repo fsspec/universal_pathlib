@@ -260,7 +260,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         **storage_options: Any,
     ) -> UPath:
         # narrow type
-        assert issubclass(cls, UPath), "_UPathMixin should never be instantiated"
+        assert issubclass(cls, UPath), "UPath.__new__ can't instantiate non-UPath classes"
 
         # deprecate 'scheme'
         if "scheme" in storage_options:
