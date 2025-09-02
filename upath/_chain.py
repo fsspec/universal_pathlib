@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import NamedTuple
 
+from fsspec import AbstractFileSystem
+
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
@@ -216,7 +218,7 @@ class FSSpecChainParser:
                 else:
                     fs_cls = get_filesystem_class(segment.protocol)
                 fs = object.__new__(fs_cls)
-                super(fs_cls, fs).__init__(**segment.storage_options)
+                AbstractFileSystem.__init__(fs, **segment.storage_options)
                 # unstrip_protocol will not necessarily return the original protocol
                 if isinstance(fs.protocol, str):
                     protos, fs.protocol = (fs.protocol,), segment.protocol

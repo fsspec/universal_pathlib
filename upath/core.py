@@ -440,6 +440,10 @@ class UPath(_UPathMixin, OpenablePath):
         path = path.removesuffix(split(path)[1]) + name
         return self.with_segments(path)
 
+    @property
+    def anchor(self):
+        return self.drive + self.root
+
     # === ReadablePath attributes =====================================
 
     @property
@@ -866,7 +870,7 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def drive(self) -> str:
-        return self.parser.splitdrive(str(self))[0]
+        return self.parser.splitroot(str(self))[0]
 
     @property
     def root(self) -> str:
