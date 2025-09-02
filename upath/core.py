@@ -260,7 +260,9 @@ class _UPathMixin(metaclass=_UPathMeta):
         **storage_options: Any,
     ) -> UPath:
         # narrow type
-        assert issubclass(cls, UPath), "UPath.__new__ can't instantiate non-UPath classes"
+        assert issubclass(
+            cls, UPath
+        ), "UPath.__new__ can't instantiate non-UPath classes"
 
         # deprecate 'scheme'
         if "scheme" in storage_options:
@@ -351,7 +353,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         if args:
             args0 = args[0]
             if isinstance(args0, UPath):
-                storage_options = {**args0._chain.nest().storage_options, **storage_options}
+                storage_options = {
+                    **args0._chain.nest().storage_options,
+                    **storage_options,
+                }
                 str_args0 = str(args0)
 
             else:
@@ -363,7 +368,9 @@ class _UPathMixin(metaclass=_UPathMeta):
                     str_args0, protocol, storage_options
                 )
             if len(args) > 1:
-                str_args0 = WrappedFileSystemFlavour.from_protocol(protocol).join(str_args0, *args[1:])
+                str_args0 = WrappedFileSystemFlavour.from_protocol(protocol).join(
+                    str_args0, *args[1:]
+                )
         else:
             str_args0 = "."
 

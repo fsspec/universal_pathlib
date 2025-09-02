@@ -12,9 +12,9 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._chain import Chain
 from upath._chain import ChainSegment
-from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
 from upath.core import UPath
@@ -133,7 +133,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             *args,
             protocol: str | None = None,
             chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
-            **storage_options: Any
+            **storage_options: Any,
         ) -> None:
             _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501

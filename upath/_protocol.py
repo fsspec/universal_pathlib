@@ -38,10 +38,7 @@ def _match_protocol(pth: str) -> str:
 def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     """check if two fsspec protocols are equivalent"""
     # FIXME: this triggers an import. We have to compare the fqns if possible!
-    return (
-        p0 == p1
-        or get_filesystem_class(p0) == get_filesystem_class(p1)
-    )
+    return p0 == p1 or get_filesystem_class(p0) == get_filesystem_class(p1)
 
 
 def get_upath_protocol(
@@ -65,7 +62,11 @@ def get_upath_protocol(
         pth_protocol = _match_protocol(str(pth))
     # if storage_options and not protocol and not pth_protocol:
     #     protocol = "file"
-    if protocol and pth_protocol and not _fsspec_protocol_equals(pth_protocol, protocol):
+    if (
+        protocol
+        and pth_protocol
+        and not _fsspec_protocol_equals(pth_protocol, protocol)
+    ):
         raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
         )

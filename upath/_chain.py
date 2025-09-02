@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os.path
 import sys
 import warnings
 from collections import defaultdict
@@ -20,7 +19,6 @@ from fsspec.core import get_filesystem_class
 
 from upath._flavour import WrappedFileSystemFlavour
 from upath._protocol import get_upath_protocol
-from upath._protocol import _fsspec_protocol_equals
 from upath.registry import available_implementations
 
 __all__ = [
