@@ -351,7 +351,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         if args:
             args0 = args[0]
             if isinstance(args0, UPath):
-                storage_options = args0._chain.nest().storage_options
+                storage_options = {**args0._chain.nest().storage_options, **storage_options}
                 str_args0 = str(args0)
 
             else:
