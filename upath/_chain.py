@@ -148,8 +148,14 @@ class FSSpecChainParser:
 
         """
         # TODO: upstream to fsspec
-        bits: list[str] = []
-        for p in path.split(self.link):
+        first_bit_protocol = kwargs.pop("protocol", None)
+        it_bits = iter(path.split(self.link))
+        bits: list[str]
+        if first_bit_protocol is not None:
+            bits = [next(it_bits)]
+        else:
+            bits = []
+        for p in it_bits:
             if "://" in p:  # uri-like, fast-path
                 bits.append(p)
             elif "/" in p:  # path-like, fast-path
@@ -167,7 +173,6 @@ class FSSpecChainParser:
         previous_bit: str | None = None
         kwargs = kwargs.copy()
         first_bit_idx = len(bits) - 1
-        first_bit_protocol = kwargs.pop("protocol", None)
         for idx, bit in enumerate(reversed(bits)):
             if idx == first_bit_idx:
                 protocol = first_bit_protocol or get_upath_protocol(bit) or ""
