@@ -74,18 +74,6 @@ def _make_instance(cls, args, kwargs):
     return cls(*args, **kwargs)
 
 
-def _explode_path(path, parser):
-    split = parser.split
-    path = parser.strip_protocol(path)
-    parent, name = parser.split(path)
-    names = []
-    while path != parent:
-        names.append(name)
-        path = parent
-        parent, name = split(path)
-    return path, names
-
-
 def _buffering2blocksize(mode: str, buffering: int) -> int | None:
     if not isinstance(buffering, int):
         raise TypeError("buffering must be an integer")
@@ -426,9 +414,29 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def parts(self) -> Sequence[str]:
-        anchor, parts = _explode_path(self._chain.active_path, self.parser)
-        if anchor:
-            parts.append(anchor)
+        split = self.parser.split
+        sep = self.parser.sep
+
+        path = self._chain.active_path
+        drive = self.parser.splitdrive(self._chain.active_path)[0]
+        stripped_path = self.parser.strip_protocol(path)
+        if stripped_path:
+            _, _, tail = path.partition(stripped_path)
+            path = stripped_path + tail
+
+        parent, name = split(path)
+        names = []
+        while path != parent:
+            names.append(name)
+            path = parent
+            parent, name = split(path)
+
+        if names and names[-1] == drive:
+            names = names[:-1]
+        if names and names[-1].startswith(sep):
+            parts = [*names[:-1], names[-1].removeprefix(sep), drive + sep]
+        else:
+            parts = [*names, drive + sep]
         return tuple(reversed(parts))
 
     def with_name(self, name) -> Self:
