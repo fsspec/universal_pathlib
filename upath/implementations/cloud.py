@@ -47,7 +47,7 @@ class CloudPath(UPath):
     def __str__(self):
         s = super().__str__()
         _, _, path = s.partition("://")
-        return s + ("" if "/" in path else "/")
+        return s + ("" if not path or "/" in path else "/")
 
     @property
     def root(self) -> str:
