@@ -459,7 +459,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.with_segments(path)
 
     @property
-    def anchor(self):
+    def anchor(self) -> str:
         return self.drive + self.root
 
     # === ReadablePath attributes =====================================
