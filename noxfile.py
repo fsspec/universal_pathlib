@@ -123,5 +123,8 @@ def generate_flavours(session):
     session.install("-r", "dev/requirements.txt")
     with open("upath/_flavour_sources.py", "w") as target:
         session.run(
-            "python", "dev/fsspec_inspector/generate_flavours.py", stdout=target
+            "python",
+            "dev/fsspec_inspector/generate_flavours.py",
+            stdout=target,
+            stderr=None,
         )
