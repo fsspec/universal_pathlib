@@ -74,6 +74,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
     )
     if TYPE_CHECKING:
         _chain: Chain
+        _chain_parser: FSSpecChainParser
         _fs_cached: AbstractFileSystem
 
     parser = os.path  # type: ignore[misc,assignment]

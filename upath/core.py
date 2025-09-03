@@ -144,6 +144,16 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     @abstractmethod
+    def _chain_parser(self) -> FSSpecChainParser:
+        raise NotImplementedError
+
+    @_chain_parser.setter
+    @abstractmethod
+    def _chain_parser(self, value: FSSpecChainParser) -> None:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def _fs_cached(self) -> AbstractFileSystem:
         raise NotImplementedError
 

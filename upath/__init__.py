@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 
 __all__ = ["UPath"]
 
-UPath: type[UPath]
-
 
 def __getattr__(name):
     if name == "UPath":

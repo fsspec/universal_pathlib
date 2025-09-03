@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import warnings
 from collections import defaultdict
+from collections.abc import MutableMapping
 from collections.abc import Sequence
 from collections.abc import Set
 from typing import TYPE_CHECKING
@@ -74,7 +75,10 @@ class Chain:
 
     @property
     def active_path(self) -> str:
-        return self._segments[self._path_index].path
+        path = self._segments[self._path_index].path
+        if path is None:
+            raise RuntimeError
+        return path
 
     @property
     def active_path_protocol(self) -> str:
@@ -91,7 +95,7 @@ class Chain:
         segments = self.to_list()
         index = self._index
 
-        replacements = defaultdict(dict)
+        replacements: MutableMapping[int, dict[str, Any]] = defaultdict(dict)
         if protocol is not None:
             replacements[index]["protocol"] = protocol
         if storage_options is not None:
@@ -104,7 +108,7 @@ class Chain:
 
         return type(self)(*segments, index=index)
 
-    def to_list(self) -> Sequence[ChainSegment]:
+    def to_list(self) -> list[ChainSegment]:
         return list(self._segments)
 
     @classmethod
