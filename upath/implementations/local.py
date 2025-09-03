@@ -96,7 +96,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             **storage_options: Any,
         ) -> None:
             super(_UPathMixin, self).__init__(*args)
-            self._chain = Chain(ChainSegment(str(self), "", {}))
+            self._chain = Chain(ChainSegment(str(self), "", storage_options))
             self._chain_parser = chain_parser
 
     elif sys.version_info >= (3, 10):
