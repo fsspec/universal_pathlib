@@ -44,11 +44,6 @@ class CloudPath(UPath):
                 break
         return super()._transform_init_args(args, protocol, storage_options)
 
-    def __str__(self):
-        s = super().__str__()
-        _, _, path = s.partition("://")
-        return s + ("" if not path or "/" in path else "/")
-
     @property
     def root(self) -> str:
         return self.parser.sep
