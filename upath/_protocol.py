@@ -42,6 +42,8 @@ _fsspec_registry_map = ChainMap(_registry, _known_implementations)
 
 def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     """check if two fsspec protocols are equivalent"""
+    p0 = p0 or "file"
+    p1 = p1 or "file"
     if p0 == p1:
         return True
 
