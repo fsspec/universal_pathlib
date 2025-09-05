@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 import warnings
 from collections.abc import Iterator
-from collections.abc import Sequence
 from itertools import chain
 from typing import TYPE_CHECKING
 from typing import Any
@@ -37,11 +36,6 @@ class HTTPPath(UPath):
         if args and not str(args[0]).startswith(protocol):
             args = (f"{protocol}://{str(args[0]).lstrip('/')}", *args[1:])
         return args, protocol, storage_options
-
-    @property
-    def parts(self) -> Sequence[str]:
-        _parts = super().parts
-        return f"{_parts[0]}/", *_parts[1:]
 
     def __str__(self) -> str:
         sr = urlsplit(super().__str__())

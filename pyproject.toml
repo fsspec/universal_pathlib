@@ -141,6 +141,7 @@ exclude_lines = [
   "raise NotImplementedError",
   "raise AssertionError",
   "@overload",
+  "except ImportError",
 ]
 
 [tool.mypy]
@@ -176,10 +177,12 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "pydantic.*"
+ignore_missing_imports = true
 ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "pydantic_core.*"
+ignore_missing_imports = true
 ignore_errors = true
 
 [[tool.mypy.overrides]]

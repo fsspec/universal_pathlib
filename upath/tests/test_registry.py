@@ -29,6 +29,7 @@ IMPLEMENTATIONS = {
     "memory",
     "s3",
     "s3a",
+    "simplecache",
     "sftp",
     "smb",
     "ssh",

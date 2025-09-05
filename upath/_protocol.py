@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import os
 import re
+from collections import ChainMap
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 from typing import Any
+
+from fsspec.registry import known_implementations as _known_implementations
+from fsspec.registry import registry as _registry
 
 if TYPE_CHECKING:
     from upath.types import JoinablePath
@@ -18,7 +22,7 @@ __all__ = [
 # Regular expression to match fsspec style protocols.
 # Matches single slash usage too for compatibility.
 _PROTOCOL_RE = re.compile(
-    r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?P<slashes>//?)(?P<path>.*)"
+    r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?:(?P<slashes>//?)|:)(?P<path>.*)"
 )
 
 # Matches data URIs
@@ -31,6 +35,28 @@ def _match_protocol(pth: str) -> str:
     elif _DATA_URI_RE.match(pth):
         return "data"
     return ""
+
+
+_fsspec_registry_map = ChainMap(_registry, _known_implementations)
+
+
+def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
+    """check if two fsspec protocols are equivalent"""
+    p0 = p0 or "file"
+    p1 = p1 or "file"
+    if p0 == p1:
+        return True
+
+    try:
+        o0 = _fsspec_registry_map[p0]
+    except KeyError:
+        raise ValueError(f"Protocol not known: {p0}")
+    try:
+        o1 = _fsspec_registry_map[p1]
+    except KeyError:
+        raise ValueError(f"Protocol not known: {p1}")
+
+    return o0 == o1
 
 
 def get_upath_protocol(
@@ -54,7 +80,11 @@ def get_upath_protocol(
         pth_protocol = _match_protocol(str(pth))
     # if storage_options and not protocol and not pth_protocol:
     #     protocol = "file"
-    if protocol and pth_protocol and not pth_protocol.startswith(protocol):
+    if (
+        protocol
+        and pth_protocol
+        and not _fsspec_protocol_equals(pth_protocol, protocol)
+    ):
         raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
         )
@@ -63,7 +93,7 @@ def get_upath_protocol(
 
 def normalize_empty_netloc(pth: str) -> str:
     if m := _PROTOCOL_RE.match(pth):
-        if len(m.group("slashes")) == 1:
+        if m.group("slashes") == "/":
             protocol = m.group("protocol")
             path = m.group("path")
             pth = f"{protocol}:///{path}"
@@ -80,6 +110,6 @@ def compatible_protocol(
         # consider protocols equivalent if they match up to the first "+"
         other_protocol = other_protocol.partition("+")[0]
         # protocols: only identical (or empty "") protocols can combine
-        if other_protocol and other_protocol != protocol:
+        if other_protocol and not _fsspec_protocol_equals(other_protocol, protocol):
             return False
     return True

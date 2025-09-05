@@ -5,6 +5,7 @@ import sys
 import warnings
 from urllib.parse import SplitResult
 
+import pathlib_abc
 import pytest
 
 from upath import UPath
@@ -108,9 +109,11 @@ def test_subclass(local_testdir):
         DeprecationWarning, match=r"MyPath\(...\) detected protocol '' .*"
     ):
         path = MyPath(local_testdir)
-    assert str(path) == str(pathlib.Path(local_testdir))
+    assert str(path) == pathlib.Path(local_testdir).as_posix()
     assert issubclass(MyPath, UPath)
-    assert isinstance(path, pathlib.Path)
+    assert isinstance(path, pathlib_abc.ReadablePath)
+    assert isinstance(path, pathlib_abc.WritablePath)
+    assert not isinstance(path, pathlib.Path)
 
 
 def test_subclass_with_gcs():

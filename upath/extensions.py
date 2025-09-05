@@ -16,6 +16,8 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import Chain
+from upath._chain import ChainSegment
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
@@ -54,13 +56,7 @@ class ProxyUPath:
     #  _fs_factory
     #  _protocol_dispatch
 
-    def __init__(
-        self,
-        *args: JoinablePathLike,
-        protocol: str | None = None,
-        **storage_options: Any,
-    ) -> None:
-        self.__wrapped__ = UPath(*args, protocol=protocol, **storage_options)
+    # === non-public methods / attributes =============================
 
     @classmethod
     def _from_upath(cls, upath: UPath, /) -> Self:
@@ -70,6 +66,31 @@ class ProxyUPath:
             obj = object.__new__(cls)
             obj.__wrapped__ = upath
             return obj
+
+    @property
+    def _chain(self):
+        try:
+            return self.__wrapped__._chain
+        except AttributeError:
+            return Chain(
+                ChainSegment(
+                    path=self.__wrapped__.path,
+                    protocol=self.__wrapped__.protocol,
+                    storage_options=dict(self.__wrapped__.storage_options),
+                ),
+                [],
+                [],
+            )
+
+    # === wrapped interface ===========================================
+
+    def __init__(
+        self,
+        *args: JoinablePathLike,
+        protocol: str | None = None,
+        **storage_options: Any,
+    ) -> None:
+        self.__wrapped__ = UPath(*args, protocol=protocol, **storage_options)
 
     @property
     def parser(self) -> UPathParser:

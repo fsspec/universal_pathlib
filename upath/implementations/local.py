@@ -12,6 +12,10 @@ from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
 
+from upath._chain import DEFAULT_CHAIN_PARSER
+from upath._chain import Chain
+from upath._chain import ChainSegment
+from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
 from upath.core import UPath
 from upath.core import _UPathMixin
@@ -64,13 +68,13 @@ def _warn_protocol_storage_options(
 
 class LocalPath(_UPathMixin, pathlib.Path):
     __slots__ = (
-        "_protocol",
-        "_storage_options",
+        "_chain",
+        "_chain_parser",
         "_fs_cached",
     )
     if TYPE_CHECKING:
-        _protocol: str
-        _storage_options: dict[str, Any]
+        _chain: Chain
+        _chain_parser: FSSpecChainParser
         _fs_cached: AbstractFileSystem
 
     parser = os.path  # type: ignore[misc,assignment]
@@ -86,49 +90,60 @@ class LocalPath(_UPathMixin, pathlib.Path):
     if sys.version_info >= (3, 12):
 
         def __init__(
-            self, *args, protocol: str | None = None, **storage_options: Any
+            self,
+            *args,
+            protocol: str | None = None,
+            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            **storage_options: Any,
         ) -> None:
             super(_UPathMixin, self).__init__(*args)
-            self._protocol = protocol or ""
-            self._storage_options = storage_options
+            self._chain = Chain(ChainSegment(str(self), "", storage_options))
+            self._chain_parser = chain_parser
 
     elif sys.version_info >= (3, 10):
 
         def __init__(
-            self, *args, protocol: str | None = None, **storage_options: Any
+            self,
+            *args,
+            protocol: str | None = None,
+            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            **storage_options: Any,
         ) -> None:
+            # super(_UPathMixin, self).__init__(*args)
             _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501
-            self._protocol = ""
-            self._storage_options = {}
+            self._chain = Chain(ChainSegment(str(self), "", {}))
+            self._chain_parser = chain_parser
 
         @classmethod
         def _from_parts(cls, args):
             obj = super()._from_parts(args)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj._chain = Chain(ChainSegment(str(obj), "", {}))
             return obj
 
         @classmethod
         def _from_parsed_parts(cls, drv, root, parts):
             obj = super()._from_parsed_parts(drv, root, parts)
-            obj._protocol = ""
-            obj._storage_options = {}
+            obj._chain = Chain(ChainSegment(str(obj), "", {}))
             return obj
 
     else:
 
         def __init__(
-            self, *args, protocol: str | None = None, **storage_options: Any
+            self,
+            *args,
+            protocol: str | None = None,
+            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            **storage_options: Any,
         ) -> None:
             _warn_protocol_storage_options(type(self), protocol, storage_options)
             self._drv, self._root, self._parts = self._parse_args(args)  # type: ignore[attr-defined] # noqa: E501
             self._init()
+            self._chain_parser = chain_parser
 
         def _init(self, **kwargs: Any) -> None:
             super()._init(**kwargs)  # type: ignore[misc]
-            self._protocol = ""
-            self._storage_options = {}
+            self._chain = Chain(ChainSegment(str(self), "", {}))
 
     def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
@@ -170,7 +185,11 @@ class WindowsUPath(LocalPath, pathlib.WindowsPath):
     if os.name != "nt":
 
         def __new__(
-            cls, *args, protocol: str | None = None, **storage_options: Any
+            cls,
+            *args,
+            protocol: str | None = None,
+            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            **storage_options: Any,
         ) -> WindowsUPath:
             raise NotImplementedError(
                 f"cannot instantiate {cls.__name__} on your system"
@@ -183,7 +202,11 @@ class PosixUPath(LocalPath, pathlib.PosixPath):
     if os.name == "nt":
 
         def __new__(
-            cls, *args, protocol: str | None = None, **storage_options: Any
+            cls,
+            *args,
+            protocol: str | None = None,
+            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            **storage_options: Any,
         ) -> PosixUPath:
             raise NotImplementedError(
                 f"cannot instantiate {cls.__name__} on your system"

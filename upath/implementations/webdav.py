@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -60,3 +61,11 @@ class WebdavPath(UPath):
             urlpath = url._replace(scheme="", netloc="").geturl() or "/"
             so.setdefault("base_url", base)
         return super()._parse_storage_options(urlpath, "webdav", so)
+
+    @property
+    def parts(self) -> Sequence[str]:
+        parts = super().parts
+        if parts and parts[0] == "/":
+            return parts[1:]
+        else:
+            return parts
