@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import os
 import re
+from collections import ChainMap
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 from typing import Any
 
-from fsspec import get_filesystem_class
+from fsspec.registry import known_implementations as _known_implementations
+from fsspec.registry import registry as _registry
 
 if TYPE_CHECKING:
     from upath.types import JoinablePath
@@ -35,10 +37,24 @@ def _match_protocol(pth: str) -> str:
     return ""
 
 
+_fsspec_registry_map = ChainMap(_registry, _known_implementations)
+
+
 def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     """check if two fsspec protocols are equivalent"""
-    # FIXME: this triggers an import. We have to compare the fqns if possible!
-    return p0 == p1 or get_filesystem_class(p0) == get_filesystem_class(p1)
+    if p0 == p1:
+        return True
+
+    try:
+        o0 = _fsspec_registry_map[p0]
+    except KeyError:
+        raise ValueError(f"Protocol not known: {p0}")
+    try:
+        o1 = _fsspec_registry_map[p1]
+    except KeyError:
+        raise ValueError(f"Protocol not known: {p1}")
+
+    return o0 == o1
 
 
 def get_upath_protocol(
