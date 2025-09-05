@@ -10,15 +10,11 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import NamedTuple
 
-from fsspec import AbstractFileSystem
-
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
         from typing_extensions import Self
-
-from fsspec.core import get_filesystem_class
 
 from upath._flavour import WrappedFileSystemFlavour
 from upath._protocol import get_upath_protocol
@@ -210,30 +206,16 @@ class FSSpecChainParser:
         kwargs = {}
         for segment in segments:
             if segment.protocol and segment.path is not None:
-                # FIXME: unstrip_protocol requires a fs instance,
-                #   which crashes below for filesystems like zip,
-                #   tar, that require a fileobject via 'fo' keyword.
-                # filesystem(segment.protocol, **segment.storage_options))
-                if (
-                    "+" in segment.protocol
-                ):  # todo: deprecate the webdav+http(s) protocols
-                    _p = segment.protocol.partition("+")[0]
-                    fs_cls = get_filesystem_class(_p)
+                # FIXME: currently unstrip_protocol is only implemented by
+                #   AbstractFileSystem, LocalFileSystem, and OSSFileSystem
+                #   so to make this work we just implement it ourselves here.
+                #   To do this properly we would need to instantiate the
+                #   filesystem with its storage options and call
+                #   fs.unstrip_protocol(segment.path)
+                if segment.path.startswith(f"{segment.protocol}:/"):
+                    urlpath = segment.path
                 else:
-                    fs_cls = get_filesystem_class(segment.protocol)
-                fs = object.__new__(fs_cls)
-                AbstractFileSystem.__init__(fs, **segment.storage_options)
-                # unstrip_protocol will not necessarily return the original protocol
-                if isinstance(fs.protocol, str):
-                    protos, fs.protocol = (fs.protocol,), segment.protocol
-                else:
-                    protos, fs.protocol = fs.protocol, (segment.protocol,)
-                urlpath = fs.unstrip_protocol(segment.path)
-                # some fs even hardcode their protocol
-                # see: fsspec.implementations.local.LocalFileSystem.unstrip_protocol
-                if urlpath.startswith(tuple(f"{p}:" for p in protos)):
-                    _, _, _path = urlpath.partition(":")
-                    urlpath = f"{segment.protocol}:{_path}"
+                    urlpath = f"{segment.protocol}://{segment.path}"
             elif segment.protocol:
                 urlpath = segment.protocol
             elif segment.path is not None:
