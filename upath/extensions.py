@@ -123,8 +123,8 @@ class ProxyUPath:
         for pth in self.__wrapped__.iterdir():
             yield self._from_upath(pth)
 
-    def __open_rb__(self, buffering: int = -1) -> BinaryIO:
-        return self.__wrapped__.__open_rb__(buffering)
+    def __open_reader__(self) -> BinaryIO:
+        return self.__wrapped__.__open_reader__()
 
     def readlink(self) -> Self:
         return self._from_upath(self.__wrapped__.readlink())
@@ -144,8 +144,8 @@ class ProxyUPath:
     ) -> None:
         self.__wrapped__.mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
 
-    def __open_wb__(self, buffering: int = -1) -> BinaryIO:
-        return self.__wrapped__.__open_wb__(buffering)
+    def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
+        return self.__wrapped__.__open_writer__(mode)
 
     @overload
     def open(

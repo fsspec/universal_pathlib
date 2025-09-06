@@ -5,6 +5,8 @@ from pathlib_abc import PathInfo
 from pathlib_abc import PathParser
 from pathlib_abc import ReadablePath
 from pathlib_abc import WritablePath
+from pathlib_abc import vfsopen
+from pathlib_abc import vfspath
 
 __all__ = [
     "JoinablePath",
@@ -12,4 +14,6 @@ __all__ = [
     "WritablePath",
     "PathInfo",
     "PathParser",
+    "vfsopen",
+    "vfspath",
 ]

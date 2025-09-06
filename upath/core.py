@@ -415,6 +415,9 @@ class UPath(_UPathMixin, OpenablePath):
         )
 
     def __str__(self) -> str:
+        return self.__vfspath__()
+
+    def __vfspath__(self) -> str:
         return self._chain_parser.chain(self._chain.to_list())[0]
 
     def __repr__(self) -> str:
@@ -484,12 +487,8 @@ class UPath(_UPathMixin, OpenablePath):
             _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
             yield base.with_segments(str(base), name)
 
-    def __open_rb__(self, buffering: int = -1) -> BinaryIO:
-        block_size = _buffering2blocksize("wb", buffering)
-        kw = {}
-        if block_size is not None:
-            kw["block_size"] = block_size
-        return self.fs.open(self.path, mode="rb", **kw)
+    def __open_reader__(self) -> BinaryIO:
+        return self.fs.open(self.path, mode="rb")
 
     def readlink(self) -> Self:
         raise NotImplementedError
@@ -523,12 +522,8 @@ class UPath(_UPathMixin, OpenablePath):
             if not self.is_dir():
                 raise FileExistsError(str(self))
 
-    def __open_wb__(self, buffering: int = -1) -> BinaryIO:
-        block_size = _buffering2blocksize("wb", buffering)
-        kw = {}
-        if block_size is not None:
-            kw["block_size"] = block_size
-        return self.fs.open(self.path, mode="wb", **kw)
+    def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
+        return self.fs.open(self.path, mode=f"{mode}b")
 
     # --- upath overrides ---------------------------------------------
 
