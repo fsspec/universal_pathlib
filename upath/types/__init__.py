@@ -17,13 +17,12 @@ from typing import Union
 from typing import overload
 from typing import runtime_checkable
 
-from pathlib_abc import magic_open
-
 from upath.types._abc import JoinablePath
 from upath.types._abc import PathInfo
 from upath.types._abc import PathParser
 from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
+from upath.types._abc import vfsopen
 
 if TYPE_CHECKING:
     if sys.version_info > (3, 11):
@@ -110,7 +109,7 @@ class OpenablePath(ReadablePath, WritablePath):
         errors: str | None = None,
         newline: str | None = None,
     ) -> IO[Any]:
-        return magic_open(self, mode, buffering, encoding, errors, newline)
+        return vfsopen(self, mode, buffering, encoding, errors, newline)
 
 
 if sys.version_info >= (3, 14):
@@ -125,10 +124,9 @@ class CompatJoinablePath(Protocol):
     # not available in Python 3.9.* pathlib:
     #  - `parser`
     #  - `with_segments`
+    #  - `__vfspath__`
     #  - `full_match`
     __slots__ = ()
-
-    def __str__(self) -> str: ...
 
     @property
     def anchor(self) -> str: ...
@@ -161,8 +159,8 @@ class CompatJoinablePath(Protocol):
 @runtime_checkable
 class CompatReadablePath(CompatJoinablePath, Protocol):
     # not available in Python 3.9.* pathlib:
-    #   - `__open_rb__`
     #   - `info`
+    #   - `__open_reader__`
     #   - `copy`
     #   - `copy_into`
     #   - `walk`
@@ -187,7 +185,7 @@ class CompatReadablePath(CompatJoinablePath, Protocol):
 @runtime_checkable
 class CompatWritablePath(CompatJoinablePath, Protocol):
     # not available in Python 3.9.* pathlib:
-    #   - `__open_wb__`
+    #   - `__open_writer__`
     #   - `_copy_from`
     __slots__ = ()
 
