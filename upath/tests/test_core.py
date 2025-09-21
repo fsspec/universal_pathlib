@@ -340,7 +340,7 @@ def test_copy_path_append_kwargs():
 
 
 def test_relative_to():
-    assert "s3://test_bucket/file.txt" == str(
+    assert "file.txt" == str(
         UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
     )
 

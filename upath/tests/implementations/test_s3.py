@@ -52,7 +52,7 @@ class TestUPathS3(BaseTests):
             self.path.joinpath("file1.txt").rmdir()
 
     def test_relative_to(self):
-        assert "s3://test_bucket/file.txt" == str(
+        assert "file.txt" == str(
             UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
         )
 
