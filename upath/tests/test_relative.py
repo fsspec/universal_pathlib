@@ -1,0 +1,212 @@
+"""Tests for relative path functionality."""
+
+import os
+import pickle
+import tempfile
+
+import pytest
+
+from upath import UPath
+
+
+@pytest.mark.parametrize(
+    "pth,base,rel",
+    [
+        ("/foo/bar/baz.txt", "/foo", "bar/baz.txt"),
+        ("/foo/bar/baz/qux.txt", "/foo/bar", "baz/qux.txt"),
+        ("/foo/bar/baz/qux.txt", "/foo/bar/baz", "qux.txt"),
+        ("/foo/bar/baz", "/foo/bar/baz", "."),
+    ],
+)
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        "memory",
+        "file",
+        "",
+    ],
+)
+def test_basic_relative_path_creation(protocol, pth, base, rel):
+    rel_pth = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+
+    assert not rel_pth.is_absolute()
+    assert str(rel_pth) == rel
+
+
+def test_relative_path_validation():
+    """Test validation of relative_to arguments."""
+    p = UPath("memory:///foo/bar")
+
+    # Different protocols should fail
+    with pytest.raises(ValueError, match="different storage_options"):
+        p.relative_to(UPath("s3://bucket"))
+
+    # Different storage options should fail
+    with pytest.raises(ValueError, match="different storage_options"):
+        UPath("s3://bucket/file", anon=True).relative_to(
+            UPath("s3://bucket", anon=False)
+        )
+
+
+def test_path_not_in_subpath():
+    """Test relative_to with paths that don't have a parent-child relationship."""
+    p = UPath("memory:///foo/bar")
+    other = UPath("memory:///baz")
+
+    with pytest.raises(ValueError, match="is not in the subpath of"):
+        p.relative_to(other)
+
+
+def test_filesystem_operations_fail_without_cwd():
+    """Test that filesystem operations fail on relative paths when cwd()"""
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    # Memory filesystem doesn't implement cwd(), so these should fail
+    with pytest.raises(
+        NotImplementedError,
+        match="require cwd\\(\\) to be implemented",
+    ):
+        _ = rel.path
+
+    with pytest.raises(
+        NotImplementedError, match="require cwd\\(\\) to be implemented"
+    ):
+        rel.exists()
+
+
+def test_filesystem_operations_work_with_cwd():
+    """Test that filesystem operations work on relative paths when cwd()"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create test file structure
+        test_dir = os.path.join(tmpdir, "testdir")
+        os.makedirs(test_dir, exist_ok=True)
+        test_file = os.path.join(test_dir, "testfile.txt")
+        with open(test_file, "w") as f:
+            f.write("test content")
+
+        # Create paths
+        abs_path = UPath(test_file)
+        abs_dir = UPath(test_dir)
+        rel_path = abs_path.relative_to(abs_dir)
+
+        assert not rel_path.is_absolute()
+        assert str(rel_path) == "testfile.txt"
+
+        # Change to the test directory and try filesystem operations
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(test_dir)
+
+            # These should work now since we're in the right directory
+            full_path = rel_path.path
+            assert "testfile.txt" in full_path
+
+            # Test that the file exists
+            assert rel_path.exists()
+
+        finally:
+            os.chdir(old_cwd)
+
+
+def test_pickling_relative_paths():
+    """Test that relative paths can be pickled and unpickled."""
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    # Pickle and unpickle
+    pickled = pickle.dumps(rel)
+    unpickled = pickle.loads(pickled)
+
+    assert str(rel) == str(unpickled)
+    assert rel.is_absolute() == unpickled.is_absolute()
+    assert rel._relative_base == unpickled._relative_base
+
+
+def test_with_segments_preserves_relative_state():
+    """Test that with_segments preserves the relative state."""
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    # Create new path with different segments
+    new_rel = rel.with_segments("memory:///foo/other/file.txt")
+
+    # Should still be relative with same root
+    assert not new_rel.is_absolute()
+    assert new_rel._relative_base == rel._relative_base
+
+
+def test_relative_path_parts():
+    """Test that parts work correctly for relative paths."""
+    p = UPath("memory:///foo/bar/baz/qux.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    assert p.parts == root.parts + rel.parts
+
+
+def test_absolute_method_behavior():
+    """Test that absolute() returns the original absolute path."""
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    with pytest.raises(
+        NotImplementedError,
+        match="require cwd\\(\\) to be implemented",
+    ):
+        rel.absolute()
+
+
+def test_is_absolute_method():
+    """Test is_absolute() method on relative paths."""
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    rel = p.relative_to(root)
+
+    assert not rel.is_absolute()
+
+
+def test_relative_path_comparison():
+    """Test that relative paths can be compared."""
+    p1 = UPath("memory:///foo/bar/baz.txt")
+    p2 = UPath("memory:///foo/bar/qux.txt")
+    root = UPath("memory:///foo")
+
+    rel1 = p1.relative_to(root)
+    rel2 = p2.relative_to(root)
+
+    # Compare string representations since .path requires cwd() for memory://
+    assert str(rel1) != str(rel2)
+    assert rel1 != rel2
+
+    # Same relative path should be equal
+    rel1_copy = p1.relative_to(root)
+    assert str(rel1) == str(rel1_copy)
+    assert rel1 == rel1_copy
+
+    # Same relative path from different base should be equal
+    rel3 = UPath("memory:///a/b/c.txt").relative_to(UPath("memory:///a"))
+    rel4 = UPath("file:///x/b/c.txt").relative_to(UPath("file:///x"))
+
+    assert str(rel3) == str(rel4)
+    assert rel3 == rel4
+
+
+def test_nonrelative_path_is_absolute():
+    """Test that normal (non-relative) paths return True for is_absolute()."""
+    p = UPath("memory:///foo/bar/baz.txt")
+    assert p.is_absolute()
+
+
+def test_s3_relative_paths():
+    """Test relative paths work with S3 URLs."""
+    p = UPath("s3://test_bucket/dir/file.txt")
+    root = UPath("s3://test_bucket")
+    rel = p.relative_to(root)
+
+    assert not rel.is_absolute()
+    assert str(rel) == "dir/file.txt"
