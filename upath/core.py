@@ -71,7 +71,12 @@ def _check_fsspec_has_working_glob():
 
 def _make_instance(cls, args, kwargs):
     """helper for pickling UPath instances"""
-    return cls(*args, **kwargs)
+    # Extract _relative_base if present
+    relative_base = kwargs.pop("_relative_base", None)
+    instance = cls(*args, **kwargs)
+    if relative_base is not None:
+        instance._relative_base = relative_base
+    return instance
 
 
 def _buffering2blocksize(mode: str, buffering: int) -> int | None:
@@ -196,7 +201,24 @@ class _UPathMixin(metaclass=_UPathMeta):
     @property
     def path(self) -> str:
         """The path that a fsspec filesystem can use."""
-        return self.parser.strip_protocol(self.__str__())
+        if self._relative_base is not None:
+            # For relative paths, we need to resolve to absolute path
+            try:
+                current_dir = self.cwd()
+            except NotImplementedError:
+                raise NotImplementedError(
+                    f"Filesystem operations on relative {self.__class__.__name__} "
+                    "require cwd() to be implemented"
+                )
+            else:
+                # Join the current directory with the relative path
+                if str(self) == ".":
+                    path = current_dir
+                else:
+                    path = current_dir / str(self)
+        else:
+            path = self.__str__()
+        return self.parser.strip_protocol(path)
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
         """Join with urljoin behavior for UPath instances"""
@@ -378,6 +400,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         self._chain = Chain.from_list(segments)
         self._chain_parser = chain_parser
         self._raw_urlpaths = args
+        self._relative_base = None
 
     # --- deprecated attributes ---------------------------------------
 
@@ -395,6 +418,7 @@ class UPath(_UPathMixin, OpenablePath):
         "_chain_parser",
         "_fs_cached",
         "_raw_urlpaths",
+        "_relative_base",
     )
 
     if TYPE_CHECKING:
@@ -402,22 +426,44 @@ class UPath(_UPathMixin, OpenablePath):
         _chain_parser: FSSpecChainParser
         _fs_cached: bool
         _raw_urlpaths: Sequence[JoinablePathLike]
+        _relative_base: str | None
 
     # === JoinablePath attributes =====================================
 
     parser: UPathParser = LazyFlavourDescriptor()  # type: ignore[assignment]
 
     def with_segments(self, *pathsegments: JoinablePathLike) -> Self:
-        return type(self)(
+        new_instance = type(self)(
             *pathsegments,
             protocol=self._protocol,
             **self._storage_options,
         )
+        # Preserve _relative_base if it was set
+        if hasattr(self, "_relative_base") and self._relative_base is not None:
+            new_instance._relative_base = self._relative_base
+        return new_instance
 
     def __str__(self) -> str:
         return self.__vfspath__()
 
     def __vfspath__(self) -> str:
+        if self._relative_base is not None:
+            full_path = self._chain_parser.chain(self._chain.to_list())[0]
+            root_path = self._relative_base
+
+            # Strip protocol for comparison
+            full_path_no_protocol = self.parser.strip_protocol(full_path)
+            root_path_no_protocol = self.parser.strip_protocol(root_path)
+
+            # Calculate relative path from root to this path
+            if full_path_no_protocol.startswith(root_path_no_protocol):
+                rel_path = full_path_no_protocol[len(root_path_no_protocol) :].lstrip(
+                    self.parser.sep
+                )
+                return rel_path or "."
+            else:
+                # If paths don't have the expected relationship, fall back
+                return full_path
         return self._chain_parser.chain(self._chain.to_list())[0]
 
     def __repr__(self) -> str:
@@ -427,6 +473,13 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def parts(self) -> Sequence[str]:
+        # For relative paths, return parts of the relative path only
+        if self._relative_base is not None:
+            rel_str = str(self)
+            if rel_str == ".":
+                return ()
+            return tuple(rel_str.split(self.parser.sep))
+
         split = self.parser.split
         sep = self.parser.sep
 
@@ -745,16 +798,43 @@ class UPath(_UPathMixin, OpenablePath):
         raise NotImplementedError
 
     def absolute(self) -> Self:
+        if self._relative_base is not None:
+            try:
+                return self.cwd().joinpath(str(self))
+            except NotImplementedError:
+                raise NotImplementedError(
+                    f"Filesystem operations on relative {self.__class__.__name__} "
+                    "require cwd() to be implemented"
+                )
         return self
 
     def is_absolute(self) -> bool:
-        return self.parser.isabs(str(self))
+        if self._relative_base is not None:
+            return False
+        else:
+            return self.parser.isabs(str(self))
 
     def __eq__(self, other: object) -> bool:
         """UPaths are considered equal if their protocol, path and
         storage_options are equal."""
         if not isinstance(other, UPath):
             return NotImplemented
+
+        # For relative paths, compare the string representation instead of path
+        if (
+            self._relative_base is not None
+            or getattr(other, "_relative_base", None) is not None
+        ):
+            # If both are relative paths, compare just the relative strings
+            if (
+                self._relative_base is not None
+                and getattr(other, "_relative_base", None) is not None
+            ):
+                return str(self) == str(other)
+            else:
+                # One is relative, one is not - they can't be equal
+                return False
+
         return (
             self.path == other.path
             and self.protocol == other.protocol
@@ -895,6 +975,9 @@ class UPath(_UPathMixin, OpenablePath):
             "protocol": self._protocol,
             **self._storage_options,
         }
+        # Include _relative_base in the state if it's set
+        if self._relative_base is not None:
+            kwargs["_relative_base"] = self._relative_base
         return _make_instance, (type(self), args, kwargs)
 
     def as_uri(self) -> str:
@@ -940,7 +1023,40 @@ class UPath(_UPathMixin, OpenablePath):
                 "paths have different storage_options:"
                 f" {self.storage_options!r} != {other.storage_options!r}"
             )
-        return self  # super().relative_to(other, *_deprecated, walk_up=walk_up)
+
+        # Calculate the relative path properly
+        other_str = str(other)
+        self_str = str(self)
+
+        # Normalize paths by ensuring root path ends with separator if it should
+        # Check if self starts with other as a proper path component
+        if self_str == other_str:
+            # Same path - return "."
+            new_instance = copy(self)
+            new_instance._relative_base = other_str
+            return new_instance
+
+        # Check if self_str starts with other_str followed by a separator
+        sep = self.parser.sep
+        if self_str.startswith(other_str + sep):
+            # Valid subpath
+            new_instance = copy(self)
+            new_instance._relative_base = other_str
+            return new_instance
+        elif self_str.startswith(other_str) and len(self_str) > len(other_str):
+            # Check if the next character is a separator
+            # (for cases where other_str ends with sep)
+            next_char = self_str[len(other_str)]
+            if next_char == sep:
+                new_instance = copy(self)
+                new_instance._relative_base = other_str
+                return new_instance
+
+        # Not a valid subpath
+        if not walk_up:
+            raise ValueError(f"{self_str!r} is not in the subpath of {other_str!r}")
+        # For walk_up=True, we'd need more complex logic - for now, keep simple
+        raise ValueError(f"{self_str!r} is not in the subpath of {other_str!r}")
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
