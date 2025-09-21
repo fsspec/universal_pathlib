@@ -175,6 +175,21 @@ class _UPathMixin(metaclass=_UPathMeta):
     def _raw_urlpaths(self, value: Sequence[JoinablePathLike]) -> None:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def _relative_base(self) -> str | None:
+        raise NotImplementedError
+
+    @_relative_base.setter
+    def _relative_base(self, value: str | None) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def cwd(cls) -> Self:
+        """Return a new path representing the current working directory."""
+        raise NotImplementedError
+
     # === upath.UPath PUBLIC ADDITIONAL API ===========================
 
     @property
@@ -212,12 +227,12 @@ class _UPathMixin(metaclass=_UPathMeta):
                 )
             else:
                 # Join the current directory with the relative path
-                if str(self) == ".":
-                    path = current_dir
+                if (self_path := str(self)) == ".":
+                    path = str(current_dir)
                 else:
-                    path = current_dir / str(self)
+                    path = current_dir.parser.join(str(self), self_path)
         else:
-            path = self.__str__()
+            path = str(self)
         return self.parser.strip_protocol(path)
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
@@ -995,34 +1010,41 @@ class UPath(_UPathMixin, OpenablePath):
         return st == other_st
 
     @classmethod
-    def cwd(cls) -> UPath:
+    def cwd(cls) -> Self:
         if cls is UPath:
-            return get_upath_class("").cwd()  # type: ignore[union-attr]
+            # default behavior for UPath.cwd() is to return local cwd
+            return get_upath_class("").cwd()  # type: ignore[union-attr,return-value]
         else:
             raise NotImplementedError
 
     @classmethod
-    def home(cls) -> UPath:
+    def home(cls) -> Self:
         if cls is UPath:
-            return get_upath_class("").home()  # type: ignore[union-attr]
+            return get_upath_class("").home()  # type: ignore[union-attr,return-value]
         else:
             raise NotImplementedError
 
     def relative_to(  # type: ignore[override]
         self,
-        other,
+        other: Self | str,
         /,
         *_deprecated,
-        walk_up=False,
+        walk_up: bool = False,
     ) -> Self:
-        if isinstance(other, UPath) and (
-            (self.__class__ is not other.__class__)
-            or (self.storage_options != other.storage_options)
-        ):
-            raise ValueError(
-                "paths have different storage_options:"
-                f" {self.storage_options!r} != {other.storage_options!r}"
-            )
+        if walk_up:
+            raise NotImplementedError("walk_up=True is not implemented yet")
+
+        if isinstance(other, UPath):
+            if self.__class__ is not other.__class__:
+                raise ValueError(
+                    "incompatible protocols:"
+                    f" {self._protocol!r} != {other._protocol!r}"
+                )
+            if self.storage_options != other.storage_options:
+                raise ValueError(
+                    "incompatible storage_options:"
+                    f" {self.storage_options!r} != {other.storage_options!r}"
+                )
 
         # Calculate the relative path properly
         other_str = str(other)
@@ -1043,19 +1065,17 @@ class UPath(_UPathMixin, OpenablePath):
             new_instance = copy(self)
             new_instance._relative_base = other_str
             return new_instance
-        elif self_str.startswith(other_str) and len(self_str) > len(other_str):
+        elif (
+            self_str.startswith(other_str)
+            and len(self_str) > len(other_str)
+            and self_str[len(other_str)] == sep
+        ):
             # Check if the next character is a separator
             # (for cases where other_str ends with sep)
-            next_char = self_str[len(other_str)]
-            if next_char == sep:
-                new_instance = copy(self)
-                new_instance._relative_base = other_str
-                return new_instance
+            new_instance = copy(self)
+            new_instance._relative_base = other_str
+            return new_instance
 
-        # Not a valid subpath
-        if not walk_up:
-            raise ValueError(f"{self_str!r} is not in the subpath of {other_str!r}")
-        # For walk_up=True, we'd need more complex logic - for now, keep simple
         raise ValueError(f"{self_str!r} is not in the subpath of {other_str!r}")
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]

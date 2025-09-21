@@ -30,7 +30,7 @@ def test_basic_relative_path_creation(protocol, pth, base, rel):
     rel_pth = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
 
     assert not rel_pth.is_absolute()
-    assert str(rel_pth) == rel
+    assert rel_pth.as_posix() == rel
 
 
 def test_relative_path_validation():
@@ -38,11 +38,11 @@ def test_relative_path_validation():
     p = UPath("memory:///foo/bar")
 
     # Different protocols should fail
-    with pytest.raises(ValueError, match="different storage_options"):
+    with pytest.raises(ValueError, match="incompatible protocols"):
         p.relative_to(UPath("s3://bucket"))
 
     # Different storage options should fail
-    with pytest.raises(ValueError, match="different storage_options"):
+    with pytest.raises(ValueError, match="incompatible storage_options"):
         UPath("s3://bucket/file", anon=True).relative_to(
             UPath("s3://bucket", anon=False)
         )

@@ -71,11 +71,13 @@ class LocalPath(_UPathMixin, pathlib.Path):
         "_chain",
         "_chain_parser",
         "_fs_cached",
+        "_relative_base",
     )
     if TYPE_CHECKING:
         _chain: Chain
         _chain_parser: FSSpecChainParser
         _fs_cached: AbstractFileSystem
+        _relative_base: str | None
 
     parser = os.path  # type: ignore[misc,assignment]
 
@@ -174,6 +176,10 @@ class LocalPath(_UPathMixin, pathlib.Path):
         if not compatible_protocol("", other):
             raise ValueError("can't combine incompatible UPath protocols")
         return super().__rtruediv__(other)
+
+    @classmethod
+    def cwd(cls) -> Self:
+        return cls(super().cwd())
 
 
 UPath.register(LocalPath)
