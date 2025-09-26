@@ -184,12 +184,6 @@ class _UPathMixin(metaclass=_UPathMeta):
     def _relative_base(self, value: str | None) -> None:
         raise NotImplementedError
 
-    @classmethod
-    @abstractmethod
-    def cwd(cls) -> Self:
-        """Return a new path representing the current working directory."""
-        raise NotImplementedError
-
     # === upath.UPath PUBLIC ADDITIONAL API ===========================
 
     @property
@@ -219,7 +213,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         if self._relative_base is not None:
             # For relative paths, we need to resolve to absolute path
             try:
-                current_dir = self.cwd()
+                current_dir = self.cwd()  # type: ignore[attr-defined]
             except NotImplementedError:
                 raise NotImplementedError(
                     f"Filesystem operations on relative {self.__class__.__name__} "

@@ -177,10 +177,6 @@ class LocalPath(_UPathMixin, pathlib.Path):
             raise ValueError("can't combine incompatible UPath protocols")
         return super().__rtruediv__(other)
 
-    @classmethod
-    def cwd(cls) -> Self:
-        return cls(super().cwd())
-
 
 UPath.register(LocalPath)
 
