@@ -210,3 +210,18 @@ def test_s3_relative_paths():
 
     assert not rel.is_absolute()
     assert str(rel) == "dir/file.txt"
+
+
+@pytest.fixture
+def rel_path():
+    p = UPath("memory:///foo/bar/baz.txt")
+    root = UPath("memory:///foo")
+    yield p.relative_to(root)
+
+
+def test_relative_path_as_uri(rel_path):
+    with pytest.raises(
+        ValueError,
+        "relative path can't be expressed as a {rel_path.protocol} URI",
+    ):
+        rel_path.as_uri()

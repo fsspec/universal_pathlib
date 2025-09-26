@@ -525,6 +525,8 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def anchor(self) -> str:
+        if self._relative_base is not None:
+            return ""
         return self.drive + self.root
 
     # === ReadablePath attributes =====================================
@@ -990,6 +992,10 @@ class UPath(_UPathMixin, OpenablePath):
         return _make_instance, (type(self), args, kwargs)
 
     def as_uri(self) -> str:
+        if self._relative_base is not None:
+            raise ValueError(
+                f"relative path can't be expressed as a {self.protocol} URI"
+            )
         return str(self)
 
     def as_posix(self) -> str:
