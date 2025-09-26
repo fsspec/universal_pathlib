@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
 from typing import Literal
+from typing import NoReturn
 from typing import TextIO
 from typing import overload
 from urllib.parse import SplitResult
@@ -90,6 +91,11 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
         return None
     else:
         return buffering
+
+
+def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
+    "relative path does not support method(), because cls_name.cwd() is unsupported"
+    raise NotImplementedError(f"{cls_name}.{method}() is unsupported")
 
 
 class _UPathMeta(ABCMeta):
@@ -212,19 +218,12 @@ class _UPathMixin(metaclass=_UPathMeta):
         """The path that a fsspec filesystem can use."""
         if self._relative_base is not None:
             # For relative paths, we need to resolve to absolute path
-            try:
-                current_dir = self.cwd()  # type: ignore[attr-defined]
-            except NotImplementedError:
-                raise NotImplementedError(
-                    f"Filesystem operations on relative {self.__class__.__name__} "
-                    "require cwd() to be implemented"
-                )
+            current_dir = self.cwd()  # type: ignore[attr-defined]
+            # Join the current directory with the relative path
+            if (self_path := str(self)) == ".":
+                path = str(current_dir)
             else:
-                # Join the current directory with the relative path
-                if (self_path := str(self)) == ".":
-                    path = str(current_dir)
-                else:
-                    path = current_dir.parser.join(str(self), self_path)
+                path = current_dir.parser.join(str(self), self_path)
         else:
             path = str(self)
         return self.parser.strip_protocol(path)
@@ -533,7 +532,7 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def info(self) -> PathInfo:
-        raise NotImplementedError("todo")
+        _raise_unsupported(type(self).__name__, "info")
 
     def iterdir(self) -> Iterator[Self]:
         sep = self.parser.sep
@@ -555,7 +554,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.fs.open(self.path, mode="rb")
 
     def readlink(self) -> Self:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "readlink")
 
     # --- WritablePath attributes -------------------------------------
 
@@ -564,7 +563,7 @@ class UPath(_UPathMixin, OpenablePath):
         target: ReadablePathLike,
         target_is_directory: bool = False,
     ) -> None:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "symlink_to")
 
     def mkdir(
         self,
@@ -687,7 +686,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.stat(follow_symlinks=False)
 
     def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "chmod")
 
     def exists(self, *, follow_symlinks=True) -> bool:
         return self.fs.exists(self.path)
@@ -750,6 +749,8 @@ class UPath(_UPathMixin, OpenablePath):
                 UserWarning,
                 stacklevel=2,
             )
+        if self._relative_base is not None:
+            self = self.absolute()
         path_pattern = self.joinpath(pattern).path
         sep = self.parser.sep
         base = self.fs._strip_protocol(self.path)
@@ -803,20 +804,14 @@ class UPath(_UPathMixin, OpenablePath):
                         yield self.joinpath(name)
 
     def owner(self) -> str:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "owner")
 
     def group(self) -> str:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "group")
 
     def absolute(self) -> Self:
         if self._relative_base is not None:
-            try:
-                return self.cwd().joinpath(str(self))
-            except NotImplementedError:
-                raise NotImplementedError(
-                    f"Filesystem operations on relative {self.__class__.__name__} "
-                    "require cwd() to be implemented"
-                )
+            return self.cwd().joinpath(str(self))
         return self
 
     def is_absolute(self) -> bool:
@@ -881,6 +876,8 @@ class UPath(_UPathMixin, OpenablePath):
         return self.path >= other.path
 
     def resolve(self, strict: bool = False) -> Self:
+        if self._relative_base is not None:
+            self = self.absolute()
         _parts = self.parts
 
         # Do not attempt to normalize path if no parts are dots
@@ -911,7 +908,7 @@ class UPath(_UPathMixin, OpenablePath):
                 pass  # unsupported by filesystem
 
     def lchmod(self, mode: int) -> None:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "lchmod")
 
     def unlink(self, missing_ok: bool = False) -> None:
         if not self.exists():
@@ -939,6 +936,8 @@ class UPath(_UPathMixin, OpenablePath):
             target = UPath(target, **self.storage_options)
         if target == self:
             return self
+        if self._relative_base is not None:
+            self = self.absolute()
         target_protocol = get_upath_protocol(target)
         if target_protocol:
             if target_protocol != self.protocol:
@@ -970,7 +969,7 @@ class UPath(_UPathMixin, OpenablePath):
         return self.with_segments(target_)
 
     def replace(self, target: WritablePathLike) -> Self:
-        raise NotImplementedError  # todo
+        _raise_unsupported(type(self).__name__, "replace")
 
     @property
     def drive(self) -> str:
@@ -1015,14 +1014,14 @@ class UPath(_UPathMixin, OpenablePath):
             # default behavior for UPath.cwd() is to return local cwd
             return get_upath_class("").cwd()  # type: ignore[union-attr,return-value]
         else:
-            raise NotImplementedError
+            _raise_unsupported(cls.__name__, "cwd")
 
     @classmethod
     def home(cls) -> Self:
         if cls is UPath:
             return get_upath_class("").home()  # type: ignore[union-attr,return-value]
         else:
-            raise NotImplementedError
+            _raise_unsupported(cls.__name__, "home")
 
     def relative_to(  # type: ignore[override]
         self,

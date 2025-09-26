@@ -2,6 +2,7 @@
 
 import os
 import pickle
+import re
 import tempfile
 
 import pytest
@@ -66,12 +67,13 @@ def test_filesystem_operations_fail_without_cwd():
     # Memory filesystem doesn't implement cwd(), so these should fail
     with pytest.raises(
         NotImplementedError,
-        match="require cwd\\(\\) to be implemented",
+        match=re.escape("MemoryPath.cwd() is unsupported"),
     ):
         _ = rel.path
 
     with pytest.raises(
-        NotImplementedError, match="require cwd\\(\\) to be implemented"
+        NotImplementedError,
+        match=re.escape("MemoryPath.cwd() is unsupported"),
     ):
         rel.exists()
 
@@ -156,7 +158,7 @@ def test_absolute_method_behavior():
 
     with pytest.raises(
         NotImplementedError,
-        match="require cwd\\(\\) to be implemented",
+        match=re.escape("MemoryPath.cwd() is unsupported"),
     ):
         rel.absolute()
 
@@ -222,6 +224,89 @@ def rel_path():
 def test_relative_path_as_uri(rel_path):
     with pytest.raises(
         ValueError,
-        "relative path can't be expressed as a {rel_path.protocol} URI",
+        match=f"relative path can't be expressed as a {rel_path.protocol} URI",
     ):
         rel_path.as_uri()
+
+
+@pytest.mark.parametrize(
+    "method_args",
+    [
+        pytest.param(("absolute", ()), id="absolute"),
+        pytest.param(("chmod", (0o777,)), id="chmod"),
+        pytest.param(("cwd", ()), id="cwd"),
+        pytest.param(("exists", ()), id="exists"),
+        pytest.param(("glob", ("*.txt",)), id="glob"),
+        pytest.param(("group", ()), id="group"),
+        pytest.param(("is_dir", ()), id="is_dir"),
+        pytest.param(("is_file", ()), id="is_file"),
+        pytest.param(("is_symlink", ()), id="is_symlink"),
+        pytest.param(("iterdir", ()), id="iterdir"),
+        pytest.param(("open", ()), id="open"),
+        pytest.param(("owner", ()), id="owner"),
+        pytest.param(("read_bytes", ()), id="read_bytes"),
+        pytest.param(("read_text", ()), id="read_text"),
+        pytest.param(("readlink", ()), id="readlink"),
+        pytest.param(("rename", ("a/b/c",)), id="rename"),
+        pytest.param(("replace", ("...",)), id="replace"),
+        pytest.param(("rglob", ("*.txt",)), id="rglob"),
+        pytest.param(("rmdir", ()), id="rmdir"),
+        pytest.param(("samefile", ("...",)), id="samefile"),
+        pytest.param(("stat", ()), id="stat"),
+        pytest.param(("symlink_to", ("...",)), id="symlink_to"),
+        pytest.param(("touch", ()), id="touch"),
+        pytest.param(("unlink", ()), id="unlink"),
+        pytest.param(("write_bytes", (b"data",)), id="write_bytes"),
+        pytest.param(("write_text", ("data",)), id="write_text"),
+    ],
+)
+def test_path_operations_disabled_without_cwd(rel_path, method_args):
+    """UPaths without .cwd() implementation should not allow path operations."""
+    method, args = method_args
+
+    with pytest.raises(NotImplementedError):
+        # next only needs to be called for iterdir and glob/rglob
+        # but the other raise already in the getattr call
+        next(getattr(rel_path, method)(*args))
+
+
+# 'anchor',
+# 'as_posix',
+# 'as_uri',
+# 'drive',
+# 'expanduser',
+# 'fs',
+# 'home',
+# 'is_absolute',
+# 'is_relative_to',
+# 'joinpath',
+# 'joinuri',
+# 'lchmod',
+# 'link_to',
+# 'lstat',
+# 'match',
+# 'mkdir',
+# 'name',
+# 'parent',
+# 'parents',
+# 'parser',
+# 'parts',
+# 'path',
+# 'protocol',
+# 'relative_to',
+# 'root',
+# 'stem',
+# 'storage_options',
+# 'suffix',
+# 'suffixes',
+# 'with_name',
+# 'with_segments',
+# 'with_stem',
+# 'with_suffix',
+# 'is_block_device',
+# 'is_char_device',
+# 'is_fifo',
+# 'is_mount',
+# 'is_reserved',
+# 'is_socket',
+# 'resolve',
