@@ -246,6 +246,9 @@ def test_relative_path_as_uri(rel_path):
         pytest.param(("is_file", ()), id="is_file"),
         pytest.param(("is_symlink", ()), id="is_symlink"),
         pytest.param(("iterdir", ()), id="iterdir"),
+        pytest.param(("lchmod", (0o777,)), id="lchmod"),
+        pytest.param(("lstat", ()), id="lstat"),
+        pytest.param(("mkdir", ()), id="mkdir"),
         pytest.param(("open", ()), id="open"),
         pytest.param(("owner", ()), id="owner"),
         pytest.param(("read_bytes", ()), id="read_bytes"),
@@ -377,16 +380,30 @@ def test_relative_path_stem_suffix_name(rel_path):
     assert rel_path.with_suffix(".tar.gz").suffixes == [".tar", ".gz"]
 
 
+@pytest.mark.parametrize(
+    "protocol,pth,base,expected_parent",
+    [
+        ("", "/foo/bar/baz.txt", "/foo", "bar"),
+        ("", "/foo", "/foo", "."),
+        ("file", "/foo/bar/baz.txt", "/foo", "bar"),
+        ("file", "/foo/bar", "/foo/bar", "."),
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo", "bar"),
+        ("s3", "s3://bucket/foo/bar/", "s3://bucket/foo/bar", "."),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo", "bar"),
+        ("gcs", "gcs://bucket/foo/bar/", "gcs://bucket/foo", "."),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo", "bar"),
+        ("memory", "memory:///foo/bar", "memory:///foo", "."),
+    ],
+)
+def test_relative_path_parent(protocol, pth, base, expected_parent):
+    rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    assert str(rel.parent) == expected_parent
+
+
 # 'fs',
 # 'home',
-# 'is_relative_to',
 # 'joinpath',
 # 'joinuri',
-# 'lchmod',
-# 'link_to',
-# 'lstat',
-# 'match',
-# 'mkdir',
 # 'parent',
 # 'parents',
 # 'parser',
@@ -395,3 +412,4 @@ def test_relative_path_stem_suffix_name(rel_path):
 # 'storage_options',
 # 'with_segments',
 # 'resolve',
+# 'match',
