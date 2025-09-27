@@ -481,6 +481,8 @@ class UPath(_UPathMixin, OpenablePath):
         return self._chain_parser.chain(self._chain.to_list())[0]
 
     def __repr__(self) -> str:
+        if self._relative_base is not None:
+            return f"<relative {type(self).__name__} {str(self)!r}>"
         return f"{type(self).__name__}({self.path!r}, protocol={self._protocol!r})"
 
     # === JoinablePath overrides ======================================
