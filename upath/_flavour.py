@@ -362,7 +362,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             return os.path.splitext(path)
         else:
             path, sep, name = path.rpartition(self.sep)
-            if name:
+            if "." in name:
                 stem, dot, ext = name.rpartition(".")
                 suffix = dot + ext
             else:

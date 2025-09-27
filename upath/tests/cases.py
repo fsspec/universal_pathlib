@@ -447,6 +447,22 @@ class BaseTests:
         path = path.with_suffix(".zip")
         assert path.suffix == ".zip"
 
+    def test_suffix(self):
+        path = self.path / "no_suffix"
+        assert path.suffix == ""
+        path = self.path / "file.txt"
+        assert path.suffix == ".txt"
+        path = self.path / "archive.tar.gz"
+        assert path.suffix == ".gz"
+
+    def test_suffixes(self):
+        path = self.path / "no_suffix"
+        assert path.suffixes == []
+        path = self.path / "file.txt"
+        assert path.suffixes == [".txt"]
+        path = self.path / "archive.tar.gz"
+        assert path.suffixes == [".tar", ".gz"]
+
     def test_with_stem(self):
         if sys.version_info < (3, 9):
             pytest.skip("with_stem only available on py3.9+")
