@@ -374,7 +374,7 @@ def test_relative_path_stem_suffix_name(rel_path):
     assert rel_path.with_name("other.txt").name == "other.txt"
     assert rel_path.with_stem("other").name == "other.txt"
     assert rel_path.with_suffix(".md").name == "baz.md"
-    assert rel_path.with_suffix([".tar.gz"]).suffixes == [".tar", ".gz"]
+    assert rel_path.with_suffix(".tar.gz").suffixes == [".tar", ".gz"]
 
 
 # 'fs',
