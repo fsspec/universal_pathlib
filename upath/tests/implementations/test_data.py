@@ -174,6 +174,12 @@ class TestUPathDataPath(BaseTests):
         with pytest.raises(NotImplementedError):
             self.path.with_suffix(".new")
 
+    def test_suffix(self):
+        assert self.path.suffix == ""
+
+    def test_suffixes(self):
+        assert self.path.suffixes == []
+
     def test_with_stem(self):
         with pytest.raises(NotImplementedError):
             self.path.with_stem("newname")
