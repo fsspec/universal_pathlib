@@ -67,13 +67,17 @@ def test_filesystem_operations_fail_without_cwd():
     # Memory filesystem doesn't implement cwd(), so these should fail
     with pytest.raises(
         NotImplementedError,
-        match=re.escape("MemoryPath.cwd() is unsupported"),
+        match=re.escape(
+            "fsspec paths can not be relative and MemoryPath.cwd() is unsupported"
+        ),
     ):
         _ = rel.path
 
     with pytest.raises(
         NotImplementedError,
-        match=re.escape("MemoryPath.cwd() is unsupported"),
+        match=re.escape(
+            "fsspec paths can not be relative and MemoryPath.cwd() is unsupported"
+        ),
     ):
         rel.exists()
 
@@ -342,10 +346,39 @@ def test_relative_path_parts_property(protocol, path, base, expected_parts):
     assert rel.parts == expected_parts
 
 
-# 'expanduser',
+def test_relative_path_is_something(rel_path):
+    assert rel_path.is_block_device() is False
+    assert rel_path.is_char_device() is False
+    assert rel_path.is_fifo() is False
+    assert rel_path.is_mount() is False
+    assert rel_path.is_reserved() is False
+    assert rel_path.is_socket() is False
+
+
+def test_relative_path_hashable():
+    x = UPath("memory:///a/b/c.txt")
+    y = x.relative_to(UPath("memory:///a"))
+    assert hash(y) != hash(x)
+
+
+def test_relative_path_expanduser_noop(rel_path):
+    # this should be revisited if we ever add ~ support to non-file protocols
+    assert rel_path == rel_path.expanduser()
+
+
+def test_relative_path_stem_suffix_name(rel_path):
+    assert rel_path.name == "baz.txt"
+    assert rel_path.stem == "baz"
+    assert rel_path.suffix == ".txt"
+    assert rel_path.suffixes == [".txt"]
+    assert rel_path.with_name("other.txt").name == "other.txt"
+    assert rel_path.with_stem("other").name == "other.txt"
+    assert rel_path.with_suffix(".md").name == "baz.md"
+    assert rel_path.with_suffix([".tar.gz"]).suffixes == [".tar", ".gz"]
+
+
 # 'fs',
 # 'home',
-# 'is_absolute',
 # 'is_relative_to',
 # 'joinpath',
 # 'joinuri',
@@ -354,25 +387,11 @@ def test_relative_path_parts_property(protocol, path, base, expected_parts):
 # 'lstat',
 # 'match',
 # 'mkdir',
-# 'name',
 # 'parent',
 # 'parents',
 # 'parser',
 # 'path',
 # 'protocol',
-# 'relative_to',
-# 'stem',
 # 'storage_options',
-# 'suffix',
-# 'suffixes',
-# 'with_name',
 # 'with_segments',
-# 'with_stem',
-# 'with_suffix',
-# 'is_block_device',
-# 'is_char_device',
-# 'is_fifo',
-# 'is_mount',
-# 'is_reserved',
-# 'is_socket',
 # 'resolve',

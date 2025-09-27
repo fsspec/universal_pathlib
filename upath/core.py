@@ -217,8 +217,14 @@ class _UPathMixin(metaclass=_UPathMeta):
     def path(self) -> str:
         """The path that a fsspec filesystem can use."""
         if self._relative_base is not None:
-            # For relative paths, we need to resolve to absolute path
-            current_dir = self.cwd()  # type: ignore[attr-defined]
+            try:
+                # For relative paths, we need to resolve to absolute path
+                current_dir = self.cwd()  # type: ignore[attr-defined]
+            except NotImplementedError:
+                raise NotImplementedError(
+                    f"fsspec paths can not be relative and"
+                    f" {type(self).__name__}.cwd() is unsupported"
+                ) from None
             # Join the current directory with the relative path
             if (self_path := str(self)) == ".":
                 path = str(current_dir)
@@ -853,6 +859,8 @@ class UPath(_UPathMixin, OpenablePath):
         Note: in the future, if hash collisions become an issue, we
           can add `fsspec.utils.tokenize(storage_options)`
         """
+        if self._relative_base is not None:
+            return hash((self.protocol, str(self)))
         return hash((self.protocol, self.path))
 
     def __lt__(self, other: object) -> bool:
