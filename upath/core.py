@@ -973,10 +973,14 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def drive(self) -> str:
+        if self._relative_base is not None:
+            return ""
         return self.parser.splitroot(str(self))[0]
 
     @property
     def root(self) -> str:
+        if self._relative_base is not None:
+            return ""
         return self.parser.splitroot(str(self))[1]
 
     def __reduce__(self):

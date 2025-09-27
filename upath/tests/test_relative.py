@@ -270,10 +270,78 @@ def test_path_operations_disabled_without_cwd(rel_path, method_args):
         next(getattr(rel_path, method)(*args))
 
 
-# 'anchor',
-# 'as_posix',
-# 'as_uri',
-# 'drive',
+@pytest.mark.parametrize(
+    "protocol,path,base",
+    [
+        ("", "/foo/bar/baz.txt", "/foo"),
+        ("file", "/foo/bar/baz.txt", "/foo"),
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo"),
+        ("ftp", "ftp://user:pass@host/foo/bar/baz.txt", "ftp://user:pass@host/foo"),
+        ("http", "http://host/foo/bar/baz.txt", "http://host/foo"),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo"),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo"),
+    ],
+)
+def test_drive_root_anchor_empty_for_relative_paths(protocol, path, base):
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    assert (rel.drive, rel.root, rel.anchor) == ("", "", "")
+
+
+@pytest.mark.parametrize(
+    "protocol,path,base,expected_rel",
+    [
+        ("", "/foo/bar/baz.txt", "/foo", "bar/baz.txt"),
+        ("file", "/foo/bar/baz.txt", "/foo", "bar/baz.txt"),
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo", "bar/baz.txt"),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo", "bar/baz.txt"),
+        (
+            "ftp",
+            "ftp://user:pass@host/foo/bar/baz.txt",
+            "ftp://user:pass@host/foo",
+            "bar/baz.txt",
+        ),
+        ("http", "http://host/foo/bar/baz.txt", "http://host/foo", "bar/baz.txt"),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo", "bar/baz.txt"),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo", "bar/baz.txt"),
+    ],
+)
+def test_relative_path_properties(protocol, path, base, expected_rel):
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+
+    assert not rel.is_absolute()
+    assert rel.as_posix() == expected_rel
+    assert rel.parts == tuple(expected_rel.split("/"))
+
+
+@pytest.mark.parametrize(
+    "protocol,path,base,expected_parts",
+    [
+        ("", "/foo/bar/baz.txt", "/foo", ("bar", "baz.txt")),
+        ("file", "/foo/bar/baz.txt", "/foo", ("bar", "baz.txt")),
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo", ("bar", "baz.txt")),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo", ("bar", "baz.txt")),
+        (
+            "ftp",
+            "ftp://user:pass@host/foo/bar/baz.txt",
+            "ftp://user:pass@host/foo",
+            ("bar", "baz.txt"),
+        ),
+        ("http", "http://host/foo/bar/baz.txt", "http://host/foo", ("bar", "baz.txt")),
+        (
+            "https",
+            "https://host/foo/bar/baz.txt",
+            "https://host/foo",
+            ("bar", "baz.txt"),
+        ),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo", ("bar", "baz.txt")),
+    ],
+)
+def test_relative_path_parts_property(protocol, path, base, expected_parts):
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    assert rel.parts == expected_parts
+
+
 # 'expanduser',
 # 'fs',
 # 'home',
@@ -290,11 +358,9 @@ def test_path_operations_disabled_without_cwd(rel_path, method_args):
 # 'parent',
 # 'parents',
 # 'parser',
-# 'parts',
 # 'path',
 # 'protocol',
 # 'relative_to',
-# 'root',
 # 'stem',
 # 'storage_options',
 # 'suffix',

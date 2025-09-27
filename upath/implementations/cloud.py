@@ -46,6 +46,8 @@ class CloudPath(UPath):
 
     @property
     def root(self) -> str:
+        if self._relative_base is not None:
+            return ""
         return self.parser.sep
 
     def mkdir(
