@@ -584,6 +584,36 @@ def test_relative_path_match(protocol, path, base):
     assert not rel.match("other.txt")
 
 
-# 'joinpath',
+@pytest.mark.parametrize(
+    "protocol,path,base",
+    [
+        ("", "/foo/bar/baz/qux.txt", "/foo"),
+        ("file", "/foo/bar/baz/qux.txt", "/foo"),
+        ("s3", "s3://bucket/foo/bar/baz/qux.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz/qux.txt", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar/baz/qux.txt", "memory:///foo"),
+        ("https", "https://host/foo/bar/baz/qux.txt", "https://host/foo"),
+    ],
+)
+def test_relative_path_joinpath(protocol, path, base):
+    """Test that joinpath works correctly for relative paths."""
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+
+    # Test joining with a single segment
+    assert str(rel) == "bar/baz/qux.txt"
+    joined = rel.joinpath("extra.txt")
+    assert str(joined) == "bar/baz/qux.txt/extra.txt"
+    assert not joined.is_absolute()
+
+    # Test joining with multiple segments
+    joined_multi = rel.joinpath("dir", "file.py")
+    assert str(joined_multi) == "bar/baz/qux.txt/dir/file.py"
+    assert not joined_multi.is_absolute()
+
+    # Test that the result is still relative with same base
+    assert joined.protocol == joined_multi.protocol == protocol
+    assert joined.storage_options == joined_multi.storage_options == rel.storage_options
+
+
 # 'joinuri',
 # 'with_segments',
