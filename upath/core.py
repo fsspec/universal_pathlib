@@ -447,13 +447,18 @@ class UPath(_UPathMixin, OpenablePath):
     parser: UPathParser = LazyFlavourDescriptor()  # type: ignore[assignment]
 
     def with_segments(self, *pathsegments: JoinablePathLike) -> Self:
+        # we change joinpath behavior if called from a relative path
+        # this is not fully ideal, but currently the best way to move forward
+        if is_relative := self._relative_base is not None:
+            pathsegments = (self._relative_base, *pathsegments)
+
         new_instance = type(self)(
             *pathsegments,
             protocol=self._protocol,
             **self._storage_options,
         )
-        # Preserve _relative_base if it was set
-        if hasattr(self, "_relative_base") and self._relative_base is not None:
+
+        if is_relative:
             new_instance._relative_base = self._relative_base
         return new_instance
 
