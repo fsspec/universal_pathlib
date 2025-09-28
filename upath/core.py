@@ -537,6 +537,24 @@ class UPath(_UPathMixin, OpenablePath):
             return ""
         return self.drive + self.root
 
+    @property
+    def parent(self) -> Self:
+        if self._relative_base is not None:
+            if str(self) == ".":
+                return self
+            else:
+                # this needs to be revisited...
+                pth = type(self)(
+                    self._relative_base,
+                    str(self),
+                    protocol=self._protocol,
+                    **self._storage_options,
+                )
+                parent = pth.parent
+                parent._relative_base = self._relative_base
+                return parent
+        return super().parent
+
     # === ReadablePath attributes =====================================
 
     @property
