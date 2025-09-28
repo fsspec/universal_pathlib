@@ -492,7 +492,8 @@ def test_relative_path_parents(uri, base, expected_parents_parts):
 )
 def test_home_works_for_local_paths(protocol, pth, base):
     rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
-    assert rel.home().as_posix() == UPath.home().as_posix()
+    prefix = f"{protocol}://" if protocol else ""
+    assert rel.home().as_posix() == prefix + UPath.home().as_posix()
 
 
 @pytest.mark.parametrize(
@@ -550,7 +551,10 @@ def test_relpath_path_resolve(tmp_path, protocol, monkeypatch):
     assert rel.as_posix() == "a/b/c/d/../../file.txt"
 
     resolved = rel.resolve()
-    assert resolved.as_posix() == (tmp_path / "a" / "b" / "file.txt").as_posix()
+    prefix = f"{protocol}://" if protocol else ""
+    assert (
+        resolved.as_posix() == prefix + (tmp_path / "a" / "b" / "file.txt").as_posix()
+    )
     assert resolved.read_text() == "data"
     assert resolved.is_absolute()
     assert resolved.exists()
