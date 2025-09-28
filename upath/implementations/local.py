@@ -71,11 +71,13 @@ class LocalPath(_UPathMixin, pathlib.Path):
         "_chain",
         "_chain_parser",
         "_fs_cached",
+        "_relative_base",
     )
     if TYPE_CHECKING:
         _chain: Chain
         _chain_parser: FSSpecChainParser
         _fs_cached: AbstractFileSystem
+        _relative_base: str | None
 
     parser = os.path  # type: ignore[misc,assignment]
 
@@ -163,17 +165,30 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def joinpath(self, *other) -> Self:
         if not compatible_protocol("", *other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().joinpath(*other)
+        return super().joinpath(
+            *(
+                str(o) if isinstance(o, UPath) and not o.is_absolute() else o
+                for o in other
+            )
+        )
 
     def __truediv__(self, other) -> Self:
         if not compatible_protocol("", other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__truediv__(other)
+        return super().__truediv__(
+            str(other)
+            if isinstance(other, UPath) and not other.is_absolute()
+            else other
+        )
 
     def __rtruediv__(self, other) -> Self:
         if not compatible_protocol("", other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__rtruediv__(other)
+        return super().__rtruediv__(
+            str(other)
+            if isinstance(other, UPath) and not other.is_absolute()
+            else other
+        )
 
 
 UPath.register(LocalPath)
@@ -229,6 +244,14 @@ class FilePath(UPath):
     @property
     def _url(self) -> SplitResult:
         return SplitResult._make((self.protocol, "", self.path, "", ""))
+
+    @classmethod
+    def cwd(cls) -> Self:
+        return cls(os.getcwd(), protocol="file")
+
+    @classmethod
+    def home(cls) -> Self:
+        return cls(os.path.expanduser("~"), protocol="file")
 
 
 LocalPath.register(FilePath)

@@ -215,7 +215,7 @@ def get_upath_class(
         if not fallback:
             return None
         try:
-            _ = get_filesystem_class(protocol)
+            get_filesystem_class(protocol)
         except ValueError:
             return None  # this is an unknown protocol
         else:
@@ -226,4 +226,13 @@ def get_upath_class(
                 UserWarning,
                 stacklevel=2,
             )
-            return upath.UPath
+            import upath.implementations._experimental as upath_experimental
+
+            cls_name = f"_{protocol.title()}Path"
+            cls = type(
+                cls_name,
+                (upath.UPath,),
+                {"__module__": "upath.implementations._experimental"},
+            )
+            setattr(upath_experimental, cls_name, cls)
+            return cls

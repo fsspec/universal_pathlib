@@ -52,7 +52,7 @@ class TestUPathS3(BaseTests):
             self.path.joinpath("file1.txt").rmdir()
 
     def test_relative_to(self):
-        assert "s3://test_bucket/file.txt" == str(
+        assert "file.txt" == str(
             UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
         )
 
@@ -78,7 +78,7 @@ class TestUPathS3(BaseTests):
 
     def test_creating_s3path_with_bucket(self):
         path = UPath("s3://", bucket="bucket", anon=self.anon, **self.s3so)
-        assert str(path) == "s3://bucket"
+        assert str(path) == "s3://bucket/"
 
     def test_iterdir_with_plus_in_name(self, s3_with_plus_chr_name):
         bucket, anon, s3so = s3_with_plus_chr_name

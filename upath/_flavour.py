@@ -17,6 +17,7 @@ from fsspec.registry import known_implementations
 from fsspec.registry import registry as _class_registry
 from fsspec.spec import AbstractFileSystem
 
+import upath
 from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
@@ -239,12 +240,14 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
     def stringify_path(pth: PathOrStr) -> str:
         if isinstance(pth, str):
             out = pth
+        elif isinstance(pth, upath.UPath) and not pth.is_absolute():
+            out = str(pth)
         elif getattr(pth, "__fspath__", None) is not None:
             assert hasattr(pth, "__fspath__")
             out = pth.__fspath__()
         elif isinstance(pth, os.PathLike):
             out = str(pth)
-        elif hasattr(pth, "path"):  # type: ignore[unreachable]
+        elif isinstance(pth, upath.UPath) and pth.is_absolute():
             out = pth.path
         else:
             out = str(pth)
@@ -288,7 +291,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         if self.local_file:
             return os.path.join(
                 self.strip_protocol(path),
-                *paths,  # type: ignore[arg-type]
+                *map(self.stringify_path, paths),
             )
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)

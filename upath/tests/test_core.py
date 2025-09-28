@@ -64,16 +64,18 @@ class TestUpath(BaseTests):
         pass
 
     def test_cwd(self):
-        pth = type(self.path).cwd()
-        assert str(pth) == os.getcwd()
-        assert isinstance(pth, pathlib.Path)
-        assert isinstance(pth, UPath)
+        with pytest.raises(
+            NotImplementedError,
+            match=r".+Path[.]cwd\(\) is unsupported",
+        ):
+            type(self.path).cwd()
 
     def test_home(self):
-        pth = type(self.path).home()
-        assert str(pth) == os.path.expanduser("~")
-        assert isinstance(pth, pathlib.Path)
-        assert isinstance(pth, UPath)
+        with pytest.raises(
+            NotImplementedError,
+            match=r".+Path[.]home\(\) is unsupported",
+        ):
+            type(self.path).home()
 
     @xfail_if_version("fsspec", reason="", ge="2024.2.0")
     def test_iterdir_no_dir(self):
@@ -340,7 +342,7 @@ def test_copy_path_append_kwargs():
 
 
 def test_relative_to():
-    assert "s3://test_bucket/file.txt" == str(
+    assert "file.txt" == str(
         UPath("s3://test_bucket/file.txt").relative_to(UPath("s3://test_bucket"))
     )
 

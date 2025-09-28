@@ -46,7 +46,17 @@ class CloudPath(UPath):
 
     @property
     def root(self) -> str:
+        if self._relative_base is not None:
+            return ""
         return self.parser.sep
+
+    def __vfspath__(self):
+        path = super().__vfspath__()
+        if self._relative_base is None:
+            drive = self.parser.splitdrive(path)[0]
+            if drive and path == f"{self.protocol}://{drive}":
+                return f"{path}{self.root}"
+        return path
 
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
@@ -59,11 +69,6 @@ class CloudPath(UPath):
         if self.is_file():
             raise NotADirectoryError(str(self))
         yield from super().iterdir()
-
-    def relative_to(self, other, /, *_deprecated, walk_up=False):
-        # use the parent implementation for the ValueError logic
-        super().relative_to(other, *_deprecated, walk_up=False)
-        return self
 
 
 class GCSPath(CloudPath):
@@ -87,6 +92,13 @@ class GCSPath(CloudPath):
         except TypeError as err:
             if "unexpected keyword argument 'create_parents'" in str(err):
                 self.fs.mkdir(self.path)
+
+    def exists(self, *, follow_symlinks=True):
+        # required for gcsfs<2025.5.0, see: https://github.com/fsspec/gcsfs/pull/676
+        path = self.path
+        if len(path) > 1:
+            path = path.removesuffix(self.root)
+        return self.fs.exists(path)
 
 
 class S3Path(CloudPath):
