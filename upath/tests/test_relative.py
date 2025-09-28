@@ -555,7 +555,35 @@ def test_relpath_path_resolve(tmp_path, protocol, monkeypatch):
     assert resolved.exists()
 
 
+@pytest.mark.parametrize(
+    "protocol,path,base",
+    [
+        ("", "/foo/bar/baz/qux.txt", "/foo"),
+        ("file", "/foo/bar/baz/qux.txt", "/foo"),
+        ("s3", "s3://bucket/foo/bar/baz/qux.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz/qux.txt", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar/baz/qux.txt", "memory:///foo"),
+        ("https", "https://host/foo/bar/baz/qux.txt", "https://host/foo"),
+    ],
+)
+def test_relative_path_match(protocol, path, base):
+    """Test that match works correctly for relative paths."""
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+
+    assert str(rel) == "bar/baz/qux.txt"
+
+    # Should match patterns that match the relative path
+    assert rel.match("bar/baz/qux.txt")
+    assert rel.match("*/baz/qux.txt")
+    assert rel.match("bar/*/qux.txt")
+    assert rel.match("*/**/*.txt")  # ** acts like *
+
+    # Should not match patterns that don't match
+    assert not rel.match("foo/baz/qux.txt")
+    assert not rel.match("*.py")
+    assert not rel.match("other.txt")
+
+
 # 'joinpath',
 # 'joinuri',
 # 'with_segments',
-# 'match',
