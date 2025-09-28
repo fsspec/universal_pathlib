@@ -11,6 +11,60 @@ from upath import UPath
 
 
 @pytest.mark.parametrize(
+    "protocol,storage_options,path,base",
+    [
+        ("memory", {}, "memory:///foo/bar/baz.txt", "memory:///foo"),
+        ("s3", {"anon": True}, "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo"),
+        ("gcs", {"token": "anon"}, "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo"),
+        ("http", {"something": 1}, "http://host/foo/bar/baz.txt", "http://host/foo"),
+        (
+            "https",
+            {},
+            "https://host/foo/bar/baz.txt",
+            "https://host/",
+        ),
+    ],
+)
+def test_protocol_storage_options_fs_preserved(protocol, storage_options, path, base):
+    """Test that protocol and storage_options are preserved in relative paths."""
+    p = UPath(path, protocol=protocol, **storage_options)
+    root = UPath(base, protocol=protocol, **storage_options)
+    rel = p.relative_to(root)
+
+    assert rel.protocol == protocol
+    assert dict(**rel.storage_options) == storage_options
+    assert isinstance(rel.fs, type(p.fs))
+
+
+@pytest.mark.parametrize(
+    "protocol,path,base",
+    [
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo"),
+        ("ftp", "ftp://user:pass@host/foo/bar/baz.txt", "ftp://user:pass@host/foo"),
+        ("http", "http://host/foo/bar/baz.txt", "http://host/foo"),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo"),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo"),
+    ],
+)
+def test_relative_urlpath_raises_without_cwd(protocol, path, base):
+    rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(f"{type(rel).__name__}.cwd() is unsupported"),
+    ):
+        rel.cwd()
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            f"fsspec paths can not be relative and"
+            f" {type(rel).__name__}.cwd() is unsupported"
+        ),
+    ):
+        _ = rel.path
+
+
+@pytest.mark.parametrize(
     "pth,base,rel",
     [
         ("/foo/bar/baz.txt", "/foo", "bar/baz.txt"),
@@ -393,6 +447,8 @@ def test_relative_path_stem_suffix_name(rel_path):
         ("gcs", "gcs://bucket/foo/bar/", "gcs://bucket/foo", "."),
         ("memory", "memory:///foo/bar/baz.txt", "memory:///foo", "bar"),
         ("memory", "memory:///foo/bar", "memory:///foo", "."),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo", "bar"),
+        ("https", "https://host/foo/bar/", "https://host/foo/bar", "."),
     ],
 )
 def test_relative_path_parent(protocol, pth, base, expected_parent):
@@ -400,16 +456,64 @@ def test_relative_path_parent(protocol, pth, base, expected_parent):
     assert str(rel.parent) == expected_parent
 
 
-# 'fs',
-# 'home',
+@pytest.mark.parametrize(
+    "uri,base,expected_parents_parts",
+    [
+        ("/foo/bar/baz/qux.txt", "/foo", [("bar", "baz"), ("bar",), ()]),
+        ("file:///foo/bar/baz/qux.txt", "file:///foo", [("bar", "baz"), ("bar",), ()]),
+        ("s3://bucket/foo/bar/baz/", "s3://bucket/", [("foo", "bar"), ("foo",), ()]),
+        ("gcs://bucket/foo/bar/baz", "gcs://bucket/", [("foo", "bar"), ("foo",), ()]),
+        (
+            "memory:///foo/bar/baz/qux.txt",
+            "memory:///foo",
+            [("bar", "baz"), ("bar",), ()],
+        ),
+        (
+            "https://host.com/foo/bar/baz/qux.txt",
+            "https://host.com/foo",
+            [("bar", "baz"), ("bar",), ()],
+        ),
+    ],
+)
+def test_relative_path_parents(uri, base, expected_parents_parts):
+    rel = UPath(uri).relative_to(UPath(base))
+    parents = list(rel.parents)
+    assert [x.parts for x in parents] == expected_parents_parts
+
+
+@pytest.mark.parametrize(
+    "protocol,pth,base",
+    [
+        ("", "/foo/bar/baz.txt", "/foo"),
+        ("file", "/foo/bar/baz.txt", "/foo"),
+    ],
+)
+def test_home_works_for_local_paths(protocol, pth, base):
+    rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    assert rel.home() == UPath.home()
+
+
+@pytest.mark.parametrize(
+    "protocol,pth,base",
+    [
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo"),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo"),
+    ],
+)
+def test_home_raises_for_non_local_paths(protocol, pth, base):
+    rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(f"{type(rel).__name__}.home() is unsupported"),
+    ):
+        rel.home()
+
+
 # 'joinpath',
 # 'joinuri',
-# 'parent',
-# 'parents',
 # 'parser',
-# 'path',
-# 'protocol',
-# 'storage_options',
 # 'with_segments',
 # 'resolve',
 # 'match',
