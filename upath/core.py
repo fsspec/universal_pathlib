@@ -467,23 +467,19 @@ class UPath(_UPathMixin, OpenablePath):
 
     def __vfspath__(self) -> str:
         if self._relative_base is not None:
-            full_path = self._chain_parser.chain(self._chain.to_list())[0]
-            root_path = self._relative_base
-
-            # Strip protocol for comparison
-            full_path_no_protocol = self.parser.strip_protocol(full_path)
-            root_path_no_protocol = self.parser.strip_protocol(root_path)
-
-            # Calculate relative path from root to this path
-            if full_path_no_protocol.startswith(root_path_no_protocol):
-                rel_path = full_path_no_protocol[len(root_path_no_protocol) :].lstrip(
-                    self.parser.sep
+            active_path = self._chain.active_path
+            stripped_base = self.parser.strip_protocol(self._relative_base)
+            if not active_path.startswith(stripped_base):
+                raise RuntimeError(
+                    f"{active_path!r} is not a subpath of {stripped_base!r}"
                 )
-                return rel_path or "."
-            else:
-                # If paths don't have the expected relationship, fall back
-                return full_path
-        return self._chain_parser.chain(self._chain.to_list())[0]
+
+            return (
+                active_path.removeprefix(stripped_base).removeprefix(self.parser.sep)
+                or "."
+            )
+        else:
+            return self._chain_parser.chain(self._chain.to_list())[0]
 
     def __repr__(self) -> str:
         if self._relative_base is not None:
