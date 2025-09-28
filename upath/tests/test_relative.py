@@ -491,7 +491,7 @@ def test_relative_path_parents(uri, base, expected_parents_parts):
 )
 def test_home_works_for_local_paths(protocol, pth, base):
     rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
-    assert rel.home() == UPath.home()
+    assert os.fspath(rel.home()) == os.fspath(UPath.home())
 
 
 @pytest.mark.parametrize(

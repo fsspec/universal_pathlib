@@ -232,5 +232,13 @@ class FilePath(UPath):
     def _url(self) -> SplitResult:
         return SplitResult._make((self.protocol, "", self.path, "", ""))
 
+    @classmethod
+    def cwd(cls) -> Self:
+        return cls(os.getcwd(), protocol="file")
+
+    @classmethod
+    def home(cls) -> Self:
+        return cls(os.path.expanduser("~"), protocol="file")
+
 
 LocalPath.register(FilePath)
