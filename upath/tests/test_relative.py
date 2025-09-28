@@ -310,6 +310,7 @@ def test_relative_path_as_uri(rel_path):
         pytest.param(("readlink", ()), id="readlink"),
         pytest.param(("rename", ("a/b/c",)), id="rename"),
         pytest.param(("replace", ("...",)), id="replace"),
+        pytest.param(("resolve", ()), id="resolve"),
         pytest.param(("rglob", ("*.txt",)), id="rglob"),
         pytest.param(("rmdir", ()), id="rmdir"),
         pytest.param(("samefile", ("...",)), id="samefile"),
@@ -511,9 +512,50 @@ def test_home_raises_for_non_local_paths(protocol, pth, base):
         rel.home()
 
 
+@pytest.mark.parametrize(
+    "protocol,pth,base",
+    [
+        ("", "/foo/bar/baz.txt", "/foo"),
+        ("file", "/foo/bar/baz.txt", "/foo"),
+        ("s3", "s3://bucket/foo/bar/baz.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz.txt", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar/baz.txt", "memory:///foo"),
+        ("https", "https://host/foo/bar/baz.txt", "https://host/foo"),
+    ],
+)
+def test_parser_attribute_available(protocol, pth, base):
+    rel_path = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
+    assert rel_path.parser is not None
+
+
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        "",
+        "file",
+    ],
+)
+def test_relpath_path_resolve(tmp_path, protocol, monkeypatch):
+    """This should work for all path types that support .cwd()"""
+    base = UPath(tmp_path, protocol=protocol)
+    (base / "a" / "b").mkdir(parents=True)
+    (base / "a" / "b" / "file.txt").write_text("data")
+    monkeypatch.chdir(base)
+
+    rel = UPath("/xyz/a/b/c/d/../../file.txt", protocol=protocol).relative_to(
+        UPath("/xyz", protocol=protocol)
+    )
+
+    assert str(rel) == "a/b/c/d/../../file.txt"
+
+    resolved = rel.resolve()
+    assert os.fspath(resolved) == os.fspath(tmp_path / "a" / "b" / "file.txt")
+    assert resolved.read_text() == "data"
+    assert resolved.is_absolute()
+    assert resolved.exists()
+
+
 # 'joinpath',
 # 'joinuri',
-# 'parser',
 # 'with_segments',
-# 'resolve',
 # 'match',
