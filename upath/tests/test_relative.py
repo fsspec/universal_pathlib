@@ -492,7 +492,7 @@ def test_relative_path_parents(uri, base, expected_parents_parts):
 )
 def test_home_works_for_local_paths(protocol, pth, base):
     rel = UPath(pth, protocol=protocol).relative_to(UPath(base, protocol=protocol))
-    assert os.fspath(rel.home()) == os.fspath(UPath.home())
+    assert rel.home().as_posix() == UPath.home().as_posix()
 
 
 @pytest.mark.parametrize(
@@ -547,10 +547,10 @@ def test_relpath_path_resolve(tmp_path, protocol, monkeypatch):
         UPath("/xyz", protocol=protocol)
     )
 
-    assert str(rel) == "a/b/c/d/../../file.txt"
+    assert rel.as_posix() == "a/b/c/d/../../file.txt"
 
     resolved = rel.resolve()
-    assert os.fspath(resolved) == os.fspath(tmp_path / "a" / "b" / "file.txt")
+    assert resolved.as_posix() == (tmp_path / "a" / "b" / "file.txt").as_posix()
     assert resolved.read_text() == "data"
     assert resolved.is_absolute()
     assert resolved.exists()
@@ -571,7 +571,7 @@ def test_relative_path_match(protocol, path, base):
     """Test that match works correctly for relative paths."""
     rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
 
-    assert str(rel) == "bar/baz/qux.txt"
+    assert rel.as_posix() == "bar/baz/qux.txt"
 
     # Should match patterns that match the relative path
     assert rel.match("bar/baz/qux.txt")
@@ -601,9 +601,9 @@ def test_relative_path_joinpath(protocol, path, base):
     rel = UPath(path, protocol=protocol).relative_to(UPath(base, protocol=protocol))
 
     # Test joining with a single segment
-    assert str(rel) == "bar/baz/qux.txt"
+    assert rel.as_posix() == "bar/baz/qux.txt"
     joined = rel.joinpath("extra.txt")
-    assert str(joined) == "bar/baz/qux.txt/extra.txt"
+    assert joined.as_posix() == "bar/baz/qux.txt/extra.txt"
     assert not joined.is_absolute()
 
     # Test joining with multiple segments
