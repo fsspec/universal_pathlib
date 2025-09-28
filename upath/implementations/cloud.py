@@ -50,6 +50,14 @@ class CloudPath(UPath):
             return ""
         return self.parser.sep
 
+    def __vfspath__(self):
+        path = super().__vfspath__()
+        if self._relative_base is None:
+            drive = self.parser.splitdrive(path)[0]
+            if drive and path == f"{self.protocol}://{drive}":
+                return f"{path}{self.root}"
+        return path
+
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
     ) -> None:

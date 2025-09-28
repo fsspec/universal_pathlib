@@ -464,6 +464,7 @@ def test_relative_path_parent(protocol, pth, base, expected_parent):
         ("file:///foo/bar/baz/qux.txt", "file:///foo", [("bar", "baz"), ("bar",), ()]),
         ("s3://bucket/foo/bar/baz/", "s3://bucket/", [("foo", "bar"), ("foo",), ()]),
         ("gcs://bucket/foo/bar/baz", "gcs://bucket/", [("foo", "bar"), ("foo",), ()]),
+        ("az://bucket/foo/bar/baz", "az://bucket/", [("foo", "bar"), ("foo",), ()]),
         (
             "memory:///foo/bar/baz/qux.txt",
             "memory:///foo",

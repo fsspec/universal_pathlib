@@ -468,7 +468,9 @@ class UPath(_UPathMixin, OpenablePath):
     def __vfspath__(self) -> str:
         if self._relative_base is not None:
             active_path = self._chain.active_path
-            stripped_base = self.parser.strip_protocol(self._relative_base)
+            stripped_base = self.parser.strip_protocol(
+                self._relative_base
+            ).removesuffix(self.parser.sep)
             if not active_path.startswith(stripped_base):
                 raise RuntimeError(
                     f"{active_path!r} is not a subpath of {stripped_base!r}"
@@ -1080,6 +1082,7 @@ class UPath(_UPathMixin, OpenablePath):
             raise NotImplementedError("walk_up=True is not implemented yet")
 
         if isinstance(other, UPath):
+            # revisit: ...
             if self.__class__ is not other.__class__:
                 raise ValueError(
                     "incompatible protocols:"
@@ -1090,38 +1093,17 @@ class UPath(_UPathMixin, OpenablePath):
                     "incompatible storage_options:"
                     f" {self.storage_options!r} != {other.storage_options!r}"
                 )
+        elif isinstance(other, str):
+            other = self.with_segments(other)
+        else:
+            raise TypeError(f"expected UPath or str, got {type(other).__name__}")
 
-        # Calculate the relative path properly
-        other_str = str(other)
-        self_str = str(self)
-
-        # Normalize paths by ensuring root path ends with separator if it should
-        # Check if self starts with other as a proper path component
-        if self_str == other_str:
-            # Same path - return "."
-            new_instance = copy(self)
-            new_instance._relative_base = other_str
-            return new_instance
-
-        # Check if self_str starts with other_str followed by a separator
-        sep = self.parser.sep
-        if self_str.startswith(other_str + sep):
-            # Valid subpath
-            new_instance = copy(self)
-            new_instance._relative_base = other_str
-            return new_instance
-        elif (
-            self_str.startswith(other_str)
-            and len(self_str) > len(other_str)
-            and self_str[len(other_str)] == sep
-        ):
-            # Check if the next character is a separator
-            # (for cases where other_str ends with sep)
-            new_instance = copy(self)
-            new_instance._relative_base = other_str
-            return new_instance
-
-        raise ValueError(f"{self_str!r} is not in the subpath of {other_str!r}")
+        if other not in self.parents and self != other:
+            raise ValueError(f"{self!s} is not in the subpath of {other!s}")
+        else:
+            rel = copy(self)
+            rel._relative_base = str(other)
+            return rel
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
