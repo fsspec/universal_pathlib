@@ -4,6 +4,7 @@ import os
 import pickle
 import re
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -620,5 +621,74 @@ def test_relative_path_joinpath(protocol, path, base):
     assert joined.storage_options == joined_multi.storage_options == rel.storage_options
 
 
-# 'joinuri',
-# 'with_segments',
+@pytest.mark.parametrize(
+    "protocol,path,base",
+    [
+        ("", "/foo/bar/baz/qux.txt", "/foo"),
+        ("file", "/foo/bar/baz/qux.txt", "/foo"),
+        ("s3", "s3://bucket/foo/bar/baz/qux.txt", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar/baz/qux.txt", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar/baz/qux.txt", "memory:///foo"),
+        ("https", "https://host/foo/bar/baz/qux.txt", "https://host/foo"),
+    ],
+)
+def test_join_local_absolute_path_to_relative(protocol, path, base, tmp_path):
+    """Test that joining an absolute path to a relative path works correctly."""
+    rel = UPath(path, protocol=protocol).relative_to(base)
+
+    assert rel.as_posix() == "bar/baz/qux.txt"
+    tmp_path.joinpath("bar/baz/qux.txt").parent.mkdir(parents=True, exist_ok=True)
+    tmp_path.joinpath("bar/baz/qux.txt").write_text("data")
+
+    assert UPath(tmp_path).joinpath(rel).read_text() == "data"
+
+
+@pytest.mark.parametrize(
+    "protocol,path",
+    [
+        ("", "/foo/bar"),
+        ("file", "/foo/bar"),
+        ("s3", "s3://bucket/foo/bar"),
+        ("gcs", "gcs://bucket/foo/bar"),
+        ("memory", "memory:///foo/bar"),
+        ("https", "https://host/foo/bar"),
+    ],
+)
+def test_join_fsspec_absolute_path_to_relative(protocol, path):
+    p = UPath(path, protocol=protocol)
+
+    x = p.joinpath(Path("a/b/c"))
+    assert x.path.endswith("foo/bar/a/b/c")
+
+
+@pytest.mark.parametrize(
+    "proto0,path0",
+    [
+        ("", "/foo/bar"),
+        ("file", "/foo/bar"),
+        ("s3", "s3://bucket/foo/bar"),
+        ("gcs", "gcs://bucket/foo/bar"),
+        ("memory", "memory:///foo/bar"),
+        ("https", "https://host/foo/bar"),
+    ],
+)
+@pytest.mark.parametrize(
+    "proto1,path1,base1",
+    [
+        ("", "/foo/bar", "/foo"),
+        ("file", "/foo/bar", "/foo"),
+        ("s3", "s3://bucket/foo/bar", "s3://bucket/foo"),
+        ("gcs", "gcs://bucket/foo/bar", "gcs://bucket/foo"),
+        ("memory", "memory:///foo/bar", "memory:///foo"),
+        ("https", "https://host/foo/bar", "https://host/foo"),
+    ],
+)
+def test_join_fsspec_absolute_path_to_fsspec_relative(
+    proto0, path0, proto1, path1, base1
+):
+    p0 = UPath(path0, protocol=proto0)
+    p1 = UPath(path1, protocol=proto1).relative_to(base1)
+    assert str(p1) == "bar"
+
+    x = p0.joinpath(p1)
+    assert x.path.endswith("foo/bar/bar")
