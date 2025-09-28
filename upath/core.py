@@ -555,6 +555,19 @@ class UPath(_UPathMixin, OpenablePath):
                 return parent
         return super().parent
 
+    @property
+    def parents(self) -> Sequence[Self]:
+        if self._relative_base is not None:
+            parents = []
+            parent = self
+            while True:
+                if str(parent) == ".":
+                    break
+                parent = parent.parent
+                parents.append(parent)
+            return parents
+        return super().parents
+
     # === ReadablePath attributes =====================================
 
     @property
