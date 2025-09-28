@@ -612,7 +612,7 @@ def test_relative_path_joinpath(protocol, path, base):
 
     # Test joining with multiple segments
     joined_multi = rel.joinpath("dir", "file.py")
-    assert str(joined_multi) == "bar/baz/qux.txt/dir/file.py"
+    assert joined_multi.as_posix() == "bar/baz/qux.txt/dir/file.py"
     assert not joined_multi.is_absolute()
 
     # Test that the result is still relative with same base
