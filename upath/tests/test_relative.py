@@ -657,7 +657,7 @@ def test_join_local_absolute_path_to_relative(protocol, path, base, tmp_path):
 def test_join_fsspec_absolute_path_to_relative(protocol, path):
     p = UPath(path, protocol=protocol)
 
-    x = p.joinpath(Path("a/b/c"))
+    x = p.joinpath(Path("a/b/c").as_posix())
     assert x.path.endswith("foo/bar/a/b/c")
 
 
