@@ -93,6 +93,13 @@ class GCSPath(CloudPath):
             if "unexpected keyword argument 'create_parents'" in str(err):
                 self.fs.mkdir(self.path)
 
+    def exists(self, *, follow_symlinks=True):
+        # required for gcsfs<2025.5.0, see: https://github.com/fsspec/gcsfs/pull/676
+        path = self.path
+        if len(path) > 1:
+            path = path.removesuffix(self.root)
+        return self.fs.exists(path)
+
 
 class S3Path(CloudPath):
     __slots__ = ()
