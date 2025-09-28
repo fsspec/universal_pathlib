@@ -165,17 +165,17 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def joinpath(self, *other) -> Self:
         if not compatible_protocol("", *other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().joinpath(*other)
+        return super().joinpath(*map(str, other))
 
     def __truediv__(self, other) -> Self:
         if not compatible_protocol("", other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__truediv__(other)
+        return super().__truediv__(str(other))
 
     def __rtruediv__(self, other) -> Self:
         if not compatible_protocol("", other):
             raise ValueError("can't combine incompatible UPath protocols")
-        return super().__rtruediv__(other)
+        return super().__rtruediv__(str(other))
 
 
 UPath.register(LocalPath)

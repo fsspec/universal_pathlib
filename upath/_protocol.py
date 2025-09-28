@@ -105,7 +105,12 @@ def compatible_protocol(
     *args: str | os.PathLike[str] | PurePath | JoinablePath,
 ) -> bool:
     """check if UPath protocols are compatible"""
+    from upath.core import UPath
+
     for arg in args:
+        if isinstance(arg, UPath) and not arg.is_absolute():
+            # relative UPath are always compatible
+            continue
         other_protocol = get_upath_protocol(arg)
         # consider protocols equivalent if they match up to the first "+"
         other_protocol = other_protocol.partition("+")[0]
