@@ -102,9 +102,9 @@ def type_checking(session):
     session.run("python", "-m", "mypy")
 
 
-@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 def typesafety(session):
-    session.install("-e", ".[tests,typechecking]")
+    session.install("-e", ".[typechecking]")
     session.run(
         "python",
         "-m",
