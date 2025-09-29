@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -47,3 +48,15 @@ class TestRayIOFSSpecLocal(BaseTests):
         cwd = type(self.path).home()
         assert isinstance(cwd, LocalPath)
         assert cwd.path == Path.home().as_posix()
+
+
+@pytest.mark.parametrize(
+    "protocol,path",
+    [
+        (None, "/tmp/somefile.txt"),
+        ("file", "file:///tmp/somefile.txt"),
+        ("local", "local:///tmp/somefile.txt"),
+    ],
+)
+def test_local_paths_are_pathlike(protocol, path):
+    assert isinstance(UPath(path, protocol=protocol), os.PathLike)
