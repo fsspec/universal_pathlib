@@ -93,7 +93,7 @@ class TestUPathS3(BaseTests):
         (file,) = files
         assert file == p.joinpath("file.txt")
 
-    @pytest.mark.xfail(msg="fsspec/universal_pathlib#144")
+    @pytest.mark.xfail(reason="fsspec/universal_pathlib#144")
     def test_rglob_with_double_fwd_slash(self, s3_with_double_fwd_slash_files):
         import boto3
         import botocore.exceptions
