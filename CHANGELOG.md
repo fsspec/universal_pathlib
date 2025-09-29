@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.3.0] - 2025-09-29
+### Fixed
+- upath: support relative paths (#405)
+- upath: implement chain functionality (#346)
+- upath: fix upath suffixes (#407)
+- upath: update flavours (#350, #351, #400, #403, #411)
+- upath: fix GH test skipping (#361)
+- ci: update ubuntu runners (#359)
+- ci: address skip_existing deprecation (#369)
+- tests: split protocol mismatch test (#365)
+- tests: ensure non-local upaths raise with builtin open (#368)
+- tests: add an xfail test for // behaviour on s3 (#370)
+- tests: fix xfail call args (#409)
+- tests: add a os.PathLike test (#410)
+
+### Added
+- upath: api extensions via `upath.extensions.ProxyUPath` (#372)
+- upath: add upath.types in preparation for deriving from pathlib-abc (#364)
+- upath: add optional support for pydantic (#395)
+- upath: list late registered protocols (#358)
+- repo: add a security policy (#327)
+- ci: start running against 3.14 (#363)
+
+### Changed
+- upath: inherit from `pathlib_abc.ReadablePath` and `pathlib_abc.WritablePath` (#366, #402, #404)
+- upath: drop Python 3.8 (#360)
+- upath: remove deprecated accessor support (#362)
+
 ## [0.2.6] - 2024-12-13
 ### Fixed
 - upath: add support for 'abfss' protocol in WrappedFileSystemFlavour (#311)
@@ -183,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/fsspec/universal_pathlib/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/fsspec/universal_pathlib/compare/v0.2.3...v0.2.4
