@@ -10,9 +10,12 @@
 [![Codestyle black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-%23E05735)](./CHANGELOG.md)
 
-Universal Pathlib is a Python library that extends the [`pathlib.Path`][pathlib]
-API to support a variety of backend filesystems via [`filesystem_spec`][fsspec].
+Universal Pathlib is a Python library that extends the
+[`pathlib_abc.JoinablePath`][pathlib_abc] API to provide a
+[`pathlib.Path`][pathlib]-like interface for a variety of backend filesystems
+via [`filesystem_spec`][fsspec].
 
+[pathlib_abc]: https://github.com/barneygale/pathlib-abc
 [pathlib]: https://docs.python.org/3/library/pathlib.html
 [fsspec]: https://filesystem-spec.readthedocs.io/en/latest/intro.html
 
@@ -44,9 +47,9 @@ project as a dependency if you want to use it with `s3` and `http` filesystems:
 ```toml
 [project]
 name = "myproject"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
-    "universal_pathlib>=0.2.5",
+    "universal_pathlib>=0.3.0",
     "fsspec[s3,http]",
 ]
 ```
@@ -106,32 +109,50 @@ And of course, contributions for new filesystems are welcome!
 
 ### Class hierarchy
 
-The class hierarchy for `UPath` implementations and their relation to the stdlib
-`pathlib` classes are visualized in the following diagram:
+The class hierarchy for `UPath` implementations and their relation to base classes
+in `pathlib_abc` and the stdlib `pathlib` classes are visualized in the following
+diagram:
 
 ```mermaid
 flowchart TB
+
+  subgraph p0[pathlib_abc]
+    X ----> Y
+    X ----> Z
+  end
+
   subgraph s0[pathlib]
-    A---> B
+    X --> A
+
+    A----> B
     A--> AP
     A--> AW
 
+    Y --> B
+    Z --> B
+
     B--> BP
-    AP---> BP
+    AP----> BP
     B--> BW
-    AW---> BW
+    AW----> BW
   end
   subgraph s1[upath]
-    B ---> U
+    Y ---> U
+    Z ---> U
+
     U --> UP
     U --> UW
-    BP --> UP
-    BW --> UW
+    BP ---> UP
+    BW ---> UW
     U --> UL
     U --> US3
     U --> UH
     U -.-> UO
   end
+
+  X(JoinablePath)
+  Y(WritablePath)
+  Z(ReadablePath)
 
   A(PurePath)
   AP(PurePosixPath)
@@ -148,14 +169,17 @@ flowchart TB
   UH(HttpPath)
   UO(...Path)
 
+  classDef na fill:#f7f7f7,stroke:#02a822,stroke-width:2px,color:#333
   classDef np fill:#f7f7f7,stroke:#2166ac,stroke-width:2px,color:#333
   classDef nu fill:#f7f7f7,stroke:#b2182b,stroke-width:2px,color:#333
 
+  class X,Y,Z na
   class A,AP,AW,B,BP,BW,UP,UW np
   class U,UL,US3,UH,UO nu
 
   style UO stroke-dasharray: 3 3
 
+  style p0 fill:none,stroke:#0a2,stroke-width:3px,stroke-dasharray:3,color:#0a2
   style s0 fill:none,stroke:#07b,stroke-width:3px,stroke-dasharray:3,color:#07b
   style s1 fill:none,stroke:#d02,stroke-width:3px,stroke-dasharray:3,color:#d02
 ```
@@ -170,15 +194,19 @@ correct behavior for filesystems that are not tested in the test-suite.
 
 ### Local paths and url paths
 
-If a local path is provided `UPath` will return a `PosixUPath` or `WindowsUPath`
-instance. These two implementations are 100% compatible with the `PosixPath` and
-`WindowsPath` classes of their specific Python version. They're tested against a
-large subset of the CPython pathlib test-suite to ensure compatibility.
+If a local path is without protocol is provided `UPath` will return a `PosixUPath`
+or `WindowsUPath` instance. These two implementations are 100% compatible with
+the `PosixPath` and `WindowsPath` classes of their specific Python version.
+They're tested against a large subset of the CPython pathlib test-suite to ensure
+compatibility.
 
 If a local urlpath is provided, i.e. a "file://" or "local://" URI, the returned
 instance type will be a `FilePath` instance. This class is a subclass of `UPath`
 that provides file access via `LocalFileSystem` from `fsspec`. You can use it to
 ensure that all your local file access is done through `fsspec` as well.
+
+All local UPath types are `os.PathLike`, but only the `PosixUPath` and
+`WindowsUPath` are subclasses of `pathlib.Path`.
 
 ### UPath public class API
 
