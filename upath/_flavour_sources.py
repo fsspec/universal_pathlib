@@ -630,7 +630,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '0.34.4'
+    __orig_version__ = '0.35.3'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
