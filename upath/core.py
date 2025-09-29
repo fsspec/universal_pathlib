@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import sys
 import warnings
 from abc import ABCMeta
@@ -14,9 +15,11 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
+from typing import Callable
 from typing import Literal
 from typing import NoReturn
 from typing import TextIO
+from typing import TypedDict
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
@@ -45,8 +48,10 @@ from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
+        from typing import NotRequired
         from typing import Self
     else:
+        from typing_extensions import NotRequired
         from typing_extensions import Self
 
     from pydantic import GetCoreSchemaHandler
@@ -117,6 +122,14 @@ class _UPathMeta(ABCMeta):
         inst = cls.__new__(cls, *args, **kwargs)
         inst.__init__(*args, **kwargs)
         return inst
+
+
+class SerializedUPath(TypedDict):
+    """Serialized format for a UPath object"""
+
+    path: str
+    protocol: NotRequired[str]
+    storage_options: NotRequired[dict[str, Any]]
 
 
 class _UPathMixin(metaclass=_UPathMeta):
@@ -233,6 +246,13 @@ class _UPathMixin(metaclass=_UPathMeta):
         else:
             path = str(self)
         return self.parser.strip_protocol(path)
+
+    def to_dict(self) -> SerializedUPath:
+        return {
+            "path": self.path,
+            "protocol": self.protocol,
+            "storage_options": dict(self.storage_options),
+        }
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
         """Join with urljoin behavior for UPath instances"""
@@ -1127,9 +1147,7 @@ class UPath(_UPathMixin, OpenablePath):
 
         deserialization_schema = core_schema.chain_schema(
             [
-                core_schema.no_info_plain_validator_function(
-                    lambda v: {"path": v} if isinstance(v, str) else v,
-                ),
+                core_schema.no_info_plain_validator_function(cls._to_serialized_format),
                 core_schema.typed_dict_schema(
                     {
                         "path": core_schema.typed_dict_field(
@@ -1154,13 +1172,7 @@ class UPath(_UPathMixin, OpenablePath):
                     },
                     extra_behavior="forbid",
                 ),
-                core_schema.no_info_plain_validator_function(
-                    lambda dct: cls(
-                        dct.pop("path"),
-                        protocol=dct.pop("protocol"),
-                        **dct["storage_options"],
-                    )
-                ),
+                core_schema.no_info_plain_validator_function(cls._validate),
             ]
         )
 
@@ -1179,3 +1191,39 @@ class UPath(_UPathMixin, OpenablePath):
             ),
             serialization=serialization_schema,
         )
+
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Callable]:
+        yield cls._validate
+
+    @staticmethod
+    def _to_serialized_format(
+        v: str | pathlib.Path | _UPathMixin | dict[str, Any],
+    ) -> SerializedUPath:
+        if isinstance(v, _UPathMixin):
+            return v.to_dict()
+        if isinstance(v, dict):
+            return {
+                "path": v["path"],
+                "protocol": v.get("protocol", ""),
+                "storage_options": v.get("storage_options", {}),
+            }
+        if isinstance(v, pathlib.Path):
+            return {"path": v.as_posix(), "protocol": ""}
+        if isinstance(v, str):
+            return {
+                "path": v,
+            }
+        raise TypeError(f"Invalid path: {v!r}")
+
+    @classmethod
+    def _validate(cls, v: Any) -> UPath:
+        if not isinstance(v, UPath):
+            v = cls._to_serialized_format(v)
+
+            return cls(
+                v["path"],
+                protocol=v.get("protocol"),
+                **v.get("storage_options", {}),  # type: ignore[arg-type]
+            )
+        return v
