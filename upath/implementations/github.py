@@ -2,6 +2,8 @@
 GitHub file system implementation
 """
 
+from __future__ import annotations
+
 import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
