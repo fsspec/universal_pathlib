@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.3.1] - 2025-10-03
+### Added
+- upath: add `UPath.from_uri()` classmethod (#423)
+- upath: add `UPath.move_into()` method (#422)
+- upath: implement `.info` property (#416)
+- typesafety: add thorough typechecks to UPath interface (#414)
+
+### Fixed
+- upath: fix type annotations for upath.core, upath.extensions and upath.implementations (#420)
+- upath: backport types and methods to local implementations (#421)
+- upath: stricter upath types and remove Compat* protocol (#417)
+
+### Changed
+- maintenance: update license identifier and restrict ci permissions (#424)
+
 ## [0.3.0] - 2025-09-29
 ### Fixed
 - upath: support relative paths (#405)
@@ -211,7 +226,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/fsspec/universal_pathlib/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/fsspec/universal_pathlib/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/fsspec/universal_pathlib/compare/v0.2.4...v0.2.5

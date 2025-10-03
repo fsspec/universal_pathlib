@@ -111,7 +111,11 @@ And of course, contributions for new filesystems are welcome!
 
 The class hierarchy for `UPath` implementations and their relation to base classes
 in `pathlib_abc` and the stdlib `pathlib` classes are visualized in the following
-diagram:
+diagram. Please be aware that the `pathlib_abc.JoinablePath`,
+`pathlib_abc.ReadablePath`, and `pathlib_abc.WritablePath` classes are currently
+not actual parent classes of the stdlib pathlib classes. This might occur in
+later Python releases, but for now, the mental model you should keep is represented
+by the diagram.
 
 ```mermaid
 flowchart TB
@@ -122,14 +126,14 @@ flowchart TB
   end
 
   subgraph s0[pathlib]
-    X --> A
+    X -.-> A
 
     A----> B
     A--> AP
     A--> AW
 
-    Y --> B
-    Z --> B
+    Y -.-> B
+    Z -.-> B
 
     B--> BP
     AP----> BP
@@ -183,6 +187,19 @@ flowchart TB
   style s0 fill:none,stroke:#07b,stroke-width:3px,stroke-dasharray:3,color:#07b
   style s1 fill:none,stroke:#d02,stroke-width:3px,stroke-dasharray:3,color:#d02
 ```
+
+To be concrete this currently means:
+
+```python
+# for all supported Python versions:
+from pathlib import Path
+from upath import UPath
+from upath.types import JoinablePath
+
+assert isinstance(Path(), JoinablePath) is False
+assert isinstance(UPath(), JoinablePath) is True
+```
+
 
 When instantiating `UPath` the returned instance type is determined by the path,
 or better said, the "protocol" that was provided to the constructor. The `UPath`
@@ -254,6 +271,113 @@ fs = filesystem(p.protocol, **p.storage_options)  # equivalent to p.fs
 with fs.open(p.path) as f:
     data = f.read()
 ```
+
+## Supported Interface
+
+Universal Pathlib provides an implementation of the `pathlib.Path` interface
+across different Python versions. The following table shows the compatibility
+matrix for stdlib pathlib.Path attributes and methods. Methods supported in
+UPath should correctly work for all supported Python versions. If not, we consider
+it a bug.
+
+| Method/Attribute          | py3.9 | py3.10 | py3.11 | py3.12 | py3.13 | py3.14 | UPath |
+|---------------------------|-------|--------|--------|--------|--------|--------|-------|
+| **Pure Paths**            |       |        |        |        |        |        |       |
+| _Operators_               |       |        |        |        |        |        |       |
+| `__truediv__`             | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `__rtruediv__`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| _Access individual Parts_ |       |        |        |        |        |        |       |
+| `parts`                   | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| _Methods and Properties_  |       |        |        |        |        |        |       |
+| `parser`                  | ❌    | ❌     | ❌     | ❌     | ✅     | ✅     | ✅    |
+| `drive`                   | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `root`                    | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `anchor`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `parents`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `parent`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `name`                    | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `suffix`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `suffixes`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `stem`                    | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `as_posix()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_absolute()`           | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_relative_to()`        | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_reserved()`           | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `joinpath()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `full_match()`            | ❌    | ❌     | ❌     | ❌     | ✅     | ✅     | ✅    |
+| `match()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `relative_to()`           | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `with_name()`             | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `with_stem()`             | ❌    | ❌     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `with_suffix()`           | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `with_segments()`         | ❌    | ❌     | ❌     | ✅     | ✅     | ✅     | ✅    |
+| **Concrete Paths**        |       |        |        |        |        |        |       |
+| _Parsing URIs_            |       |        |        |        |        |        |       |
+| `from_uri()`              | ❌    | ❌     | ❌     | ❌     | ✅     | ✅     | ✅    |
+| `as_uri()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| _Expanding Paths_         |       |        |        |        |        |        |       |
+| `home()`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `expanduser()`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `cwd()`                   | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `absolute()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `resolve()`               | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `readlink()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| _Querying File status_    |       |        |        |        |        |        |       |
+| `stat()`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `lstat()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `exists()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_file()`               | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_dir()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_symlink()`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_junction()`           | ❌    | ❌     | ❌     | ✅     | ✅     | ✅     | ✅    |
+| `is_mount()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_socket()`             | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_fifo()`               | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_block_device()`       | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `is_char_device()`        | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `samefile()`              | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `info`                    | ❌    | ❌     | ❌     | ❌     | ❌     | ✅     | ✅    |
+| _Reading & Writing Files_ |       |        |        |        |        |        |       |
+| `open()`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `read_text()`             | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `read_bytes()`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `write_text()`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `write_bytes()`           | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| _Reading Directories_     |       |        |        |        |        |        |       |
+| `iterdir()`               | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `glob()`                  | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `rglob()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `walk()`                  | ❌    | ❌     | ❌     | ✅     | ✅     | ✅     | ✅    |
+| _Creating Files & Dirs_   |       |        |        |        |        |        |       |
+| `touch()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `mkdir()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `symlink_to()`            | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| `hardlink_to()`           | ❌    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| _Copying & Moving_        |       |        |        |        |        |        |       |
+| `copy()`                  | ❌    | ❌     | ❌     | ❌     | ❌     | ✅     | ✅    |
+| `copy_into()`             | ❌    | ❌     | ❌     | ❌     | ❌     | ✅     | ✅    |
+| `rename()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `replace()`               | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| `move()`                  | ❌    | ❌     | ❌     | ❌     | ❌     | ✅     | ✅    |
+| `move_into()`             | ❌    | ❌     | ❌     | ❌     | ❌     | ✅     | ✅    |
+| `unlink()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| `rmdir()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ✅    |
+| _Permission & Owner_      |       |        |        |        |        |        |       |
+| `owner()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| `group()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| `chmod()`                 | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| `lchmod()`                | ✅    | ✅     | ✅     | ✅     | ✅     | ✅     | ⚠️    |
+| **UPath interface**       |       |        |        |        |        |        |       |
+| `protocol`                | ❌    | ❌     | ❌     | ❌     | ❌     | ❌     | ✅    |
+| `storage_options`         | ❌    | ❌     | ❌     | ❌     | ❌     | ❌     | ✅    |
+| `path`                    | ❌    | ❌     | ❌     | ❌     | ❌     | ❌     | ✅    |
+| `fs`                      | ❌    | ❌     | ❌     | ❌     | ❌     | ❌     | ✅    |
+| `joinuri()`               | ❌    | ❌     | ❌     | ❌     | ❌     | ❌     | ✅    |
+
+**Key:**
+- ✅ = Available/Supported
+- ❌ = Not available in this version
+- ⚠️ = Currently raises unsupported error for UPath implementations
 
 ## Advanced Usage
 
