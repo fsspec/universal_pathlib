@@ -126,6 +126,21 @@ class TestUPathHttp(BaseTests):
     def test_stat_dir_st_mode(self):
         super().test_stat_dir_st_mode()
 
+    def test_info(self):
+        p0 = self.path.joinpath("file1.txt")
+        p1 = self.path.joinpath("folder1")
+
+        assert p0.info.exists() is True
+        assert p0.info.is_file() is True
+        assert p0.info.is_dir() is False
+        assert p0.info.is_symlink() is False
+        assert p1.info.exists() is True
+        assert (
+            p1.info.is_file() is True
+        )  # Weird quirk of how directories work in http fsspec
+        assert p1.info.is_dir() is True
+        assert p1.info.is_symlink() is False
+
 
 @pytest.mark.parametrize(
     "args,parts",
