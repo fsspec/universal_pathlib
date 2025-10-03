@@ -8,6 +8,9 @@ from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
+from typing import Literal
+from typing import overload
 from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
@@ -19,13 +22,26 @@ from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
 from upath.core import UPath
 from upath.core import _UPathMixin
+from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
+from upath.types import PathInfo
+from upath.types import ReadablePath
+from upath.types import ReadablePathLike
+from upath.types import SupportsPathLike
+from upath.types import WritablePath
 
 if TYPE_CHECKING:
+    from typing import IO
+    from typing import BinaryIO
+    from typing import TextIO
+    from typing import TypeVar
+
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
         from typing_extensions import Self
+
+    _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "LocalPath",
@@ -64,6 +80,27 @@ def _warn_protocol_storage_options(
         UserWarning,
         stacklevel=3,
     )
+
+
+class _LocalPathInfo(PathInfo):
+    """Backported PathInfo implementation for LocalPath.
+    todo: currently not handling symlinks correctly.
+    """
+
+    def __init__(self, path: LocalPath) -> None:
+        self._path = path.path
+
+    def exists(self, *, follow_symlinks: bool = True) -> bool:
+        return os.path.exists(self._path)
+
+    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+        return os.path.isdir(self._path)
+
+    def is_file(self, *, follow_symlinks: bool = True) -> bool:
+        return os.path.isfile(self._path)
+
+    def is_symlink(self) -> bool:
+        return os.path.islink(self._path)
 
 
 class LocalPath(_UPathMixin, pathlib.Path):
@@ -147,6 +184,22 @@ class LocalPath(_UPathMixin, pathlib.Path):
             super()._init(**kwargs)  # type: ignore[misc]
             self._chain = Chain(ChainSegment(str(self), "", {}))
 
+    def __vfspath__(self) -> str:
+        return self.__fspath__()
+
+    def __open_reader__(self) -> BinaryIO:
+        return self.open("rb")
+
+    def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
+        if mode == "w":
+            return self.open(mode="wb")
+        elif mode == "a":
+            return self.open(mode="ab")
+        elif mode == "x":
+            return self.open(mode="xb")
+        else:
+            raise ValueError(f"invalid mode: {mode}")
+
     def with_segments(self, *pathsegments: str | os.PathLike[str]) -> Self:
         return type(self)(
             *pathsegments,
@@ -189,6 +242,149 @@ class LocalPath(_UPathMixin, pathlib.Path):
             if isinstance(other, UPath) and not other.is_absolute()
             else other
         )
+
+    @overload  # type: ignore[override]
+    def open(
+        self,
+        mode: Literal["r", "w", "a"] = "r",
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+        **fsspec_kwargs: Any,
+    ) -> TextIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: Literal["rb", "wb", "ab", "xb"],
+        buffering: int = ...,
+        encoding: str = ...,
+        errors: str = ...,
+        newline: str = ...,
+        **fsspec_kwargs: Any,
+    ) -> BinaryIO: ...
+
+    @overload
+    def open(
+        self,
+        mode: str,
+        buffering: int = ...,
+        encoding: str | None = ...,
+        errors: str | None = ...,
+        newline: str | None = ...,
+        **fsspec_kwargs: Any,
+    ) -> IO[Any]: ...
+
+    def open(
+        self,
+        mode: str = "r",
+        buffering: int = UNSET_DEFAULT,
+        encoding: str | None = UNSET_DEFAULT,
+        errors: str | None = UNSET_DEFAULT,
+        newline: str | None = UNSET_DEFAULT,
+        **fsspec_kwargs: Any,
+    ) -> IO[Any]:
+        if not fsspec_kwargs:
+            kwargs: dict[str, str | int | None] = {}
+            if buffering is not UNSET_DEFAULT:
+                kwargs["buffering"] = buffering
+            if encoding is not UNSET_DEFAULT:
+                kwargs["encoding"] = encoding
+            if errors is not UNSET_DEFAULT:
+                kwargs["errors"] = errors
+            if newline is not UNSET_DEFAULT:
+                kwargs["newline"] = newline
+            return super().open(mode, **kwargs)  # type: ignore  # noqa: E501
+        return UPath.open.__get__(self)(
+            mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+            **fsspec_kwargs,
+        )
+
+    if sys.version_info < (3, 14):
+
+        @overload
+        def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+        @overload
+        def copy(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+        def copy(
+            self, target: _WT | SupportsPathLike | str, **kwargs: Any
+        ) -> _WT | Self:
+            # hacky workaround for missing pathlib.Path.copy in python < 3.14
+            # todo: revisit
+            _copy: Any = ReadablePath.copy.__get__(self)
+            if not isinstance(target, UPath):
+                return _copy(self.with_segments(str(target)), **kwargs)
+            else:
+                return _copy(target, **kwargs)
+
+        @overload
+        def copy_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
+
+        @overload
+        def copy_into(
+            self, target_dir: SupportsPathLike | str, **kwargs: Any
+        ) -> Self: ...
+
+        def copy_into(
+            self,
+            target_dir: _WT | SupportsPathLike | str,
+            **kwargs: Any,
+        ) -> _WT | Self:
+            # hacky workaround for missing pathlib.Path.copy_into in python < 3.14
+            # todo: revisit
+            _copy_into: Any = ReadablePath.copy_into.__get__(self)
+            if not isinstance(target_dir, UPath):
+                return _copy_into(self.with_segments(str(target_dir)), **kwargs)
+            else:
+                return _copy_into(target_dir, **kwargs)
+
+        @property
+        def info(self) -> PathInfo:
+            return _LocalPathInfo(self)
+
+    if sys.version_info < (3, 13):
+
+        def full_match(self, pattern: str) -> bool:
+            # hacky workaround for missing pathlib.Path.full_match in python < 3.13
+            # todo: revisit
+            return self.match(pattern)
+
+    if sys.version_info < (3, 12):
+
+        def is_junction(self) -> bool:
+            return False
+
+        def walk(
+            self,
+            top_down: bool = True,
+            on_error: Callable[[Exception], Any] | None = None,
+            follow_symlinks: bool = False,
+        ) -> Iterator[tuple[Self, list[str], list[str]]]:
+            _walk = ReadablePath.walk.__get__(self)
+            return _walk(top_down, on_error, follow_symlinks)
+
+    if sys.version_info < (3, 10):
+
+        def hardlink_to(self, target: ReadablePathLike) -> None:
+            try:
+                os.link(target, self)
+            except AttributeError:
+                raise NotImplementedError
+
+    if not hasattr(pathlib.Path, "_copy_from"):
+
+        def _copy_from(
+            self, source: ReadablePath | LocalPath, follow_symlinks: bool = True
+        ) -> None:
+            _copy_from: Any = WritablePath._copy_from.__get__(self)
+            _copy_from(source, follow_symlinks=follow_symlinks)
 
 
 UPath.register(LocalPath)
