@@ -234,9 +234,8 @@ class _UPathMixin(metaclass=_UPathMeta):
                 path = str(current_dir)
             else:
                 path = current_dir.parser.join(str(self), self_path)
-        else:
-            path = str(self)
-        return self.parser.strip_protocol(path)
+            return self.parser.strip_protocol(path)
+        return self._chain.active_path
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
         """Join with urljoin behavior for UPath instances"""

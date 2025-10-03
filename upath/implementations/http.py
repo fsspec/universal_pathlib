@@ -41,6 +41,11 @@ class HTTPPath(UPath):
         sr = urlsplit(super().__str__())
         return sr._replace(path=sr.path or "/").geturl()
 
+    @property
+    def path(self) -> str:
+        sr = urlsplit(super().path)
+        return sr._replace(path=sr.path or "/").geturl()
+
     def is_file(self) -> bool:
         try:
             next(super().iterdir())

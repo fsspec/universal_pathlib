@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,33 @@ from upath import UPath
 def test_chaining_upath_protocol(urlpath, expected):
     pth = UPath(urlpath)
     assert pth.protocol == expected
+
+
+def add_current_drive_on_windows(pth: str) -> str:
+    drive = os.path.splitdrive(Path.cwd().as_posix())[0]
+    return f"{drive}{pth}"
+
+
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
+        pytest.param(
+            "simplecache::file:///tmp",
+            add_current_drive_on_windows("/tmp"),
+        ),
+        pytest.param(
+            "zip://file.txt::file:///tmp.zip",
+            "file.txt",
+        ),
+        pytest.param(
+            "zip://a/b/c.txt::simplecache::memory://zipfile.zip",
+            "a/b/c.txt",
+        ),
+    ],
+)
+def test_chaining_upath_path(urlpath, expected):
+    pth = UPath(urlpath)
+    assert pth.path == expected
 
 
 @pytest.mark.parametrize(
