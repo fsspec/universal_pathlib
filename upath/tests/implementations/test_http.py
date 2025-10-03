@@ -141,6 +141,22 @@ class TestUPathHttp(BaseTests):
         assert p1.info.is_dir() is True
         assert p1.info.is_symlink() is False
 
+    @pytest.mark.skip(reason="HttpPath does not support unlink")
+    def test_move_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="HttpPath does not support unlink")
+    def test_move_into_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="HttpPath does not support unlink")
+    def test_move_memory(self, clear_fsspec_memory_cache):
+        pass
+
+    @pytest.mark.skip(reason="HttpPath does not support unlink")
+    def test_move_into_memory(self, clear_fsspec_memory_cache):
+        pass
+
 
 @pytest.mark.parametrize(
     "args,parts",
