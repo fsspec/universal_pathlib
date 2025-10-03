@@ -216,3 +216,11 @@ class TestUPathDataPath(BaseTests):
         f1 = self.path
 
         assert f1.samefile(f1) is True
+
+    def test_info(self):
+        p0 = self.path
+
+        assert p0.info.exists() is True
+        assert p0.info.is_file() is True
+        assert p0.info.is_dir() is False
+        assert p0.info.is_symlink() is False
