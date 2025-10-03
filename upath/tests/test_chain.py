@@ -21,6 +21,18 @@ def test_chaining_upath_protocol(urlpath, expected):
 @pytest.mark.parametrize(
     "urlpath,expected",
     [
+        ("simplecache::file:///tmp", "/tmp"),
+        ("zip://file.txt::file:///tmp.zip", "file.txt"),
+    ],
+)
+def test_chaining_upath_path(urlpath, expected):
+    pth = UPath(urlpath)
+    assert pth.path == expected
+
+
+@pytest.mark.parametrize(
+    "urlpath,expected",
+    [
         (
             "simplecache::file:///tmp",
             {
