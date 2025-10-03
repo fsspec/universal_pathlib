@@ -648,6 +648,35 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         else:
             return super().copy_into(target_dir, **kwargs)
 
+    @overload
+    def move(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def move(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def move(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        target = self.copy(target, **kwargs)
+        self.fs.rm(self.path, recursive=self.is_dir())
+        return target
+
+    @overload
+    def move_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def move_into(self, target_dir: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def move_into(
+        self, target_dir: _WT | SupportsPathLike | str, **kwargs: Any
+    ) -> _WT | UPath:
+        name = self.name
+        if not name:
+            raise ValueError(f"{self!r} has an empty name")
+        elif hasattr(target_dir, "with_segments"):
+            target = target_dir.with_segments(target_dir, name)  # type: ignore
+        else:
+            target = self.with_segments(target_dir, name)
+        return self.move(target)
+
     # --- WritablePath attributes -------------------------------------
 
     def symlink_to(

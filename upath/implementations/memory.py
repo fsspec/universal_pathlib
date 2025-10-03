@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from upath.core import UPath
 
-if sys.version_info > (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+if TYPE_CHECKING:
+    if sys.version_info > (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __all__ = ["MemoryPath"]
 

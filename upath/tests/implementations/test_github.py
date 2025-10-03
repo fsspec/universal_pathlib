@@ -71,3 +71,19 @@ class TestUPathGitHubPath(BaseTests):
     @pytest.mark.skip(reason="GitHub filesystem is read-only")
     def test_fsspec_compat(self):
         pass
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_move_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_move_into_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_move_memory(self, clear_fsspec_memory_cache):
+        pass
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_move_into_memory(self, clear_fsspec_memory_cache):
+        pass

@@ -454,6 +454,24 @@
     reveal_type(p.copy_into("target_dir"))  # N: Revealed type is "upath.core.UPath"
     reveal_type(p.copy_into(UPath("target_dir")))  # N: Revealed type is "upath.core.UPath"
 
+- case: upath_method_move
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.move("target"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.move(UPath("target")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_move_into
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.move_into("target_dir"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.move_into(UPath("target_dir")))  # N: Revealed type is "upath.core.UPath"
+
 - case: upath_method_symlink_to
   disable_cache: false
   main: |
@@ -1017,6 +1035,10 @@
     reveal_type(p.copy({{ cls }}("target")))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.copy_into("target_dir"))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.copy_into({{ cls }}("target_dir")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.move("target"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.move({{ cls }}("target")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.move_into("target_dir"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.move_into({{ cls }}("target_dir")))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.rename("new_name"))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.rename({{ cls }}("new_name")))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.replace("target"))  # N: Revealed type is "{{ module }}.{{ cls }}"

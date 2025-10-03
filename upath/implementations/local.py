@@ -310,7 +310,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             **fsspec_kwargs,
         )
 
-    if sys.version_info < (3, 14):
+    if sys.version_info < (3, 14):  # noqa: C901
 
         @overload
         def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
@@ -349,6 +349,39 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 return _copy_into(self.with_segments(str(target_dir)), **kwargs)
             else:
                 return _copy_into(target_dir, **kwargs)
+
+        @overload
+        def move(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+        @overload
+        def move(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+        def move(
+            self, target: _WT | SupportsPathLike | str, **kwargs: Any
+        ) -> _WT | Self:
+            target = self.copy(target, **kwargs)
+            self.fs.rm(self.path, recursive=self.is_dir())
+            return target
+
+        @overload
+        def move_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
+
+        @overload
+        def move_into(
+            self, target_dir: SupportsPathLike | str, **kwargs: Any
+        ) -> Self: ...
+
+        def move_into(
+            self, target_dir: _WT | SupportsPathLike | str, **kwargs: Any
+        ) -> _WT | Self:
+            name = self.name
+            if not name:
+                raise ValueError(f"{self!r} has an empty name")
+            elif hasattr(target_dir, "with_segments"):
+                target = target_dir.with_segments(str(target_dir), name)  # type: ignore
+            else:
+                target = self.with_segments(str(target_dir), name)
+            return self.move(target)
 
         @property
         def info(self) -> PathInfo:
