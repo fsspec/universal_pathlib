@@ -264,3 +264,19 @@ class TestUPathDataPath(BaseTests):
         target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
+
+    @pytest.mark.skip(reason="DataPath does not support unlink")
+    def test_move_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="DataPath does not support unlink")
+    def test_move_into_local(self, tmp_path):
+        pass
+
+    @pytest.mark.skip(reason="DataPath does not support unlink")
+    def test_move_memory(self, clear_fsspec_memory_cache):
+        pass
+
+    @pytest.mark.skip(reason="DataPath does not support unlink")
+    def test_move_into_memory(self, clear_fsspec_memory_cache):
+        pass
