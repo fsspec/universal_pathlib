@@ -567,3 +567,42 @@ class BaseTests:
         assert p1.info.is_file() is False
         assert p1.info.is_dir() is True
         assert p1.info.is_symlink() is False
+
+    def test_copy_local(self, tmp_path: Path):
+        target = UPath(tmp_path) / "target-file1.txt"
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy(target)
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_into_local(self, tmp_path: Path):
+        target_dir = UPath(tmp_path) / "target-dir"
+        target_dir.mkdir()
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy_into(target_dir)
+        target = target_dir / "file1.txt"
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_memory(self, clear_fsspec_memory_cache):
+        target = UPath("memory:///target-file1.txt")
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy(target)
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_into_memory(self, clear_fsspec_memory_cache):
+        target_dir = UPath("memory:///target-dir")
+        target_dir.mkdir()
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy_into(target_dir)
+        target = target_dir / "file1.txt"
+        assert target.exists()
+        assert target.read_text() == content

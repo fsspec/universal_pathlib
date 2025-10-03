@@ -614,6 +614,11 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def __open_reader__(self) -> BinaryIO:
         return self.fs.open(self.path, mode="rb")
 
+    if sys.version_info >= (3, 14):
+
+        def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
+            return self.open("rb", buffering=buffering)
+
     def readlink(self) -> Self:
         _raise_unsupported(type(self).__name__, "readlink")
 
