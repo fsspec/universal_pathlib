@@ -1119,7 +1119,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @classmethod
     def from_uri(cls, uri: str, **storage_options: Any) -> Self:
-        return UPath(uri, **storage_options)  # type: ignore[return-value]
+        return cls(uri, **storage_options)
 
     def as_uri(self) -> str:
         if self._relative_base is not None:
