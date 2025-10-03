@@ -434,6 +434,12 @@ class ProxyUPath:
     def copy_into(self, target_dir: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
         return self._from_upath(self.__wrapped__.copy_into(target_dir, **kwargs))
 
+    def move(self, target: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        return self._from_upath(self.__wrapped__.move(target, **kwargs))
+
+    def move_into(self, target_dir: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        return self._from_upath(self.__wrapped__.move_into(target_dir, **kwargs))
+
     def write_bytes(self, data: bytes) -> int:
         return self.__wrapped__.write_bytes(data)
 
