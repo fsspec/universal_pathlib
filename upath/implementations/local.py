@@ -190,6 +190,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def __open_reader__(self) -> BinaryIO:
         return self.open("rb")
 
+    if sys.version_info >= (3, 14):
+
+        def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
+            return self.open("rb", buffering=buffering)
+
     def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
         if mode == "w":
             return self.open(mode="wb")
