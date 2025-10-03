@@ -10,6 +10,7 @@ from pathlib import Path
 
 import fsspec
 import pytest
+from fsspec import get_filesystem_class
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.local import make_path_posix
 from fsspec.implementations.smb import SMBFileSystem
@@ -45,6 +46,18 @@ def clear_registry():
         yield
     finally:
         _registry.clear()
+
+
+@pytest.fixture(scope="function")
+def clear_fsspec_memory_cache():
+    fs_cls = get_filesystem_class("memory")
+    pseudo_dirs = fs_cls.pseudo_dirs.copy()
+    store = fs_cls.store.copy()
+    try:
+        yield
+    finally:
+        fs_cls.pseudo_dirs = pseudo_dirs
+        fs_cls.store = store
 
 
 @pytest.fixture(scope="function")
@@ -257,10 +270,10 @@ def http_server(tmp_path_factory):
     requests = pytest.importorskip("requests")
     pytest.importorskip("http.server")
     proc = subprocess.Popen(
-        shlex.split(f"python -m http.server --directory {http_tempdir} 8080")
+        shlex.split(f"python -m http.server --directory {http_tempdir} 18080")
     )
     try:
-        url = "http://127.0.0.1:8080/folder"
+        url = "http://127.0.0.1:18080/folder"
         path = Path(http_tempdir) / "folder"
         path.mkdir()
         timeout = 10

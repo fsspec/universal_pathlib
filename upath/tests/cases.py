@@ -554,3 +554,55 @@ class BaseTests:
         assert f1.samefile(f2.path) is False
         assert f1.samefile(f1) is True
         assert f1.samefile(f1.path) is True
+
+    def test_info(self):
+        p0 = self.path.joinpath("file1.txt")
+        p1 = self.path.joinpath("folder1")
+
+        assert p0.info.exists() is True
+        assert p0.info.is_file() is True
+        assert p0.info.is_dir() is False
+        assert p0.info.is_symlink() is False
+        assert p1.info.exists() is True
+        assert p1.info.is_file() is False
+        assert p1.info.is_dir() is True
+        assert p1.info.is_symlink() is False
+
+    def test_copy_local(self, tmp_path: Path):
+        target = UPath(tmp_path) / "target-file1.txt"
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy(target)
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_into_local(self, tmp_path: Path):
+        target_dir = UPath(tmp_path) / "target-dir"
+        target_dir.mkdir()
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy_into(target_dir)
+        target = target_dir / "file1.txt"
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_memory(self, clear_fsspec_memory_cache):
+        target = UPath("memory:///target-file1.txt")
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy(target)
+        assert target.exists()
+        assert target.read_text() == content
+
+    def test_copy_into_memory(self, clear_fsspec_memory_cache):
+        target_dir = UPath("memory:///target-dir")
+        target_dir.mkdir()
+
+        source = self.path / "file1.txt"
+        content = source.read_text()
+        source.copy_into(target_dir)
+        target = target_dir / "file1.txt"
+        assert target.exists()
+        assert target.read_text() == content

@@ -39,8 +39,8 @@ from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
-from upath.types import OpenablePath
 from upath.types import PathInfo
+from upath.types import ReadablePath
 from upath.types import ReadablePathLike
 from upath.types import SupportsPathLike
 from upath.types import UPathParser
@@ -430,7 +430,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         return urlsplit(self.__str__())
 
 
-class UPath(_UPathMixin, OpenablePath):
+class UPath(_UPathMixin, WritablePath, ReadablePath):
     __slots__ = (
         "_chain",
         "_chain_parser",
@@ -613,6 +613,11 @@ class UPath(_UPathMixin, OpenablePath):
 
     def __open_reader__(self) -> BinaryIO:
         return self.fs.open(self.path, mode="rb")
+
+    if sys.version_info >= (3, 14):
+
+        def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
+            return self.open("rb", buffering=buffering)
 
     def readlink(self) -> Self:
         _raise_unsupported(type(self).__name__, "readlink")
