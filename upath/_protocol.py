@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 from collections import ChainMap
 from pathlib import PurePath
@@ -11,7 +10,7 @@ from fsspec.registry import known_implementations as _known_implementations
 from fsspec.registry import registry as _registry
 
 if TYPE_CHECKING:
-    from upath.types import JoinablePath
+    from upath.types import JoinablePathLike
 
 __all__ = [
     "get_upath_protocol",
@@ -60,7 +59,7 @@ def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
 
 
 def get_upath_protocol(
-    pth: str | os.PathLike[str] | PurePath | JoinablePath,
+    pth: JoinablePathLike,
     *,
     protocol: str | None = None,
     storage_options: dict[str, Any] | None = None,
@@ -74,6 +73,8 @@ def get_upath_protocol(
         pth_protocol = pth.protocol
     elif isinstance(pth, PurePath):
         pth_protocol = getattr(pth, "protocol", "")
+    elif hasattr(pth, "__vfspath__"):
+        pth_protocol = _match_protocol(pth.__vfspath__())
     elif hasattr(pth, "__fspath__"):
         pth_protocol = _match_protocol(pth.__fspath__())
     else:
@@ -102,7 +103,7 @@ def normalize_empty_netloc(pth: str) -> str:
 
 def compatible_protocol(
     protocol: str,
-    *args: str | os.PathLike[str] | PurePath | JoinablePath,
+    *args: JoinablePathLike,
 ) -> bool:
     """check if UPath protocols are compatible"""
     from upath.core import UPath
