@@ -1,0 +1,15 @@
+- case: upath_types_joinablepath
+  disable_cache: false
+  main: |
+    from pathlib import PurePath
+    from upath.types import CompatJoinablePath
+
+    a: CompatJoinablePath = PurePath()
+
+- case: upath_types_joinablepath_upath
+  disable_cache: false
+  main: |
+    from upath import UPath
+    from upath.types import CompatJoinablePath
+
+    a: CompatJoinablePath = UPath()
