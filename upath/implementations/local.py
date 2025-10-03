@@ -394,6 +394,10 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # todo: revisit
             return self.match(pattern)
 
+        @classmethod
+        def from_uri(cls, uri: str, **storage_options: Any) -> Self:
+            return UPath(uri, **storage_options)  # type: ignore[return-value]
+
     if sys.version_info < (3, 12):
 
         def is_junction(self) -> bool:

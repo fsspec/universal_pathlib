@@ -1117,6 +1117,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             kwargs["_relative_base"] = self._relative_base
         return _make_instance, (type(self), args, kwargs)
 
+    @classmethod
+    def from_uri(cls, uri: str, **storage_options: Any) -> Self:
+        return cls(uri, **storage_options)
+
     def as_uri(self) -> str:
         if self._relative_base is not None:
             raise ValueError(
