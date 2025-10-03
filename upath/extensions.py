@@ -344,6 +344,10 @@ class ProxyUPath:
     def __reduce__(self):
         return type(self)._from_upath, (self.__wrapped__,)
 
+    @classmethod
+    def from_uri(cls, uri: str, **storage_options: Any) -> Self:
+        return cls(uri, **storage_options)
+
     def as_uri(self) -> str:
         return self.__wrapped__.as_uri()
 
