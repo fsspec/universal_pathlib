@@ -29,13 +29,16 @@ CURRENT_DRIVE = os.path.splitdrive(Path.cwd().as_posix())[0]
     [
         ("simplecache::file:///tmp", "/tmp"),
         pytest.param(
-            "zip://file.txt::file:///tmp.zip", "file.txt", marks=skip_on_windows(None)
+            "zip://file.txt::file:///tmp.zip",
+            "file.txt",
+            marks=skip_on_windows(None),
         ),
         pytest.param(
             "zip://file.txt::file:///tmp.zip",
             f"{CURRENT_DRIVE}/file.txt",
             marks=only_on_windows(None),
         ),
+        ("zip://a/b/c.txt::simplecache::memory://zipfile.zip", "a/b/c.txt"),
     ],
 )
 def test_chaining_upath_path(urlpath, expected):
