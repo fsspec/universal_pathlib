@@ -111,7 +111,11 @@ And of course, contributions for new filesystems are welcome!
 
 The class hierarchy for `UPath` implementations and their relation to base classes
 in `pathlib_abc` and the stdlib `pathlib` classes are visualized in the following
-diagram:
+diagram. Please be aware that the `pathlib_abc.JoinablePath`,
+`pathlib_abc.ReadablePath`, and `pathlib_abc.WritablePath` classes are currently
+not actual parent classes of the stdlib pathlib classes. This might occur in
+later Python releases, but for now, the mental model you should keep is represented
+by the diagram.
 
 ```mermaid
 flowchart TB
@@ -122,14 +126,14 @@ flowchart TB
   end
 
   subgraph s0[pathlib]
-    X --> A
+    X -.-> A
 
     A----> B
     A--> AP
     A--> AW
 
-    Y --> B
-    Z --> B
+    Y -.-> B
+    Z -.-> B
 
     B--> BP
     AP----> BP
@@ -183,6 +187,19 @@ flowchart TB
   style s0 fill:none,stroke:#07b,stroke-width:3px,stroke-dasharray:3,color:#07b
   style s1 fill:none,stroke:#d02,stroke-width:3px,stroke-dasharray:3,color:#d02
 ```
+
+To be concrete this currently means:
+
+```python
+# for all supported Python versions:
+from pathlib import Path
+from upath import UPath
+from upath.types import JoinablePath
+
+assert isinstance(Path(), JoinablePath) is False
+assert isinstance(UPath(), JoinablePath) is True
+```
+
 
 When instantiating `UPath` the returned instance type is determined by the path,
 or better said, the "protocol" that was provided to the constructor. The `UPath`
