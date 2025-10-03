@@ -1,9 +1,12 @@
+import os
 from pathlib import Path
 
 import pytest
 from fsspec.implementations.memory import MemoryFileSystem
 
 from upath import UPath
+from upath.tests.utils import only_on_windows
+from upath.tests.utils import skip_on_windows
 
 
 @pytest.mark.parametrize(
@@ -18,11 +21,21 @@ def test_chaining_upath_protocol(urlpath, expected):
     assert pth.protocol == expected
 
 
+CURRENT_DRIVE = os.path.splitdrive(Path.cwd().as_posix())[0]
+
+
 @pytest.mark.parametrize(
     "urlpath,expected",
     [
         ("simplecache::file:///tmp", "/tmp"),
-        ("zip://file.txt::file:///tmp.zip", "file.txt"),
+        pytest.param(
+            "zip://file.txt::file:///tmp.zip", "file.txt", marks=skip_on_windows(None)
+        ),
+        pytest.param(
+            "zip://file.txt::file:///tmp.zip",
+            f"{CURRENT_DRIVE}/file.txt",
+            marks=only_on_windows(None),
+        ),
     ],
 )
 def test_chaining_upath_path(urlpath, expected):
