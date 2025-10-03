@@ -38,10 +38,11 @@ from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
-from upath.types import OpenablePath
 from upath.types import PathInfo
+from upath.types import ReadablePath
 from upath.types import ReadablePathLike
 from upath.types import UPathParser
+from upath.types import WritablePath
 from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
@@ -427,7 +428,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         return urlsplit(self.__str__())
 
 
-class UPath(_UPathMixin, OpenablePath):
+class UPath(_UPathMixin, WritablePath, ReadablePath):
     __slots__ = (
         "_chain",
         "_chain_parser",

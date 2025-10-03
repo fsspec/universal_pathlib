@@ -3,16 +3,9 @@ from __future__ import annotations
 import enum
 import pathlib
 import sys
-from collections.abc import Iterator
-from collections.abc import Sequence
-from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import BinaryIO
-from typing import Literal
 from typing import Protocol
-from typing import TextIO
-from typing import overload
 from typing import runtime_checkable
 
 from upath.types._abc import JoinablePath
@@ -20,15 +13,9 @@ from upath.types._abc import PathInfo
 from upath.types._abc import PathParser
 from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
-from upath.types._abc import vfsopen
 
 if TYPE_CHECKING:
     from os import PathLike  # noqa: F401
-
-    if sys.version_info > (3, 11):
-        from typing import Self
-    else:
-        from typing_extensions import Self
 
     if sys.version_info >= (3, 12):
         from typing import TypeAlias
@@ -39,15 +26,10 @@ __all__ = [
     "JoinablePath",
     "ReadablePath",
     "WritablePath",
-    "OpenablePath",
     "JoinablePathLike",
     "ReadablePathLike",
     "WritablePathLike",
     "SupportsPathLike",
-    "CompatJoinablePath",
-    "CompatReadablePath",
-    "CompatWritablePath",
-    "CompatOpenablePath",
     "PathInfo",
     "StatResultType",
     "PathParser",
@@ -64,9 +46,6 @@ SupportsPathLike: TypeAlias = "VFSPathLike | PathLike[str]"
 JoinablePathLike: TypeAlias = "JoinablePath | SupportsPathLike | str"
 ReadablePathLike: TypeAlias = "ReadablePath | SupportsPathLike | str"
 WritablePathLike: TypeAlias = "WritablePath | SupportsPathLike | str"
-CompatJoinablePathLike: TypeAlias = "CompatJoinablePath | SupportsPathLike | str"
-CompatReadablePathLike: TypeAlias = "CompatReadablePath | SupportsPathLike | str"
-CompatWritablePathLike: TypeAlias = "CompatWritablePath | SupportsPathLike | str"
 
 
 class _DefaultValue(enum.Enum):
@@ -76,179 +55,10 @@ class _DefaultValue(enum.Enum):
 UNSET_DEFAULT: Any = _DefaultValue.UNSET
 
 
-class OpenablePath(ReadablePath, WritablePath):
-    """Helper class to annotate read/writable paths which have an .open() method."""
-
-    __slots__ = ()
-
-    @overload
-    def open(
-        self,
-        mode: Literal["r", "w", "a"] = ...,
-        buffering: int = ...,
-        encoding: str = ...,
-        errors: str = ...,
-        newline: str = ...,
-    ) -> TextIO: ...
-
-    @overload
-    def open(
-        self,
-        mode: Literal["rb", "wb", "ab"] = ...,
-        buffering: int = ...,
-        encoding: str = ...,
-        errors: str = ...,
-        newline: str = ...,
-    ) -> BinaryIO: ...
-
-    @overload
-    def open(
-        self,
-        mode: str = ...,
-        buffering: int = ...,
-        encoding: str | None = ...,
-        errors: str | None = ...,
-        newline: str | None = ...,
-    ) -> IO[Any]: ...
-
-    def open(
-        self,
-        mode: str = "r",
-        buffering: int = -1,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> IO[Any]:
-        return vfsopen(self, mode, buffering, encoding, errors, newline)
-
-
 if sys.version_info >= (3, 14):
     JoinablePath.register(pathlib.PurePath)
     ReadablePath.register(pathlib.Path)
     WritablePath.register(pathlib.Path)
-    OpenablePath.register(pathlib.Path)
-
-
-@runtime_checkable
-class CompatJoinablePath(Protocol):
-    # not available in Python 3.9.* pathlib:
-    #  - `parser`
-    #  - `with_segments`
-    #  - `__vfspath__`
-    #  - `full_match`
-    __slots__ = ()
-
-    @property
-    def anchor(self) -> str: ...
-    @property
-    def name(self) -> str: ...
-    @property
-    def suffix(self) -> str: ...
-    @property
-    def suffixes(self) -> Sequence[str]: ...
-    @property
-    def stem(self) -> str: ...
-
-    def with_name(self, name: str) -> Self: ...
-    def with_stem(self, stem: str) -> Self: ...
-    def with_suffix(self, suffix: str) -> Self: ...
-
-    @property
-    def parts(self) -> Sequence[str]: ...
-
-    def joinpath(self, *pathsegments: str) -> Self: ...
-    def __truediv__(self, key: str) -> Self: ...
-    def __rtruediv__(self, key: str) -> Self: ...
-
-    @property
-    def parent(self) -> Self: ...
-    @property
-    def parents(self) -> Sequence[Self]: ...
-
-
-@runtime_checkable
-class CompatReadablePath(CompatJoinablePath, Protocol):
-    # not available in Python 3.9.* pathlib:
-    #   - `info`
-    #   - `__open_reader__`
-    #   - `copy`
-    #   - `copy_into`
-    #   - `walk`
-    __slots__ = ()
-
-    def read_bytes(self) -> bytes: ...
-
-    def read_text(
-        self,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> str: ...
-
-    def iterdir(self) -> Iterator[Self]: ...
-
-    def glob(self, pattern: str, *, recurse_symlinks: bool = ...) -> Iterator[Self]: ...
-
-    def readlink(self) -> Self: ...
-
-
-@runtime_checkable
-class CompatWritablePath(CompatJoinablePath, Protocol):
-    # not available in Python 3.9.* pathlib:
-    #   - `__open_writer__`
-    #   - `_copy_from`
-    __slots__ = ()
-
-    def symlink_to(
-        self, target: str | Self, target_is_directory: bool = ...
-    ) -> None: ...
-    def mkdir(self) -> None: ...
-
-    def write_bytes(self, data: bytes) -> int: ...
-
-    def write_text(
-        self,
-        data: str,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> int: ...
-
-
-@runtime_checkable
-class CompatOpenablePath(CompatReadablePath, CompatWritablePath, Protocol):
-    """A path that can be read from and written to."""
-
-    __slots__ = ()
-
-    @overload
-    def open(
-        self,
-        mode: Literal["r", "w", "a"] = "r",
-        buffering: int = ...,
-        encoding: str = ...,
-        errors: str = ...,
-        newline: str = ...,
-    ) -> TextIO: ...
-
-    @overload
-    def open(
-        self,
-        mode: Literal["rb", "wb", "ab"],
-        buffering: int = ...,
-        encoding: str = ...,
-        errors: str = ...,
-        newline: str = ...,
-    ) -> BinaryIO: ...
-
-    def open(
-        self,
-        mode: str = "r",
-        buffering: int = -1,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> IO[Any]: ...
 
 
 class StatResultType(Protocol):
