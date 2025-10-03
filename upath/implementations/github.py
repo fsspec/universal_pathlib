@@ -2,9 +2,16 @@
 GitHub file system implementation
 """
 
+import sys
+from collections.abc import Iterator
 from collections.abc import Sequence
 
 import upath.core
+
+if sys.version_info > (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class GitHubPath(upath.core.UPath):
@@ -19,7 +26,7 @@ class GitHubPath(upath.core.UPath):
             return ""
         return pth
 
-    def iterdir(self):
+    def iterdir(self) -> Iterator[Self]:
         if self.is_file():
             raise NotADirectoryError(str(self))
         yield from super().iterdir()

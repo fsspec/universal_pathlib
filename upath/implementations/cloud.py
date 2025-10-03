@@ -50,7 +50,7 @@ class CloudPath(UPath):
             return ""
         return self.parser.sep
 
-    def __vfspath__(self):
+    def __vfspath__(self) -> str:
         path = super().__vfspath__()
         if self._relative_base is None:
             drive = self.parser.splitdrive(path)[0]
@@ -93,7 +93,7 @@ class GCSPath(CloudPath):
             if "unexpected keyword argument 'create_parents'" in str(err):
                 self.fs.mkdir(self.path)
 
-    def exists(self, *, follow_symlinks=True):
+    def exists(self, *, follow_symlinks: bool = True) -> bool:
         # required for gcsfs<2025.5.0, see: https://github.com/fsspec/gcsfs/pull/676
         path = self.path
         if len(path) > 1:
