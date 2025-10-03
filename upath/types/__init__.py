@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import enum
-import os
 import pathlib
 import sys
 from collections.abc import Iterator
@@ -13,7 +12,6 @@ from typing import BinaryIO
 from typing import Literal
 from typing import Protocol
 from typing import TextIO
-from typing import Union
 from typing import overload
 from typing import runtime_checkable
 
@@ -25,6 +23,8 @@ from upath.types._abc import WritablePath
 from upath.types._abc import vfsopen
 
 if TYPE_CHECKING:
+    from os import PathLike  # noqa: F401
+
     if sys.version_info > (3, 11):
         from typing import Self
     else:
@@ -43,6 +43,7 @@ __all__ = [
     "JoinablePathLike",
     "ReadablePathLike",
     "WritablePathLike",
+    "SupportsPathLike",
     "CompatJoinablePath",
     "CompatReadablePath",
     "CompatWritablePath",
@@ -54,9 +55,18 @@ __all__ = [
     "UNSET_DEFAULT",
 ]
 
-JoinablePathLike: TypeAlias = Union[str, JoinablePath]
-ReadablePathLike: TypeAlias = Union[str, ReadablePath]
-WritablePathLike: TypeAlias = Union[str, WritablePath]
+
+class VFSPathLike(Protocol):
+    def __vfspath__(self) -> str: ...
+
+
+SupportsPathLike: TypeAlias = "VFSPathLike | PathLike[str]"
+JoinablePathLike: TypeAlias = "JoinablePath | SupportsPathLike | str"
+ReadablePathLike: TypeAlias = "ReadablePath | SupportsPathLike | str"
+WritablePathLike: TypeAlias = "WritablePath | SupportsPathLike | str"
+CompatJoinablePathLike: TypeAlias = "CompatJoinablePath | SupportsPathLike | str"
+CompatReadablePathLike: TypeAlias = "CompatReadablePath | SupportsPathLike | str"
+CompatWritablePathLike: TypeAlias = "CompatWritablePath | SupportsPathLike | str"
 
 
 class _DefaultValue(enum.Enum):
@@ -139,16 +149,16 @@ class CompatJoinablePath(Protocol):
     @property
     def stem(self) -> str: ...
 
-    def with_name(self, name) -> Self: ...
-    def with_stem(self, stem) -> Self: ...
-    def with_suffix(self, suffix) -> Self: ...
+    def with_name(self, name: str) -> Self: ...
+    def with_stem(self, stem: str) -> Self: ...
+    def with_suffix(self, suffix: str) -> Self: ...
 
     @property
     def parts(self) -> Sequence[str]: ...
 
-    def joinpath(self, *pathsegments: str | Self) -> Self: ...
-    def __truediv__(self, key: str | Self) -> Self: ...
-    def __rtruediv__(self, key: str | Self) -> Self: ...
+    def joinpath(self, *pathsegments: str) -> Self: ...
+    def __truediv__(self, key: str) -> Self: ...
+    def __rtruediv__(self, key: str) -> Self: ...
 
     @property
     def parent(self) -> Self: ...
@@ -190,7 +200,7 @@ class CompatWritablePath(CompatJoinablePath, Protocol):
     __slots__ = ()
 
     def symlink_to(
-        self, target: WritablePath, target_is_directory: bool = ...
+        self, target: str | Self, target_is_directory: bool = ...
     ) -> None: ...
     def mkdir(self) -> None: ...
 
@@ -280,20 +290,20 @@ class StatResultType(Protocol):
 class UPathParser(PathParser, Protocol):
     """duck-type for upath.core.UPathParser"""
 
-    def strip_protocol(self, path: JoinablePath | str) -> str: ...
+    def split(self, path: JoinablePathLike) -> tuple[str, str]: ...
+    def splitext(self, path: JoinablePathLike) -> tuple[str, str]: ...
+    def normcase(self, path: JoinablePathLike) -> str: ...
+
+    def strip_protocol(self, path: JoinablePathLike) -> str: ...
 
     def join(
         self,
-        path: JoinablePath | os.PathLike[str] | str,
-        *paths: JoinablePath | os.PathLike[str] | str,
+        path: JoinablePathLike,
+        *paths: JoinablePathLike,
     ) -> str: ...
 
-    def isabs(self, path: JoinablePath | os.PathLike[str] | str) -> bool: ...
+    def isabs(self, path: JoinablePathLike) -> bool: ...
 
-    def splitdrive(
-        self, path: JoinablePath | os.PathLike[str] | str
-    ) -> tuple[str, str]: ...
+    def splitdrive(self, path: JoinablePathLike) -> tuple[str, str]: ...
 
-    def splitroot(
-        self, path: JoinablePath | os.PathLike[str] | str
-    ) -> tuple[str, str, str]: ...
+    def splitroot(self, path: JoinablePathLike) -> tuple[str, str, str]: ...
