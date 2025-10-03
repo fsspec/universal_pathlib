@@ -588,16 +588,15 @@ class BaseTests:
         assert target.exists()
         assert target.read_text() == content
 
-    def test_copy_memory(self):
+    def test_copy_memory(self, clear_fsspec_memory_cache):
         target = UPath("memory:///target-file1.txt")
-
         source = self.path / "file1.txt"
         content = source.read_text()
         source.copy(target)
         assert target.exists()
         assert target.read_text() == content
 
-    def test_copy_into_memory(self):
+    def test_copy_into_memory(self, clear_fsspec_memory_cache):
         target_dir = UPath("memory:///target-dir")
         target_dir.mkdir()
 
