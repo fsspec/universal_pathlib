@@ -58,6 +58,13 @@ class CloudPath(UPath):
                 return f"{path}{self.root}"
         return path
 
+    @property
+    def path(self) -> str:
+        self_path = super().path
+        if self._relative_base is None and self.parser.sep not in self_path:
+            return self_path + self.root
+        return self_path
+
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
     ) -> None:
