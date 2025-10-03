@@ -17,6 +17,7 @@ from typing import BinaryIO
 from typing import Literal
 from typing import NoReturn
 from typing import TextIO
+from typing import TypeVar
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
@@ -41,6 +42,7 @@ from upath.types import JoinablePathLike
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
+from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePath
 from upath.types import WritablePathLike
@@ -54,9 +56,9 @@ if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
+    _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = ["UPath"]
-
 
 _FSSPEC_HAS_WORKING_GLOB = None
 
@@ -526,7 +528,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             parts = [*names, drive + sep]
         return tuple(reversed(parts))
 
-    def with_name(self, name) -> Self:
+    def with_name(self, name: str) -> Self:
         """Return a new path with the file name changed."""
         split = self.parser.split
         if self.parser.sep in name:  # `split(name)[0]`
@@ -572,6 +574,21 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             return parents
         return super().parents
 
+    def joinpath(self, *pathsegments: JoinablePathLike) -> Self:
+        return self.with_segments(self.__vfspath__(), *pathsegments)
+
+    def __truediv__(self, key: JoinablePathLike) -> Self:
+        try:
+            return self.with_segments(self.__vfspath__(), key)
+        except TypeError:
+            return NotImplemented
+
+    def __rtruediv__(self, key: JoinablePathLike) -> Self:
+        try:
+            return self.with_segments(key, self.__vfspath__())
+        except TypeError:
+            return NotImplemented
+
     # === ReadablePath attributes =====================================
 
     @property
@@ -599,6 +616,32 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     def readlink(self) -> Self:
         _raise_unsupported(type(self).__name__, "readlink")
+
+    @overload
+    def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def copy(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def copy(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        if not isinstance(target, UPath):
+            return super().copy(self.with_segments(target), **kwargs)
+        else:
+            return super().copy(target, **kwargs)
+
+    @overload
+    def copy_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def copy_into(self, target_dir: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def copy_into(
+        self, target_dir: _WT | SupportsPathLike | str, **kwargs: Any
+    ) -> _WT | UPath:
+        if not isinstance(target_dir, UPath):
+            return super().copy_into(self.with_segments(target_dir), **kwargs)
+        else:
+            return super().copy_into(target_dir, **kwargs)
 
     # --- WritablePath attributes -------------------------------------
 
@@ -715,7 +758,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def stat(
         self,
         *,
-        follow_symlinks=True,
+        follow_symlinks: bool = True,
     ) -> UPathStatResult:
         if not follow_symlinks:
             warnings.warn(
@@ -732,7 +775,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:
         _raise_unsupported(type(self).__name__, "chmod")
 
-    def exists(self, *, follow_symlinks=True) -> bool:
+    def exists(self, *, follow_symlinks: bool = True) -> bool:
         return self.fs.exists(self.path)
 
     def is_dir(self) -> bool:
@@ -780,7 +823,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         *,
         case_sensitive: bool = UNSET_DEFAULT,
         recurse_symlinks: bool = UNSET_DEFAULT,
-    ) -> Iterator[UPath]:
+    ) -> Iterator[Self]:
         if case_sensitive is not UNSET_DEFAULT:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
@@ -808,7 +851,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         *,
         case_sensitive: bool = UNSET_DEFAULT,
         recurse_symlinks: bool = UNSET_DEFAULT,
-    ) -> Iterator[UPath]:
+    ) -> Iterator[Self]:
         if case_sensitive is not UNSET_DEFAULT:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
@@ -941,7 +984,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
         return self.with_segments(*_parts[:1], *resolved)
 
-    def touch(self, mode=0o666, exist_ok=True) -> None:
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
         exists = self.fs.exists(self.path)
         if exists and not exist_ok:
             raise FileExistsError(str(self))
