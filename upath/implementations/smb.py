@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import warnings
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -21,7 +22,12 @@ if TYPE_CHECKING:
 class SMBPath(UPath):
     __slots__ = ()
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
         # smbclient does not support setting mode externally
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
@@ -36,7 +42,7 @@ class SMBPath(UPath):
             if not self.is_dir():
                 raise FileExistsError(str(self))
 
-    def iterdir(self):
+    def iterdir(self) -> Iterator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))
         else:
