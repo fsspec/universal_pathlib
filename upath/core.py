@@ -31,6 +31,7 @@ from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
+from upath._info import UPathInfo
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
@@ -574,7 +575,7 @@ class UPath(_UPathMixin, OpenablePath):
 
     @property
     def info(self) -> PathInfo:
-        _raise_unsupported(type(self).__name__, "info")
+        return UPathInfo(self)
 
     def iterdir(self) -> Iterator[Self]:
         sep = self.parser.sep
