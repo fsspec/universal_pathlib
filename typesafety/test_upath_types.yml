@@ -1,0 +1,21 @@
+
+- case: upath_types_joinablepath_upath
+  disable_cache: false
+  main: |
+    from upath import UPath
+    from upath.types import JoinablePath
+
+    a: JoinablePath = UPath()
+
+- case: upath_types_joinablepathlike
+  disable_cache: false
+  main: |
+    from pathlib import PurePath
+    from pathlib import Path
+    from upath import UPath
+    from upath.types import JoinablePathLike
+
+    a: JoinablePathLike = "abc"
+    b: JoinablePathLike = PurePath()
+    c: JoinablePathLike = Path()
+    d: JoinablePathLike = UPath()

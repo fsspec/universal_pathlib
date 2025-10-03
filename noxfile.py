@@ -115,6 +115,7 @@ def typesafety(session):
         "--mypy-pyproject-toml-file",
         "pyproject.toml",
         "typesafety",
+        *session.posargs,
     )
 
 

@@ -1,0 +1,1064 @@
+- case: upath_constructor_no_args
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_string_arg
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath("."))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_purepath_arg
+  disable_cache: false
+  main: |
+    from pathlib import PurePath
+    from upath import UPath
+
+    reveal_type(UPath(PurePath()))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_path_arg
+  disable_cache: false
+  main: |
+    from pathlib import Path
+    from upath import UPath
+
+    reveal_type(UPath(Path()))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_pathlike_arg
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    class CustomPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    reveal_type(UPath(CustomPathLike()))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_vfspathlike_arg
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    class CustomVFSPathLike:
+        def __vfspath__(self) -> str:
+            return ""
+
+    reveal_type(UPath(CustomVFSPathLike()))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_constructor_upath_arg
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath(UPath()))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_implementations_constructor
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+    - module: upath.implementations.cloud
+      cls: S3Path
+    - module: upath.implementations.cloud
+      cls: GCSPath
+    - module: upath.implementations.cloud
+      cls: AzurePath
+    - module: upath.implementations.data
+      cls: DataPath
+    - module: upath.implementations.github
+      cls: GitHubPath
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+    - module: upath.implementations.http
+      cls: HTTPPath
+    - module: upath.implementations.local
+      cls: PosixUPath
+    - module: upath.implementations.local
+      cls: WindowsUPath
+    - module: upath.implementations.local
+      cls: FilePath
+    - module: upath.implementations.memory
+      cls: MemoryPath
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+    - module: upath.implementations.smb
+      cls: SMBPath
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+    - module: upath.extensions
+      cls: ProxyUPath
+  main: |
+    from pathlib import PurePath
+    from {{ module }} import {{ cls }}
+
+    reveal_type({{ cls }}())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type({{ cls }}("."))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type({{ cls }}(PurePath()))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type({{ cls }}({{ cls }}()))  # N: Revealed type is "{{ module }}.{{ cls }}"
+
+- case: upath_attribute_parts
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.parts)       # N: Revealed type is "typing.Sequence[builtins.str]"
+
+- case: upath_attribute_anchor
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.anchor)      # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_name
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.name)        # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_stem
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.stem)        # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_suffix
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.suffix)      # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_suffixes
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.suffixes)    # N: Revealed type is "builtins.list[builtins.str]"
+
+- case: upath_attribute_root
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.root)        # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_drive
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.drive)       # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_parent
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.parent)      # N: Revealed type is "upath.core.UPath"
+
+- case: upath_attribute_parents
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.parents)     # N: Revealed type is "typing.Sequence[upath.core.UPath]"
+
+- case: upath_attribute_path
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.path)        # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_protocol
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.protocol)    # N: Revealed type is "builtins.str"
+
+- case: upath_attribute_storage_options
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.storage_options)  # N: Revealed type is "typing.Mapping[builtins.str, Any]"
+
+- case: upath_attribute__url
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p._url)        # N: Revealed type is "tuple[builtins.str, builtins.str, builtins.str, builtins.str, builtins.str, fallback=urllib.parse.SplitResult]"
+
+# FIXME fsspec types are not available
+# - case: upath_attribute_fs
+#   disable_cache: false
+#   main: |
+#     from upath import UPath
+#
+#     p = UPath("")
+#     reveal_type(p.fs)          # N: Revealed type is "fsspec.spec.AbstractFileSystem"
+
+- case: upath_attribute_parser
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.parser)      # N: Revealed type is "upath.types.UPathParser"
+
+- case: upath_attribute_info
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.info)        # N: Revealed type is "upath.types._abc.PathInfo"
+
+- case: upath_subclass_attributes
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+    - module: upath.implementations.cloud
+      cls: S3Path
+    - module: upath.implementations.cloud
+      cls: GCSPath
+    - module: upath.implementations.cloud
+      cls: AzurePath
+    - module: upath.implementations.data
+      cls: DataPath
+    - module: upath.implementations.github
+      cls: GitHubPath
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+    - module: upath.implementations.http
+      cls: HTTPPath
+    - module: upath.implementations.local
+      cls: PosixUPath
+    - module: upath.implementations.local
+      cls: WindowsUPath
+    - module: upath.implementations.local
+      cls: FilePath
+    - module: upath.implementations.memory
+      cls: MemoryPath
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+    - module: upath.implementations.smb
+      cls: SMBPath
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+    - module: upath.extensions
+      cls: ProxyUPath
+  main: |
+    from {{ module }} import {{ cls }}
+
+    p = {{ cls }}("")
+    reveal_type(p.parts)             # NR: Revealed type is "(typing\.Sequence|builtins\.tuple)\[builtins\.str(, ...)?\]"
+    reveal_type(p.anchor)            # N: Revealed type is "builtins.str"
+    reveal_type(p.name)              # N: Revealed type is "builtins.str"
+    reveal_type(p.stem)              # N: Revealed type is "builtins.str"
+    reveal_type(p.suffix)            # N: Revealed type is "builtins.str"
+    reveal_type(p.suffixes)          # N: Revealed type is "builtins.list[builtins.str]"
+    reveal_type(p.root)              # N: Revealed type is "builtins.str"
+    reveal_type(p.drive)             # N: Revealed type is "builtins.str"
+    reveal_type(p.parent)            # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.parents)           # N: Revealed type is "typing.Sequence[{{ module }}.{{ cls }}]"
+    reveal_type(p.path)              # N: Revealed type is "builtins.str"
+    reveal_type(p.protocol)          # N: Revealed type is "builtins.str"
+    reveal_type(p.storage_options)   # N: Revealed type is "typing.Mapping[builtins.str, Any]"
+    # reveal_type(p.fs)
+    # reveal_type(p.parser)
+    reveal_type(p.info)              # NR: Revealed type is ".*PathInfo"
+
+- case: upath_method_with_segments
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.with_segments("foo", "bar"))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_vfspath
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.__vfspath__())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_with_name
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.with_name("newname"))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_with_stem
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.with_stem("newstem"))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_with_suffix
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.with_suffix(".txt"))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_joinpath
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.joinpath("foo"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.joinpath(UPath("bar")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_truediv
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p / "foo")  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p / UPath("bar"))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_rtruediv
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type("foo" / p)  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_full_match
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.full_match("*.txt"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_open_reader
+  disable_cache: false
+  main: |
+    from upath import UPath
+    from typing import BinaryIO
+
+    p = UPath("")
+    reveal_type(p.__open_reader__())  # N: Revealed type is "typing.BinaryIO"
+
+- case: upath_method_open_writer
+  disable_cache: false
+  main: |
+    from upath import UPath
+    from typing import BinaryIO
+
+    p = UPath("")
+    reveal_type(p.__open_writer__("a"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.__open_writer__("w"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.__open_writer__("x"))  # N: Revealed type is "typing.BinaryIO"
+
+- case: upath_method_read_bytes
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.read_bytes())  # N: Revealed type is "builtins.bytes"
+
+- case: upath_method_read_text
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.read_text())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_iterdir
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.iterdir())  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
+
+- case: upath_method_glob
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.glob("*.txt"))  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
+
+- case: upath_method_walk
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.walk())  # N: Revealed type is "typing.Iterator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+
+- case: upath_method_readlink
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.readlink())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_copy
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.copy("target"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.copy(UPath("target")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_copy_into
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.copy_into("target_dir"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.copy_into(UPath("target_dir")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_symlink_to
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.symlink_to("target"))  # N: Revealed type is "None"
+    reveal_type(p.symlink_to(UPath("target")))  # N: Revealed type is "None"
+
+- case: upath_method_mkdir
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.mkdir())  # N: Revealed type is "None"
+
+- case: upath_method_write_bytes
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.write_bytes(b"data"))  # N: Revealed type is "builtins.int"
+
+- case: upath_method_write_text
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.write_text("data"))  # N: Revealed type is "builtins.int"
+
+- case: upath_method_copy_from
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p._copy_from(UPath("source")))  # N: Revealed type is "None"
+
+- case: upath_method_joinuri
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.joinuri("other"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.joinuri(UPath("other")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_str
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(str(p))  # N: Revealed type is "builtins.str"
+
+- case: upath_method_repr
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(repr(p))  # N: Revealed type is "builtins.str"
+
+- case: upath_method_open
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.open())  # N: Revealed type is "typing.TextIO"
+    reveal_type(p.open("w"))  # N: Revealed type is "typing.TextIO"
+    reveal_type(p.open("rb"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.open("wb"))  # N: Revealed type is "typing.BinaryIO"
+
+- case: upath_method_open_fsspec_kwargs
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+    - module: upath.implementations.cloud
+      cls: S3Path
+    - module: upath.implementations.cloud
+      cls: GCSPath
+    - module: upath.implementations.cloud
+      cls: AzurePath
+    - module: upath.implementations.data
+      cls: DataPath
+    - module: upath.implementations.github
+      cls: GitHubPath
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+    - module: upath.implementations.http
+      cls: HTTPPath
+    - module: upath.implementations.local
+      cls: PosixUPath
+    - module: upath.implementations.local
+      cls: WindowsUPath
+    - module: upath.implementations.local
+      cls: FilePath
+    - module: upath.implementations.memory
+      cls: MemoryPath
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+    - module: upath.implementations.smb
+      cls: SMBPath
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+    - module: upath.extensions
+      cls: ProxyUPath
+  main: |
+    from {{ module }} import {{ cls }}
+
+    p = {{ cls }}("")
+    reveal_type(p.open(mode="rb", compression="gz"))  # N: Revealed type is "typing.BinaryIO"
+
+- case: upath_method_stat
+  disable_cache: false
+  main: |
+    from upath import UPath
+    import os
+
+    p = UPath("")
+    reveal_type(p.stat())  # N: Revealed type is "upath._stat.UPathStatResult"
+
+- case: upath_method_lstat
+  disable_cache: false
+  main: |
+    from upath import UPath
+    import os
+
+    p = UPath("")
+    reveal_type(p.lstat())  # N: Revealed type is "upath._stat.UPathStatResult"
+
+- case: upath_method_chmod
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.chmod(0o755))  # N: Revealed type is "None"
+
+- case: upath_method_exists
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.exists())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_dir
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_dir())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_file
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_file())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_mount
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_mount())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_symlink
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_symlink())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_junction
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_junction())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_block_device
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_block_device())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_char_device
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_char_device())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_fifo
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_fifo())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_socket
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_socket())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_is_reserved
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_reserved())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_expanduser
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.expanduser())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_rglob
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.rglob("*.txt"))  # N: Revealed type is "typing.Iterator[upath.core.UPath]"
+
+- case: upath_method_owner
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.owner())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_group
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.group())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_absolute
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.absolute())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_is_absolute
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_absolute())  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_eq
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p == UPath("other"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_hash
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(hash(p))  # N: Revealed type is "builtins.int"
+
+- case: upath_method_lt
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p < UPath("other"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_le
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p <= UPath("other"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_gt
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p > UPath("other"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_ge
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p >= UPath("other"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_resolve
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.resolve())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_touch
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.touch())  # N: Revealed type is "None"
+
+- case: upath_method_lchmod
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.lchmod(0o755))  # N: Revealed type is "None"
+
+- case: upath_method_unlink
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.unlink())  # N: Revealed type is "None"
+
+- case: upath_method_rmdir
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.rmdir())  # N: Revealed type is "None"
+
+- case: upath_method_rename
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.rename("new_name"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.rename(UPath("new_name")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_replace
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.replace("target"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.replace(UPath("target")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_as_uri
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.as_uri())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_as_posix
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.as_posix())  # N: Revealed type is "builtins.str"
+
+- case: upath_method_samefile
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.samefile("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.samefile(UPath("other")))  # N: Revealed type is "builtins.bool"
+
+- case: upath_classmethod_cwd
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath.cwd())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_classmethod_home
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    reveal_type(UPath.home())  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_relative_to
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.relative_to("other"))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(p.relative_to(UPath("other")))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_method_is_relative_to
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.is_relative_to("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_relative_to(UPath("other")))  # N: Revealed type is "builtins.bool"
+
+- case: upath_method_hardlink_to
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.hardlink_to("target"))  # N: Revealed type is "None"
+    reveal_type(p.hardlink_to(UPath("target")))  # N: Revealed type is "None"
+
+- case: upath_method_match
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    p = UPath("")
+    reveal_type(p.match("*.txt"))  # N: Revealed type is "builtins.bool"
+
+- case: upath_subclass_methods
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+    - module: upath.implementations.cloud
+      cls: S3Path
+    - module: upath.implementations.cloud
+      cls: GCSPath
+    - module: upath.implementations.cloud
+      cls: AzurePath
+    - module: upath.implementations.data
+      cls: DataPath
+    - module: upath.implementations.github
+      cls: GitHubPath
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+    - module: upath.implementations.http
+      cls: HTTPPath
+    - module: upath.implementations.local
+      cls: PosixUPath
+    - module: upath.implementations.local
+      cls: WindowsUPath
+    - module: upath.implementations.local
+      cls: FilePath
+    - module: upath.implementations.memory
+      cls: MemoryPath
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+    - module: upath.implementations.smb
+      cls: SMBPath
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+    - module: upath.extensions
+      cls: ProxyUPath
+  main: |
+    from {{ module }} import {{ cls }}
+
+    p = {{ cls }}("")
+
+    # Path manipulation methods
+    reveal_type(p.with_segments("foo", "bar"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.__vfspath__())  # N: Revealed type is "builtins.str"
+    reveal_type(p.with_name("newname"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.with_stem("newstem"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.with_suffix(".txt"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.joinpath("foo"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.joinpath({{ cls }}("bar")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p / "foo")  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p / {{ cls }}("bar"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type("foo" / p)  # N: Revealed type is "{{ module }}.{{ cls }}"
+
+    # Boolean methods
+    reveal_type(p.full_match("*.txt"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.exists())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_dir())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_file())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_mount())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_symlink())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_junction())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_block_device())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_char_device())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_fifo())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_socket())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_reserved())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_absolute())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.match("*.txt"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_relative_to("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_relative_to({{ cls }}("other")))  # N: Revealed type is "builtins.bool"
+
+    # File I/O methods
+    reveal_type(p.__open_reader__())  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.__open_writer__("a"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.__open_writer__("w"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.__open_writer__("x"))  # N: Revealed type is "typing.BinaryIO"
+    reveal_type(p.read_bytes())  # N: Revealed type is "builtins.bytes"
+    reveal_type(p.read_text())  # N: Revealed type is "builtins.str"
+    reveal_type(p.open())  # NR: Revealed type is ".*TextIO.*"
+    reveal_type(p.open("w"))  # NR: Revealed type is ".*TextIO.*"
+    reveal_type(p.open("rb"))  # NR: Revealed type is ".*(BinaryIO|BufferedReader).*"
+    reveal_type(p.open("wb"))  # NR: Revealed type is ".*(BinaryIO|BufferedWriter).*"
+    reveal_type(p.write_bytes(b"data"))  # N: Revealed type is "builtins.int"
+    reveal_type(p.write_text("data"))  # N: Revealed type is "builtins.int"
+
+    # Iterator methods
+    reveal_type(p.iterdir())  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
+    reveal_type(p.glob("*.txt"))  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
+    reveal_type(p.rglob("*.txt"))  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
+    reveal_type(p.walk())  # N: Revealed type is "typing.Iterator[tuple[{{ module }}.{{ cls }}, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+
+    # Path resolution methods
+    reveal_type(p.readlink())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.expanduser())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.absolute())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.resolve())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.relative_to("other"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.relative_to({{ cls }}("other")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+
+    # File system operations that return paths
+    reveal_type(p.copy("target"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.copy({{ cls }}("target")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.copy_into("target_dir"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.copy_into({{ cls }}("target_dir")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.rename("new_name"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.rename({{ cls }}("new_name")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.replace("target"))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.replace({{ cls }}("target")))  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type(p.joinuri("other"))  # NR: Revealed type is "(upath.core.UPath|upath.extensions.ProxyUPath)"
+    reveal_type(p.joinuri({{ cls }}("other")))  # NR: Revealed type is "(upath.core.UPath|upath.extensions.ProxyUPath)"
+
+    # String returning methods
+    reveal_type(str(p))  # N: Revealed type is "builtins.str"
+    reveal_type(repr(p))  # N: Revealed type is "builtins.str"
+    reveal_type(p.as_uri())  # N: Revealed type is "builtins.str"
+    reveal_type(p.as_posix())  # N: Revealed type is "builtins.str"
+    reveal_type(p.owner())  # N: Revealed type is "builtins.str"
+    reveal_type(p.group())  # N: Revealed type is "builtins.str"
+
+    # Stat methods
+    reveal_type(p.stat())  # NR: Revealed type is ".*(UPathStatResult|stat_result).*"
+    reveal_type(p.lstat())  # NR: Revealed type is ".*(UPathStatResult|stat_result).*"
+
+    # None methods
+    reveal_type(p.symlink_to("target"))  # N: Revealed type is "None"
+    reveal_type(p.symlink_to({{ cls }}("target")))  # N: Revealed type is "None"
+    reveal_type(p.mkdir())  # N: Revealed type is "None"
+    reveal_type(p._copy_from({{ cls }}("source")))  # N: Revealed type is "None"
+    reveal_type(p.chmod(0o755))  # N: Revealed type is "None"
+    reveal_type(p.touch())  # N: Revealed type is "None"
+    reveal_type(p.lchmod(0o755))  # N: Revealed type is "None"
+    reveal_type(p.unlink())  # N: Revealed type is "None"
+    reveal_type(p.rmdir())  # N: Revealed type is "None"
+    reveal_type(p.hardlink_to("target"))  # N: Revealed type is "None"
+    reveal_type(p.hardlink_to({{ cls }}("target")))  # N: Revealed type is "None"
+
+    # Comparison methods
+    reveal_type(p == {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(hash(p))  # N: Revealed type is "builtins.int"
+    reveal_type(p < {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p <= {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p > {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p >= {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.samefile("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.samefile({{ cls }}("other")))  # N: Revealed type is "builtins.bool"
+
+    # Class methods
+    reveal_type({{ cls }}.cwd())  # N: Revealed type is "{{ module }}.{{ cls }}"
+    reveal_type({{ cls }}.home())  # N: Revealed type is "{{ module }}.{{ cls }}"

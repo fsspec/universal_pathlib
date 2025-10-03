@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import enum
-import pathlib
 import sys
 from typing import TYPE_CHECKING
 from typing import Any
@@ -54,11 +53,11 @@ class _DefaultValue(enum.Enum):
 
 UNSET_DEFAULT: Any = _DefaultValue.UNSET
 
-
-if sys.version_info >= (3, 14):
-    JoinablePath.register(pathlib.PurePath)
-    ReadablePath.register(pathlib.Path)
-    WritablePath.register(pathlib.Path)
+# We can't assume this, because pathlib_abc==0.5.1 is ahead of stdlib 3.14
+# if sys.version_info >= (3, 14):
+#     JoinablePath.register(pathlib.PurePath)
+#     ReadablePath.register(pathlib.Path)
+#     WritablePath.register(pathlib.Path)
 
 
 class StatResultType(Protocol):
