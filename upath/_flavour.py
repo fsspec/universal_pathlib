@@ -9,7 +9,6 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypedDict
-from typing import Union
 from urllib.parse import SplitResult
 from urllib.parse import urlsplit
 
@@ -22,7 +21,7 @@ from upath._flavour_sources import FileSystemFlavourBase
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
 from upath._protocol import normalize_empty_netloc
-from upath.types import JoinablePath
+from upath.types import JoinablePathLike
 from upath.types import UPathParser
 
 if TYPE_CHECKING:
@@ -42,7 +41,6 @@ __all__ = [
 ]
 
 class_registry: Mapping[str, type[AbstractFileSystem]] = _class_registry
-PathOrStr: TypeAlias = Union[str, os.PathLike[str], JoinablePath]
 
 
 class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
@@ -237,7 +235,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         return bool(getattr(self._spec, "local_file", False))
 
     @staticmethod
-    def stringify_path(pth: PathOrStr) -> str:
+    def stringify_path(pth: JoinablePathLike) -> str:
         if isinstance(pth, str):
             out = pth
         elif isinstance(pth, upath.UPath) and not pth.is_absolute():
@@ -253,18 +251,18 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             out = str(pth)
         return normalize_empty_netloc(out)
 
-    def strip_protocol(self, pth: PathOrStr) -> str:
+    def strip_protocol(self, pth: JoinablePathLike) -> str:
         pth = self.stringify_path(pth)
         return self._spec._strip_protocol(pth)
 
-    def get_kwargs_from_url(self, url: PathOrStr) -> dict[str, Any]:
+    def get_kwargs_from_url(self, url: JoinablePathLike) -> dict[str, Any]:
         # NOTE: the public variant is _from_url not _from_urls
         if hasattr(url, "storage_options"):
             return dict(url.storage_options)
         url = self.stringify_path(url)
         return self._spec._get_kwargs_from_urls(url)
 
-    def parent(self, path: PathOrStr) -> str:
+    def parent(self, path: JoinablePathLike) -> str:
         path = self.stringify_path(path)
         return self._spec._parent(path)
 
@@ -278,14 +276,14 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
     def altsep(self) -> str | None:  # type: ignore[override]
         return None
 
-    def isabs(self, path: PathOrStr) -> bool:
+    def isabs(self, path: JoinablePathLike) -> bool:
         path = self.strip_protocol(path)
         if self.local_file:
             return os.path.isabs(path)
         else:
             return path.startswith(self.root_marker)
 
-    def join(self, path: PathOrStr, *paths: PathOrStr) -> str:
+    def join(self, path: JoinablePathLike, *paths: JoinablePathLike) -> str:
         if not paths:
             return self.strip_protocol(path) or self.root_marker
         if self.local_file:
@@ -309,7 +307,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         else:
             return drv + posixpath.join(p0, *pN)
 
-    def split(self, path: PathOrStr):
+    def split(self, path: JoinablePathLike) -> tuple[str, str]:
         stripped_path = self.strip_protocol(path)
         if self.local_file:
             return os.path.split(stripped_path)
@@ -328,7 +326,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             return self.split(head)
         return head, tail
 
-    def splitdrive(self, path: PathOrStr) -> tuple[str, str]:
+    def splitdrive(self, path: JoinablePathLike) -> tuple[str, str]:
         path = self.strip_protocol(path)
         if self.netloc_is_anchor:
             u = urlsplit(path)
@@ -353,13 +351,13 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             # all other cases don't have a drive
             return "", path
 
-    def normcase(self, path: PathOrStr) -> str:
+    def normcase(self, path: JoinablePathLike) -> str:
         if self.local_file:
             return os.path.normcase(self.stringify_path(path))
         else:
             return self.stringify_path(path)
 
-    def splitext(self, path: PathOrStr) -> tuple[str, str]:
+    def splitext(self, path: JoinablePathLike) -> tuple[str, str]:
         path = self.stringify_path(path)
         if self.local_file:
             return os.path.splitext(path)
@@ -375,7 +373,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
 
     # === Python3.12 pathlib flavour ==================================
 
-    def splitroot(self, path: PathOrStr) -> tuple[str, str, str]:
+    def splitroot(self, path: JoinablePathLike) -> tuple[str, str, str]:
         drive, tail = self.splitdrive(path)
         if self.netloc_is_anchor:
             root_marker = self.root_marker or self.sep
@@ -422,13 +420,13 @@ class LazyFlavourDescriptor:
             return f"<{cls_name} of {self._owner.__name__}>"
 
 
-def upath_strip_protocol(pth: PathOrStr) -> str:
+def upath_strip_protocol(pth: JoinablePathLike) -> str:
     if protocol := get_upath_protocol(pth):
         return WrappedFileSystemFlavour.from_protocol(protocol).strip_protocol(pth)
     return WrappedFileSystemFlavour.stringify_path(pth)
 
 
-def upath_get_kwargs_from_url(url: PathOrStr) -> dict[str, Any]:
+def upath_get_kwargs_from_url(url: JoinablePathLike) -> dict[str, Any]:
     if protocol := get_upath_protocol(url):
         return WrappedFileSystemFlavour.from_protocol(protocol).get_kwargs_from_url(url)
     return {}
