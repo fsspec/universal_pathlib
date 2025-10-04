@@ -48,6 +48,27 @@ from fsspec.registry import registry as _fsspec_registry
 
 import upath
 
+if TYPE_CHECKING:
+    from typing import Literal
+    from typing import overload
+
+    from upath.implementations.cached import SimpleCachePath as _SimpleCachePath
+    from upath.implementations.cloud import AzurePath as _AzurePath
+    from upath.implementations.cloud import GCSPath as _GCSPath
+    from upath.implementations.cloud import S3Path as _S3Path
+    from upath.implementations.data import DataPath as _DataPath
+    from upath.implementations.github import GitHubPath as _GitHubPath
+    from upath.implementations.hdfs import HDFSPath as _HDFSPath
+    from upath.implementations.http import HTTPPath as _HTTPPath
+    from upath.implementations.local import FilePath as _FilePath
+    from upath.implementations.local import PosixUPath as _PosixUPath
+    from upath.implementations.local import WindowsUPath as _WindowsUPath
+    from upath.implementations.memory import MemoryPath as _MemoryPath
+    from upath.implementations.sftp import SFTPPath as _SFTPPath
+    from upath.implementations.smb import SMBPath as _SMBPath
+    from upath.implementations.webdav import WebdavPath as _WebdavPath
+
+
 __all__ = [
     "get_upath_class",
     "available_implementations",
@@ -125,7 +146,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
                 f"expected UPath subclass or FQN-string, got: {type(value).__name__!r}"
             )
         if not item or item in self._m:
-            get_upath_class.cache_clear()
+            get_upath_class.cache_clear()  # type: ignore[attr-defined]
         self._m[item] = value
 
     def __delitem__(self, __v: str) -> None:
@@ -182,7 +203,57 @@ def register_implementation(
     _registry[protocol] = cls
 
 
-@lru_cache
+# --- get_upath_class type overloads ------------------------------------------
+
+if TYPE_CHECKING:  # noqa: C901
+
+    @overload
+    def get_upath_class(protocol: Literal["simplecache"]) -> type[_SimpleCachePath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["s3", "s3a"]) -> type[_S3Path]: ...
+    @overload
+    def get_upath_class(protocol: Literal["gcs", "gs"]) -> type[_GCSPath]: ...
+
+    @overload
+    def get_upath_class(
+        protocol: Literal["abfs", "abfss", "adl", "az"],
+    ) -> type[_AzurePath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["data"]) -> type[_DataPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["github"]) -> type[_GitHubPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["hdfs"]) -> type[_HDFSPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["http", "https"]) -> type[_HTTPPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["file", "local"]) -> type[_FilePath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["memory"]) -> type[_MemoryPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["sftp", "ssh"]) -> type[_SFTPPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["smb"]) -> type[_SMBPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["webdav"]) -> type[_WebdavPath]: ...
+
+    if sys.platform == "win32":
+
+        @overload
+        def get_upath_class(protocol: Literal[""]) -> type[_WindowsUPath]: ...
+
+    else:
+
+        @overload
+        def get_upath_class(protocol: Literal[""]) -> type[_PosixUPath]: ...  # type: ignore[overload-overlap]  # noqa: E501
+
+    @overload
+    def get_upath_class(
+        protocol: str, *, fallback: bool = ...
+    ) -> type[upath.UPath] | None: ...
+
+
+@lru_cache  # type: ignore[misc] # see: https://github.com/python/typeshed/issues/11280
 def get_upath_class(
     protocol: str,
     *,

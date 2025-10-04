@@ -30,6 +30,16 @@ class TestUPathGitHubPath(BaseTests):
         path = "github://ap--:universal_pathlib@test_data/data"
         self.path = UPath(path)
 
+    @pytest.fixture(autouse=True)
+    def _xfail_on_rate_limit_errors(self):
+        try:
+            yield
+        except Exception as e:
+            if "rate limit exceeded" in str(e):
+                pytest.xfail("GitHub API rate limit exceeded")
+            else:
+                raise
+
     def test_is_GitHubPath(self):
         """
         Test that the path is a GitHubPath instance.
