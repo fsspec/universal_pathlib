@@ -49,11 +49,11 @@ def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     try:
         o0 = _fsspec_registry_map[p0]
     except KeyError:
-        raise ValueError(f"Protocol not known: {p0}")
+        raise ValueError(f"Protocol not known: {p0!r}")
     try:
         o1 = _fsspec_registry_map[p1]
     except KeyError:
-        raise ValueError(f"Protocol not known: {p1}")
+        raise ValueError(f"Protocol not known: {p1!r}")
 
     return o0 == o1
 
@@ -81,13 +81,21 @@ def get_upath_protocol(
         pth_protocol = _match_protocol(str(pth))
     # if storage_options and not protocol and not pth_protocol:
     #     protocol = "file"
-    if (
+    if protocol is None:
+        return pth_protocol or ""
+    elif (
         protocol
         and pth_protocol
         and not _fsspec_protocol_equals(pth_protocol, protocol)
     ):
         raise ValueError(
             f"requested protocol {protocol!r} incompatible with {pth_protocol!r}"
+        )
+    elif protocol == "" and pth_protocol:
+        # explicitly requested empty protocol, but path has non-empty protocol
+        raise ValueError(
+            f"explicitly requested empty protocol {protocol!r}"
+            f" incompatible with {pth_protocol!r}"
         )
     return protocol or pth_protocol or ""
 

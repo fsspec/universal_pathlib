@@ -1219,7 +1219,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                         ),
                         "protocol": core_schema.typed_dict_field(
                             core_schema.with_default_schema(
-                                core_schema.str_schema(), default=""
+                                core_schema.nullable_schema(
+                                    core_schema.str_schema(),
+                                ),
+                                default=None,
                             ),
                             required=False,
                         ),

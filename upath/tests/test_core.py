@@ -439,3 +439,38 @@ def test_open_a_local_upath(tmp_path, protocol):
     u = UPath(p, protocol=protocol)
     with open(u, "rb") as f:
         assert f.read() == b"hello world"
+
+
+@pytest.mark.parametrize(
+    "uri,protocol",
+    [
+        ("s3://bucket/folder", "s3"),
+        ("gs://bucket/folder", "gs"),
+        ("bucket/folder", "s3"),
+        ("memory://folder", "memory"),
+        ("file:/tmp/folder", "file"),
+        ("/tmp/folder", "file"),
+        ("/tmp/folder", ""),
+        ("a/b/c", ""),
+    ],
+)
+def test_constructor_compatible_protocol_uri(uri, protocol):
+    p = UPath(uri, protocol=protocol)
+    assert p.protocol == protocol
+
+
+@pytest.mark.parametrize(
+    "uri,protocol",
+    [
+        ("s3://bucket/folder", "gs"),
+        ("gs://bucket/folder", "s3"),
+        ("memory://folder", "s3"),
+        ("file:/tmp/folder", "s3"),
+        ("s3://bucket/folder", ""),
+        ("memory://folder", ""),
+        ("file:/tmp/folder", ""),
+    ],
+)
+def test_constructor_incompatible_protocol_uri(uri, protocol):
+    with pytest.raises(ValueError, match=r".*incompatible with"):
+        UPath(uri, protocol=protocol)
