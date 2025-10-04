@@ -73,10 +73,20 @@
     path_cls = get_upath_class("")
     reveal_type(path_cls)  # N: Revealed type is "type[upath.implementations.local.WindowsUPath]"
 
-- case: get_upath_class_unknown_protocol
+- case: get_upath_class_unknown_protocol_py39
   disable_cache: false
+  skip: sys.version_info >= (3, 10)
   main: |
     from upath.registry import get_upath_class
 
     path_cls = get_upath_class("some-unknown-protocol")
     reveal_type(path_cls)  # N: Revealed type is "Union[type[upath.core.UPath], None]"
+
+- case: get_upath_class_unknown_protocol_py310plus
+  disable_cache: false
+  skip: sys.version_info < (3, 10)
+  main: |
+    from upath.registry import get_upath_class
+
+    path_cls = get_upath_class("some-unknown-protocol")
+    reveal_type(path_cls)  # N: Revealed type is "type[upath.core.UPath] | None"
