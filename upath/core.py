@@ -121,7 +121,11 @@ class _UPathMeta(ABCMeta):
         else:
             if isinstance(arg0, UPath) and not kwargs:
                 return copy(arg0)  # type: ignore[return-value]
-        return ABCMeta.__call__(cls, *args, **kwargs)
+        # We do this call manually, because cls could be a registered
+        # subclass of UPath that is not directly inheriting from UPath.
+        inst = cls.__new__(cls, *args, **kwargs)
+        inst.__init__(*args, **kwargs)  # type: ignore[misc]
+        return inst
 
 
 class _UPathMixin(metaclass=_UPathMeta):
