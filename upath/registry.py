@@ -213,8 +213,7 @@ if TYPE_CHECKING:  # noqa: C901
     def get_upath_class(protocol: Literal["s3", "s3a"]) -> type[_S3Path]: ...
     @overload
     def get_upath_class(protocol: Literal["gcs", "gs"]) -> type[_GCSPath]: ...
-
-    @overload
+    @overload  # noqa: E301
     def get_upath_class(
         protocol: Literal["abfs", "abfss", "adl", "az"],
     ) -> type[_AzurePath]: ...
