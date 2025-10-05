@@ -48,6 +48,8 @@ from upath.types import WritablePath
 from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
+    import upath.implementations as _uimpl
+
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
@@ -56,6 +58,7 @@ if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
+    _MT = TypeVar("_MT")
     _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = ["UPath"]
@@ -109,7 +112,7 @@ class _UPathMeta(ABCMeta):
         def __getitem__(cls, key):
             return cls
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls: type[_MT], *args: Any, **kwargs: Any) -> _MT:
         # create a copy if UPath class
         try:
             (arg0,) = args
@@ -117,10 +120,8 @@ class _UPathMeta(ABCMeta):
             pass
         else:
             if isinstance(arg0, UPath) and not kwargs:
-                return copy(arg0)
-        inst = cls.__new__(cls, *args, **kwargs)
-        inst.__init__(*args, **kwargs)
-        return inst
+                return copy(arg0)  # type: ignore[return-value]
+        return ABCMeta.__call__(cls, *args, **kwargs)
 
 
 class _UPathMixin(metaclass=_UPathMeta):
@@ -316,6 +317,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             storage_options=storage_options,
         )
         # determine which UPath subclass to dispatch to
+        upath_cls: type[_UPathMixin] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
             upath_cls = get_upath_class(protocol=pth_protocol)
             if upath_cls is None:
@@ -325,9 +327,12 @@ class _UPathMixin(metaclass=_UPathMeta):
             # by setting MyUPathSubclass._protocol_dispatch to `False`.
             # This will effectively ignore the registered UPath
             # implementations and return an instance of MyUPathSubclass.
-            # This can be useful if a subclass wants to extend the UPath
+            # This be useful if a subclass wants to extend the UPath
             # api, and it is fine to rely on the default implementation
             # for all supported user protocols.
+            #
+            # THIS IS DEPRECATED!
+            # Use upath.extensions.ProxyUPath to extend the UPath API
             upath_cls = cls
 
         if issubclass(upath_cls, cls):
@@ -444,8 +449,6 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         _raw_urlpaths: Sequence[JoinablePathLike]
         _relative_base: str | None
 
-        import upath.implementations as _uimpl
-
         @overload
         def __new__(
             cls,
@@ -551,6 +554,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             **storage_options: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
         @overload  # noqa: E301
+        def __new__(  # type: ignore[misc]
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal[""],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.local.PosixUPath: ...
+        @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
@@ -558,13 +569,21 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Any,
         ) -> Self: ...
-        def __new__(  # noqa: E301
+
+        def __new__(  # type: ignore[misc]
             cls,
             *args: JoinablePathLike,
             protocol: str | None = None,
             chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
             **storage_options: Any,
-        ) -> Self: ...
+        ) -> Self:
+            return super().__new__(
+                cls,
+                *args,
+                protocol=protocol,
+                chain_parser=chain_parser,
+                **storage_options,
+            )
 
     # === JoinablePath attributes =====================================
 
