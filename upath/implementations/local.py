@@ -432,38 +432,53 @@ class LocalPath(_UPathMixin, pathlib.Path):
 UPath.register(LocalPath)
 
 
-class WindowsUPath(LocalPath, pathlib.WindowsPath):
-    __slots__ = ()
+# Mypy will ignore the ABC.register call above, so we need to force it to
+# think PosixUPath and WindowsUPath are subclasses of UPath.
+# This is really not a good pattern, but it's the best we can do without
+# either introducing a duck-type protocol for UPath or come up with a
+# better solution for the UPath versions of the pathlib.Path subclasses.
 
-    if os.name != "nt":
+if TYPE_CHECKING:
 
-        def __new__(
-            cls,
-            *args,
-            protocol: str | None = None,
-            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
-            **storage_options: Any,
-        ) -> WindowsUPath:
-            raise NotImplementedError(
-                f"cannot instantiate {cls.__name__} on your system"
-            )
+    class WindowsUPath(LocalPath, pathlib.WindowsPath, UPath):  # type: ignore[misc]
+        __slots__ = ()
 
+    class PosixUPath(LocalPath, pathlib.PosixPath, UPath):  # type: ignore[misc]
+        __slots__ = ()
 
-class PosixUPath(LocalPath, pathlib.PosixPath):
-    __slots__ = ()
+else:
 
-    if os.name == "nt":
+    class WindowsUPath(LocalPath, pathlib.WindowsPath):
+        __slots__ = ()
 
-        def __new__(
-            cls,
-            *args,
-            protocol: str | None = None,
-            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
-            **storage_options: Any,
-        ) -> PosixUPath:
-            raise NotImplementedError(
-                f"cannot instantiate {cls.__name__} on your system"
-            )
+        if os.name != "nt":
+
+            def __new__(
+                cls,
+                *args,
+                protocol: str | None = None,
+                chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+                **storage_options: Any,
+            ) -> WindowsUPath:
+                raise NotImplementedError(
+                    f"cannot instantiate {cls.__name__} on your system"
+                )
+
+    class PosixUPath(LocalPath, pathlib.PosixPath):
+        __slots__ = ()
+
+        if os.name == "nt":
+
+            def __new__(
+                cls,
+                *args,
+                protocol: str | None = None,
+                chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+                **storage_options: Any,
+            ) -> PosixUPath:
+                raise NotImplementedError(
+                    f"cannot instantiate {cls.__name__} on your system"
+                )
 
 
 class FilePath(UPath):

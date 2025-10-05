@@ -90,3 +90,58 @@
 
     path_cls = get_upath_class("some-unknown-protocol")
     reveal_type(path_cls)  # N: Revealed type is "type[upath.core.UPath] | None"
+
+- case: upath__new__fsspec_protocols
+  disable_cache: false
+  parametrized:
+    - cls_fqn: upath.implementations.cached.SimpleCachePath
+      protocol: simplecache
+    - cls_fqn: upath.implementations.cloud.S3Path
+      protocol: s3
+    - cls_fqn: upath.implementations.cloud.GCSPath
+      protocol: gcs
+    - cls_fqn: upath.implementations.cloud.AzurePath
+      protocol: abfs
+    - cls_fqn: upath.implementations.data.DataPath
+      protocol: data
+    - cls_fqn: upath.implementations.github.GitHubPath
+      protocol: github
+    - cls_fqn: upath.implementations.hdfs.HDFSPath
+      protocol: hdfs
+    - cls_fqn: upath.implementations.http.HTTPPath
+      protocol: http
+    - cls_fqn: upath.implementations.local.FilePath
+      protocol: file
+    - cls_fqn: upath.implementations.memory.MemoryPath
+      protocol: memory
+    - cls_fqn: upath.implementations.sftp.SFTPPath
+      protocol: sftp
+    - cls_fqn: upath.implementations.smb.SMBPath
+      protocol: smb
+    - cls_fqn: upath.implementations.webdav.WebdavPath
+      protocol: webdav
+    - cls_fqn: upath.core.UPath
+      protocol: unknown-protocol
+  main: |
+    import upath
+
+    p = upath.UPath(".", protocol="{{ protocol }}")
+    reveal_type(p)  # N: Revealed type is "{{ cls_fqn }}"
+
+- case: upath__new__empty_protocol
+  disable_cache: true
+  skip: sys.platform == "win32"
+  main: |
+    from upath.core import UPath
+
+    p = UPath("asd", protocol="")
+    reveal_type(p)  # N: Revealed type is "upath.implementations.local.PosixUPath"
+
+- case: get_upath_class_pathlib_win
+  disable_cache: true
+  skip: sys.platform != "win32"
+  main: |
+    from upath.core import UPath
+
+    p = UPath("", protocol="")
+    reveal_type(p)  # N: Revealed type is "upath.implementations.local.WindowsUPath"

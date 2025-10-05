@@ -48,6 +48,8 @@ from upath.types import WritablePath
 from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
+    import upath.implementations as _uimpl
+
     if sys.version_info >= (3, 11):
         from typing import Self
     else:
@@ -56,6 +58,7 @@ if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
+    _MT = TypeVar("_MT")
     _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = ["UPath"]
@@ -109,7 +112,7 @@ class _UPathMeta(ABCMeta):
         def __getitem__(cls, key):
             return cls
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls: type[_MT], *args: Any, **kwargs: Any) -> _MT:
         # create a copy if UPath class
         try:
             (arg0,) = args
@@ -117,9 +120,11 @@ class _UPathMeta(ABCMeta):
             pass
         else:
             if isinstance(arg0, UPath) and not kwargs:
-                return copy(arg0)
+                return copy(arg0)  # type: ignore[return-value]
+        # We do this call manually, because cls could be a registered
+        # subclass of UPath that is not directly inheriting from UPath.
         inst = cls.__new__(cls, *args, **kwargs)
-        inst.__init__(*args, **kwargs)
+        inst.__init__(*args, **kwargs)  # type: ignore[misc]
         return inst
 
 
@@ -297,9 +302,8 @@ class _UPathMixin(metaclass=_UPathMeta):
         **storage_options: Any,
     ) -> UPath:
         # narrow type
-        assert issubclass(
-            cls, UPath
-        ), "UPath.__new__ can't instantiate non-UPath classes"
+        if not issubclass(cls, UPath):
+            raise TypeError("UPath.__new__ can't instantiate non-UPath classes")
 
         # deprecate 'scheme'
         if "scheme" in storage_options:
@@ -317,6 +321,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             storage_options=storage_options,
         )
         # determine which UPath subclass to dispatch to
+        upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
             upath_cls = get_upath_class(protocol=pth_protocol)
             if upath_cls is None:
@@ -326,9 +331,12 @@ class _UPathMixin(metaclass=_UPathMeta):
             # by setting MyUPathSubclass._protocol_dispatch to `False`.
             # This will effectively ignore the registered UPath
             # implementations and return an instance of MyUPathSubclass.
-            # This can be useful if a subclass wants to extend the UPath
+            # This be useful if a subclass wants to extend the UPath
             # api, and it is fine to rely on the default implementation
             # for all supported user protocols.
+            #
+            # THIS IS DEPRECATED!
+            # Use upath.extensions.ProxyUPath to extend the UPath API
             upath_cls = cls
 
         if issubclass(upath_cls, cls):
@@ -438,12 +446,160 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         "_relative_base",
     )
 
-    if TYPE_CHECKING:
+    if TYPE_CHECKING:  # noqa: C901
         _chain: Chain
         _chain_parser: FSSpecChainParser
         _fs_cached: bool
         _raw_urlpaths: Sequence[JoinablePathLike]
         _relative_base: str | None
+
+        @overload
+        def __new__(
+            cls,
+        ) -> Self: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["simplecache"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.cached.SimpleCachePath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["gcs", "gs"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.cloud.GCSPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["s3", "s3a"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.cloud.S3Path: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["az", "abfs", "abfss", "adl"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.cloud.AzurePath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["data"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.data.DataPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["github"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.github.GitHubPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["hdfs"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.hdfs.HDFSPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["http", "https"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.http.HTTPPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["file", "local"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.local.FilePath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["memory"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.memory.MemoryPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["sftp", "ssh"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.sftp.SFTPPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["smb"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.smb.SMBPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["webdav"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.webdav.WebdavPath: ...
+
+        if sys.platform == "win32":
+
+            @overload  # noqa: E301
+            def __new__(
+                cls,
+                *args: JoinablePathLike,
+                protocol: Literal[""],
+                chain_parser: FSSpecChainParser = ...,
+                **storage_options: Any,
+            ) -> _uimpl.local.WindowsUPath: ...
+
+        else:
+
+            @overload  # noqa: E301
+            def __new__(
+                cls,
+                *args: JoinablePathLike,
+                protocol: Literal[""],
+                chain_parser: FSSpecChainParser = ...,
+                **storage_options: Any,
+            ) -> _uimpl.local.PosixUPath: ...
+
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: str | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> Self: ...
+
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: str | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> Self: ...
 
     # === JoinablePath attributes =====================================
 
