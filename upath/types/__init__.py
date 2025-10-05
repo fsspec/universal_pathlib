@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import sys
+from os import PathLike
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
@@ -15,7 +16,6 @@ from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
 
 if TYPE_CHECKING:
-    from os import PathLike  # noqa: F401
 
     if sys.version_info >= (3, 12):
         from typing import TypeAlias
