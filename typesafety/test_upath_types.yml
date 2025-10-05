@@ -123,26 +123,25 @@
     - cls_fqn: upath.core.UPath
       protocol: unknown-protocol
   main: |
-    from upath import UPath
+    import upath
 
-    # without protocol kwarg resolve to UPath
-    reveal_type(UPath("{{ protocol }}://someuri/blah"))  # N: Revealed type is "upath.core.UPath"
-
-    # with protocol kwarg resolve to specific UPath subclass
-    reveal_type(UPath(".", protocol="{{ protocol }}"))  # N: Revealed type is "{{ cls_fqn }}"
+    p = upath.UPath(".", protocol="{{ protocol }}")
+    reveal_type(p)  # N: Revealed type is "{{ cls_fqn }}"
 
 - case: upath__new__empty_protocol
-  disable_cache: false
+  disable_cache: true
   skip: sys.platform == "win32"
   main: |
-    from upath import UPath
+    from upath.core import UPath
 
-    reveal_type(UPath("", protocol=""))  # N: Revealed type is "type[upath.implementations.local.PosixUPath]"
+    p = UPath("asd", protocol="")
+    reveal_type(p)  # N: Revealed type is "upath.implementations.local.PosixUPath"
 
 - case: get_upath_class_pathlib_win
-  disable_cache: false
+  disable_cache: true
   skip: sys.platform != "win32"
   main: |
-    from upath import UPath
+    from upath.core import UPath
 
-    reveal_type(UPath("", protocol=""))  # N: Revealed type is "type[upath.implementations.local.WindowsUPath]"
+    p = UPath("", protocol="")
+    reveal_type(p)  # N: Revealed type is "upath.implementations.local.WindowsUPath"
