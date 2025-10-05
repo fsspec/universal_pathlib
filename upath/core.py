@@ -296,7 +296,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         protocol: str | None = None,
         chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
         **storage_options: Any,
-    ) -> Self:
+    ) -> UPath:
         # narrow type
         if not issubclass(cls, UPath):
             raise TypeError("UPath.__new__ can't instantiate non-UPath classes")
@@ -317,7 +317,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             storage_options=storage_options,
         )
         # determine which UPath subclass to dispatch to
-        upath_cls: type[_UPathMixin] | None
+        upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
             upath_cls = get_upath_class(protocol=pth_protocol)
             if upath_cls is None:
@@ -452,6 +452,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         @overload
         def __new__(
             cls,
+        ) -> Self: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
             *args: JoinablePathLike,
             protocol: Literal["simplecache"],
             chain_parser: FSSpecChainParser = ...,
@@ -553,14 +557,29 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
-        @overload  # noqa: E301
-        def __new__(  # type: ignore[misc]
-            cls,
-            *args: JoinablePathLike,
-            protocol: Literal[""],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
-        ) -> _uimpl.local.PosixUPath: ...
+
+        if sys.platform == "win32":
+
+            @overload  # noqa: E301
+            def __new__(
+                cls,
+                *args: JoinablePathLike,
+                protocol: Literal[""],
+                chain_parser: FSSpecChainParser = ...,
+                **storage_options: Any,
+            ) -> _uimpl.local.WindowsUPath: ...
+
+        else:
+
+            @overload  # noqa: E301
+            def __new__(
+                cls,
+                *args: JoinablePathLike,
+                protocol: Literal[""],
+                chain_parser: FSSpecChainParser = ...,
+                **storage_options: Any,
+            ) -> _uimpl.local.PosixUPath: ...
+
         @overload  # noqa: E301
         def __new__(
             cls,
@@ -570,20 +589,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             **storage_options: Any,
         ) -> Self: ...
 
-        def __new__(  # type: ignore[misc]
+        def __new__(
             cls,
             *args: JoinablePathLike,
-            protocol: str | None = None,
-            chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+            protocol: str | None = ...,
+            chain_parser: FSSpecChainParser = ...,
             **storage_options: Any,
-        ) -> Self:
-            return super().__new__(
-                cls,
-                *args,
-                protocol=protocol,
-                chain_parser=chain_parser,
-                **storage_options,
-            )
+        ) -> Self: ...
 
     # === JoinablePath attributes =====================================
 
