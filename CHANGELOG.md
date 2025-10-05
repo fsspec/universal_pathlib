@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.3.2] - 2025-10-05
+### Added
+- upath.types: add storage_options submodule with TypedDict classes for all filesystem implementations (#432)
+- upath.implementations: add storage_options type annotations to all UPath subclass constructors (#432)
+- upath: add type overloads to narrow UPath type based on protocol parameter (#431)
+- upath.registry: add overloads to `get_upath_class()` to return correct subclass type based on protocol (#429)
+- typesafety: add comprehensive tests for storage_options type checking (#432)
+- typesafety: add tests for protocol-based type narrowing (#429, #431)
+
+### Fixed
+- upath: fix chained paths `.path` property to return correct normalized paths (#426)
+- upath.implementations: correct `.path` normalization for cloud and http paths (#426)
+- upath._protocol: raise error when explicitly requesting empty protocol but another protocol is found (#430)
+- upath.core: adjust Pydantic v2 schema to support None protocol (#430)
+- tests: add xfail when hitting GitHub rate limit (#429)
+
 ## [0.3.1] - 2025-10-03
 ### Added
 - upath: add `UPath.from_uri()` classmethod (#423)
@@ -226,7 +242,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/fsspec/universal_pathlib/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/fsspec/universal_pathlib/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/fsspec/universal_pathlib/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/fsspec/universal_pathlib/compare/v0.2.5...v0.2.6

@@ -49,7 +49,7 @@ project as a dependency if you want to use it with `s3` and `http` filesystems:
 name = "myproject"
 requires-python = ">=3.9"
 dependencies = [
-    "universal_pathlib>=0.3.0",
+    "universal_pathlib>=0.3.2",
     "fsspec[s3,http]",
 ]
 ```
