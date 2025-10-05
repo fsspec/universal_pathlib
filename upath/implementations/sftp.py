@@ -3,21 +3,38 @@ from __future__ import annotations
 import sys
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
-from typing import Any
+
+from upath.core import UPath
+from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
+    from typing import Literal
+
     if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import Unpack
     else:
         from typing_extensions import Self
+        from typing_extensions import Unpack
 
-from upath import UPath
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import SFTPStorageOptions
 
-_unset: Any = object()
+__all__ = ["SFTPPath"]
 
 
 class SFTPPath(UPath):
     __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["sftp"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[SFTPStorageOptions],
+        ) -> None: ...
 
     def iterdir(self) -> Iterator[Self]:
         if not self.is_dir():

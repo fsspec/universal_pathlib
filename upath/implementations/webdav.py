@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Mapping
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -11,9 +13,18 @@ from fsspec.registry import register_implementation
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
-__all__ = [
-    "WebdavPath",
-]
+if TYPE_CHECKING:
+    from typing import Literal
+
+    if sys.version_info >= (3, 11):
+        from typing import Unpack
+    else:
+        from typing_extensions import Unpack
+
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import WebdavStorageOptions
+
+__all__ = ["WebdavPath"]
 
 # webdav was only registered in fsspec>=2022.5.0
 if "webdav" not in known_implementations:
@@ -24,6 +35,16 @@ if "webdav" not in known_implementations:
 
 class WebdavPath(UPath):
     __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["webdav+http", "webdav+https"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[WebdavStorageOptions],
+        ) -> None: ...
 
     @classmethod
     def _transform_init_args(

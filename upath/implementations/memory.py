@@ -5,17 +5,37 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from upath.core import UPath
+from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
-    if sys.version_info > (3, 11):
+    from typing import Literal
+
+    if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import Unpack
     else:
         from typing_extensions import Self
+        from typing_extensions import Unpack
+
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import MemoryStorageOptions
 
 __all__ = ["MemoryPath"]
 
 
 class MemoryPath(UPath):
+    __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["memory"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[MemoryStorageOptions],
+        ) -> None: ...
+
     def iterdir(self) -> Iterator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))
