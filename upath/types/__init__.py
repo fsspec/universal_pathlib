@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import enum
 import sys
+from os import PathLike
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
+from typing import Union
 from typing import runtime_checkable
 
 from upath.types._abc import JoinablePath
@@ -14,12 +16,11 @@ from upath.types._abc import ReadablePath
 from upath.types._abc import WritablePath
 
 if TYPE_CHECKING:
-    from os import PathLike  # noqa: F401
 
     if sys.version_info >= (3, 12):
         from typing import TypeAlias
     else:
-        TypeAlias = Any
+        from typing_extensions import TypeAlias
 
 __all__ = [
     "JoinablePath",
@@ -41,10 +42,10 @@ class VFSPathLike(Protocol):
     def __vfspath__(self) -> str: ...
 
 
-SupportsPathLike: TypeAlias = "VFSPathLike | PathLike[str]"
-JoinablePathLike: TypeAlias = "JoinablePath | SupportsPathLike | str"
-ReadablePathLike: TypeAlias = "ReadablePath | SupportsPathLike | str"
-WritablePathLike: TypeAlias = "WritablePath | SupportsPathLike | str"
+SupportsPathLike: TypeAlias = Union[VFSPathLike, PathLike[str]]
+JoinablePathLike: TypeAlias = Union[JoinablePath, SupportsPathLike, str]
+ReadablePathLike: TypeAlias = Union[ReadablePath, SupportsPathLike, str]
+WritablePathLike: TypeAlias = Union[WritablePath, SupportsPathLike, str]
 
 
 class _DefaultValue(enum.Enum):

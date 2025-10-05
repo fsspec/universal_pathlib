@@ -38,8 +38,12 @@ if TYPE_CHECKING:
 
     if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import Unpack
     else:
         from typing_extensions import Self
+        from typing_extensions import Unpack
+
+    from upath.types.storage_options import FileStorageOptions
 
     _WT = TypeVar("_WT", bound="WritablePath")
 
@@ -416,7 +420,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         def hardlink_to(self, target: ReadablePathLike) -> None:
             try:
-                os.link(target, self)
+                os.link(target, self)  # type: ignore[arg-type]
             except AttributeError:
                 raise NotImplementedError
 
@@ -483,6 +487,16 @@ else:
 
 class FilePath(UPath):
     __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["file", "local"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[FileStorageOptions],
+        ) -> None: ...
 
     def __fspath__(self) -> str:
         return self.path

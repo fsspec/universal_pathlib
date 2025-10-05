@@ -9,19 +9,41 @@ from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-import upath.core
+from upath.core import UPath
+from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
-    if sys.version_info > (3, 11):
+    from typing import Literal
+
+    if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import Unpack
     else:
         from typing_extensions import Self
+        from typing_extensions import Unpack
+
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import GithubStorageOptions
+
+__all__ = ["GitHubPath"]
 
 
-class GitHubPath(upath.core.UPath):
+class GitHubPath(UPath):
     """
     GitHubPath supporting the fsspec.GitHubFileSystem
     """
+
+    __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["github"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[GithubStorageOptions],
+        ) -> None: ...
 
     @property
     def path(self) -> str:

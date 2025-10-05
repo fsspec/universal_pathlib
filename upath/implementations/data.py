@@ -8,13 +8,33 @@ from upath.core import UPath
 from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
-    if sys.version_info > (3, 11):
+    from typing import Literal
+
+    if sys.version_info >= (3, 11):
         from typing import Self
+        from typing import Unpack
     else:
         from typing_extensions import Self
+        from typing_extensions import Unpack
+
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import DataStorageOptions
+
+__all__ = ["DataPath"]
 
 
 class DataPath(UPath):
+    __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["data"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[DataStorageOptions],
+        ) -> None: ...
 
     @property
     def parts(self) -> Sequence[str]:
