@@ -267,6 +267,93 @@
 
     p = {{ cls }}(".", {{ supported_example_name }}={{ unsupported_example_value }})  # ER: Argument "{{ supported_example_name }}" to "{{ cls }}" has incompatible type.*
 
+- case: upath_constructor_sopts_via_dict
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+    - module: upath.implementations.cloud
+      cls: GCSPath
+    - module: upath.implementations.cloud
+      cls: S3Path
+    - module: upath.implementations.cloud
+      cls: AzurePath
+    - module: upath.implementations.data
+      cls: DataPath
+    - module: upath.implementations.github
+      cls: GitHubPath
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+    - module: upath.implementations.http
+      cls: HTTPPath
+    - module: upath.implementations.local
+      cls: FilePath
+    - module: upath.implementations.memory
+      cls: MemoryPath
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+    - module: upath.implementations.smb
+      cls: SMBPath
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+  main: |
+    from typing import Any
+    from {{ module }} import {{ cls }}
+
+    kw: dict[str, Any] = {}
+    p = {{ cls }}(".", **kw)
+    reveal_type(p)  # N: Revealed type is "{{ module }}.{{ cls }}"
+
+- case: upath_constructor_sopts_via_typed_dict
+  disable_cache: false
+  parametrized:
+    - module: upath.implementations.cached
+      cls: SimpleCachePath
+      td: SimpleCacheStorageOptions
+    - module: upath.implementations.cloud
+      cls: GCSPath
+      td: GCSStorageOptions
+    - module: upath.implementations.cloud
+      cls: S3Path
+      td: S3StorageOptions
+    - module: upath.implementations.cloud
+      cls: AzurePath
+      td: AzureStorageOptions
+    - module: upath.implementations.data
+      cls: DataPath
+      td: DataStorageOptions
+    - module: upath.implementations.github
+      cls: GitHubPath
+      td: GitHubStorageOptions
+    - module: upath.implementations.hdfs
+      cls: HDFSPath
+      td: HDFSStorageOptions
+    - module: upath.implementations.http
+      cls: HTTPPath
+      td: HTTPStorageOptions
+    - module: upath.implementations.local
+      cls: FilePath
+      td: FileStorageOptions
+    - module: upath.implementations.memory
+      cls: MemoryPath
+      td: MemoryStorageOptions
+    - module: upath.implementations.sftp
+      cls: SFTPPath
+      td: SFTPStorageOptions
+    - module: upath.implementations.smb
+      cls: SMBPath
+      td: SMBStorageOptions
+    - module: upath.implementations.webdav
+      cls: WebdavPath
+      td: WebdavStorageOptions
+  main: |
+    from {{ module }} import {{ cls }}
+    from upath.types.storage_options import {{ td }}
+
+    kw: {{ td }} = {{ td }}()
+    p = {{ cls }}(".", **kw)
+    reveal_type(p)  # N: Revealed type is "{{ module }}.{{ cls }}"
+
 # FIXME: mypy emits a 'defined here' note when emitting the error below.
 #        seems to be a limitation/bug in pytest-mypy-plugins that I can't match it
 #
