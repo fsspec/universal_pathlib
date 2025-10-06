@@ -78,8 +78,6 @@ class ProxyUPath:
                     protocol=self.__wrapped__.protocol,
                     storage_options=dict(self.__wrapped__.storage_options),
                 ),
-                [],
-                [],
             )
 
     # === wrapped interface ===========================================
