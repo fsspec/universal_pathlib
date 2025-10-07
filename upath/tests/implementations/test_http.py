@@ -94,6 +94,10 @@ class TestUPathHttp(BaseTests):
         pass
 
     @pytest.mark.skip
+    def test_touch(self):
+        pass
+
+    @pytest.mark.skip
     def test_touch_unlink(self):
         pass
 

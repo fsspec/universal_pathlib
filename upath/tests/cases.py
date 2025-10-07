@@ -316,6 +316,12 @@ class BaseTests:
         f.touch(exist_ok=True)
         assert f.read_text() == data
 
+    def test_touch(self):
+        path = self.path.joinpath("test_touch.txt")
+        assert not path.exists()
+        path.touch()
+        assert path.exists()
+
     def test_touch_unlink(self):
         path = self.path.joinpath("test_touch.txt")
         path.touch()
