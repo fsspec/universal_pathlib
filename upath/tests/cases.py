@@ -512,7 +512,7 @@ class BaseTests:
         # test that we can reconstruct the path from the uri
         p0 = self.path
         uri = p0.as_uri()
-        p1 = UPath(uri, **p0.fs.storage_options)
+        p1 = UPath(uri, **p0.storage_options)
         assert p0 == p1
 
     def test_protocol(self):

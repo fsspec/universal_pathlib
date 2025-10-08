@@ -287,10 +287,11 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         if not paths:
             return self.strip_protocol(path) or self.root_marker
         if self.local_file:
-            return os.path.join(
+            p = os.path.join(
                 self.strip_protocol(path),
                 *map(self.stringify_path, paths),
             )
+            return p if os.name != "nt" else p.replace("\\", "/")
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))

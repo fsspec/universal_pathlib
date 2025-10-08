@@ -82,3 +82,19 @@ class TestTarPath(BaseTests):
     @pytest.mark.skip(reason="Only testing read on TarPath")
     def test_move_into_memory(self, clear_fsspec_memory_cache):
         pass
+
+
+@pytest.fixture(scope="function")
+def tarred_testdir_file_in_memory(tarred_testdir_file, clear_fsspec_memory_cache):
+    p = UPath(tarred_testdir_file, protocol="file")
+    t = p.move(UPath("memory:///mytarfile.tar"))
+    assert t.protocol == "memory"
+    assert t.exists()
+    yield t.as_uri()
+
+
+class TestChainedTarPath(TestTarPath):
+
+    @pytest.fixture(autouse=True)
+    def path(self, tarred_testdir_file_in_memory):
+        self.path = UPath("tar://::memory:///mytarfile.tar")

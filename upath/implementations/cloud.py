@@ -60,8 +60,8 @@ class CloudPath(UPath):
             return ""
         return self.parser.sep
 
-    def __vfspath__(self) -> str:
-        path = super().__vfspath__()
+    def __str__(self) -> str:
+        path = super().__str__()
         if self._relative_base is None:
             drive = self.parser.splitdrive(path)[0]
             if drive and path == f"{self.protocol}://{drive}":
@@ -71,7 +71,11 @@ class CloudPath(UPath):
     @property
     def path(self) -> str:
         self_path = super().path
-        if self._relative_base is None and self.parser.sep not in self_path:
+        if (
+            self._relative_base is None
+            and self_path
+            and self.parser.sep not in self_path
+        ):
             return self_path + self.root
         return self_path
 

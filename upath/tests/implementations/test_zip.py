@@ -145,3 +145,25 @@ class TestZipPath(BaseTests):
     @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
     def test_fsspec_compat(self):
         pass
+
+
+@pytest.fixture(scope="function")
+def zipped_testdir_file_in_memory(zipped_testdir_file, clear_fsspec_memory_cache):
+    p = UPath(zipped_testdir_file, protocol="file")
+    t = p.move(UPath("memory:///myzipfile.zip"))
+    assert t.protocol == "memory"
+    assert t.exists()
+    yield t.as_uri()
+
+
+class TestChainedZipPath(TestZipPath):
+
+    @pytest.fixture(autouse=True)
+    def path(self, zipped_testdir_file_in_memory, request):
+        try:
+            (mode,) = request.param
+        except (ValueError, TypeError, AttributeError):
+            mode = "r"
+        self.path = UPath(
+            "zip://", fo="/myzipfile.zip", mode=mode, target_protocol="memory"
+        )
