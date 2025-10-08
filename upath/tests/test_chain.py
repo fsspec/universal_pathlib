@@ -5,6 +5,7 @@ import pytest
 from fsspec.implementations.memory import MemoryFileSystem
 
 from upath import UPath
+from upath._chain import FSSpecChainParser
 
 
 @pytest.mark.parametrize(
@@ -115,3 +116,21 @@ def test_write_file(clear_memory_fs):
     pth = UPath("simplecache::memory://abc.txt")
     pth.write_bytes(b"hello world")
     assert clear_memory_fs.cat_file("abc.txt") == b"hello world"
+
+
+@pytest.mark.parametrize(
+    "urlpath",
+    [
+        "memory:///file.txt",
+        "simplecache::file:///tmp",
+        "zip://file.txt::file:///tmp.zip",
+        "zip://a/b/c.txt::simplecache::memory:///zipfile.zip",
+        "simplecache::zip://a/b/c.txt::tar://blah.zip::memory:///file.tar",
+    ],
+)
+def test_chain_parser_roundtrip(urlpath: str):
+    parser = FSSpecChainParser()
+    segments = parser.unchain(urlpath, {})
+    rechained, kw = parser.chain(segments)
+    assert rechained == urlpath
+    assert kw == {}
