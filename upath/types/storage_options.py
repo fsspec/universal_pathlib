@@ -29,6 +29,7 @@ __all__ = [
     "SMBStorageOptions",
     "WebdavStorageOptions",
     "ZipStorageOptions",
+    "TarStorageOptions",
 ]
 
 
@@ -376,3 +377,19 @@ class ZipStorageOptions(
     compression: int  # Compression method (e.g., zipfile.ZIP_STORED, ZIP_DEFLATED)
     allowZip64: bool  # Enable ZIP64 extensions for large files
     compresslevel: int | None  # Compression level (None uses default for method)
+
+
+class TarStorageOptions(
+    _AbstractStorageOptions,
+    _ChainableStorageOptions,
+    total=False,
+):
+    """Storage options for TAR archive filesystem (read-only)"""
+
+    # Archive file settings
+    fo: str | Any  # Path to TAR file or file-like object
+    # Compression settings
+    compression: (
+        str | None
+    )  # Compression method: 'gzip', 'bz2', 'xz', or None for auto-detect
+    index_store: str | None  # Path to store/load the file index cache

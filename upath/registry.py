@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from upath.implementations.memory import MemoryPath as _MemoryPath
     from upath.implementations.sftp import SFTPPath as _SFTPPath
     from upath.implementations.smb import SMBPath as _SMBPath
+    from upath.implementations.tar import TarPath as _TarPath
     from upath.implementations.webdav import WebdavPath as _WebdavPath
     from upath.implementations.zip import ZipPath as _ZipPath
 
@@ -102,6 +103,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "simplecache": "upath.implementations.cached.SimpleCachePath",
         "sftp": "upath.implementations.sftp.SFTPPath",
         "ssh": "upath.implementations.sftp.SFTPPath",
+        "tar": "upath.implementations.tar.TarPath",
         "webdav": "upath.implementations.webdav.WebdavPath",
         "webdav+http": "upath.implementations.webdav.WebdavPath",
         "webdav+https": "upath.implementations.webdav.WebdavPath",
@@ -235,6 +237,8 @@ if TYPE_CHECKING:  # noqa: C901
     def get_upath_class(protocol: Literal["sftp", "ssh"]) -> type[_SFTPPath]: ...
     @overload
     def get_upath_class(protocol: Literal["smb"]) -> type[_SMBPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["tar"]) -> type[_TarPath]: ...
     @overload
     def get_upath_class(protocol: Literal["webdav"]) -> type[_WebdavPath]: ...
     @overload

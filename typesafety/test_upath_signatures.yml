@@ -88,6 +88,8 @@
       cls: SFTPPath
     - module: upath.implementations.smb
       cls: SMBPath
+    - module: upath.implementations.tar
+      cls: TarPath
     - module: upath.implementations.webdav
       cls: WebdavPath
     - module: upath.implementations.zip
@@ -271,6 +273,8 @@
       cls: SFTPPath
     - module: upath.implementations.smb
       cls: SMBPath
+    - module: upath.implementations.tar
+      cls: TarPath
     - module: upath.implementations.webdav
       cls: WebdavPath
     - module: upath.implementations.zip
@@ -584,6 +588,8 @@
       cls: SFTPPath
     - module: upath.implementations.smb
       cls: SMBPath
+    - module: upath.implementations.tar
+      cls: TarPath
     - module: upath.implementations.webdav
       cls: WebdavPath
     - module: upath.implementations.zip
@@ -976,6 +982,8 @@
       cls: SFTPPath
     - module: upath.implementations.smb
       cls: SMBPath
+    - module: upath.implementations.tar
+      cls: TarPath
     - module: upath.implementations.webdav
       cls: WebdavPath
     - module: upath.implementations.zip
