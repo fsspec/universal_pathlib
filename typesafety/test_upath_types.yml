@@ -367,9 +367,15 @@
     - module: upath.implementations.smb
       cls: SMBPath
       td: SMBStorageOptions
+    - module: upath.implementations.tar
+      cls: TarPath
+      td: TarStorageOptions
     - module: upath.implementations.webdav
       cls: WebdavPath
       td: WebdavStorageOptions
+    - module: upath.implementations.zip
+      cls: ZipPath
+      td: ZipStorageOptions
   main: |
     from {{ module }} import {{ cls }}
     from upath.types.storage_options import {{ td }}

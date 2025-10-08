@@ -557,8 +557,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             cls,
             *args: JoinablePathLike,
             protocol: Literal["tar"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.tar.TarPath: ...
         @overload  # noqa: E301
         def __new__(
@@ -572,8 +571,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             cls,
             *args: JoinablePathLike,
             protocol: Literal["zip"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.zip.ZipPath: ...
 
         if sys.platform == "win32":
