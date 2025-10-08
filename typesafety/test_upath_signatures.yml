@@ -90,6 +90,8 @@
       cls: SMBPath
     - module: upath.implementations.webdav
       cls: WebdavPath
+    - module: upath.implementations.zip
+      cls: ZipPath
     - module: upath.extensions
       cls: ProxyUPath
   main: |
@@ -271,6 +273,8 @@
       cls: SMBPath
     - module: upath.implementations.webdav
       cls: WebdavPath
+    - module: upath.implementations.zip
+      cls: ZipPath
     - module: upath.extensions
       cls: ProxyUPath
   main: |
@@ -582,6 +586,8 @@
       cls: SMBPath
     - module: upath.implementations.webdav
       cls: WebdavPath
+    - module: upath.implementations.zip
+      cls: ZipPath
     - module: upath.extensions
       cls: ProxyUPath
   main: |
@@ -972,6 +978,8 @@
       cls: SMBPath
     - module: upath.implementations.webdav
       cls: WebdavPath
+    - module: upath.implementations.zip
+      cls: ZipPath
     - module: upath.extensions
       cls: ProxyUPath
   main: |
