@@ -557,6 +557,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
+            protocol: Literal["tar"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.tar.TarPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
             protocol: Literal["webdav"],
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Any,

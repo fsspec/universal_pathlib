@@ -38,6 +38,7 @@ IMPLEMENTATIONS = {
     "webdav+https",
     "github",
     "zip",
+    "tar",
 }
 
 
