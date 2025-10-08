@@ -216,6 +216,13 @@ class FSSpecChainParser:
                 out.append(ChainSegment(None, protocol, kw))
                 if previous_bit is not None:
                     bit = previous_bit
+            elif (
+                protocol in {"blockcache", "filecache", "simplecache"}
+                and "target_protocol" in kw
+            ):
+                out.append(ChainSegment(None, protocol, kw))
+                if previous_bit is not None:
+                    bit = previous_bit
             else:
                 out.append(ChainSegment(bit, protocol, kw))
             previous_bit = bit
