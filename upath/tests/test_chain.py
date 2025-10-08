@@ -122,8 +122,8 @@ def test_write_file(clear_memory_fs):
     "urlpath",
     [
         "memory:///file.txt",
-        "simplecache::file:///tmp",
-        "zip://file.txt::file:///tmp.zip",
+        "simplecache::memory:///tmp",
+        "zip://file.txt::memory:///tmp.zip",
         "zip://a/b/c.txt::simplecache::memory:///zipfile.zip",
         "simplecache::zip://a/b/c.txt::tar://blah.zip::memory:///file.tar",
     ],
