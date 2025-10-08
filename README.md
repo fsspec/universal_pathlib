@@ -625,13 +625,109 @@ assert ExtraUPath("s3://bucket/file.txt").some_extra_method() == "hello world"
 
 ## Migration Guide
 
-UPath's internal implementation is likely going to change with larger changes in
-CPython's stdlib `pathlib` landing in the next Python versions (`3.13`, `3.14`).
-To reduce the problems for user code, when these changes are landing in `UPath`,
-there have been some significant changes in `v0.2.0`. This migration guide tries
-to help migrating code that extensively relies on private implementation details
-of the `UPath` class of versions `v0.1.x` to the new and better supported public
-interface of `v0.2.0`
+UPath's internal implementation is converging towards a more stable state,
+with changes in CPython's stdlib `pathlib` having landed in newer Python versions
+(`3.13`, `3.14`) and the currently private interface for JoinablePaths,
+ReadablePaths, and WriteablePaths stabilizing. There will likely be other
+breaking changes down the line, but we'll make the transition as smooth
+as possible.
+
+### migrating to `v0.3.0`
+
+Version `0.3.0` introduced a breaking change to fix a longstanding bug related to
+`os.PathLike` protocol compliance. This change affects how UPath instances work
+with standard library functions that expect local filesystem paths.
+
+#### Background: PathLike protocol and local filesystem paths
+
+In Python, `os.PathLike` objects and `pathlib.Path` subclasses represent local
+filesystem paths. This is used by the standard library - functions like
+`os.remove()`, `shutil.copy()`, and similar expect paths that point to the local
+filesystem. However, UPath implementations like `S3Path` or `MemoryPath` do not
+represent local filesystem paths and should not be treated as such.
+
+Prior to `v0.3.0`, all UPath instances incorrectly implemented `os.PathLike`,
+which could lead to runtime errors when non-local paths were passed to functions
+expecting local paths. Starting with `v0.3.0`, only local UPath implementations
+(`PosixUPath`, `WindowsUPath`, and `FilePath`) implement `os.PathLike`.
+
+#### Migration strategy
+
+If your code passes UPath instances to functions expecting `os.PathLike` objects,
+you have several options:
+
+**Option 1: Explicitly request a local path** (Recommended)
+
+```python
+import os
+from upath import UPath
+
+# Explicitly specify the file:// protocol to get a FilePath instance
+path = UPath(__file__, protocol="file")
+assert isinstance(path, os.PathLike)  # True
+
+# Now you can safely use it with os functions
+os.remove(path)
+```
+
+**Option 2: Use UPath's filesystem operations**
+
+```python
+from upath import UPath
+
+# Works for any UPath implementation, not just local paths
+path = UPath("s3://bucket/file.txt")
+path.unlink()  # UPath's native unlink method
+```
+
+**Option 3: Use type checking with upath.types**
+
+For code that needs to work with different path types, use the type hints from
+`upath.types` to properly specify your requirements:
+
+```python
+from upath import UPath
+from upath.types import (
+    JoinablePathLike,
+    ReadablePathLike,
+    WritablePathLike,
+)
+
+def read_only_local_file(path: os.PathLike) -> None:
+    """Read a file on the local filesystem."""
+    with open(path) as f:
+        return f.read_text()
+
+def write_only_local_file(path: os.PathLike) -> None:
+    """Write to a file on the local filesystem."""
+    with open(path) as f:
+        f.write_text("hello world")
+
+def read_any_file(path: WritablePathLike) -> None:
+    """Write a file on any filesystem."""
+    return UPath(path).read_text()
+
+def read_any_file(path: WritablePathLike) -> None:
+    """Write a file on any filesystem."""
+    UPath(path).write_text("hello world")
+```
+
+#### Example: Incorrect code that would fail
+
+The following example shows code that would incorrectly work in `v0.2.x` but
+properly fail in `v0.3.0`:
+
+```python
+import os
+from upath import UPath
+
+# This creates a MemoryPath, which is not a local filesystem path
+path = UPath("memory:///file.txt")
+
+# In v0.2.x this would incorrectly accept the path and fail at runtime
+# In v0.3.0 this correctly fails at type-check time
+os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
+```
 
 ### migrating to `v0.2.0`
 
