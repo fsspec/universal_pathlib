@@ -561,6 +561,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["zip"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.zip.ZipPath: ...
 
         if sys.platform == "win32":
 

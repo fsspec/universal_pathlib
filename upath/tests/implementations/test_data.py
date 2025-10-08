@@ -133,6 +133,9 @@ class TestUPathDataPath(BaseTests):
         with pytest.raises(NotImplementedError):
             list(self.path.rglob("*"))
 
+    def test_touch(self):
+        self.path.touch()
+
     def test_touch_exists_ok_false(self):
         with pytest.raises(FileExistsError):
             self.path.touch(exist_ok=False)
