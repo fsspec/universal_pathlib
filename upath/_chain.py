@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import warnings
 from collections import defaultdict
+from collections import deque
 from collections.abc import MutableMapping
 from collections.abc import Sequence
 from collections.abc import Set
@@ -105,7 +106,26 @@ class Chain:
         return type(self)(*segments, index=index)
 
     def to_list(self) -> list[ChainSegment]:
-        return list(self._segments)
+        """return a list of chain segments unnesting target_* segments"""
+        queue = deque(self._segments)
+        segments = []
+        while queue:
+            segment = queue.popleft()
+            if (
+                "target_protocol" in segment.storage_options
+                and "fo" in segment.storage_options
+            ):
+                storage_options = segment.storage_options.copy()
+                target_options = storage_options.pop("target_options", {})
+                target_protocol = storage_options.pop("target_protocol")
+                fo = storage_options.pop("fo")
+                queue.appendleft(ChainSegment(fo, target_protocol, target_options))
+                segments.append(
+                    ChainSegment(segment.path, segment.protocol, storage_options)
+                )
+            elif not segments or segment != segments[-1]:
+                segments.append(segment)
+        return segments
 
     @classmethod
     def from_list(cls, segments: list[ChainSegment], index: int = 0) -> Self:
@@ -124,9 +144,9 @@ class Chain:
                 urls = _prev
             _prev = urls
             if i == len(chain) - 1:
-                inkwargs = dict(**kw, **inkwargs)
+                inkwargs = {**kw, **inkwargs}
                 continue
-            inkwargs["target_options"] = dict(**kw, **inkwargs)
+            inkwargs["target_options"] = {**kw, **inkwargs}
             inkwargs["target_protocol"] = protocol
             inkwargs["fo"] = urls  # codespell:ignore fo
         urlpath, protocol, _ = chain[0]
@@ -186,6 +206,8 @@ class FSSpecChainParser:
                 kws.update(kwargs)
             kw = dict(**extra_kwargs)
             kw.update(kws)
+            if "target_protocol" in kw:
+                kw.setdefault("target_options", {})
             bit = flavour.strip_protocol(bit) or flavour.root_marker
             if (
                 protocol in {"blockcache", "filecache", "simplecache"}
@@ -229,7 +251,8 @@ class FSSpecChainParser:
                 continue
             urlpaths.append(urlpath)
             # TODO: ensure roundtrip with unchain behavior
-            kwargs[segment.protocol] = segment.storage_options
+            if segment.storage_options:
+                kwargs[segment.protocol] = segment.storage_options
         return self.link.join(urlpaths), kwargs
 
 

@@ -28,6 +28,8 @@ __all__ = [
     "SFTPStorageOptions",
     "SMBStorageOptions",
     "WebdavStorageOptions",
+    "ZipStorageOptions",
+    "TarStorageOptions",
 ]
 
 
@@ -358,3 +360,36 @@ class WebdavStorageOptions(_AbstractStorageOptions, total=False):
 
     # Client configuration
     client: Any | None  # webdav4.client.Client instance
+
+
+class ZipStorageOptions(
+    _AbstractStorageOptions,
+    _ChainableStorageOptions,
+    total=False,
+):
+    """Storage options for ZIP archive filesystem"""
+
+    # Archive file settings
+    fo: str | Any  # Path to ZIP file or file-like object
+    mode: Literal["r", "w", "a"]  # Open mode: read, write, or append
+
+    # ZIP compression settings
+    compression: int  # Compression method (e.g., zipfile.ZIP_STORED, ZIP_DEFLATED)
+    allowZip64: bool  # Enable ZIP64 extensions for large files
+    compresslevel: int | None  # Compression level (None uses default for method)
+
+
+class TarStorageOptions(
+    _AbstractStorageOptions,
+    _ChainableStorageOptions,
+    total=False,
+):
+    """Storage options for TAR archive filesystem (read-only)"""
+
+    # Archive file settings
+    fo: str | Any  # Path to TAR file or file-like object
+    # Compression settings
+    compression: (
+        str | None
+    )  # Compression method: 'gzip', 'bz2', 'xz', or None for auto-detect
+    index_store: str | None  # Path to store/load the file index cache

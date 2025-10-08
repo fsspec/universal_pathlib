@@ -47,8 +47,12 @@
       protocol: sftp
     - cls_fqn: upath.implementations.smb.SMBPath
       protocol: smb
+    - cls_fqn: upath.implementations.tar.TarPath
+      protocol: tar
     - cls_fqn: upath.implementations.webdav.WebdavPath
       protocol: webdav
+    - cls_fqn: upath.implementations.zip.ZipPath
+      protocol: zip
   main: |
     from upath.registry import get_upath_class
 
@@ -118,8 +122,12 @@
       protocol: sftp
     - cls_fqn: upath.implementations.smb.SMBPath
       protocol: smb
+    - cls_fqn: upath.implementations.tar.TarPath
+      protocol: tar
     - cls_fqn: upath.implementations.webdav.WebdavPath
       protocol: webdav
+    - cls_fqn: upath.implementations.zip.ZipPath
+      protocol: zip
     - cls_fqn: upath.core.UPath
       protocol: unknown-protocol
   main: |
@@ -197,10 +205,18 @@
       cls: SMBPath
       supported_example_name: timeout
       supported_example_value: 60
+    - module: upath.implementations.tar
+      cls: TarPath
+      supported_example_name: compression
+      supported_example_value: '"gzip"'
     - module: upath.implementations.webdav
       cls: WebdavPath
       supported_example_name: base_url
       supported_example_value: '"https://webdav.example.com"'
+    - module: upath.implementations.zip
+      cls: ZipPath
+      supported_example_name: compression
+      supported_example_value: 9
   main: |
     from {{ module }} import {{ cls }}
 
@@ -258,10 +274,18 @@
       cls: SMBPath
       supported_example_name: host
       unsupported_example_value: 'False'
+    - module: upath.implementations.tar
+      cls: TarPath
+      supported_example_name: compression
+      unsupported_example_value: '[]'
     - module: upath.implementations.webdav
       cls: WebdavPath
       supported_example_name: base_url
       unsupported_example_value: '123'
+    - module: upath.implementations.zip
+      cls: ZipPath
+      supported_example_name: compression
+      unsupported_example_value: '"hello"'
   main: |
     from {{ module }} import {{ cls }}
 

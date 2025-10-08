@@ -316,6 +316,12 @@ class BaseTests:
         f.touch(exist_ok=True)
         assert f.read_text() == data
 
+    def test_touch(self):
+        path = self.path.joinpath("test_touch.txt")
+        assert not path.exists()
+        path.touch()
+        assert path.exists()
+
     def test_touch_unlink(self):
         path = self.path.joinpath("test_touch.txt")
         path.touch()
@@ -506,7 +512,7 @@ class BaseTests:
         # test that we can reconstruct the path from the uri
         p0 = self.path
         uri = p0.as_uri()
-        p1 = UPath(uri, **p0.fs.storage_options)
+        p1 = UPath(uri, **p0.storage_options)
         assert p0 == p1
 
     def test_protocol(self):

@@ -402,19 +402,22 @@ class _UPathMixin(metaclass=_UPathMeta):
                     **args0._chain.nest().storage_options,
                     **storage_options,
                 }
-                str_args0 = str(args0)
+                str_args0 = args0.__vfspath__()
 
             else:
                 if hasattr(args0, "__fspath__") and args0.__fspath__ is not None:
                     str_args0 = args0.__fspath__()
+                elif hasattr(args0, "__vfspath__") and args0.__vfspath__ is not None:
+                    str_args0 = args0.__vfspath__()
+                elif isinstance(args0, str):
+                    str_args0 = args0
                 else:
-                    str_args0 = str(args0)
+                    raise TypeError(
+                        "argument should be a UPath, str, "
+                        f"or support __vfspath__ or __fspath__, not {type(args0)!r}"
+                    )
                 storage_options = type(self)._parse_storage_options(
                     str_args0, protocol, storage_options
-                )
-            if len(args) > 1:
-                str_args0 = WrappedFileSystemFlavour.from_protocol(protocol).join(
-                    str_args0, *args[1:]
                 )
         else:
             str_args0 = "."
@@ -422,7 +425,15 @@ class _UPathMixin(metaclass=_UPathMeta):
         segments = chain_parser.unchain(
             str_args0, {"protocol": protocol, **storage_options}
         )
-        self._chain = Chain.from_list(segments)
+        chain = Chain.from_list(segments)
+        if len(args) > 1:
+            chain = chain.replace(
+                path=WrappedFileSystemFlavour.from_protocol(protocol).join(
+                    chain.active_path,
+                    *args[1:],
+                )
+            )
+        self._chain = chain
         self._chain_parser = chain_parser
         self._raw_urlpaths = args
         self._relative_base = None
@@ -545,9 +556,25 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
+            protocol: Literal["tar"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.tar.TarPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
             protocol: Literal["webdav"],
             **_: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
+            protocol: Literal["zip"],
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Any,
+        ) -> _uimpl.zip.ZipPath: ...
 
         if sys.platform == "win32":
 
@@ -606,9 +633,6 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return new_instance
 
     def __str__(self) -> str:
-        return self.__vfspath__()
-
-    def __vfspath__(self) -> str:
         if self._relative_base is not None:
             active_path = self._chain.active_path
             stripped_base = self.parser.strip_protocol(
@@ -626,10 +650,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         else:
             return self._chain_parser.chain(self._chain.to_list())[0]
 
-    def __repr__(self) -> str:
+    def __vfspath__(self) -> str:
         if self._relative_base is not None:
-            return f"<relative {type(self).__name__} {str(self)!r}>"
-        return f"{type(self).__name__}({self.path!r}, protocol={self._protocol!r})"
+            return self.__str__()
+        else:
+            return self.path
+
+    def __repr__(self) -> str:
+        cls_name = type(self).__name__
+        path = self.__vfspath__()
+        if self._relative_base is not None:
+            return f"<relative {cls_name} {path!r}>"
+        else:
+            return f"{cls_name}({path!r}, protocol={self._protocol!r})"
 
     # === JoinablePath overrides ======================================
 
@@ -672,9 +705,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         split = self.parser.split
         if self.parser.sep in name:  # `split(name)[0]`
             raise ValueError(f"Invalid name {name!r}")
-        path = str(self)
-        path = path.removesuffix(split(path)[1]) + name
-        return self.with_segments(path)
+        _path = self.__vfspath__()
+        _path = _path.removesuffix(split(_path)[1]) + name
+        return self.with_segments(_path)
 
     @property
     def anchor(self) -> str:
@@ -748,7 +781,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 continue
             # only want the path name with iterdir
             _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
-            yield base.with_segments(str(base), name)
+            yield base.with_segments(base.path, name)
 
     def __open_reader__(self) -> BinaryIO:
         return self.fs.open(self.path, mode="rb")
@@ -1013,7 +1046,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             self = self.absolute()
         path_pattern = self.joinpath(pattern).path
         sep = self.parser.sep
-        base = self.fs._strip_protocol(self.path)
+        base = self.path
         for name in self.fs.glob(path_pattern):
             name = name.removeprefix(base).removeprefix(sep)
             yield self.joinpath(name)
@@ -1043,7 +1076,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if _FSSPEC_HAS_WORKING_GLOB:
             r_path_pattern = self.joinpath("**", pattern).path
             sep = self.parser.sep
-            base = self.fs._strip_protocol(self.path)
+            base = self.path
             for name in self.fs.glob(r_path_pattern):
                 name = name.removeprefix(base).removeprefix(sep)
                 yield self.joinpath(name)
@@ -1052,7 +1085,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             path_pattern = self.joinpath(pattern).path
             r_path_pattern = self.joinpath("**", pattern).path
             sep = self.parser.sep
-            base = self.fs._strip_protocol(self.path)
+            base = self.path
             seen = set()
             for p in (path_pattern, r_path_pattern):
                 for name in self.fs.glob(p):
@@ -1102,7 +1135,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 return False
 
         return (
-            self.path == other.path
+            self.__vfspath__() == other.__vfspath__()
             and self.protocol == other.protocol
             and self.storage_options == other.storage_options
         )
@@ -1113,29 +1146,27 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         Note: in the future, if hash collisions become an issue, we
           can add `fsspec.utils.tokenize(storage_options)`
         """
-        if self._relative_base is not None:
-            return hash((self.protocol, str(self)))
-        return hash((self.protocol, self.path))
+        return hash((self.protocol, self.__vfspath__()))
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, UPath) or self.parser is not other.parser:
             return NotImplemented
-        return self.path < other.path
+        return self.__vfspath__() < other.__vfspath__()
 
     def __le__(self, other: object) -> bool:
         if not isinstance(other, UPath) or self.parser is not other.parser:
             return NotImplemented
-        return self.path <= other.path
+        return self.__vfspath__() <= other.__vfspath__()
 
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, UPath) or self.parser is not other.parser:
             return NotImplemented
-        return self.path > other.path
+        return self.__vfspath__() > other.__vfspath__()
 
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, UPath) or self.parser is not other.parser:
             return NotImplemented
-        return self.path >= other.path
+        return self.__vfspath__() >= other.__vfspath__()
 
     def resolve(self, strict: bool = False) -> Self:
         if self._relative_base is not None:
