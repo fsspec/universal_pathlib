@@ -206,6 +206,8 @@ class FSSpecChainParser:
                 kws.update(kwargs)
             kw = dict(**extra_kwargs)
             kw.update(kws)
+            if "target_protocol" in kw:
+                kw.setdefault("target_options", {})
             bit = flavour.strip_protocol(bit) or flavour.root_marker
             if (
                 protocol in {"blockcache", "filecache", "simplecache"}
