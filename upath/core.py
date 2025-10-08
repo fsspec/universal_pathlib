@@ -473,120 +473,105 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             cls,
             *args: JoinablePathLike,
             protocol: Literal["simplecache"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.cached.SimpleCachePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["gcs", "gs"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.cloud.GCSPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["s3", "s3a"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.cloud.S3Path: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["az", "abfs", "abfss", "adl"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.cloud.AzurePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["data"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.data.DataPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["github"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.github.GitHubPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["hdfs"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.hdfs.HDFSPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["http", "https"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.http.HTTPPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["file", "local"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.local.FilePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["memory"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.memory.MemoryPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["sftp", "ssh"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.sftp.SFTPPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["smb"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.smb.SMBPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["tar"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.tar.TarPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["webdav"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["zip"],
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> _uimpl.zip.ZipPath: ...
 
         if sys.platform == "win32":
@@ -596,8 +581,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 cls,
                 *args: JoinablePathLike,
                 protocol: Literal[""],
-                chain_parser: FSSpecChainParser = ...,
-                **storage_options: Any,
+                **_: Any,
             ) -> _uimpl.local.WindowsUPath: ...
 
         else:
@@ -607,8 +591,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 cls,
                 *args: JoinablePathLike,
                 protocol: Literal[""],
-                chain_parser: FSSpecChainParser = ...,
-                **storage_options: Any,
+                **_: Any,
             ) -> _uimpl.local.PosixUPath: ...
 
         @overload  # noqa: E301
@@ -616,8 +599,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             cls,
             *args: JoinablePathLike,
             protocol: str | None = ...,
-            chain_parser: FSSpecChainParser = ...,
-            **storage_options: Any,
+            **_: Any,
         ) -> Self: ...
 
         def __new__(

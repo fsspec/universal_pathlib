@@ -23,7 +23,7 @@ if TYPE_CHECKING:
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
-    from upath.types.storage_options import GithubStorageOptions
+    from upath.types.storage_options import GitHubStorageOptions
 
 __all__ = ["GitHubPath"]
 
@@ -42,7 +42,7 @@ class GitHubPath(UPath):
             *args: JoinablePathLike,
             protocol: Literal["github"] | None = ...,
             chain_parser: FSSpecChainParser = ...,
-            **storage_options: Unpack[GithubStorageOptions],
+            **storage_options: Unpack[GitHubStorageOptions],
         ) -> None: ...
 
     @property

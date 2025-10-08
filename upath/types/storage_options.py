@@ -18,9 +18,9 @@ __all__ = [
     "SimpleCacheStorageOptions",
     "GCSStorageOptions",
     "S3StorageOptions",
-    "AzureBlobStorageOptions",
+    "AzureStorageOptions",
     "DataStorageOptions",
-    "GithubStorageOptions",
+    "GitHubStorageOptions",
     "HDFSStorageOptions",
     "HTTPStorageOptions",
     "FileStorageOptions",
@@ -142,7 +142,7 @@ class S3StorageOptions(_AbstractStorageOptions, total=False):
     cache_regions: bool
 
 
-class AzureBlobStorageOptions(_AbstractStorageOptions, total=False):
+class AzureStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for Azure Blob Storage and Azure Data Lake Gen2"""
 
     # Account and authentication
@@ -188,7 +188,7 @@ class DataStorageOptions(_AbstractStorageOptions, total=False):
     # No specific options for Data URIs at the moment
 
 
-class GithubStorageOptions(_AbstractStorageOptions, total=False):
+class GitHubStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for GitHub repository filesystem"""
 
     # Repository identification

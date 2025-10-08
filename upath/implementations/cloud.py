@@ -21,7 +21,7 @@ if TYPE_CHECKING:
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
-    from upath.types.storage_options import AzureBlobStorageOptions
+    from upath.types.storage_options import AzureStorageOptions
     from upath.types.storage_options import GCSStorageOptions
     from upath.types.storage_options import S3StorageOptions
 
@@ -150,7 +150,7 @@ class AzurePath(CloudPath):
         *args: JoinablePathLike,
         protocol: Literal["abfs", "abfss", "adl", "az"] | None = None,
         chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
-        **storage_options: Unpack[AzureBlobStorageOptions],
+        **storage_options: Unpack[AzureStorageOptions],
     ) -> None:
         super().__init__(
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
