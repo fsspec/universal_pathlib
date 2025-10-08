@@ -318,8 +318,12 @@
       cls: SFTPPath
     - module: upath.implementations.smb
       cls: SMBPath
+    - module: upath.implementations.tar
+      cls: TarPath
     - module: upath.implementations.webdav
       cls: WebdavPath
+    - module: upath.implementations.zip
+      cls: ZipPath
   main: |
     from typing import Any
     from {{ module }} import {{ cls }}
