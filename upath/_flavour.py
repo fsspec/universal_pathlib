@@ -198,7 +198,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
         except KeyError:
             pass
         # finally fallback to a default flavour for the protocol
-        if protocol in known_implementations:
+        if protocol not in known_implementations:
             warnings.warn(
                 f"Could not find default for known protocol {protocol!r}."
                 " Creating a default flavour for it. Please report this"
