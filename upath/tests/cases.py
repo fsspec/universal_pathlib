@@ -1,6 +1,5 @@
 import os
 import pickle
-import re
 import stat
 import sys
 import warnings
@@ -380,12 +379,8 @@ class BaseTests:
         fs = self.path.fs
         content = b"a,b,c\n1,2,3\n4,5,6"
 
-        def strip_scheme(path):
-            root = "" if sys.platform.startswith("win") else "/"
-            return root + re.sub("^[a-z0-9]+:/*", "", str(path))
-
         upath1 = self.path / "output1.csv"
-        p1 = strip_scheme(upath1)
+        p1 = upath1.path
         upath1.write_bytes(content)
         assert fs is upath1.fs
         with fs.open(p1) as f:
@@ -394,7 +389,7 @@ class BaseTests:
 
         # write with fsspec, read with upath
         upath2 = self.path / "output2.csv"
-        p2 = strip_scheme(upath2)
+        p2 = upath2.path
         assert fs is upath2.fs
         with fs.open(p2, "wb") as f:
             f.write(content)
