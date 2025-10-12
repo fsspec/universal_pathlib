@@ -172,8 +172,14 @@ class FSSpecChainParser:
         first_bit_protocol: str | None = kwargs.pop("protocol", None)
         it_bits = iter(path.split(self.link))
         bits: list[str]
-        if first_bit_protocol is not None:
-            bits = [next(it_bits)]
+        if first_bit_protocol == (bit := next(it_bits)) and first_bit_protocol in {
+            "blockcache",
+            "filecache",
+            "simplecache",
+        }:
+            bits = [""]
+        elif first_bit_protocol is not None:
+            bits = [bit]
         else:
             bits = []
         for p in it_bits:
@@ -191,7 +197,6 @@ class FSSpecChainParser:
 
         # [[url, protocol, kwargs], ...]
         out: list[ChainSegment] = []
-        previous_bit: str | None = None
         kwargs = kwargs.copy()
         first_bit_idx = len(bits) - 1
         for idx, bit in enumerate(reversed(bits)):
@@ -206,19 +211,22 @@ class FSSpecChainParser:
                 kws.update(kwargs)
             kw = dict(**extra_kwargs)
             kw.update(kws)
-            if "target_protocol" in kw:
-                kw.setdefault("target_options", {})
-            bit = flavour.strip_protocol(bit) or flavour.root_marker
-            if (
-                protocol in {"blockcache", "filecache", "simplecache"}
-                and "target_protocol" not in kw
-            ):
-                out.append(ChainSegment(None, protocol, kw))
-                if previous_bit is not None:
-                    bit = previous_bit
+            if protocol in {"blockcache", "filecache", "simplecache"}:
+                # passthrough filesystems
+                if bit:
+                    kw["fo"] = bit  # codespell:ignore fo
+                bit = None
             else:
-                out.append(ChainSegment(bit, protocol, kw))
-            previous_bit = bit
+                bit = flavour.strip_protocol(bit) or flavour.root_marker
+            if "target_protocol" in kw:
+                out.append(
+                    ChainSegment(
+                        kw.pop("fo", None),  # codespell:ignore fo
+                        kw.pop("target_protocol"),
+                        kw.pop("target_options", {}),
+                    )
+                )
+            out.append(ChainSegment(bit, protocol, kw))
         out.reverse()
         return out
 
