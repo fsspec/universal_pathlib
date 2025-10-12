@@ -425,7 +425,8 @@ class _UPathMixin(metaclass=_UPathMeta):
         segments = chain_parser.unchain(
             str_args0, {"protocol": protocol, **storage_options}
         )
-        chain = Chain.from_list(segments)
+        # FIXME: normalization needs to happen in unchain already...
+        chain = Chain.from_list(Chain.from_list(segments).to_list())
         if len(args) > 1:
             chain = chain.replace(
                 path=WrappedFileSystemFlavour.from_protocol(protocol).join(
@@ -1102,14 +1103,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     def absolute(self) -> Self:
         if self._relative_base is not None:
-            return self.cwd().joinpath(str(self))
+            return self.cwd().joinpath(self.__vfspath__())
         return self
 
     def is_absolute(self) -> bool:
         if self._relative_base is not None:
             return False
         else:
-            return self.parser.isabs(str(self))
+            return self.parser.isabs(self.__vfspath__())
 
     def __eq__(self, other: object) -> bool:
         """UPaths are considered equal if their protocol, path and
@@ -1275,7 +1276,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.parser.splitroot(str(self))[1]
 
     def __reduce__(self):
-        args = tuple(self._raw_urlpaths)
+        args = (self.__vfspath__(),)
         kwargs = {
             "protocol": self._protocol,
             **self._storage_options,
