@@ -268,7 +268,7 @@ class BaseTests:
         assert not upath.exists()
         assert moved.exists()
         # reverse with an absolute path as str
-        back = moved.rename(str(upath))
+        back = moved.rename(upath.path)
         assert back == upath
         assert not moved.exists()
         assert back.exists()
@@ -382,7 +382,9 @@ class BaseTests:
         upath1 = self.path / "output1.csv"
         p1 = upath1.path
         upath1.write_bytes(content)
-        assert fs is upath1.fs
+        assert fs._fs_token == upath1.fs._fs_token
+        if fs.cachable:  # codespell:ignore cachable
+            assert fs is upath1.fs
         with fs.open(p1) as f:
             assert f.read() == content
         upath1.unlink()
@@ -390,7 +392,8 @@ class BaseTests:
         # write with fsspec, read with upath
         upath2 = self.path / "output2.csv"
         p2 = upath2.path
-        assert fs is upath2.fs
+        if fs.cachable:  # codespell:ignore cachable
+            assert fs is upath2.fs
         with fs.open(p2, "wb") as f:
             f.write(content)
         assert upath2.read_bytes() == content
@@ -419,8 +422,10 @@ class BaseTests:
         assert path.storage_options == recovered_path.storage_options
 
     def test_child_path(self):
-        path_str = str(self.path)
-        path_a = UPath(path_str, "folder", **self.path.storage_options)
+        path_str = self.path.__vfspath__()
+        path_a = UPath(
+            path_str, "folder", protocol=self.path.protocol, **self.path.storage_options
+        )
         path_b = self.path / "folder"
 
         assert str(path_a) == str(path_b)
