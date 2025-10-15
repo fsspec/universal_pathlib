@@ -1376,38 +1376,50 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     ) -> CoreSchema:
         from pydantic_core import core_schema
 
+        str_schema = core_schema.chain_schema(
+            [
+                core_schema.str_schema(),
+                core_schema.no_info_plain_validator_function(
+                    lambda path: {
+                        "path": path,
+                        "protocol": None,
+                        "storage_options": {},
+                    },
+                ),
+            ]
+        )
+
+        object_schema = core_schema.typed_dict_schema(
+            {
+                "path": core_schema.typed_dict_field(
+                    core_schema.str_schema(), required=True
+                ),
+                "protocol": core_schema.typed_dict_field(
+                    core_schema.with_default_schema(
+                        core_schema.nullable_schema(
+                            core_schema.str_schema(),
+                        ),
+                        default=None,
+                    ),
+                    required=False,
+                ),
+                "storage_options": core_schema.typed_dict_field(
+                    core_schema.with_default_schema(
+                        core_schema.dict_schema(
+                            core_schema.str_schema(),
+                            core_schema.any_schema(),
+                        ),
+                        default_factory=dict,
+                    ),
+                    required=False,
+                ),
+            },
+            extra_behavior="forbid",
+        )
+
         deserialization_schema = core_schema.chain_schema(
             [
-                core_schema.no_info_plain_validator_function(
-                    lambda v: {"path": v} if isinstance(v, str) else v,
-                ),
-                core_schema.typed_dict_schema(
-                    {
-                        "path": core_schema.typed_dict_field(
-                            core_schema.str_schema(), required=True
-                        ),
-                        "protocol": core_schema.typed_dict_field(
-                            core_schema.with_default_schema(
-                                core_schema.nullable_schema(
-                                    core_schema.str_schema(),
-                                ),
-                                default=None,
-                            ),
-                            required=False,
-                        ),
-                        "storage_options": core_schema.typed_dict_field(
-                            core_schema.with_default_schema(
-                                core_schema.dict_schema(
-                                    core_schema.str_schema(),
-                                    core_schema.any_schema(),
-                                ),
-                                default_factory=dict,
-                            ),
-                            required=False,
-                        ),
-                    },
-                    extra_behavior="forbid",
-                ),
+                core_schema.union_schema([str_schema, object_schema]),
                 core_schema.no_info_plain_validator_function(
                     lambda dct: cls(
                         dct.pop("path"),
