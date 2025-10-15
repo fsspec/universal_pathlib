@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import posixpath
 import sys
 import warnings
 from abc import ABCMeta
@@ -1226,25 +1226,22 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
-        if isinstance(target, str) and self.storage_options:
-            if self.anchor and target.startswith(self.anchor):
-                target = UPath(target, protocol=self.protocol, **self.storage_options)
+        target_protocol = get_upath_protocol(target)
+        if target_protocol and target_protocol != self.protocol:
+            raise ValueError(
+                f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
+            )
+        if not isinstance(target, UPath):
+            if target_protocol or self.anchor and target.startswith(self.anchor):
+                target = self.with_segments(target)
             else:
-                target = UPath(target, **self._storage_options)
+                target = UPath(target)
         if target == self:
             return self
         if self._relative_base is not None:
             self = self.absolute()
-        target_protocol = get_upath_protocol(target)
         if target_protocol:
-            if target_protocol != self.protocol:
-                raise ValueError(
-                    f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
-                )
-            if not isinstance(target, UPath):
-                target_ = UPath(target, **self.storage_options)
-            else:
-                target_ = target
+            target_ = target
             # avoid calling .resolve for subclasses of UPath
             if ".." in target_.parts or "." in target_.parts:
                 target_ = target_.resolve()
@@ -1253,7 +1250,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             # avoid calling .resolve for subclasses of UPath
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
-            target_ = parent.joinpath(os.path.normpath(str(target)))
+            target_ = parent.joinpath(posixpath.normpath(target.path))
         if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
