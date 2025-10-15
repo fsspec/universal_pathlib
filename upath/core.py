@@ -423,7 +423,9 @@ class _UPathMixin(metaclass=_UPathMeta):
             str_args0 = "."
 
         segments = chain_parser.unchain(
-            str_args0, {"protocol": protocol, **storage_options}
+            str_args0,
+            protocol=protocol,
+            storage_options=storage_options,
         )
         # FIXME: normalization needs to happen in unchain already...
         chain = Chain.from_list(Chain.from_list(segments).to_list())

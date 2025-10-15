@@ -54,7 +54,6 @@ def test_chaining_upath_path(urlpath, expected):
             "simplecache::file:///tmp",
             {
                 "target_protocol": "file",
-                "fo": Path("/tmp").absolute().as_posix(),
                 "target_options": {},
             },
         ),
@@ -130,7 +129,7 @@ def test_write_file(clear_memory_fs):
 )
 def test_chain_parser_roundtrip(urlpath: str):
     parser = FSSpecChainParser()
-    segments = parser.unchain(urlpath, {})
+    segments = parser.unchain(urlpath, protocol=None, storage_options={})
     rechained, kw = parser.chain(segments)
     assert rechained == urlpath
     assert kw == {}
