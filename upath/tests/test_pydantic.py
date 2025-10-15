@@ -111,3 +111,8 @@ def test_dump_non_serializable_json():
         pydantic.TypeAdapter(UPath).dump_python(
             UPath("https://www.example.com", get_client=get_client), mode="json"
         )
+
+
+def test_json_schema():
+    ta = pydantic.TypeAdapter(UPath)
+    ta.json_schema()
