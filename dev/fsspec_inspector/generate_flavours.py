@@ -105,7 +105,6 @@ SKIP_PROTOCOLS = [
     "dir",
     "blockcache",
     "cached",
-    "simplecache",
     "filecache",
 ]
 
@@ -116,6 +115,7 @@ FIX_PROTOCOLS = {
 
 FIX_METHODS = {
     "GCSFileSystem": ["_strip_protocol", "_get_kwargs_from_urls", "_split_path"],
+    "SimpleCacheFileSystem": [],
 }
 
 
