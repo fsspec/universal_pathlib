@@ -1232,7 +1232,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
             )
         if not isinstance(target, UPath):
-            if target_protocol or self.anchor and target.startswith(self.anchor):
+            target = str(target)
+            if target_protocol or (self.anchor and target.startswith(self.anchor)):
                 target = self.with_segments(target)
             else:
                 target = UPath(target)
@@ -1240,6 +1241,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             return self
         if self._relative_base is not None:
             self = self.absolute()
+        target_protocol = get_upath_protocol(target)
         if target_protocol:
             target_ = target
             # avoid calling .resolve for subclasses of UPath
