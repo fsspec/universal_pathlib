@@ -49,7 +49,7 @@ class SimpleCachePath(UPath):
         protocol: str,
         storage_options: Mapping[str, Any],
     ) -> AbstractFileSystem:
-        so = storage_options.copy()
+        so = dict(storage_options)
         so.pop("fo", None)
         return super()._fs_factory(
             urlpath,

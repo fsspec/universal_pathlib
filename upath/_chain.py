@@ -158,21 +158,21 @@ class Chain:
         return ChainSegment(urlpath, protocol, inkwargs)
 
 
-def _iter_protocol_fileobject_options(
-    protocol: str,
+def _iter_fileobject_protocol_options(
     fileobject: str | None,
+    protocol: str,
     storage_options: dict[str, Any],
     /,
-) -> Iterator[tuple[str, str | None, dict[str, Any]]]:
-    """yields protocol, fileobject, and remaining storage options"""
+) -> Iterator[tuple[str | None, str, dict[str, Any]]]:
+    """yields fileobject, protocol and remaining storage options"""
     so = storage_options.copy()
     while "target_protocol" in so:
-        t_protocol = so.pop("target_protocol", None)
+        t_protocol = so.pop("target_protocol", "")
         t_fileobject = so.pop("fo", None)  # codespell:ignore fo
         t_so = so.pop("target_options", {})
-        yield protocol, fileobject, so
-        protocol, fileobject, so = t_protocol, t_fileobject, t_so
-    yield protocol, fileobject, so
+        yield fileobject, protocol, so
+        fileobject, protocol, so = t_fileobject, t_protocol, t_so
+    yield fileobject, protocol, so
 
 
 class FSSpecChainParser:
@@ -214,7 +214,8 @@ class FSSpecChainParser:
         if storage_options is None:
             storage_options = {}
 
-        segments = []
+        segments: list[ChainSegment] = []
+        path_bit: str | None
         next_path_overwrite: str | None = None
         for proto0, bit in zip_longest([protocol], path.split(self.link)):
             # get protocol and path_bit
@@ -256,13 +257,13 @@ class FSSpecChainParser:
         root_so = segments[0].storage_options
         for segment, proto_fo_so in zip_longest(
             segments,
-            _iter_protocol_fileobject_options(
-                protocol or "",
+            _iter_fileobject_protocol_options(
                 path_bit if segments else None,
+                protocol or "",
                 storage_options,
             ),
         ):
-            t_proto, t_fo, t_so = proto_fo_so or (None, None, {})
+            t_fo, t_proto, t_so = proto_fo_so or (None, "", {})
             if segment is None:
                 if next_path_overwrite is not None:
                     t_fo = next_path_overwrite
@@ -327,7 +328,7 @@ if __name__ == "__main__":
     chained_kw = {"zip": {"allowZip64": False}}
     print(chained_path, chained_kw)
     out0 = _un_chain(chained_path, chained_kw)
-    out1 = FSSpecChainParser().unchain(chained_path, chained_kw)
+    out1 = FSSpecChainParser().unchain(chained_path, storage_options=chained_kw)
 
     pp(out0)
     pp(out1)
