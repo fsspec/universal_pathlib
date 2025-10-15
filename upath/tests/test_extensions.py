@@ -1,5 +1,6 @@
 import pytest
 
+from upath import UPath
 from upath.extensions import ProxyUPath
 from upath.implementations.local import FilePath
 from upath.implementations.memory import MemoryPath
@@ -53,3 +54,14 @@ def test_custom_subclass():
 
     r.parent.joinpath("file2").write_bytes_reversed(b"dlrow olleh")
     assert b.joinpath("file2").read_bytes() == b"hello world"
+
+
+def test_protocol_dispatch_deprecation_warning():
+
+    class MyPath(UPath):
+        _protocol_dispatch = False
+
+    with pytest.warns(DeprecationWarning, match="_protocol_dispatch = False"):
+        a = MyPath(".", protocol="memory")
+
+    assert isinstance(a, MyPath)
