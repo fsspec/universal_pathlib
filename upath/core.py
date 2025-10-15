@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import posixpath
 import sys
 import warnings
 from abc import ABCMeta
@@ -423,9 +423,12 @@ class _UPathMixin(metaclass=_UPathMeta):
             str_args0 = "."
 
         segments = chain_parser.unchain(
-            str_args0, {"protocol": protocol, **storage_options}
+            str_args0,
+            protocol=protocol,
+            storage_options=storage_options,
         )
-        chain = Chain.from_list(segments)
+        # FIXME: normalization needs to happen in unchain already...
+        chain = Chain.from_list(Chain.from_list(segments).to_list())
         if len(args) > 1:
             chain = chain.replace(
                 path=WrappedFileSystemFlavour.from_protocol(protocol).join(
@@ -1102,14 +1105,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     def absolute(self) -> Self:
         if self._relative_base is not None:
-            return self.cwd().joinpath(str(self))
+            return self.cwd().joinpath(self.__vfspath__())
         return self
 
     def is_absolute(self) -> bool:
         if self._relative_base is not None:
             return False
         else:
-            return self.parser.isabs(str(self))
+            return self.parser.isabs(self.__vfspath__())
 
     def __eq__(self, other: object) -> bool:
         """UPaths are considered equal if their protocol, path and
@@ -1223,22 +1226,24 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
-        if isinstance(target, str) and self.storage_options:
-            target = UPath(target, **self.storage_options)
+        target_protocol = get_upath_protocol(target)
+        if target_protocol and target_protocol != self.protocol:
+            raise ValueError(
+                f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
+            )
+        if not isinstance(target, UPath):
+            target = str(target)
+            if target_protocol or (self.anchor and target.startswith(self.anchor)):
+                target = self.with_segments(target)
+            else:
+                target = UPath(target)
         if target == self:
             return self
         if self._relative_base is not None:
             self = self.absolute()
         target_protocol = get_upath_protocol(target)
         if target_protocol:
-            if target_protocol != self.protocol:
-                raise ValueError(
-                    f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
-                )
-            if not isinstance(target, UPath):
-                target_ = UPath(target, **self.storage_options)
-            else:
-                target_ = target
+            target_ = target
             # avoid calling .resolve for subclasses of UPath
             if ".." in target_.parts or "." in target_.parts:
                 target_ = target_.resolve()
@@ -1247,7 +1252,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             # avoid calling .resolve for subclasses of UPath
             if ".." in parent.parts or "." in parent.parts:
                 parent = parent.resolve()
-            target_ = parent.joinpath(os.path.normpath(str(target)))
+            target_ = parent.joinpath(posixpath.normpath(target.path))
         if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
@@ -1275,14 +1280,20 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.parser.splitroot(str(self))[1]
 
     def __reduce__(self):
-        args = tuple(self._raw_urlpaths)
-        kwargs = {
-            "protocol": self._protocol,
-            **self._storage_options,
-        }
-        # Include _relative_base in the state if it's set
-        if self._relative_base is not None:
-            kwargs["_relative_base"] = self._relative_base
+        if self._relative_base is None:
+            args = (self.__vfspath__(),)
+            kwargs = {
+                "protocol": self._protocol,
+                **self._storage_options,
+            }
+        else:
+            args = (self._relative_base, self.__vfspath__())
+            # Include _relative_base in the state if it's set
+            kwargs = {
+                "protocol": self._protocol,
+                **self._storage_options,
+                "_relative_base": self._relative_base,
+            }
         return _make_instance, (type(self), args, kwargs)
 
     @classmethod

@@ -23,7 +23,6 @@ without a direct dependency on the underlying filesystem package.
 #   - cached
 #   - dir
 #   - filecache
-#   - simplecache
 # protocol import errors:
 #   - gdrive (Please install gdrive_fs for access to Google Drive)
 #   - generic (GenericFileSystem: '_strip_protocol' not a classmethod)
@@ -924,6 +923,15 @@ class SMBFileSystemFlavour(AbstractFileSystemFlavour):
         out.pop("path", None)
         out.pop("protocol", None)
         return out
+
+
+class SimpleCacheFileSystemFlavour(AbstractFileSystemFlavour):
+    __orig_class__ = 'fsspec.implementations.cached.SimpleCacheFileSystem'
+    __orig_version__ = '2025.9.0'
+    protocol = ('simplecache',)
+    root_marker = ''
+    sep = '/'
+    local_file = True
 
 
 class TarFileSystemFlavour(AbstractFileSystemFlavour):
