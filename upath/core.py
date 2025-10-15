@@ -1281,14 +1281,20 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.parser.splitroot(str(self))[1]
 
     def __reduce__(self):
-        args = (self.__vfspath__(),)
-        kwargs = {
-            "protocol": self._protocol,
-            **self._storage_options,
-        }
-        # Include _relative_base in the state if it's set
-        if self._relative_base is not None:
-            kwargs["_relative_base"] = self._relative_base
+        if self._relative_base is None:
+            args = (self.__vfspath__(),)
+            kwargs = {
+                "protocol": self._protocol,
+                **self._storage_options,
+            }
+        else:
+            args = (self._relative_base, self.__vfspath__())
+            # Include _relative_base in the state if it's set
+            kwargs = {
+                "protocol": self._protocol,
+                **self._storage_options,
+                "_relative_base": self._relative_base,
+            }
         return _make_instance, (type(self), args, kwargs)
 
     @classmethod
