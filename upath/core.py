@@ -1227,7 +1227,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         **kwargs: Any,
     ) -> Self:
         if isinstance(target, str) and self.storage_options:
-            target = UPath(target, **self.storage_options)
+            if self.anchor and target.startswith(self.anchor):
+                target = UPath(target, protocol=self.protocol, **self.storage_options)
+            else:
+                target = UPath(target, **self._storage_options)
         if target == self:
             return self
         if self._relative_base is not None:
