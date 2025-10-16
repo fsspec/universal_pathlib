@@ -337,6 +337,13 @@ class _UPathMixin(metaclass=_UPathMeta):
             #
             # THIS IS DEPRECATED!
             # Use upath.extensions.ProxyUPath to extend the UPath API
+            warnings.warn(
+                f"{cls.__name__}._protocol_dispatch = False is deprecated and"
+                " will be removed in future universal_pathlib versions."
+                " To extend the UPath API, subclass upath.extensions.ProxyUPath",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             upath_cls = cls
 
         if issubclass(upath_cls, cls):

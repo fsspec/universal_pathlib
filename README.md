@@ -602,25 +602,28 @@ class MyProtoPath(UPath):
         return args, protocol, storage_options
 ```
 
-#### Stopping UPath's subclass dispatch mechanism
+#### Extending UPath's API interface
 
-There are cases for which you want to disable the protocol dispatch mechanism of
-the `UPath.__new__` constructor. For example if you want to extend the class API
-of your `UPath` implementation, and use it as the base class for other, directly
-instantiated subclasses. Together with other customization options this can be a
-useful feature. Please be aware that in this case all protocols are handled with
-the default implementation in UPath. Please always feel free to open an issue in
-the issue tracker to discuss your use case. We're happy to help with finding the
-most maintainable solution.
+If you want to extend the class API
+of your `UPath` implementation, it's recommended to subclass
+`upath.extensions.ProxyUPath`. It's a thin proxy layer around
+the public methods and attributes of a UPath instance.
 
 ```python
-class ExtraUPath(UPath):
-    _protocol_dispatch = False  # disable the registry return an ExtraUPath
+from upath.extensions import ProxyUPath
+
+class ExtraUPath(ProxyUPath):
 
     def some_extra_method(self) -> str:
-        return "hello world"
+        return f"hello world {self.name}"
 
-assert ExtraUPath("s3://bucket/file.txt").some_extra_method() == "hello world"
+e0 = ExtraUPath("s3://bucket/foo.txt")
+e1 = ExtraUPath("memory://bar/baz.txt")
+
+assert e0.some_extra_method() == "hello world foo.txt"
+assert isinstance(e0, ExtraUPath)
+assert e1.some_extra_method() == "hello world baz.txt"
+assert isinstance(e1, ExtraUPath)
 ```
 
 ## Migration Guide
@@ -728,6 +731,12 @@ path = UPath("memory:///file.txt")
 # In v0.3.0 this correctly fails at type-check time
 os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
 ```
+
+#### Extending UPath via `_protocol_dispatch=False`
+
+If you previously used `_protocol_dipatch=False` to enable extension of the
+UPath API, we now recommend to subclass `upath.extensions.ProxyUPath`. See
+the example in the main docs.
 
 ### migrating to `v0.2.0`
 
