@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+...
+
+## [0.3.4] - 2025-10-16
+### Added
+- upath.implementations: add `SimpleCachePath` for simplecache protocol support (#453)
+- upath: support JSON schema generation for Pydantic integration (#451)
+
+### Changed
+- upath: move pathlib-abc from `0.5.1` to `>=0.5.1,<0.6.0` (#450)
+- upath.core: deprecate `_protocol_dispatch=False` parameter (#454)
 
 ## [0.3.3] - 2025-10-08
 ### Added
@@ -253,7 +263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/fsspec/universal_pathlib/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/fsspec/universal_pathlib/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/fsspec/universal_pathlib/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/fsspec/universal_pathlib/compare/v0.3.0...v0.3.1
