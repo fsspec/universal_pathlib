@@ -1371,7 +1371,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise ValueError(f"{self!s} is not in the subpath of {other!s}")
         else:
             rel = copy(self)
-            rel._relative_base = str(other)
+            rel._relative_base = other.path
             return rel
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
