@@ -283,3 +283,7 @@ class TestUPathDataPath(BaseTests):
     @pytest.mark.skip(reason="DataPath does not support unlink")
     def test_move_into_memory(self, clear_fsspec_memory_cache):
         pass
+
+    @pytest.mark.skip(reason="DataPath does not support relative_to")
+    def test_relative_to(self):
+        pass

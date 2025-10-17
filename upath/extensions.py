@@ -370,6 +370,8 @@ class ProxyUPath:
         *_deprecated,
         walk_up=False,
     ) -> Self:
+        if isinstance(other, ProxyUPath):
+            other = other.__wrapped__
         return self._from_upath(
             self.__wrapped__.relative_to(other, *_deprecated, walk_up=walk_up)
         )

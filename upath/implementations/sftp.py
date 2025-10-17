@@ -36,6 +36,19 @@ class SFTPPath(UPath):
             **storage_options: Unpack[SFTPStorageOptions],
         ) -> None: ...
 
+    @property
+    def path(self) -> str:
+        path = super().path
+        if len(path) > 1:
+            return path.removesuffix("/")
+        return path
+
+    def __str__(self) -> str:
+        path_str = super().__str__()
+        if path_str.startswith(("ssh:///", "sftp:///")):
+            return path_str.removesuffix("/")
+        return path_str
+
     def iterdir(self) -> Iterator[Self]:
         if not self.is_dir():
             raise NotADirectoryError(str(self))

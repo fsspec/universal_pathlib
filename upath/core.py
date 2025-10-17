@@ -1355,7 +1355,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             if self.__class__ is not other.__class__:
                 raise ValueError(
                     "incompatible protocols:"
-                    f" {self._protocol!r} != {other._protocol!r}"
+                    f" {self.protocol!r} != {other.protocol!r}"
                 )
             if self.storage_options != other.storage_options:
                 raise ValueError(
@@ -1371,7 +1371,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise ValueError(f"{self!s} is not in the subpath of {other!s}")
         else:
             rel = copy(self)
-            rel._relative_base = str(other)
+            rel._relative_base = other.path
             return rel
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
