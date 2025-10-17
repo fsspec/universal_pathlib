@@ -19,6 +19,7 @@ __all__ = [
     "GCSStorageOptions",
     "S3StorageOptions",
     "AzureStorageOptions",
+    "HFStorageOptions",
     "DataStorageOptions",
     "GitHubStorageOptions",
     "HDFSStorageOptions",
@@ -180,6 +181,22 @@ class AzureStorageOptions(_AbstractStorageOptions, total=False):
     # Feature flags
     version_aware: bool  # support blob versioning
     assume_container_exists: bool | None  # container existence assumptions
+
+
+class HFStorageOptions(_AbstractStorageOptions, total=False):
+    """Storage options for Hugging face filesystem"""
+
+    # Authentication
+    token: str | None
+
+    # Connection settings
+    endpoint: str | None
+
+    # Performance settings
+    block_size: (
+        int | None
+    )  # Block size for reading bytes; 0 = raw requests file-like objects
+
 
 
 class DataStorageOptions(_AbstractStorageOptions, total=False):

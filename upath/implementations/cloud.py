@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from upath._chain import FSSpecChainParser
     from upath.types.storage_options import AzureStorageOptions
     from upath.types.storage_options import GCSStorageOptions
+    from upath.types.storage_options import HFStorageOptions
     from upath.types.storage_options import S3StorageOptions
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "GCSPath",
     "S3Path",
     "AzurePath",
+    "HfPath",
 ]
 
 
@@ -157,3 +159,18 @@ class AzurePath(CloudPath):
         )
         if not self.drive and len(self.parts) > 1:
             raise ValueError("non key-like path provided (bucket/container missing)")
+
+
+class HfPath(CloudPath):
+    __slots__ = ()
+
+    def __init__(
+        self,
+        *args: JoinablePathLike,
+        protocol: Literal["hf"] | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+        **storage_options: Unpack[HFStorageOptions],
+    ) -> None:
+        super().__init__(
+            *args, protocol=protocol, chain_parser=chain_parser, **storage_options
+        )
