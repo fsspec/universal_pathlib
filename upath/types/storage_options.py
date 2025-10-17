@@ -198,7 +198,6 @@ class HfStorageOptions(_AbstractStorageOptions, total=False):
     )  # Block size for reading bytes; 0 = raw requests file-like objects
 
 
-
 class DataStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for Data URIs filesystem"""
 
