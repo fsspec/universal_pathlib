@@ -655,3 +655,9 @@ class BaseTests:
         assert target.exists()
         assert target.read_text() == content
         assert not source.exists()
+
+    def test_relative_to(self):
+        base = self.path
+        child = self.path / "folder1" / "file1.txt"
+        relative = child.relative_to(base)
+        assert str(relative) == "folder1/file1.txt"
