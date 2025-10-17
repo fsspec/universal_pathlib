@@ -95,6 +95,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "gcs": "upath.implementations.cloud.GCSPath",
         "gs": "upath.implementations.cloud.GCSPath",
         "hdfs": "upath.implementations.hdfs.HDFSPath",
+        "hf": "upath.implementations.cloud.HfPath",
         "http": "upath.implementations.http.HTTPPath",
         "https": "upath.implementations.http.HTTPPath",
         "memory": "upath.implementations.memory.MemoryPath",
