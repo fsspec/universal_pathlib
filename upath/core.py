@@ -1355,7 +1355,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             if self.__class__ is not other.__class__:
                 raise ValueError(
                     "incompatible protocols:"
-                    f" {self._protocol!r} != {other._protocol!r}"
+                    f" {self.protocol!r} != {other.protocol!r}"
                 )
             if self.storage_options != other.storage_options:
                 raise ValueError(
