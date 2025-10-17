@@ -19,7 +19,7 @@ __all__ = [
     "GCSStorageOptions",
     "S3StorageOptions",
     "AzureStorageOptions",
-    "HFStorageOptions",
+    "HfStorageOptions",
     "DataStorageOptions",
     "GitHubStorageOptions",
     "HDFSStorageOptions",
@@ -183,7 +183,7 @@ class AzureStorageOptions(_AbstractStorageOptions, total=False):
     assume_container_exists: bool | None  # container existence assumptions
 
 
-class HFStorageOptions(_AbstractStorageOptions, total=False):
+class HfStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for Hugging face filesystem"""
 
     # Authentication

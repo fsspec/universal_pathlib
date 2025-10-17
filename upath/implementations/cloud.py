@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from upath._chain import FSSpecChainParser
     from upath.types.storage_options import AzureStorageOptions
     from upath.types.storage_options import GCSStorageOptions
-    from upath.types.storage_options import HFStorageOptions
+    from upath.types.storage_options import HfStorageOptions
     from upath.types.storage_options import S3StorageOptions
 
 __all__ = [
@@ -169,7 +169,7 @@ class HfPath(CloudPath):
         *args: JoinablePathLike,
         protocol: Literal["hf"] | None = None,
         chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
-        **storage_options: Unpack[HFStorageOptions],
+        **storage_options: Unpack[HfStorageOptions],
     ) -> None:
         super().__init__(
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
