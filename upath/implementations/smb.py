@@ -40,6 +40,19 @@ class SMBPath(UPath):
             **storage_options: Unpack[SMBStorageOptions],
         ) -> None: ...
 
+    @property
+    def path(self) -> str:
+        path = super().path
+        if len(path) > 1:
+            return path.removesuffix("/")
+        return path
+
+    def __str__(self) -> str:
+        path_str = super().__str__()
+        if path_str.startswith("smb:///"):
+            return path_str.removesuffix("/")
+        return path_str
+
     def mkdir(
         self,
         mode: int = 0o777,
