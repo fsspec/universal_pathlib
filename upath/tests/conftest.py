@@ -553,3 +553,99 @@ def ssh_fixture(ssh_container, local_testdir, monkeypatch):
         )
     finally:
         fs.delete("/app/testdir", recursive=True)
+
+
+@pytest.fixture
+def hf_test_repo():
+    # "__username__" is an invalid username so we can use it for tests
+    return "__username__/test_repo"
+
+
+@pytest.fixture
+def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
+    huggingface_hub = pytest.importorskip(
+        "huggingface_hub", reason="hf tests require huggingface_hub"
+    )
+    hf_file_system = pytest.importorskip(
+        "huggingface_hub.hf_file_system", reason="hf tests require huggingface_hub"
+    )
+
+    class MockedHfApi(huggingface_hub.HfApi):
+
+        def repo_info(self, repo_id, *args, repo_type=None, **kwargs):
+            if repo_id != hf_test_repo:
+                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+            elif repo_type is None or repo_type == "model":
+                return huggingface_hub.hf_api.ModelInfo(id=repo_id)
+            elif repo_type == "dataset":
+                return huggingface_hub.hf_api.DatasetInfo(id=repo_id)
+            elif repo_type == "space":
+                return huggingface_hub.hf_api.SpaceInfo(id=repo_id)
+            else:
+                raise ValueError("Unsupported repo type.")
+
+        def get_paths_info(self, repo_id, paths, *args, **kwargs):
+            if repo_id != hf_test_repo:
+                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+            paths_info = []
+            for path in paths:
+                if path:
+                    path = pathlib_base / path
+                    if path.is_file():
+                        paths_info.append(
+                            huggingface_hub.hf_api.RepoFile(
+                                path=path.relative_to(pathlib_base).as_posix(),
+                                blob_id="blob_id",
+                                size=path.stat().st_size,
+                            )
+                        )
+                    elif path.is_dir():
+                        paths_info.append(
+                            huggingface_hub.hf_api.RepoFolder(
+                                path=path.relative_to(pathlib_base).as_posix(),
+                                tree_id="tree_id",
+                            )
+                        )
+            return paths_info
+
+        def list_repo_tree(
+            self, repo_id, path_in_repo, *args, recursive=False, **kwargs
+        ):
+            if repo_id != hf_test_repo:
+                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+            pathlib_dir = pathlib_base / path_in_repo if path_in_repo else pathlib_base
+            for path in pathlib_dir.rglob("*") if recursive else pathlib_dir.glob("*"):
+                if path.is_file():
+                    yield huggingface_hub.hf_api.RepoFile(
+                        path=path.relative_to(pathlib_base).as_posix(),
+                        oid="oid",
+                        size=path.stat().st_size,
+                    )
+                else:
+                    yield huggingface_hub.hf_api.RepoFolder(
+                        path=path.relative_to(pathlib_base).as_posix(),
+                        oid="oid",
+                    )
+
+    hf_file_system.HfFileSystem.clear_instance_cache()
+    monkeypatch.setattr(hf_file_system, "HfApi", MockedHfApi)
+
+
+@pytest.fixture
+def mock_hf_filesystem_open(pathlib_base, monkeypatch):
+    hf_file_system = pytest.importorskip(
+        "huggingface_hub.hf_file_system", reason="hf tests require huggingface_hub"
+    )
+
+    def mocked_open(fs, path, mode="rb", *args, **kwargs):
+        resolved_path = fs.resolve_path(path)
+        return (pathlib_base / resolved_path.path_in_repo).open(mode)
+
+    monkeypatch.setattr(hf_file_system.HfFileSystem, "_open", mocked_open)
+
+
+@pytest.fixture
+def hf_fixture_with_readonly_mocked_hf_api(
+    hf_test_repo, mock_hf_api, mock_hf_filesystem_open
+):
+    return "hf://" + hf_test_repo
