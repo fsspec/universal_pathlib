@@ -232,11 +232,11 @@ simplify interaction with `filesystem_spec`. Think of the `UPath` class in terms
 of the following code:
 
 ```python
-from pathlib import Path
+from pathlib_abc import ReadablePath, WritablePath
 from typing import Any, Mapping
 from fsspec import AbstractFileSystem
 
-class UPath(Path):
+class UPath(ReadablePath, WriteablePath):
     # the real implementation is more complex, but this is the general idea
 
     @property
