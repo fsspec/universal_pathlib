@@ -45,9 +45,9 @@ nav:
     - Changelog: changelog.md
   - Concepts:
     - Overview: concepts/index.md
-    - FSSpec File Systems: concepts/filesystems.md
-    - Pathlib: concepts/pathlib.md
-    - UPath: concepts/upath.md
+    - Filesystem Spec: concepts/filesystems.md
+    - Stdlib Pathlib: concepts/pathlib.md
+    - Universal Pathlib: concepts/upath.md
   - Usage:
     - Basic Usage: usage.md
   - API Reference:
@@ -84,8 +84,8 @@ markdown_extensions:
         format: !!python/name:pymdownx.superfences.fence_code_format
 
 watch:
-  - docs
-  - upath
+  - docs/
+  - upath/
 
 plugins:
 - search
