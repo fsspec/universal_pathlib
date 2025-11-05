@@ -144,3 +144,6 @@ upath/_version.py
 
 # vscode workspace settings
 .vscode/
+
+# mac
+**/.DS_Store
