@@ -45,8 +45,8 @@ nav:
     - Changelog: changelog.md
   - Concepts:
     - Overview: concepts/index.md
-    - Filesystem Spec: concepts/filesystems.md
-    - Stdlib Pathlib: concepts/pathlib.md
+    - Filesystem Spec: concepts/fsspec.md
+    - Standard Library Pathlib: concepts/pathlib.md
     - Universal Pathlib: concepts/upath.md
   - Usage:
     - Basic Usage: usage.md

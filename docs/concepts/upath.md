@@ -6,11 +6,9 @@
 
 # Universal Pathlib ![upath](../assets/logo-128x128.svg){: #upath-logo }
 
-## Bringing pathlib to All Filesystems
-
 **universal-pathlib** (imported as `upath`) bridges Python's [pathlib](https://docs.python.org/3/library/pathlib.html) API with [fsspec](https://filesystem-spec.readthedocs.io/)'s filesystem implementations. It provides a familiar, pathlib-style interface for working with files across local storage, cloud services, and remote systems.
 
-### The Best of Both Worlds
+## The Best of Both Worlds
 
 universal-pathlib combines:
 
@@ -19,11 +17,11 @@ universal-pathlib combines:
 
 This means you can write code using the pathlib syntax you already know, and it works seamlessly across any storage system that fsspec supports.
 
-### How UPath and Path Relate via pathlib-abc
+## How UPath and Path Relate via pathlib-abc
 
 `UPath` and `pathlib.Path` are related through the abstract base classes defined in [pathlib-abc](https://github.com/barneygale/pathlib-abc). While they share a common API design, they serve different purposes and have distinct inheritance hierarchies.
 
-#### The Class Hierarchy
+### The Class Hierarchy
 
 The following diagram shows how `UPath` implementations relate to `pathlib` classes through the `pathlib_abc` abstract base classes:
 
@@ -99,30 +97,34 @@ flowchart TB
 ```
 
 **Legend:**
+
 - **Green (pathlib_abc)**: Abstract base classes defining the path interface
 - **Blue (pathlib)**: Standard library path classes for local filesystems
 - **Red (upath)**: Universal pathlib classes for all filesystems
 - Solid lines: Direct inheritance
 - Dotted lines: Conceptual relationship (not actual inheritance yet)
 
-#### Understanding the Relationships
+### Understanding the Relationships
 
-**pathlib_abc Layer (Green):**
+**pathlib-abc Layer (Green):**
+
 - `JoinablePath` - Basic path manipulation without filesystem access
 - `ReadablePath` - Adds read-only filesystem operations
 - `WritablePath` - Adds write filesystem operations
 
 **pathlib Layer (Blue):**
+
 - `PurePath` - Pure path manipulation (similar to `JoinablePath` conceptually)
 - `Path` - Concrete local filesystem paths (conceptually similar to `ReadablePath` + `WritablePath`)
 - Platform-specific: `PosixPath`, `WindowsPath`, etc.
 
-**upath Layer (Red):**
+**universal-pathlib Layer (Red):**
+
 - `UPath` - Universal path for any filesystem backend
 - Local implementations: `PosixUPath`, `WindowsUPath`, `FilePath`
 - Remote implementations: `S3Path`, `HttpPath`, and others
 
-#### Key Differences
+### Key Differences
 
 **Current State (Python 3.9-3.13):**
 
@@ -146,7 +148,7 @@ assert isinstance(local, WritablePath)   # False
 
 **Important Note:** The dotted lines in the diagram represent a conceptual relationship. While `pathlib.Path` doesn't currently inherit from `pathlib_abc` classes, it implements a compatible API. Future Python versions may formalize this relationship.
 
-#### Local Path Compatibility
+### Local Path Compatibility
 
 For local filesystem paths, `UPath` provides implementations that are 100% compatible with stdlib `pathlib`:
 
@@ -178,7 +180,7 @@ assert not isinstance(file_path, Path)    # False (uses fsspec instead)
 - Useful for consistent fsspec-based access across all backends
 - Implements `os.PathLike` protocol
 
-#### Remote and Cloud Paths
+### Remote and Cloud Paths
 
 For remote filesystems, `UPath` implementations provide the pathlib API backed by fsspec:
 
@@ -196,7 +198,7 @@ assert isinstance(http, UPath)
 assert not isinstance(http, Path)  # Not a local path
 ```
 
-#### Why This Design?
+### Why This Design?
 
 This architecture provides several benefits:
 
@@ -206,7 +208,7 @@ This architecture provides several benefits:
 4. **Flexibility**: Easy to add new filesystem implementations
 5. **Future-Proof**: Ready for potential stdlib integration of pathlib-abc
 
-#### Writing Filesystem-Agnostic Code
+### Writing Filesystem-Agnostic Code
 
 Use pathlib-abc types to write code that works with both `Path` and `UPath`:
 
@@ -237,7 +239,7 @@ process_file(
 )
 ```
 
-### Learn More
+## Learn More
 
 - **pathlib concepts**: See [pathlib.md](pathlib.md) for details on the pathlib API
 - **fsspec backends**: See [filesystems.md](filesystems.md) for information about available filesystems
