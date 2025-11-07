@@ -9,7 +9,7 @@ nox.options.reuse_existing_virtualenvs = True
 nox.options.error_on_external_run = True
 
 nox.needs_version = ">=2024.3.2"
-nox.options.default_venv_backend = "uv|virtualenv"
+nox.options.default_venv_backend = "uv"
 
 nox.options.sessions = "lint", "tests"
 locations = ("upath",)
@@ -129,3 +129,15 @@ def generate_flavours(session):
             stdout=target,
             stderr=None,
         )
+
+
+@nox.session(python="3.12")
+def mkdocs_build(session):
+    session.install("--group=docs", "-e", ".")
+    session.run("mkdocs", "build")
+
+
+@nox.session(python="3.12")
+def mkdocs_serve(session):
+    session.install("--group=docs", "-e", ".")
+    session.run("mkdocs", "serve", "--no-strict")
