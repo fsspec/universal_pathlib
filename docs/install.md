@@ -76,6 +76,6 @@ dependencies = [
 
 <div align="center" markdown>
 
-**Ready to get started?** Check out our [Quick Start Guide](index.md#quick-start) :rocket:
+**Ready to get started?** Learn about [Universal Pathlib Concepts](concepts/index.md) :rocket:
 
 </div>

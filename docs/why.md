@@ -236,7 +236,6 @@ Ready to give Universal Pathlib a try?
 
 <div align="center" markdown>
 
-[Get Started →](install.md){ .md-button .md-button--primary }
-<!-- [View Examples](../notebooks/examples.ipynb){ .md-button } --> `TODO`
+[Install Now →](install.md){ .md-button .md-button--primary }
 
 </div>

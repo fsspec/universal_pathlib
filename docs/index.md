@@ -163,6 +163,5 @@ Universal Pathlib is distributed under the [MIT license](https://github.com/fssp
 **Ready to get started?**
 
 [Install Now](install.md){ .md-button .md-button--primary }
-<!-- TODO [View Examples](notebooks/examples.ipynb){ .md-button } -->
 
 </div>

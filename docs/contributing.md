@@ -48,7 +48,7 @@ There are many ways to contribute to Universal Pathlib:
 
     Spot a typo? Know a better way to explain something? Documentation improvements are always welcome!
 
-    [:octicons-arrow-right-24: Edit the docs](#)
+    [:octicons-arrow-right-24: Edit the docs](https://github.com/fsspec/universal_pathlib)
 
 -   :wrench: **Contribute Code**
 
@@ -57,22 +57,6 @@ There are many ways to contribute to Universal Pathlib:
     Ready to get your hands dirty? We welcome bug fixes, new features, and performance improvements.
 
     [:octicons-arrow-right-24: Development guide](#setting-up-your-development-environment)
-
--   :test_tube: **Add Tests**
-
-    ---
-
-    Help us maintain quality! More test coverage means more reliable code.
-
-    [:octicons-arrow-right-24: Testing guide](#running-tests)
-
--   :speech_balloon: **Help Others**
-
-    ---
-
-    Answer questions on GitHub issues and help other users succeed.
-
-    [:octicons-arrow-right-24: View discussions](https://github.com/fsspec/universal_pathlib/issues)
 
 </div>
 
@@ -197,7 +181,7 @@ You'll need:
 2. **Install nox**
 
    ```bash
-   pip install nox
+   uv tool install nox
    ```
 
 3. **Verify your setup**
@@ -280,18 +264,11 @@ This runs:
 - **mypy** - Type checking
 - **Code formatting checks**
 
-### Auto-fix Issues
-
-```bash
-nox --session=lint -- --fix
-```
-
-This automatically fixes many common issues.
-
 ### Type Checking
 
 ```bash
-nox --session=mypy
+nox --session=type_checking
+nox --session=typesafety
 ```
 
 !!! tip "Pre-commit Hooks"
@@ -395,39 +372,6 @@ How was this tested?
 
 ## Development Tips :bulb:
 
-### Working with Different Filesystems
-
-To test with specific filesystems, install the required extras:
-
-```bash
-# S3
-pip install -e ".[s3]"
-
-# Google Cloud Storage
-pip install -e ".[gcs]"
-
-# Azure
-pip install -e ".[azure]"
-
-# All extras
-pip install -e ".[dev,s3,gcs,azure,hdfs,sftp]"
-```
-
-### Using Memory Filesystem for Testing
-
-The memory filesystem is great for fast tests:
-
-```python
-from upath import UPath
-
-# Create test files in memory
-path = UPath("memory://test/file.txt")
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text("test data")
-
-# Fast and no cleanup needed!
-```
-
 ### Debugging Tests
 
 ```bash
@@ -437,41 +381,6 @@ nox --session=tests -- tests/test_core.py::test_name -v
 # Drop into debugger on failure
 nox --session=tests -- --pdb
 ```
-
----
-
-## Documentation :books:
-
-Documentation improvements are always welcome!
-
-### Building Documentation Locally
-
-```bash
-nox --session=docs
-
-# Or with uv:
-uv run --group docs mkdocs serve
-```
-
-Then open http://localhost:8000 in your browser.
-
-### Documentation Structure
-
-- [`docs/index.md`](index.md) - Home page
-- [`docs/why.md`](why.md) - Why use Universal Pathlib
-- [`docs/install.md`](install.md) - Installation guide
-- [`docs/concepts/`](concepts/index.md) - Concepts
-- [`docs/api/`](api/index.md) - API reference
-- [`docs/contributing.md`](contributing.md) - This guide!
-
-### Writing Good Documentation
-
-- ✅ **Be clear and concise** - Get to the point
-- ✅ **Use examples** - Show, don't just tell
-- ✅ **Test your code** - Make sure examples actually work
-- ✅ **Add context** - Explain why, not just how
-- ✅ **Use admonitions** - Highlight important information
-
 ---
 
 ## Getting Help :question:
