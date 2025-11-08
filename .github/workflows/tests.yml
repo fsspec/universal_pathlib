@@ -59,7 +59,7 @@ jobs:
     - uses: hynek/setup-cached-uv@v2
 
     - name: Run tests
-      run: uvx nox --sessions typesafety --python ${{ matrix.pyv }}
+      run: uvx nox --sessions type-safety --python ${{ matrix.pyv }}
 
   lint:
     runs-on: ubuntu-latest
