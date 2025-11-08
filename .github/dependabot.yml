@@ -6,7 +6,12 @@ updates:
     schedule:
       interval: "weekly"
     labels:
-      - "maintenance"
+      - "maintenance :construction:"
+    groups:
+      # Group all pip dependencies into one PR
+      pip-dependencies:
+        patterns:
+          - "*"
     # Update via cruft
     ignore:
       - dependency-name: "mkdocs*"
@@ -19,7 +24,7 @@ updates:
     schedule:
       interval: "weekly"
     labels:
-      - "maintenance"
+      - "maintenance :construction:"
     # Update via cruft
     ignore:
       - dependency-name: "actions/checkout"

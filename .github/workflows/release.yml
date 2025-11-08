@@ -20,19 +20,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Upgrade pip and nox
-      run: |
-        pip install --upgrade pip nox
-        pip --version
-        nox --version
+    - uses: hynek/setup-cached-uv@v2
 
     - name: Build package
-      run: nox -s build
+      run: uvx nox -s build
 
     - name: Upload package
       if: github.event_name == 'release'
