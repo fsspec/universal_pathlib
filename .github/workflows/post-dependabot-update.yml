@@ -1,0 +1,29 @@
+name: Post Dependabot Update
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  auto-update:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: hynek/setup-cached-uv@v2
+
+      - name: Run tests
+        run: uvx nox --sessions flavours-codegen
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add upath/_flavour_sources.py
+          git commit -m "Auto-update generated flavours" || echo "No changes"
+          git push
