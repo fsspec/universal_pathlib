@@ -2,6 +2,8 @@ name: Post Dependabot Update
 on:
   pull_request:
     branches: [main]
+    paths:
+      - dev/**
 
 jobs:
   auto-update:
