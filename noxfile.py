@@ -72,7 +72,7 @@ def tests(session: nox.Session) -> None:
 
 @nox.session(python=MIN_PYTHON, name="tests-minversion")
 def tests_minversion(session: nox.Session) -> None:
-    session.install("fsspec=={FSSPEC_MIN_VERSION}", ".[tests,dev]")
+    session.install(f"fsspec=={FSSPEC_MIN_VERSION}", ".[tests,dev]")
     session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
@@ -146,12 +146,12 @@ def type_safety(session):
     )
 
 
-@nox.session(name="flavours-upgrade-deps", python="3.12")
+@nox.session(name="flavours-upgrade-deps", python=BASE_PYTHON)
 def upgrade_flavours(session):
     session.run("uvx", "pur", "-r", "dev/requirements.txt")
 
 
-@nox.session(name="flavours-codegen", python="3.12")
+@nox.session(name="flavours-codegen", python=BASE_PYTHON)
 def generate_flavours(session):
     session.install("-r", "dev/requirements.txt")
     with open("upath/_flavour_sources.py", "w") as target:
@@ -163,14 +163,14 @@ def generate_flavours(session):
         )
 
 
-@nox.session(name="docs-build", python="3.12")
+@nox.session(name="docs-build", python=BASE_PYTHON)
 def docs_build(session):
     """Build the documentation in strict mode."""
     session.install("--group=docs", "-e", ".")
     session.run("mkdocs", "build")
 
 
-@nox.session(name="docs-serve", python="3.12")
+@nox.session(name="docs-serve", python=BASE_PYTHON)
 def docs_serve(session):
     """Serve the documentation with live reloading."""
     session.install("--group=docs", "-e", ".")
