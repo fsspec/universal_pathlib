@@ -1952,13 +1952,15 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     def is_relative_to(
         self,
-        other: Self,
+        other: Self | str,
         /,
         *_deprecated: Any,
     ) -> bool:  # type: ignore[override]
         """Return True if the path is relative to another path identified."""
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             return False
+        elif isinstance(other, str):
+            other = self.with_segments(other)
         return self == other or other in self.parents
 
     def hardlink_to(self, target: ReadablePathLike) -> None:
