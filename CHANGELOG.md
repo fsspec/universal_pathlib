@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.3.5] - 2025-11-09
+### Added
+- upath.implementations.cloud: add `HfPath` for Hugging Face Hub support (#457)
+- docs: MkDocs documentation on Read The Docs (#468, #469)
+
+### Fixed
+- upath: fix `relative_to` for simplecache, smb, sftp and extensions (#458)
+
+### Changed
+- ci: nox and ci updates (#466)
+- upath: update flavours (#467)
+
 ## [0.3.4] - 2025-10-16
 ### Added
 - upath.implementations: add `SimpleCachePath` for simplecache protocol support (#453)
@@ -263,7 +275,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/fsspec/universal_pathlib/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/fsspec/universal_pathlib/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/fsspec/universal_pathlib/compare/v0.3.1...v0.3.2
