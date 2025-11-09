@@ -31,6 +31,8 @@
       protocol: gcs
     - cls_fqn: upath.implementations.cloud.AzurePath
       protocol: abfs
+    - cls_fqn: upath.implementations.cloud.HfPath
+      protocol: hf
     - cls_fqn: upath.implementations.data.DataPath
       protocol: data
     - cls_fqn: upath.implementations.github.GitHubPath
@@ -106,6 +108,8 @@
       protocol: gcs
     - cls_fqn: upath.implementations.cloud.AzurePath
       protocol: abfs
+    - cls_fqn: upath.implementations.cloud.HfPath
+      protocol: hf
     - cls_fqn: upath.implementations.data.DataPath
       protocol: data
     - cls_fqn: upath.implementations.github.GitHubPath
@@ -173,6 +177,10 @@
       cls: AzurePath
       supported_example_name: account_name
       supported_example_value: '"myaccount"'
+    - module: upath.implementations.cloud
+      cls: HfPath
+      supported_example_name: token
+      supported_example_value: '"abcd1234"'
     - module: upath.implementations.data
       cls: DataPath
       supported_example_name: use_listings_cache
@@ -242,6 +250,10 @@
       cls: AzurePath
       supported_example_name: account_name
       unsupported_example_value: '123'
+    - module: upath.implementations.cloud
+      cls: HfPath
+      supported_example_name: endpoint
+      unsupported_example_value: '123'
     - module: upath.implementations.data
       cls: DataPath
       supported_example_name: use_listings_cache
@@ -302,6 +314,8 @@
       cls: S3Path
     - module: upath.implementations.cloud
       cls: AzurePath
+    - module: upath.implementations.cloud
+      cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
     - module: upath.implementations.github
@@ -347,6 +361,9 @@
     - module: upath.implementations.cloud
       cls: AzurePath
       td: AzureStorageOptions
+    - module: upath.implementations.cloud
+      cls: HfPath
+      td: HfStorageOptions
     - module: upath.implementations.data
       cls: DataPath
       td: DataStorageOptions

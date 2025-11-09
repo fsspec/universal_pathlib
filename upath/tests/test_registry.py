@@ -23,6 +23,7 @@ IMPLEMENTATIONS = {
     "gcs",
     "gs",
     "hdfs",
+    "hf",
     "http",
     "https",
     "local",

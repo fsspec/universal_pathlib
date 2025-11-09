@@ -807,6 +807,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
+            protocol: Literal["hf"],
+            **_: Any,
+        ) -> _uimpl.cloud.HfPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
             protocol: Literal["data"],
             **_: Any,
         ) -> _uimpl.data.DataPath: ...
