@@ -161,3 +161,17 @@ def generate_flavours(session):
             stdout=target,
             stderr=None,
         )
+
+
+@nox.session(name="docs-build", python=BASE_PYTHON)
+def docs_build(session):
+    """Build the documentation in strict mode."""
+    session.install("--group=docs", "-e", ".")
+    session.run("mkdocs", "build")
+
+
+@nox.session(name="docs-serve", python=BASE_PYTHON)
+def docs_serve(session):
+    """Serve the documentation with live reloading."""
+    session.install("--group=docs", "-e", ".")
+    session.run("mkdocs", "serve", "--no-strict")

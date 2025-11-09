@@ -6,8 +6,6 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
-from smbprotocol.exceptions import SMBOSError
-
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
@@ -60,6 +58,8 @@ class SMBPath(UPath):
         exist_ok: bool = False,
     ) -> None:
         # smbclient does not support setting mode externally
+        from smbprotocol.exceptions import SMBOSError
+
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:

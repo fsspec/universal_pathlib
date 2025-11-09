@@ -1,0 +1,135 @@
+site_name: Universal Pathlib
+site_description: A universal pathlib implementation for Python
+strict: true
+# site_url: !ENV READTHEDOCS_CANONICAL_URL
+
+theme:
+  name: 'material'
+  logo: assets/logo-128x128-white.svg
+  favicon: 'assets/favicon.png'
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    toggle:
+      icon: material/lightbulb-outline
+      name: "Switch to dark mode"
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    toggle:
+      icon: material/lightbulb
+      name: "Switch to light mode"
+  features:
+    # - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+
+extra_css:
+  - css/extra.css
+
+repo_name: fsspec/universal_pathlib
+repo_url: https://github.com/fsspec/universal_pathlib
+edit_uri: edit/main/docs/
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+
+nav:
+  - Home:
+    - Introduction: index.md
+    - Why use Universal Pathlib: why.md
+    - Installation: install.md
+    - Contributing: contributing.md
+    - Changelog: changelog.md
+  - Concepts:
+    - Overview: concepts/index.md
+    - Filesystem Spec: concepts/fsspec.md
+    - Standard Library Pathlib: concepts/pathlib.md
+    - Universal Pathlib: concepts/upath.md
+  - Usage:
+    - Basic Usage: usage.md
+  - API Reference:
+    - Core: api/index.md
+    - Registry: api/registry.md
+    - Implementations: api/implementations.md
+    - Extensions: api/extensions.md
+    - Types: api/types.md
+  - Migration Guide: migration.md
+
+markdown_extensions:
+- tables
+- attr_list
+- toc:
+    permalink: true
+    title: Page contents
+- admonition
+- pymdownx.details
+- pymdownx.highlight:
+    pygments_lang_class: true
+- pymdownx.extra
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:pymdownx.superfences.fence_code_format
+
+watch:
+  - docs/
+  - upath/
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        inventories:
+          - https://docs.python.org/3/objects.inv
+        paths: [.]
+        options:
+          preload_modules:
+            - __future__
+            - typing
+            - abc
+            - asyncio
+            - pathlib
+            - pathlib_abc
+            - fsspec
+            - upath.types._abc
+            - upath.types
+            - upath.registry
+            - upath.core
+          docstring_style: numpy
+          docstring_section_style: list
+          group_by_category: false
+          members_order: source
+          docstring_options:
+            ignore_init_summary: true
+          docstring_section_style: spacy
+          merge_init_into_class: true
+          show_source: true
+          show_root_heading: true
+          show_root_toc_entry: true
+          allow_inspection: true
+          separate_signature: true
+          show_signature: true
+          show_signature_annotations: true
+          show_signature_type_parameters: true
+          signature_crossrefs: true
+          show_symbol_type_heading: true
+- exclude:
+    glob:
+      - _plugins/*
+      - __pycache__/*
+      - tests/*
+      - test_*.py
+hooks:
+  - docs/_plugins/copy_changelog.py

@@ -1,0 +1,11 @@
+:root {
+    --md-primary-fg-color: #4361EE;
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+}
+
+.md-typeset table:not([class]) th:not(:first-child) {
+   min-width: 1em;
+   padding-left: 0.8em;
+   padding-right: 0.8em;
+}

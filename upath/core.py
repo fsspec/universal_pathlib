@@ -1,3 +1,5 @@
+"""upath.core module: UPath base class implementation"""
+
 from __future__ import annotations
 
 import posixpath
@@ -101,11 +103,17 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
 
 
 def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
-    "relative path does not support method(), because cls_name.cwd() is unsupported"
     raise NotImplementedError(f"{cls_name}.{method}() is unsupported")
 
 
 class _UPathMeta(ABCMeta):
+    """metaclass for UPath to customize instance creation
+
+    There are two main reasons for this metaclass:
+    - support copying UPath instances via UPath(existing_upath)
+    - force calling __init__ on instance creation for instances of a non-subclass
+    """
+
     if sys.version_info < (3, 11):
         # pathlib 3.9 and 3.10 supported `Path[str]` but
         # did not return a GenericAlias but the class itself?
@@ -129,11 +137,16 @@ class _UPathMeta(ABCMeta):
 
 
 class _UPathMixin(metaclass=_UPathMeta):
+    """Mixin class for UPath to allow sharing some common functionality
+    between UPath and PosixUPath/WindowsUPath.
+    """
+
     __slots__ = ()
 
     @property
     @abstractmethod
     def parser(self) -> UPathParser:
+        """The parser (flavour) for this UPath instance."""
         raise NotImplementedError
 
     @property
@@ -203,17 +216,67 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     def protocol(self) -> str:
-        """The fsspec protocol for the path."""
+        """The fsspec protocol for the path.
+
+        Note
+        ----
+        Protocols are linked to upath and fsspec filesystems via the
+        `upath.registry` and `fsspec.registry` modules. They basically
+        represent the URI scheme used for the specific filesystem.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p0 = UPath("s3://my-bucket/path/to/file.txt")
+        >>> p0.protocol
+        's3'
+        >>> p1 = UPath("/foo/bar/baz.txt", protocol="memory")
+        >>> p1.protocol
+        'memory'
+
+        """
         return self._protocol
 
     @property
     def storage_options(self) -> Mapping[str, Any]:
-        """The fsspec storage options for the path."""
+        """The read-only fsspec storage options for the path.
+
+        Note
+        ----
+        Storage options are specific to each fsspec filesystem and
+        can include parameters such as authentication credentials,
+        connection settings, and other options that affect how the
+        filesystem interacts with the underlying storage.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt", anon=True)
+        >>> p.storage_options['anon']
+        True
+
+        """
         return MappingProxyType(self._storage_options)
 
     @property
     def fs(self) -> AbstractFileSystem:
-        """The cached fsspec filesystem instance for the path."""
+        """The cached fsspec filesystem instance for the path.
+
+        This is the underlying fsspec filesystem instance. It's
+        instantiated on first filesystem access and cached. Can
+        be used to access fsspec-specific functionality not exposed
+        by the UPath API.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt")
+        >>> p.fs
+        <s3fs.core.S3FileSystem object at 0x...>
+        >>> p.fs.get_tags(p.path)
+        {'VersionId': 'null', 'ContentLength': 12345, ...}
+
+        """
         try:
             return self._fs_cached
         except AttributeError:
@@ -224,7 +287,25 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     @property
     def path(self) -> str:
-        """The path that a fsspec filesystem can use."""
+        """The path used by fsspec filesystem.
+
+        FSSpec filesystems usually handle paths stripped of protocol.
+        This property returns the path suitable for use with the
+        underlying fsspec filesystem. It guarantees that a filesystem's
+        strip_protocol method is applied correctly.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("memory:///foo/bar.txt")
+        >>> str(p)
+        'memory:///foo/bar.txt'
+        >>> p.path
+        '/foo/bar.txt'
+        >>> p.fs.exists(p.path)
+        True
+
+        """
         if self._relative_base is not None:
             try:
                 # For relative paths, we need to resolve to absolute path
@@ -243,7 +324,20 @@ class _UPathMixin(metaclass=_UPathMeta):
         return self._chain.active_path
 
     def joinuri(self, uri: JoinablePathLike) -> UPath:
-        """Join with urljoin behavior for UPath instances"""
+        """Join with urljoin behavior for UPath instances.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("https://example.com/dir/subdir/")
+        >>> p.joinuri("file.txt")
+        HTTPSPath('https://example.com/dir/subdir/file.txt')
+        >>> p.joinuri("/anotherdir/otherfile.txt")
+        HTTPSPath('https://example.com/anotherdir/otherfile.txt')
+        >>> p.joinuri("memory:///foo/bar.txt"
+        MemoryPath('memory:///foo/bar.txt')
+
+        """
         # short circuit if the new uri uses a different protocol
         other_protocol = get_upath_protocol(uri)
         if other_protocol and other_protocol != self._protocol:
@@ -383,6 +477,28 @@ class _UPathMixin(metaclass=_UPathMeta):
         chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
         **storage_options: Any,
     ) -> None:
+        """Initialize a UPath instance
+
+        When instantiating a `UPath`, the detected or provided protocol determines
+        the `UPath` subclass that will be instantiated. The protocol is looked up
+        via the `get_upath_protocol` function, which loads the registered `UPath`
+        implementation from the registry. If no `UPath` implementation is found for
+        the detected protocol, but a registered `fsspec` filesystem exists for the
+        protocol, a default dynamically created `UPath` implementation will be used.
+
+        Parameters
+        ----------
+        *args :
+            The path (or uri) segments to construct the UPath from. The first
+            argument is used to detect the protocol if no protocol is provided.
+        protocol :
+            The protocol to use for the path.
+        chain_parser :
+            A chain parser instance for chained urlpaths. _(experimental)_
+        **storage_options :
+            Additional storage options for the path.
+
+        """
 
         # todo: avoid duplicating this call from __new__
         protocol = get_upath_protocol(
@@ -459,6 +575,187 @@ class _UPathMixin(metaclass=_UPathMeta):
 
 
 class UPath(_UPathMixin, WritablePath, ReadablePath):
+    """Base class for pathlike paths backed by an fsspec filesystem.
+
+    Note
+    ----
+    The following attributes and methods are specific to UPath instances and are not
+    available on pathlib.Path instances.
+
+    Attributes
+    ----------
+    protocol :
+        The fsspec protocol for the path.
+    storage_options :
+        The fsspec storage options for the path.
+    path :
+        The path that a fsspec filesystem can use.
+    fs :
+        The cached fsspec filesystem instance for the path.
+
+    Methods
+    -------
+    joinuri(*parts) :
+        Join URI parts to this path.
+
+
+    Info
+    ----
+    Below are pathlib attributes and methods available on UPath instances.
+
+    Attributes
+    ----------
+    drive :
+        The drive component of the path.
+    root :
+        The root component of the path.
+    anchor :
+        The concatenation of the drive and root.
+    parent :
+        The logical parent of the path.
+    parents :
+        An immutable sequence providing access to the logical ancestors of the path.
+    name :
+        The final path component, excluding the drive and root, if any.
+    suffix :
+        The file extension of the final component, if any.
+    suffixes :
+        A list of the path's file extensions.
+    stem :
+        The final path component, without its suffix.
+    info :
+        Filesystem information about the path.
+    parser :
+        The path parser instance for parsing path segments.
+
+    Methods
+    -------
+    __truediv__(key) :
+        Combine this path with the argument using the `/` operator.
+    __rtruediv__(key) :
+        Combine the argument with this path using the `/` operator.
+    as_posix() :
+        Return the string representation of the path with forward slashes.
+    is_absolute() :
+        Return True if the path is absolute.
+    is_relative_to(other) :
+        Return True if the path is relative to another path.
+    is_reserved() :
+        Return True if the path is reserved under Windows.
+    joinpath(*pathsegments) :
+        Combine this path with one or several arguments, and return a new path.
+    full_match(pattern, *, case_sensitive=None) :
+        Match this path against the provided glob-style pattern.
+    match(pattern, *, case_sensitive=None) :
+        Match this path against the provided glob-style pattern.
+    relative_to(other, walk_up=False) :
+        Return a version of this path relative to another path.
+    with_name(name) :
+        Return a new path with the name changed.
+    with_stem(stem) :
+        Return a new path with the stem changed.
+    with_suffix(suffix) :
+        Return a new path with the suffix changed.
+    with_segments(*pathsegments) :
+        Construct a new path object from any number of path-like objects.
+    from_uri(uri) :
+        Return a new path from the given URI.
+    as_uri() :
+        Return the path as a URI.
+    home() :
+        Return a new path pointing to the user's home directory.
+    expanduser() :
+        Return a new path with expanded `~` constructs.
+    cwd() :
+        Return a new path pointing to the current working directory.
+    absolute() :
+        Make the path absolute, without normalization or resolving symlinks.
+    resolve(strict=False) :
+        Make the path absolute, resolving any symlinks.
+    readlink() :
+        Return the path to which the symbolic link points.
+    stat(*, follow_symlinks=True) :
+        Return the result of the stat() system call on this path.
+    lstat() :
+        Like stat(), but if the path points to a symlink, return the symlink's
+        information.
+    exists(*, follow_symlinks=True) :
+        Return True if the path exists.
+    is_file(*, follow_symlinks=True) :
+        Return True if the path is a regular file.
+    is_dir(*, follow_symlinks=True) :
+        Return True if the path is a directory.
+    is_symlink() :
+        Return True if the path is a symbolic link.
+    is_junction() :
+        Return True if the path is a junction.
+    is_mount() :
+        Return True if the path is a mount point.
+    is_socket() :
+        Return True if the path is a socket.
+    is_fifo() :
+        Return True if the path is a FIFO.
+    is_block_device() :
+        Return True if the path is a block device.
+    is_char_device() :
+        Return True if the path is a character device.
+    samefile(other_path) :
+        Return True if this path points to the same file as other_path.
+    open(mode='r', buffering=-1, encoding=None, errors=None, newline=None) :
+        Open the file pointed to by the path.
+    read_text(encoding=None, errors=None, newline=None) :
+        Open the file in text mode, read it, and close the file.
+    read_bytes() :
+        Open the file in bytes mode, read it, and close the file.
+    write_text(data, encoding=None, errors=None, newline=None) :
+        Open the file in text mode, write to it, and close the file.
+    write_bytes(data) :
+        Open the file in bytes mode, write to it, and close the file.
+    iterdir() :
+        Yield path objects of the directory contents.
+    glob(pattern, *, case_sensitive=None) :
+        Iterate over this subtree and yield all existing files matching the
+        given pattern.
+    rglob(pattern, *, case_sensitive=None) :
+        Recursively yield all existing files matching the given pattern.
+    walk(top_down=True, on_error=None, follow_symlinks=False) :
+        Generate the file names in a directory tree by walking the tree.
+    touch(mode=0o666, exist_ok=True) :
+        Create this file with the given access mode, if it doesn't exist.
+    mkdir(mode=0o777, parents=False, exist_ok=False) :
+        Create a new directory at this given path.
+    symlink_to(target, target_is_directory=False) :
+        Make this path a symbolic link pointing to target.
+    hardlink_to(target) :
+        Make this path a hard link pointing to the same file as target.
+    copy(target, *, follow_symlinks=True, preserve_metadata=False) :
+        Copy the contents of this file to the target file.
+    copy_into(target_dir, *, follow_symlinks=True, preserve_metadata=False) :
+        Copy this file or directory into the target directory.
+    rename(target) :
+        Rename this path to the target path.
+    replace(target) :
+        Rename this path to the target path, overwriting if that path exists.
+    move(target) :
+        Move this file or directory tree to the target path.
+    move_into(target_dir) :
+        Move this file or directory into the target directory.
+    unlink(missing_ok=False) :
+        Remove this file or link.
+    rmdir() :
+        Remove this directory.
+    owner(*, follow_symlinks=True) :
+        Return the login name of the file owner.
+    group(*, follow_symlinks=True) :
+        Return the group name of the file gid.
+    chmod(mode, *, follow_symlinks=True) :
+        Change the permissions of the path.
+    lchmod(mode) :
+        Like chmod() but, if the path points to a symlink, modify the symlink's
+        permissions.
+
+    """
+
     __slots__ = (
         "_chain",
         "_chain_parser",
@@ -625,6 +922,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     parser: UPathParser = LazyFlavourDescriptor()  # type: ignore[assignment]
 
     def with_segments(self, *pathsegments: JoinablePathLike) -> Self:
+        """Construct a new path object from any number of path-like objects."""
         # we change joinpath behavior if called from a relative path
         # this is not fully ideal, but currently the best way to move forward
         if is_relative := self._relative_base is not None:
@@ -676,6 +974,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @property
     def parts(self) -> Sequence[str]:
+        """Provides sequence-like access to the filesystem path components.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt")
+        >>> p.parts
+        ('my-bucket/', 'path', 'to', 'file.txt')
+        >>> p2 = UPath("/foo/bar/baz.txt", protocol="memory")
+        >>> p2.parts
+        ('/', 'foo', 'bar', 'baz.txt')
+
+        """
         # For relative paths, return parts of the relative path only
         if self._relative_base is not None:
             rel_str = str(self)
@@ -719,12 +1030,23 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @property
     def anchor(self) -> str:
+        """The concatenation of the drive and root or an empty string."""
         if self._relative_base is not None:
             return ""
         return self.drive + self.root
 
     @property
     def parent(self) -> Self:
+        """The logical parent of the path.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt")
+        >>> p.parent
+        S3Path('s3://my-bucket/path/to')
+
+        """
         if self._relative_base is not None:
             if str(self) == ".":
                 return self
@@ -743,6 +1065,20 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @property
     def parents(self) -> Sequence[Self]:
+        """A sequence providing access to the logical ancestors of the path.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("memory:///foo/bar/baz.txt")
+        >>> list(p.parents)
+        [
+          MemoryPath('memory:///foo/bar'),
+          MemoryPath('memory:///foo'),
+          MemoryPath('memory:///'),
+        ]
+
+        """
         if self._relative_base is not None:
             parents = []
             parent = self
@@ -755,6 +1091,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return super().parents
 
     def joinpath(self, *pathsegments: JoinablePathLike) -> Self:
+        """Combine this path with one or several arguments, and return a new path.
+
+        For one argument, this is equivalent to using the `/` operator.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to")
+        >>> p.joinpath("file.txt")
+        S3Path('s3://my-bucket/path/to/file.txt')
+
+        """
         return self.with_segments(self.__vfspath__(), *pathsegments)
 
     def __truediv__(self, key: JoinablePathLike) -> Self:
@@ -773,9 +1121,32 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @property
     def info(self) -> PathInfo:
+        """
+        A PathInfo object that exposes the file type and other file attributes
+        of this path.
+
+        Returns
+        -------
+        : UPathInfo
+            The UPathInfo object for this path.
+        """
         return UPathInfo(self)
 
     def iterdir(self) -> Iterator[Self]:
+        """Yield path objects of the directory contents.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("memory:///foo/")
+        >>> p.joinpath("bar.txt").touch()
+        >>> p.joinpath("baz.txt").touch()
+        >>> for child in p.iterdir():
+        ...     print(child)
+        MemoryPath('memory:///foo/bar.txt')
+        MemoryPath('memory:///foo/baz.txt')
+
+        """
         sep = self.parser.sep
         base = self
         if self.parts[-1:] == ("",):
@@ -809,6 +1180,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def copy(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
 
     def copy(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        """
+        Recursively copy this file or directory tree to the given destination.
+        """
         if not isinstance(target, UPath):
             return super().copy(self.with_segments(target), **kwargs)
         else:
@@ -823,6 +1197,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def copy_into(
         self, target_dir: _WT | SupportsPathLike | str, **kwargs: Any
     ) -> _WT | UPath:
+        """
+        Copy this file or directory tree into the given existing directory.
+        """
         if not isinstance(target_dir, UPath):
             return super().copy_into(self.with_segments(target_dir), **kwargs)
         else:
@@ -835,6 +1212,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def move(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
 
     def move(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        """
+        Recursively move this file or directory tree to the given destination.
+        """
         target = self.copy(target, **kwargs)
         self.fs.rm(self.path, recursive=self.is_dir())
         return target
@@ -848,6 +1228,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def move_into(
         self, target_dir: _WT | SupportsPathLike | str, **kwargs: Any
     ) -> _WT | UPath:
+        """
+        Move this file or directory tree into the given existing directory.
+        """
         name = self.name
         if not name:
             raise ValueError(f"{self!r} has an empty name")
@@ -872,6 +1255,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         parents: bool = False,
         exist_ok: bool = False,
     ) -> None:
+        """
+        Create a new directory at this given path.
+        """
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -974,6 +1360,20 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         *,
         follow_symlinks: bool = True,
     ) -> UPathStatResult:
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+
+        Info
+        ----
+        For fsspec filesystems follow_symlinks is currently ignored.
+
+        Returns
+        -------
+        : UPathStatResult
+            The upath stat result for this path, emulating `os.stat_result`.
+
+        """
         if not follow_symlinks:
             warnings.warn(
                 f"{type(self).__name__}.stat(follow_symlinks=False):"
@@ -990,18 +1390,41 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         _raise_unsupported(type(self).__name__, "chmod")
 
     def exists(self, *, follow_symlinks: bool = True) -> bool:
+        """
+        Whether this path exists.
+
+        Info
+        ----
+        For fsspec filesystems follow_symlinks is currently ignored.
+        """
         return self.fs.exists(self.path)
 
     def is_dir(self) -> bool:
+        """
+        Whether this path is a directory.
+        """
         return self.fs.isdir(self.path)
 
     def is_file(self) -> bool:
+        """
+        Whether this path is a regular file.
+        """
         return self.fs.isfile(self.path)
 
     def is_mount(self) -> bool:
+        """
+        Check if this path is a mount point
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_symlink(self) -> bool:
+        """
+        Whether this path is a symbolic link.
+        """
         try:
             info = self.fs.info(self.path)
             if "islink" in info:
@@ -1011,24 +1434,72 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return False
 
     def is_junction(self) -> bool:
+        """
+        Whether this path is a junction.
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_block_device(self) -> bool:
+        """
+        Whether this path is a block device.
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_char_device(self) -> bool:
+        """
+        Whether this path is a character device.
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_fifo(self) -> bool:
+        """
+        Whether this path is a FIFO (named pipe).
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_socket(self) -> bool:
+        """
+        Whether this path is a socket.
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def is_reserved(self) -> bool:
+        """
+        Whether this path is reserved under Windows.
+
+        Info
+        ----
+        For fsspec filesystems this is always False.
+        """
         return False
 
     def expanduser(self) -> Self:
+        """Return a new path with expanded `~` constructs.
+
+        Info
+        ----
+        For fsspec filesystems this is currently a no-op.
+        """
         return self
 
     def glob(
@@ -1038,6 +1509,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         case_sensitive: bool = UNSET_DEFAULT,
         recurse_symlinks: bool = UNSET_DEFAULT,
     ) -> Iterator[Self]:
+        """Iterate over this subtree and yield all existing files (of any
+        kind, including directories) matching the given relative pattern."""
         if case_sensitive is not UNSET_DEFAULT:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
@@ -1066,6 +1539,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         case_sensitive: bool = UNSET_DEFAULT,
         recurse_symlinks: bool = UNSET_DEFAULT,
     ) -> Iterator[Self]:
+        """Recursively yield all existing files (of any kind, including
+        directories) matching the given relative pattern, anywhere in
+        this subtree.
+        """
         if case_sensitive is not UNSET_DEFAULT:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
@@ -1111,11 +1588,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         _raise_unsupported(type(self).__name__, "group")
 
     def absolute(self) -> Self:
+        """Return an absolute version of this path
+        No normalization or symlink resolution is performed.
+
+        Use resolve() to resolve symlinks and remove '..' segments.
+        """
         if self._relative_base is not None:
             return self.cwd().joinpath(self.__vfspath__())
         return self
 
     def is_absolute(self) -> bool:
+        """True if the path is absolute (has both a root and, if applicable,
+        a drive)."""
         if self._relative_base is not None:
             return False
         else:
@@ -1177,6 +1661,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.__vfspath__() >= other.__vfspath__()
 
     def resolve(self, strict: bool = False) -> Self:
+        """
+        Make the path absolute, resolving all symlinks on the way and also
+        normalizing it.
+        """
         if self._relative_base is not None:
             self = self.absolute()
         _parts = self.parts
@@ -1197,6 +1685,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.with_segments(*_parts[:1], *resolved)
 
     def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        """Create this file with the given access mode, if it doesn't exist."""
         exists = self.fs.exists(self.path)
         if exists and not exist_ok:
             raise FileExistsError(str(self))
@@ -1212,6 +1701,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         _raise_unsupported(type(self).__name__, "lchmod")
 
     def unlink(self, missing_ok: bool = False) -> None:
+        """
+        Remove this file or link.
+        If the path is a directory, use rmdir() instead.
+        """
         if not self.exists():
             if not missing_ok:
                 raise FileNotFoundError(str(self))
@@ -1219,6 +1712,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self.fs.rm(self.path, recursive=False)
 
     def rmdir(self, recursive: bool = True) -> None:  # fixme: non-standard
+        """
+        Remove this directory.
+
+        Warning
+        -------
+        This method is non-standard compared to pathlib.Path.rmdir(),
+        as it supports a `recursive` parameter to remove non-empty
+        directories and defaults to recursive deletion.
+
+        This behavior is likely to change in future releases once
+        `.delete()` is introduced.
+
+        """
         if not self.is_dir():
             raise NotADirectoryError(str(self))
         if not recursive and next(self.iterdir()):  # type: ignore[arg-type]
@@ -1233,6 +1739,25 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
+        """
+        Rename this file or directory to the given target.
+
+        The target path may be absolute or relative. Relative paths are
+        interpreted relative to the current working directory, *not* the
+        directory of the Path object.
+
+        Returns the new Path instance pointing to the target path.
+
+        Warning
+        -------
+        This method is non-standard compared to pathlib.Path.rename(),
+        as it supports `recursive` and `maxdepth` parameters for
+        directory moves. This will be revisited in future releases.
+
+        It's better to use `.move()` or `.move_into()` to avoid
+        running into future compatibility issues.
+
+        """
         target_protocol = get_upath_protocol(target)
         if target_protocol and target_protocol != self.protocol:
             raise ValueError(
@@ -1272,16 +1797,38 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self.with_segments(target_)
 
     def replace(self, target: WritablePathLike) -> Self:
+        """
+        Rename this path to the target path, overwriting if that path exists.
+
+        The target path may be absolute or relative. Relative paths are
+        interpreted relative to the current working directory, *not* the
+        directory of the Path object.
+
+        Returns the new Path instance pointing to the target path.
+
+        Warning
+        -------
+        This method is currently not implemented.
+
+        """
         _raise_unsupported(type(self).__name__, "replace")
 
     @property
     def drive(self) -> str:
+        """The drive prefix (letter or UNC path), if any.
+
+        Info
+        ----
+        On non-Windows systems, the drive is always an empty string.
+        On cloud storage systems, the drive is the bucket name or equivalent.
+        """
         if self._relative_base is not None:
             return ""
         return self.parser.splitroot(str(self))[0]
 
     @property
     def root(self) -> str:
+        """The root of the path, if any."""
         if self._relative_base is not None:
             return ""
         return self.parser.splitroot(str(self))[1]
@@ -1308,6 +1855,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return cls(uri, **storage_options)
 
     def as_uri(self) -> str:
+        """Return the string representation of the path as a URI."""
         if self._relative_base is not None:
             raise ValueError(
                 f"relative path can't be expressed as a {self.protocol} URI"
@@ -1315,6 +1863,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return str(self)
 
     def as_posix(self) -> str:
+        """Return the string representation of the path with POSIX-style separators."""
         return str(self)
 
     def samefile(self, other_path) -> bool:
@@ -1327,6 +1876,16 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @classmethod
     def cwd(cls) -> Self:
+        """
+        Return a new UPath object representing the current working directory.
+
+        Info
+        ----
+        None of the fsspec filesystems support a global current working
+        directory, so this method only works for the base UPath class,
+        returning the local current working directory.
+
+        """
         if cls is UPath:
             # default behavior for UPath.cwd() is to return local cwd
             return get_upath_class("").cwd()  # type: ignore[union-attr,return-value]
@@ -1335,6 +1894,16 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
     @classmethod
     def home(cls) -> Self:
+        """
+        Return a new UPath object representing the user's home directory.
+
+        Info
+        ----
+        None of the fsspec filesystems support user home directories,
+        so this method only works for the base UPath class, returning the
+        local user's home directory.
+
+        """
         if cls is UPath:
             return get_upath_class("").home()  # type: ignore[union-attr,return-value]
         else:
@@ -1344,9 +1913,16 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         other: Self | str,
         /,
-        *_deprecated,
+        *_deprecated: Any,
         walk_up: bool = False,
     ) -> Self:
+        """Return the relative path to another path identified by the passed
+        arguments.  If the operation is not possible (because this is not
+        related to the other path), raise ValueError.
+
+        The *walk_up* parameter controls whether `..` may be used to resolve
+        the path.
+        """
         if walk_up:
             raise NotImplementedError("walk_up=True is not implemented yet")
 
@@ -1374,9 +1950,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             rel._relative_base = other.path
             return rel
 
-    def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
+    def is_relative_to(
+        self,
+        other: Self | str,
+        /,
+        *_deprecated: Any,
+    ) -> bool:  # type: ignore[override]
+        """Return True if the path is relative to another path identified."""
         if isinstance(other, UPath) and self.storage_options != other.storage_options:
             return False
+        elif isinstance(other, str):
+            other = self.with_segments(other)
         return self == other or other in self.parents
 
     def hardlink_to(self, target: ReadablePathLike) -> None:

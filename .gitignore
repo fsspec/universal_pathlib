@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/changelog.md
 
 # PyBuilder
 .pybuilder/
@@ -143,3 +144,6 @@ upath/_version.py
 
 # vscode workspace settings
 .vscode/
+
+# mac
+**/.DS_Store
