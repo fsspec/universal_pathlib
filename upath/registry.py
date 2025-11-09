@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from upath.implementations.cached import SimpleCachePath as _SimpleCachePath
     from upath.implementations.cloud import AzurePath as _AzurePath
     from upath.implementations.cloud import GCSPath as _GCSPath
+    from upath.implementations.cloud import HfPath as _HfPath
     from upath.implementations.cloud import S3Path as _S3Path
     from upath.implementations.data import DataPath as _DataPath
     from upath.implementations.github import GitHubPath as _GitHubPath
@@ -228,6 +229,8 @@ if TYPE_CHECKING:  # noqa: C901
     def get_upath_class(protocol: Literal["github"]) -> type[_GitHubPath]: ...
     @overload
     def get_upath_class(protocol: Literal["hdfs"]) -> type[_HDFSPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["hf"]) -> type[_HfPath]: ...
     @overload
     def get_upath_class(protocol: Literal["http", "https"]) -> type[_HTTPPath]: ...
     @overload
