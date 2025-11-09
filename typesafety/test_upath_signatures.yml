@@ -68,6 +68,8 @@
       cls: GCSPath
     - module: upath.implementations.cloud
       cls: AzurePath
+    - module: upath.implementations.cloud
+      cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
     - module: upath.implementations.github
@@ -253,6 +255,8 @@
       cls: GCSPath
     - module: upath.implementations.cloud
       cls: AzurePath
+    - module: upath.implementations.cloud
+      cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
     - module: upath.implementations.github
@@ -568,6 +572,8 @@
       cls: GCSPath
     - module: upath.implementations.cloud
       cls: AzurePath
+    - module: upath.implementations.cloud
+      cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
     - module: upath.implementations.github
@@ -962,6 +968,8 @@
       cls: GCSPath
     - module: upath.implementations.cloud
       cls: AzurePath
+    - module: upath.implementations.cloud
+      cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
     - module: upath.implementations.github
