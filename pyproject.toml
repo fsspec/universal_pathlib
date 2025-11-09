@@ -55,6 +55,7 @@ dev = [
     "s3fs >=2024.5.0",
     "gcsfs >=2024.5.0",
     "adlfs >=2024",
+    "huggingface_hub",
     "webdav4[fsspec]",
     # testing
     "moto[s3,server]",
