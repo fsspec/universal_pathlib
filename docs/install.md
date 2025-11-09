@@ -57,7 +57,7 @@ When adding `universal-pathlib` to your project, specify the filesystem extras y
 name = "myproject"
 requires-python = ">=3.9"
 dependencies = [
-    "universal_pathlib>=0.3.4",
+    "universal_pathlib>=0.3.5",
     "fsspec[s3,http]",  # Add the filesystems you need
 ]
 ```

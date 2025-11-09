@@ -59,6 +59,9 @@ gcs_path = UPath("gs://my-bucket/data.csv")
 # Azure Blob Storage
 az_path = UPath("az://container/blob.parquet")
 
+# Hugging Face Hub
+hf_path = UPath("hf://datasets/username/dataset-name/data.csv")
+
 # GitHub repositories
 gh_path = UPath("github://fsspec:universal_pathlib@main/")
 ```
@@ -253,6 +256,7 @@ Universal Pathlib works with any [fsspec](https://filesystem-spec.readthedocs.io
 | `s3://` | Amazon S3 | `s3fs` |
 | `gs://`, `gcs://` | Google Cloud Storage | `gcsfs` |
 | `az://`, `abfs://` | Azure Blob Storage | `adlfs` |
+| `hf://` | Hugging Face Hub | `huggingface_hub` |
 | `github://` | GitHub | _(built-in)_ |
 | `http://`, `https://` | HTTP(S) | _(built-in)_ |
 | `ssh://`, `sftp://` | SSH/SFTP | `paramiko` |

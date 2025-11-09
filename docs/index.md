@@ -131,6 +131,7 @@ if http_path.exists():
 - :fontawesome-solid-globe: `http:` and `https:` HTTP(S)-based filesystem
 - :fontawesome-solid-server: `hdfs:` Hadoop distributed filesystem
 - :fontawesome-brands-google: `gs:` and `gcs:` Google Cloud Storage _(requires `gcsfs`)_
+- :simple-huggingface: `hf:` Hugging Face Hub _(requires `huggingface_hub`)_
 - :fontawesome-brands-aws: `s3:` and `s3a:` AWS S3 _(requires `s3fs`)_
 - :fontawesome-solid-network-wired: `sftp:` and `ssh:` SFTP and SSH filesystems _(requires `paramiko`)_
 - :fontawesome-solid-share-nodes: `smb:` SMB filesystems _(requires `smbprotocol`)_

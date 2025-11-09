@@ -42,6 +42,18 @@ Google Cloud Storage implementation.
 
 Azure Blob Storage and Azure Data Lake implementation.
 
+::: upath.implementations.cloud.HfPath
+    options:
+        heading_level: 3
+        show_root_heading: true
+        show_root_full_path: false
+        members: []
+        show_bases: true
+
+**Protocols:** `hf://`
+
+Hugging Face Hub implementation for accessing models, datasets, and spaces.
+
 ---
 
 ## upath.implementations.local
