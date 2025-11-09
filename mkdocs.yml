@@ -51,10 +51,9 @@ nav:
   - Usage:
     - Basic Usage: usage.md
   - API Reference:
-    - Overview: api/index.md
-    - Constructors: api/upath.md
-    - UPath Methods: api/methods.md
-    - Registry and Implementations: api/registry.md
+    - Core: api/index.md
+    - Registry: api/registry.md
+    - Implementations: api/implementations.md
     - Extensions: api/extensions.md
     - Types: api/types.md
   - Migration Guide: migration.md
@@ -92,19 +91,45 @@ plugins:
 - mkdocstrings:
     handlers:
       python:
+        inventories:
+          - https://docs.python.org/3/objects.inv
         paths: [.]
         options:
+          preload_modules:
+            - __future__
+            - typing
+            - abc
+            - asyncio
+            - pathlib
+            - pathlib_abc
+            - fsspec
+            - upath.types._abc
+            - upath.types
+            - upath.registry
+            - upath.core
+          docstring_style: numpy
+          docstring_section_style: list
+          group_by_category: false
           members_order: source
-          separate_signature: true
-          filters: ["!^_"]
           docstring_options:
             ignore_init_summary: true
+          docstring_section_style: spacy
           merge_init_into_class: true
+          show_source: true
+          show_root_heading: true
+          show_root_toc_entry: true
+          allow_inspection: true
+          separate_signature: true
+          show_signature: true
+          show_signature_annotations: true
+          show_signature_type_parameters: true
+          signature_crossrefs: true
+          show_symbol_type_heading: true
 - exclude:
     glob:
       - _plugins/*
       - __pycache__/*
-      - test/*
+      - tests/*
       - test_*.py
 hooks:
   - docs/_plugins/copy_changelog.py

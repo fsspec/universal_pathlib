@@ -232,7 +232,7 @@ Ready to give Universal Pathlib a try?
 
 1. **[Install Universal Pathlib](install.md)** - Get set up in minutes
 2. **[Understand the concepts](concepts/index.md)** - Understand the concepts
-3. **[Read the API docs](api/upath.md)** - Learn about all the features
+3. **[Read the API docs](api/index.md)** - Learn about all the features
 
 <div align="center" markdown>
 

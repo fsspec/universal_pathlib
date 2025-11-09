@@ -243,5 +243,5 @@ process_file(
 
 - **pathlib concepts**: See [pathlib.md](pathlib.md) for details on the pathlib API
 - **fsspec backends**: See [filesystems.md](fsspec.md) for information about available filesystems
-- **API reference**: Check the [API documentation](../api/upath.md) for complete method details
+- **API reference**: Check the [API documentation](../api/index.md) for complete method details
 - **fsspec details**: Visit [fsspec documentation](https://filesystem-spec.readthedocs.io/) for filesystem-specific options
