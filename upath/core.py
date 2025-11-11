@@ -49,6 +49,12 @@ from upath.types import UPathParser
 from upath.types import WritablePath
 from upath.types import WritablePathLike
 
+if sys.version_info >= (3, 13):
+    from pathlib import UnsupportedOperation
+else:
+    UnsupportedOperation = NotImplementedError
+    """Raised when an unsupported operation is called on a path object."""
+
 if TYPE_CHECKING:
     import upath.implementations as _uimpl
 
@@ -63,7 +69,10 @@ if TYPE_CHECKING:
     _MT = TypeVar("_MT")
     _WT = TypeVar("_WT", bound="WritablePath")
 
-__all__ = ["UPath"]
+__all__ = [
+    "UPath",
+    "UnsupportedOperation",
+]
 
 _FSSPEC_HAS_WORKING_GLOB = None
 
@@ -103,7 +112,7 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
 
 
 def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
-    raise NotImplementedError(f"{cls_name}.{method}() is unsupported")
+    raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
 
 
 class _UPathMeta(ABCMeta):
@@ -311,7 +320,7 @@ class _UPathMixin(metaclass=_UPathMeta):
                 # For relative paths, we need to resolve to absolute path
                 current_dir = self.cwd()  # type: ignore[attr-defined]
             except NotImplementedError:
-                raise NotImplementedError(
+                raise UnsupportedOperation(
                     f"fsspec paths can not be relative and"
                     f" {type(self).__name__}.cwd() is unsupported"
                 ) from None
@@ -1971,7 +1980,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         return self == other or other in self.parents
 
     def hardlink_to(self, target: ReadablePathLike) -> None:
-        raise NotImplementedError
+        _raise_unsupported(type(self).__name__, "hardlink_to")
 
     def match(self, pattern: str) -> bool:
         # fixme: hacky emulation of match. needs tests...
