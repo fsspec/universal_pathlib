@@ -44,6 +44,7 @@ from upath.types import JoinablePathLike
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
+from upath.types import StatResultType
 from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePath
@@ -1375,7 +1376,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         *,
         follow_symlinks: bool = True,
-    ) -> UPathStatResult:
+    ) -> StatResultType:
         """
         Return the result of the stat() system call on this path, like
         os.stat() does.
@@ -1399,7 +1400,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             )
         return UPathStatResult.from_info(self.fs.info(self.path))
 
-    def lstat(self) -> UPathStatResult:
+    def lstat(self) -> StatResultType:
         return self.stat(follow_symlinks=False)
 
     def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:

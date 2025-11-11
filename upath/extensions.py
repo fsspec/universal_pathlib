@@ -18,7 +18,6 @@ from fsspec import AbstractFileSystem
 
 from upath._chain import Chain
 from upath._chain import ChainSegment
-from upath._stat import UPathStatResult
 from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
@@ -27,6 +26,7 @@ from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
 from upath.types import SupportsPathLike
+from upath.types import StatResultType
 from upath.types import UPathParser
 from upath.types import WritablePathLike
 
@@ -202,10 +202,10 @@ class ProxyUPath:
         self,
         *,
         follow_symlinks=True,
-    ) -> UPathStatResult:
+    ) -> StatResultType:
         return self.__wrapped__.stat(follow_symlinks=follow_symlinks)
 
-    def lstat(self) -> UPathStatResult:
+    def lstat(self) -> StatResultType:
         return self.__wrapped__.stat(follow_symlinks=False)
 
     def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:

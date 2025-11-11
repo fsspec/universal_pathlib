@@ -28,6 +28,7 @@ from upath.types import JoinablePathLike
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
+from upath.types import StatResultType
 from upath.types import SupportsPathLike
 from upath.types import WritablePath
 
@@ -432,6 +433,20 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 os.link(target, self)  # type: ignore[arg-type]
             except AttributeError:
                 raise UnsupportedOperation("hardlink operation not supported")
+
+        def stat(
+            self,
+            *,
+            follow_symlinks: bool = True,
+        ) -> StatResultType:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.stat(follow_symlinks=False):"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().stat()
 
     if not hasattr(pathlib.Path, "_copy_from"):
 
