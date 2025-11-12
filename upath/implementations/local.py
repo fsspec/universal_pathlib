@@ -598,7 +598,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         # def parents(self) -> Sequence[Self]:
         #     return list(super().parents)
 
-        def stat(
+        def stat(  # type: ignore[override]
             self,
             *,
             follow_symlinks: bool = True,

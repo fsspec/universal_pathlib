@@ -615,7 +615,7 @@
     import os
 
     p = UPath("")
-    reveal_type(p.stat())  # N: Revealed type is "upath._stat.UPathStatResult"
+    reveal_type(p.stat())  # N: Revealed type is "upath.types.StatResultType"
 
 - case: upath_method_lstat
   disable_cache: false
@@ -624,7 +624,7 @@
     import os
 
     p = UPath("")
-    reveal_type(p.lstat())  # N: Revealed type is "upath._stat.UPathStatResult"
+    reveal_type(p.lstat())  # N: Revealed type is "upath.types.StatResultType"
 
 - case: upath_method_chmod
   disable_cache: false
@@ -1086,8 +1086,8 @@
     reveal_type(p.group())  # N: Revealed type is "builtins.str"
 
     # Stat methods
-    reveal_type(p.stat())  # NR: Revealed type is ".*(UPathStatResult|stat_result).*"
-    reveal_type(p.lstat())  # NR: Revealed type is ".*(UPathStatResult|stat_result).*"
+    reveal_type(p.stat())  # NR: Revealed type is ".*(StatResultType|stat_result).*"
+    reveal_type(p.lstat())  # NR: Revealed type is ".*(StatResultType|stat_result).*"
 
     # None methods
     reveal_type(p.symlink_to("target"))  # N: Revealed type is "None"
