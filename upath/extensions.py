@@ -27,6 +27,7 @@ from upath.types import ReadablePath
 from upath.types import ReadablePathLike
 from upath.types import SupportsPathLike
 from upath.types import StatResultType
+from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePathLike
 

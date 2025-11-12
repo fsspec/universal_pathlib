@@ -437,7 +437,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             encoding: str | None = None,
             errors: str | None = None,
             newline: str | None = None,
-        ) -> int:
+        ) -> str:
             if newline is not None:
                 warnings.warn(
                     f"{type(self).__name__}.read_text() newline"
@@ -450,63 +450,67 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 errors=errors,
             )
 
-        def glob(
+        def glob(  # type: ignore[override]
             self,
             pattern: str | os.PathLike,
             *,
-            case_sensitive: bool = UNSET_DEFAULT,
-            recurse_symlinks: bool = UNSET_DEFAULT,
+            case_sensitive: bool | None = None,
+            recurse_symlinks: bool = False,
         ) -> Iterator[Self]:
-            if not isinstance(pattern, str):
-                pattern = os.fspath(pattern)
-            kw = {}
-            if case_sensitive is not UNSET_DEFAULT:
+            if isinstance(pattern, str):
+                pattern_str = pattern
+            else:
+                pattern_str = os.fspath(pattern)
+            kw: dict[str, Any] = {}
+            if case_sensitive is not None:
                 if sys.version_info < (3, 12):
                     warnings.warn(
-                        f"{type(self).__name__}.glob() case_sensitive=False"
+                        f"{type(self).__name__}.glob() case_sensitive"
                         " is currently ignored.",
                         UserWarning,
                         stacklevel=2,
                     )
                 else:
                     kw["case_sensitive"] = case_sensitive
-            if recurse_symlinks is not UNSET_DEFAULT:
+            if recurse_symlinks:
                 warnings.warn(
                     f"{type(self).__name__}.glob() recurse_symlinks=True"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
                 )
-            return super().glob(pattern, **kw)  # type: ignore[misc]
+            return super().glob(pattern_str, **kw)
 
-        def rglob(
+        def rglob(  # type: ignore[override]
             self,
             pattern: str | os.PathLike,
             *,
-            case_sensitive: bool = UNSET_DEFAULT,
-            recurse_symlinks: bool = UNSET_DEFAULT,
+            case_sensitive: bool | None = None,
+            recurse_symlinks: bool = False,
         ) -> Iterator[Self]:
-            if not isinstance(pattern, str):
-                pattern = os.fspath(pattern)
-            kw = {}
-            if case_sensitive is not UNSET_DEFAULT:
+            if isinstance(pattern, str):
+                pattern_str = pattern
+            else:
+                pattern_str = os.fspath(pattern)
+            kw: dict[str, Any] = {}
+            if case_sensitive is not None:
                 if sys.version_info < (3, 12):
                     warnings.warn(
-                        f"{type(self).__name__}.rglob() case_sensitive=False"
+                        f"{type(self).__name__}.rglob() case_sensitive"
                         " is currently ignored.",
                         UserWarning,
                         stacklevel=2,
                     )
                 else:
                     kw["case_sensitive"] = case_sensitive
-            if recurse_symlinks is not UNSET_DEFAULT:
+            if recurse_symlinks:
                 warnings.warn(
                     f"{type(self).__name__}.rglob() recurse_symlinks=True"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
                 )
-            return super().rglob(pattern, **kw)  # type: ignore[misc]
+            return super().rglob(pattern_str, **kw)
 
         def owner(self, *, follow_symlinks: bool = True) -> str:
             if not follow_symlinks:
@@ -544,20 +548,22 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         def match(
             self,
-            path_pattern: str | os.PathLike,
+            path_pattern: str | os.PathLike[str],
             *,
-            case_sensitive: bool = True,
+            case_sensitive: bool | None = None,
         ) -> bool:
-            if not isinstance(path_pattern, str):
-                path_pattern = os.fspath(path_pattern)
-            if not case_sensitive:
+            if isinstance(path_pattern, str):
+                pattern_str = path_pattern
+            else:
+                pattern_str = os.fspath(path_pattern)
+            if case_sensitive is not None:
                 warnings.warn(
-                    f"{type(self).__name__}.match() case_sensitive=False"
+                    f"{type(self).__name__}.match() case_sensitive"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
                 )
-            return super().match(path_pattern)  # type: ignore[misc]
+            return super().match(pattern_str)
 
         def exists(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:
@@ -569,12 +575,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 )
             return super().exists()
 
-        def relative_to(
+        def relative_to(  # type: ignore[override]
             self,
-            other,
+            other: str | os.PathLike[str],
             /,
-            *_deprecated,
-            walk_up=False,
+            *_deprecated: str | os.PathLike[str],
+            walk_up: bool = False,
         ) -> Self:
             if walk_up:
                 warnings.warn(
