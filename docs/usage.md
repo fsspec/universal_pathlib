@@ -227,15 +227,21 @@ with fs.open(path_str, 'rb') as f:
 
 ### How do I create a custom UPath for a new filesystem?
 
-Subclass `UPath` and register it:
+Let's say you have an fsspec filesystem with protocol `myproto` and the default
+implementation does not correctly work for `.is_dir()`. You can then subclass
+`UPath` and register your implementation:
 
 ```python
 from upath import UPath
 from upath.registry import register_implementation
 
 class MyCustomPath(UPath):
-    def custom_method(self):
-        return f"Custom behavior for {self}"
+
+    # fix specific methods if the filesystem is a bit non-standard
+    def is_dir(self, *, follow_symlinks=True):
+        # some special way to check if it's a dir
+        is_dir = ...
+        return is_dir
 
 # Register for your protocol
 register_implementation("myproto", MyCustomPath)
@@ -243,6 +249,52 @@ register_implementation("myproto", MyCustomPath)
 # Now it works!
 my_path = UPath("myproto://server/path")
 ```
+
+!!! note "don't extend the API in your subclass"
+
+    You should not extend the API in your UPath subclass.
+    If you want to add new methods please use `upath.extensions.ProxyUPath` as a base class
+
+### How do I add custom methods to UPath?
+
+If you need to add domain-specific methods (like `.download()` or `.upload()`), use `ProxyUPath` instead of subclassing `UPath` directly:
+
+```python
+from upath import UPath
+from upath.extensions import ProxyUPath
+
+class MyCustomPath(ProxyUPath):
+    """A path with extra convenience methods."""
+
+    def download(self, local_path):
+        """Download this remote file to a local path."""
+        local = UPath(local_path)
+        local.write_bytes(self.read_bytes())
+        return local
+
+    def get_metadata(self):
+        """Get custom metadata for this file."""
+        stat = self.stat()
+        return {
+            'size': stat.st_size,
+            'modified': stat.st_mtime,
+            'name': self.name,
+        }
+
+# Use it like a regular UPath
+path = MyCustomPath("s3://my-bucket/data.csv", anon=True)
+
+# Access standard UPath methods
+print(path.exists())
+print(path.name)
+
+# Use your custom methods
+metadata = path.get_metadata()
+path.download("/tmp/data.csv")
+```
+
+The key difference: `ProxyUPath` wraps a `UPath` instance and delegates to it, while keeping your custom methods separate from the core pathlib API.
+
 
 ---
 
