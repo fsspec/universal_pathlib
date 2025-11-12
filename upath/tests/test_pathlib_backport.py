@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import PosixPath
 from pathlib import WindowsPath
 
@@ -33,20 +34,46 @@ def test_unsupportedoperation_catches_pathlib_errors(wrong_cls):
 
 
 @pytest.fixture(params=["", "file", "memory"])
-def pth(request, tmp_path):
+def pth(request, tmp_path, clear_fsspec_memory_cache):
     pth = UPath(tmp_path, protocol=request.param)
-    pth.touch()
     yield pth
 
 
-def test_signature_stat_follow_symlinks(pth):
-    _ = pth.stat(follow_symlinks=True)
+@pytest.fixture
+def pth_file(pth):
+    f = pth.joinpath("testfile")
+    f.touch()
+    return f
+
+
+@pytest.mark.parametrize(
+    "pth",
+    [
+        pytest.param(
+            "",
+            marks=pytest.mark.xfail(
+                sys.version_info < (3, 10), reason="parents getitem differs"
+            ),
+        ),
+        "file",
+        "memory",
+    ],
+    indirect=True,
+)
+def test_signature_parents_getitem(pth):
+    pth.parents[-1]
+    pth.parents[0:2]
+
+
+def test_signature_stat_follow_symlinks(pth_file):
+    pth_file.stat(follow_symlinks=True)
 
 
 def test_signature_write_text_newline(pth):
-    _ = pth.write_text("test", newline="\n")
+    _ = pth.joinpath("somename").write_text("test", newline="\n")
 
 
+@pytest.mark.parametrize("pth", ["", "file"], indirect=True)
 def test_signature_chmod_follow_symlinks(pth):
     _ = pth.chmod(0o777, follow_symlinks=True)
 
@@ -84,8 +111,9 @@ def test_signature_is_dir_follow_symlinks(pth):
 
 
 def test_signature_read_text_newline(pth):
-    pth.write_text("test")
-    _ = pth.read_text(newline="\n")
+    p0 = pth.joinpath("test")
+    p0.write_text("test")
+    _ = p0.read_text(newline="\n")
 
 
 def test_signature_glob_recurse_symlinks(pth):
@@ -104,9 +132,11 @@ def test_signature_rglob_pathlike(pth):
     _ = list(pth.parent.rglob(UPath("*.py")))
 
 
+@pytest.mark.parametrize("pth", [""], indirect=True)
 def test_signature_owner_follow_symlinks(pth):
     _ = pth.owner(follow_symlinks=True)
 
 
+@pytest.mark.parametrize("pth", [""], indirect=True)
 def test_signature_group_follow_symlinks(pth):
     _ = pth.group(follow_symlinks=True)
