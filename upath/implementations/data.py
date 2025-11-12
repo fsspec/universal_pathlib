@@ -61,8 +61,8 @@ class DataPath(UPath):
     def write_text(
         self,
         data: str,
-        encoding: str | None = ...,
-        errors: str | None = ...,
-        newline: str | None = ...,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
     ) -> int:
         raise UnsupportedOperation("DataPath does not support writing")

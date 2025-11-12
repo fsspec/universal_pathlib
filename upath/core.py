@@ -1522,20 +1522,20 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         pattern: str,
         *,
-        case_sensitive: bool = UNSET_DEFAULT,
-        recurse_symlinks: bool = UNSET_DEFAULT,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = False,
     ) -> Iterator[Self]:
         """Iterate over this subtree and yield all existing files (of any
         kind, including directories) matching the given relative pattern."""
-        if case_sensitive is not UNSET_DEFAULT:
+        if case_sensitive is not None:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if recurse_symlinks is not UNSET_DEFAULT:
+        if recurse_symlinks:
             warnings.warn(
-                "UPath.glob(): recurse_symlinks is currently ignored.",
+                "UPath.glob(): recurse_symlinks=True is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -1552,22 +1552,22 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         pattern: str,
         *,
-        case_sensitive: bool = UNSET_DEFAULT,
-        recurse_symlinks: bool = UNSET_DEFAULT,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = False,
     ) -> Iterator[Self]:
         """Recursively yield all existing files (of any kind, including
         directories) matching the given relative pattern, anywhere in
         this subtree.
         """
-        if case_sensitive is not UNSET_DEFAULT:
+        if case_sensitive is not None:
             warnings.warn(
                 "UPath.glob(): case_sensitive is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
-        if recurse_symlinks is not UNSET_DEFAULT:
+        if recurse_symlinks:
             warnings.warn(
-                "UPath.glob(): recurse_symlinks is currently ignored.",
+                "UPath.glob(): recurse_symlinks=True is currently ignored.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -1982,11 +1982,37 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def hardlink_to(self, target: ReadablePathLike) -> None:
         _raise_unsupported(type(self).__name__, "hardlink_to")
 
-    def match(self, pattern: str) -> bool:
-        # fixme: hacky emulation of match. needs tests...
-        if not pattern:
+    def full_match(
+        self,
+        pattern: str | SupportsPathLike,
+        *,
+        case_sensitive: bool | None = None,
+    ) -> bool:
+        """Match this path against the provided glob-style pattern.
+        Return True if matching is successful, False otherwise.
+        """
+        if case_sensitive is not None:
+            warnings.warn(
+                f"{type(self).__name__}.full_match(): case_sensitive"
+                " is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return super().full_match(str(pattern))
+
+    def match(
+        self,
+        path_pattern: str | SupportsPathLike,
+        *,
+        case_sensitive: bool | None = None,
+    ) -> bool:
+        """Match this path against the provided non-recursive glob-style pattern.
+        Return True if matching is successful, False otherwise.
+        """
+        path_pattern = str(path_pattern)
+        if not path_pattern:
             raise ValueError("pattern cannot be empty")
-        return self.full_match(pattern.replace("**", "*"))
+        return self.full_match(path_pattern.replace("**", "*"))
 
     @classmethod
     def __get_pydantic_core_schema__(

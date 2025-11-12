@@ -26,6 +26,7 @@ from upath.types import JoinablePathLike
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
+from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePathLike
 
@@ -250,8 +251,8 @@ class ProxyUPath:
         self,
         pattern: str,
         *,
-        case_sensitive: bool = UNSET_DEFAULT,
-        recurse_symlinks: bool = UNSET_DEFAULT,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = False,
     ) -> Iterator[Self]:
         for p in self.__wrapped__.glob(
             pattern, case_sensitive=case_sensitive, recurse_symlinks=recurse_symlinks
@@ -262,8 +263,8 @@ class ProxyUPath:
         self,
         pattern: str,
         *,
-        case_sensitive: bool = UNSET_DEFAULT,
-        recurse_symlinks: bool = UNSET_DEFAULT,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool = False,
     ) -> Iterator[Self]:
         for p in self.__wrapped__.rglob(
             pattern, case_sensitive=case_sensitive, recurse_symlinks=recurse_symlinks
@@ -383,7 +384,7 @@ class ProxyUPath:
     def hardlink_to(self, target: ReadablePathLike) -> None:
         return self.__wrapped__.hardlink_to(target)
 
-    def match(self, pattern: str) -> bool:
+    def match(self, pattern: str, *, case_sensitive: bool | None = None) -> bool:
         return self.__wrapped__.match(pattern)
 
     @property
@@ -511,8 +512,13 @@ class ProxyUPath:
     def parents(self) -> Sequence[Self]:
         return tuple(self._from_upath(p) for p in self.__wrapped__.parents)
 
-    def full_match(self, pattern: str) -> bool:
-        return self.__wrapped__.full_match(pattern)
+    def full_match(
+        self,
+        pattern: str | SupportsPathLike,
+        *,
+        case_sensitive: bool | None = None,
+    ) -> bool:
+        return self.__wrapped__.full_match(pattern, case_sensitive=case_sensitive)
 
 
 UPath.register(ProxyUPath)

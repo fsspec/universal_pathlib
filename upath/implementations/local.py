@@ -394,10 +394,18 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
     if sys.version_info < (3, 13):
 
-        def full_match(self, pattern: str) -> bool:
+        def full_match(
+            self,
+            pattern: str | os.PathLike[str],
+            *,
+            case_sensitive: bool | None = None,
+        ) -> bool:
             # hacky workaround for missing pathlib.Path.full_match in python < 3.13
             # todo: revisit
-            return self.match(pattern)
+            return self.match(
+                pattern,  # type: ignore[arg-type]
+                case_sensitive=case_sensitive,
+            )
 
         @classmethod
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
