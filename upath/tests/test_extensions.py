@@ -34,6 +34,9 @@ class TestProxyFilePath(BaseTests):
     def test_is_not_FilePath(self):
         assert not isinstance(self.path, FilePath)
 
+    def test_chmod(self):
+        self.path.joinpath("file1.txt").chmod(777)
+
 
 def test_custom_subclass():
 
