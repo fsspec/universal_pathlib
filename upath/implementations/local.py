@@ -393,7 +393,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def info(self) -> PathInfo:
             return _LocalPathInfo(self)
 
-    if sys.version_info < (3, 13):
+    if sys.version_info < (3, 13):  # noqa: C901
 
         def full_match(
             self,
@@ -412,6 +412,122 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
             return UPath(uri, **storage_options)  # type: ignore[return-value]
 
+        def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.is_dir() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().is_dir()
+
+        def is_file(self, *, follow_symlinks: bool = True) -> bool:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.is_file() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().is_file()
+
+        def read_text(
+            self,
+            encoding: str | None = None,
+            errors: str | None = None,
+            newline: str | None = None,
+        ) -> int:
+            if newline is not None:
+                warnings.warn(
+                    f"{type(self).__name__}.read_text() newline"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().read_text(
+                encoding=encoding,
+                errors=errors,
+            )
+
+        def glob(
+            self,
+            pattern: str | os.PathLike,
+            *,
+            case_sensitive: bool = UNSET_DEFAULT,
+            recurse_symlinks: bool = UNSET_DEFAULT,
+        ) -> Iterator[Self]:
+            if not isinstance(pattern, str):
+                pattern = os.fspath(pattern)
+            kw = {}
+            if case_sensitive is not UNSET_DEFAULT:
+                if sys.version_info < (3, 12):
+                    warnings.warn(
+                        f"{type(self).__name__}.glob() case_sensitive=False"
+                        " is currently ignored.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                else:
+                    kw["case_sensitive"] = case_sensitive
+            if recurse_symlinks is not UNSET_DEFAULT:
+                warnings.warn(
+                    f"{type(self).__name__}.glob() recurse_symlinks=True"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().glob(pattern, **kw)  # type: ignore[misc]
+
+        def rglob(
+            self,
+            pattern: str | os.PathLike,
+            *,
+            case_sensitive: bool = UNSET_DEFAULT,
+            recurse_symlinks: bool = UNSET_DEFAULT,
+        ) -> Iterator[Self]:
+            if not isinstance(pattern, str):
+                pattern = os.fspath(pattern)
+            kw = {}
+            if case_sensitive is not UNSET_DEFAULT:
+                if sys.version_info < (3, 12):
+                    warnings.warn(
+                        f"{type(self).__name__}.rglob() case_sensitive=False"
+                        " is currently ignored.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                else:
+                    kw["case_sensitive"] = case_sensitive
+            if recurse_symlinks is not UNSET_DEFAULT:
+                warnings.warn(
+                    f"{type(self).__name__}.rglob() recurse_symlinks=True"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().rglob(pattern, **kw)  # type: ignore[misc]
+
+        def owner(self, *, follow_symlinks: bool = True) -> str:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.owner() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().owner()
+
+        def group(self, *, follow_symlinks: bool = True) -> str:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.group() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().group()
+
     if sys.version_info < (3, 12):
 
         def is_junction(self) -> bool:
@@ -426,6 +542,49 @@ class LocalPath(_UPathMixin, pathlib.Path):
             _walk = ReadablePath.walk.__get__(self)
             return _walk(top_down, on_error, follow_symlinks)
 
+        def match(
+            self,
+            path_pattern: str | os.PathLike,
+            *,
+            case_sensitive: bool = True,
+        ) -> bool:
+            if not isinstance(path_pattern, str):
+                path_pattern = os.fspath(path_pattern)
+            if not case_sensitive:
+                warnings.warn(
+                    f"{type(self).__name__}.match() case_sensitive=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().match(path_pattern)  # type: ignore[misc]
+
+        def exists(self, *, follow_symlinks: bool = True) -> bool:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.exists() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().exists()
+
+        def relative_to(
+            self,
+            other,
+            /,
+            *_deprecated,
+            walk_up=False,
+        ) -> Self:
+            if walk_up:
+                warnings.warn(
+                    f"{type(self).__name__}.relative_to() walk_up=True"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().relative_to(other, *_deprecated)
+
     if sys.version_info < (3, 10):
 
         def hardlink_to(self, target: ReadablePathLike) -> None:
@@ -434,6 +593,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
             except AttributeError:
                 raise UnsupportedOperation("hardlink operation not supported")
 
+        # let's skip this one as backporting it breaks one pathlib test
+        # @property
+        # def parents(self) -> Sequence[Self]:
+        #     return list(super().parents)
+
         def stat(
             self,
             *,
@@ -441,12 +605,47 @@ class LocalPath(_UPathMixin, pathlib.Path):
         ) -> StatResultType:
             if not follow_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.stat(follow_symlinks=False):"
+                    f"{type(self).__name__}.stat() follow_symlinks=False"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
                 )
             return super().stat()
+
+        def write_text(
+            self,
+            data: str,
+            encoding: str | None = None,
+            errors: str | None = None,
+            newline: str | None = None,
+        ) -> int:
+            if newline is not None:
+                warnings.warn(
+                    f"{type(self).__name__}.write_text() newline"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().write_text(
+                data,
+                encoding=encoding,
+                errors=errors,
+            )
+
+        def chmod(
+            self,
+            mode: int,
+            *,
+            follow_symlinks: bool = True,
+        ) -> None:
+            if not follow_symlinks:
+                warnings.warn(
+                    f"{type(self).__name__}.chmod() follow_symlinks=False"
+                    " is currently ignored.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            return super().chmod(mode)
 
     if not hasattr(pathlib.Path, "_copy_from"):
 
@@ -543,6 +742,14 @@ class FilePath(UPath):
     @classmethod
     def home(cls) -> Self:
         return cls(os.path.expanduser("~"), protocol="file")
+
+    def chmod(
+        self,
+        mode: int,
+        *,
+        follow_symlinks: bool = True,
+    ) -> None:
+        return os.chmod(self.path, mode, follow_symlinks=follow_symlinks)
 
 
 LocalPath.register(FilePath)
