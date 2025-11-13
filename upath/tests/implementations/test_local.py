@@ -28,6 +28,9 @@ class TestFSSpecLocal(BaseTests):
         assert isinstance(cwd, LocalPath)
         assert cwd.path == Path.home().as_posix()
 
+    def test_chmod(self):
+        self.path.joinpath("file1.txt").chmod(777)
+
 
 @xfail_if_version("fsspec", lt="2023.10.0", reason="requires fsspec>=2023.10.0")
 class TestRayIOFSSpecLocal(BaseTests):
@@ -48,6 +51,9 @@ class TestRayIOFSSpecLocal(BaseTests):
         cwd = type(self.path).home()
         assert isinstance(cwd, LocalPath)
         assert cwd.path == Path.home().as_posix()
+
+    def test_chmod(self):
+        self.path.joinpath("file1.txt").chmod(777)
 
 
 @pytest.mark.parametrize(

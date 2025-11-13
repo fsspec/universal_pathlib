@@ -44,6 +44,7 @@ from upath.types import JoinablePathLike
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
+from upath.types import StatResultType
 from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePath
@@ -1375,7 +1376,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         *,
         follow_symlinks: bool = True,
-    ) -> UPathStatResult:
+    ) -> StatResultType:
         """
         Return the result of the stat() system call on this path, like
         os.stat() does.
@@ -1399,7 +1400,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             )
         return UPathStatResult.from_info(self.fs.info(self.path))
 
-    def lstat(self) -> UPathStatResult:
+    def lstat(self) -> StatResultType:
         return self.stat(follow_symlinks=False)
 
     def chmod(self, mode: int, *, follow_symlinks: bool = True) -> None:
@@ -1413,18 +1414,39 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         ----
         For fsspec filesystems follow_symlinks is currently ignored.
         """
+        if not follow_symlinks:
+            warnings.warn(
+                f"{type(self).__name__}.exists() follow_symlinks=False"
+                " is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.fs.exists(self.path)
 
-    def is_dir(self) -> bool:
+    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
         """
         Whether this path is a directory.
         """
+        if not follow_symlinks:
+            warnings.warn(
+                f"{type(self).__name__}.is_dir() follow_symlinks=False"
+                " is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.fs.isdir(self.path)
 
-    def is_file(self) -> bool:
+    def is_file(self, *, follow_symlinks: bool = True) -> bool:
         """
         Whether this path is a regular file.
         """
+        if not follow_symlinks:
+            warnings.warn(
+                f"{type(self).__name__}.is_file() follow_symlinks=False"
+                " is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.fs.isfile(self.path)
 
     def is_mount(self) -> bool:
@@ -1597,10 +1619,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                         seen.add(name)
                         yield self.joinpath(name)
 
-    def owner(self) -> str:
+    def owner(self, *, follow_symlinks: bool = True) -> str:
         _raise_unsupported(type(self).__name__, "owner")
 
-    def group(self) -> str:
+    def group(self, *, follow_symlinks: bool = True) -> str:
         _raise_unsupported(type(self).__name__, "group")
 
     def absolute(self) -> Self:
@@ -2012,6 +2034,12 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         path_pattern = str(path_pattern)
         if not path_pattern:
             raise ValueError("pattern cannot be empty")
+        if case_sensitive is not None:
+            warnings.warn(
+                f"{type(self).__name__}.match(): case_sensitive is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.full_match(path_pattern.replace("**", "*"))
 
     @classmethod

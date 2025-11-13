@@ -90,10 +90,19 @@ class StatResultType(Protocol):
     def st_mtime_ns(self) -> int: ...
     @property
     def st_ctime_ns(self) -> int: ...
-    @property
-    def st_birthtime(self) -> float: ...
-    @property
-    def st_birthtime_ns(self) -> int: ...
+
+    if sys.platform == "win32":
+        if sys.version_info >= (3, 12):
+
+            @property
+            def st_birthtime(self) -> float: ...
+            @property
+            def st_birthtime_ns(self) -> int: ...
+
+    else:
+
+        @property
+        def st_birthtime(self) -> float: ...
 
 
 @runtime_checkable

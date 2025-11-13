@@ -273,7 +273,7 @@
   main: |
     from upath import UPath
 
-    reveal_type(UPath("abc").stat())  # N: Revealed type is "upath._stat.UPathStatResult"
+    reveal_type(UPath("abc").stat())  # N: Revealed type is "upath.types.StatResultType"
 
 - case: upath_chmod
   disable_cache: false
@@ -378,7 +378,7 @@
   main: |
     from upath import UPath
 
-    reveal_type(UPath("abc").lstat())  # N: Revealed type is "upath._stat.UPathStatResult"
+    reveal_type(UPath("abc").lstat())  # N: Revealed type is "upath.types.StatResultType"
 
 - case: upath_mkdir
   disable_cache: false

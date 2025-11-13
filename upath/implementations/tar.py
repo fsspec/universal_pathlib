@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import JoinablePathLike
+from upath.types import StatResultType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -44,7 +45,7 @@ class TarPath(UPath):
         self,
         *,
         follow_symlinks: bool = True,
-    ) -> UPathStatResult:
+    ) -> StatResultType:
         if not follow_symlinks:
             warnings.warn(
                 f"{type(self).__name__}.stat(follow_symlinks=False):"
