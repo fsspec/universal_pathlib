@@ -177,7 +177,7 @@ class BaseTests:
 
     def test_lchmod(self):
         with pytest.raises(NotImplementedError):
-            self.path.lchmod(mode=77)
+            self.path.lchmod(mode=0o777)
 
     def test_lstat(self):
         with pytest.warns(UserWarning, match=r"[A-Za-z]+.stat"):
