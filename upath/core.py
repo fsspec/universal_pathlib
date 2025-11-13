@@ -397,8 +397,6 @@ class _UPathMixin(metaclass=_UPathMeta):
     ) -> AbstractFileSystem:
         """Instantiate the filesystem_spec filesystem class"""
         fs_cls = get_filesystem_class(protocol)
-        so_dct = fs_cls._get_kwargs_from_urls(urlpath)
-        so_dct.update(storage_options)
         return fs_cls(**storage_options)
 
     # === upath.UPath constructor =====================================
