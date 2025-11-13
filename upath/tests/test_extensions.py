@@ -3,6 +3,8 @@ import pytest
 from upath import UPath
 from upath.extensions import ProxyUPath
 from upath.implementations.local import FilePath
+from upath.implementations.local import PosixUPath
+from upath.implementations.local import WindowsUPath
 from upath.implementations.memory import MemoryPath
 from upath.tests.cases import BaseTests
 
@@ -33,6 +35,22 @@ class TestProxyFilePath(BaseTests):
 
     def test_is_not_FilePath(self):
         assert not isinstance(self.path, FilePath)
+
+    def test_chmod(self):
+        self.path.joinpath("file1.txt").chmod(777)
+
+
+class TestProxyPathlibPath(BaseTests):
+    @pytest.fixture(autouse=True)
+    def path(self, local_testdir):
+        self.path = ProxyUPath(f"{local_testdir}")
+        self.prepare_file_system()
+
+    def test_is_ProxyUPath(self):
+        assert isinstance(self.path, ProxyUPath)
+
+    def test_is_not_PosixUPath_WindowsUPath(self):
+        assert not isinstance(self.path, (PosixUPath, WindowsUPath))
 
     def test_chmod(self):
         self.path.joinpath("file1.txt").chmod(777)
