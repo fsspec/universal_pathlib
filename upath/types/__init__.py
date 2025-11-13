@@ -95,14 +95,9 @@ class StatResultType(Protocol):
     # st_birthtime is available on Windows (3.12+), FreeBSD, and macOS
     # On Linux it's currently unavailable
     # see: https://discuss.python.org/t/st-birthtime-not-available/104350/2
-    if sys.platform == "win32" and sys.version_info >= (3, 12):
-
-        @property
-        def st_birthtime(self) -> float: ...
-        @property
-        def st_birthtime_ns(self) -> int: ...
-
-    elif sys.platform == "darwin" or sys.platform.startswith("freebsd"):
+    if (sys.platform == "win32" and sys.version_info >= (3, 12)) or (
+        sys.platform == "darwin" or sys.platform.startswith("freebsd")
+    ):
 
         @property
         def st_birthtime(self) -> float: ...
