@@ -291,17 +291,30 @@ class ProxyUPath:
     def __hash__(self) -> int:
         return self.__wrapped__.__hash__()
 
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__ne__(other.__wrapped__)
+
     def __lt__(self, other: object) -> bool:
-        return self.__wrapped__.__lt__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__lt__(other.__wrapped__)
 
     def __le__(self, other: object) -> bool:
-        return self.__wrapped__.__le__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__le__(other.__wrapped__)
 
     def __gt__(self, other: object) -> bool:
-        return self.__wrapped__.__gt__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__gt__(other.__wrapped__)
 
     def __ge__(self, other: object) -> bool:
-        return self.__wrapped__.__ge__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__ge__(other.__wrapped__)
 
     def resolve(self, strict: bool = False) -> Self:
         return self._from_upath(self.__wrapped__.resolve(strict=strict))

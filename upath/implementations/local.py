@@ -197,6 +197,24 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def __open_reader__(self) -> BinaryIO:
         return self.open("rb")
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, UPath):
+            return NotImplemented
+        return (
+            super().__eq__(other)
+            and self.protocol == other.protocol
+            and self.storage_options == other.storage_options
+        )
+
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, UPath):
+            return NotImplemented
+        return (
+            super().__ne__(other)
+            or self.protocol != other.protocol
+            or self.storage_options != other.storage_options
+        )
+
     if sys.version_info >= (3, 14):
 
         def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
