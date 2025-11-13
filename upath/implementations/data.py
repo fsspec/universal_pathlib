@@ -4,6 +4,7 @@ import sys
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
@@ -44,10 +45,10 @@ class DataPath(UPath):
         return self.parser.join(*self._raw_urlpaths)
 
     def with_segments(self, *pathsegments: JoinablePathLike) -> Self:
-        raise NotImplementedError("path operation not supported by DataPath")
+        raise UnsupportedOperation("path operation not supported by DataPath")
 
     def with_suffix(self, suffix: str) -> Self:
-        raise NotImplementedError("path operation not supported by DataPath")
+        raise UnsupportedOperation("path operation not supported by DataPath")
 
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
@@ -55,13 +56,13 @@ class DataPath(UPath):
         raise FileExistsError(str(self))
 
     def write_bytes(self, data: bytes) -> int:
-        raise NotImplementedError("DataPath does not support writing")
+        raise UnsupportedOperation("DataPath does not support writing")
 
     def write_text(
         self,
         data: str,
-        encoding: str | None = ...,
-        errors: str | None = ...,
-        newline: str | None = ...,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
     ) -> int:
-        raise NotImplementedError("DataPath does not support writing")
+        raise UnsupportedOperation("DataPath does not support writing")

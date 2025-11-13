@@ -20,6 +20,7 @@ from upath._chain import Chain
 from upath._chain import ChainSegment
 from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
+from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.core import _UPathMixin
 from upath.types import UNSET_DEFAULT
@@ -393,10 +394,17 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
     if sys.version_info < (3, 13):
 
-        def full_match(self, pattern: str) -> bool:
+        def full_match(
+            self,
+            pattern: str | os.PathLike[str],
+            *,
+            case_sensitive: bool | None = None,
+        ) -> bool:
             # hacky workaround for missing pathlib.Path.full_match in python < 3.13
             # todo: revisit
-            return self.match(pattern)
+            return self.match(
+                pattern,  # type: ignore[arg-type]
+            )
 
         @classmethod
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
@@ -422,7 +430,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             try:
                 os.link(target, self)  # type: ignore[arg-type]
             except AttributeError:
-                raise NotImplementedError
+                raise UnsupportedOperation("hardlink operation not supported")
 
     if not hasattr(pathlib.Path, "_copy_from"):
 
@@ -464,7 +472,7 @@ else:
                 chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
                 **storage_options: Any,
             ) -> WindowsUPath:
-                raise NotImplementedError(
+                raise UnsupportedOperation(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
 
@@ -480,7 +488,7 @@ else:
                 chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
                 **storage_options: Any,
             ) -> PosixUPath:
-                raise NotImplementedError(
+                raise UnsupportedOperation(
                     f"cannot instantiate {cls.__name__} on your system"
                 )
 

@@ -10,9 +10,10 @@ except ImportError:
     __version__ = "not-installed"
 
 if TYPE_CHECKING:
+    from upath.core import UnsupportedOperation
     from upath.core import UPath
 
-__all__ = ["UPath"]
+__all__ = ["UPath", "UnsupportedOperation"]
 
 
 def __getattr__(name):
@@ -21,5 +22,10 @@ def __getattr__(name):
 
         globals()["UPath"] = UPath
         return UPath
+    elif name == "UnsupportedOperation":
+        from upath.core import UnsupportedOperation
+
+        globals()["UnsupportedOperation"] = UnsupportedOperation
+        return UnsupportedOperation
     else:
         raise AttributeError(f"module {__name__} has no attribute {name}")
