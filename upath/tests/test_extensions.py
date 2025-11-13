@@ -1,5 +1,9 @@
+import os
+import sys
+
 import pytest
 
+from upath import UnsupportedOperation
 from upath import UPath
 from upath.extensions import ProxyUPath
 from upath.implementations.local import FilePath
@@ -54,6 +58,41 @@ class TestProxyPathlibPath(BaseTests):
 
     def test_chmod(self):
         self.path.joinpath("file1.txt").chmod(777)
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 12), reason="storage options only handled in 3.12+"
+    )
+    def test_eq(self):
+        super().test_eq()
+
+    def test_group(self):
+        pytest.importorskip("grp")
+        self.path.group()
+
+    def test_owner(self):
+        pytest.importorskip("pwd")
+        self.path.owner()
+
+    def test_lchmod(self):
+        self.path.lchmod(0o777)
+
+    def test_readlink(self):
+        try:
+            os.readlink
+        except AttributeError:
+            pytest.skip("os.readlink not available on this platform")
+        with pytest.raises((OSError, UnsupportedOperation)):
+            self.path.readlink()
+
+    def test_protocol(self):
+        assert self.path.protocol == ""
+
+    def test_as_uri(self):
+        assert self.path.as_uri().startswith("file://")
+
+    @pytest.mark.xfail(reason="need to revisit relative path .rename")
+    def test_rename2(self):
+        super().test_rename2()
 
 
 def test_custom_subclass():

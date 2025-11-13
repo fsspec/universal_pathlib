@@ -12,6 +12,7 @@ from packaging.version import Version
 
 from upath import UPath
 from upath._stat import UPathStatResult
+from upath.types import StatResultType
 
 
 class BaseTests:
@@ -29,7 +30,7 @@ class BaseTests:
 
     def test_stat(self):
         stat = self.path.stat()
-        assert isinstance(stat, UPathStatResult)
+        assert isinstance(stat, StatResultType)
         assert len(tuple(stat)) == os.stat_result.n_sequence_fields
 
         with warnings.catch_warnings():
