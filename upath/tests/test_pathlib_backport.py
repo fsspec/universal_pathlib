@@ -133,10 +133,12 @@ def test_signature_rglob_pathlike(pth):
 
 
 @pytest.mark.parametrize("pth", [""], indirect=True)
+@pytest.mark.skipif(os.name == "nt", reason="owner/group not available on windows")
 def test_signature_owner_follow_symlinks(pth):
     _ = pth.owner(follow_symlinks=True)
 
 
 @pytest.mark.parametrize("pth", [""], indirect=True)
+@pytest.mark.skipif(os.name == "nt", reason="owner/group not available on windows")
 def test_signature_group_follow_symlinks(pth):
     _ = pth.group(follow_symlinks=True)
