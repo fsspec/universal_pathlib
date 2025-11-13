@@ -221,6 +221,9 @@ class LocalPath(_UPathMixin, pathlib.Path):
             or self.storage_options != other.storage_options
         )
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     if sys.version_info >= (3, 14):
 
         def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
