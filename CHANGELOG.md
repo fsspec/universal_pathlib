@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ...
 
+## [0.3.6] - 2025-11-13
+### Added
+- upath: add `UnsupportedOperation` exception for better pathlib compatibility (#474)
+- upath: backport pathlib 3.10-3.14 method signatures (follow_symlinks, newline, case_sensitive, recurse_symlinks, walk_up, etc.) (#476)
+- docs: add ProxyUPath usage example (#475)
+- tests: add comprehensive pathlib backport signature tests (#474, #476, #477)
+
+### Fixed
+- upath.types: correct `st_birthtime` and `st_birthtime_ns` availability (Windows 3.12+, macOS, FreeBSD only) (#476, #477)
+- upath: fix `stat()` return type to use `StatResultType` protocol (#476)
+- upath: fix equality checks for extensions and local paths (#477)
+- upath.implementations.local: fix `_copy_from` method (#477)
+- upath.core: remove unneeded lines in `_fs_factory` (#478)
+
+### Changed
+- upath.core: raise `TypeError` when creating UPath with incompatible protocols (#477)
+
 ## [0.3.5] - 2025-11-09
 ### Added
 - upath.implementations.cloud: add `HfPath` for Hugging Face Hub support (#457)
@@ -275,7 +292,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/fsspec/universal_pathlib/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/fsspec/universal_pathlib/compare/v0.3.2...v0.3.3
