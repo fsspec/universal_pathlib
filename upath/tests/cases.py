@@ -31,6 +31,11 @@ class BaseTests:
 
     def test_stat(self):
         stat = self.path.stat()
+
+        # for debugging os.stat_result compatibility
+        attrs = {attr for attr in dir(stat) if attr.startswith("st_")}
+        print(attrs)
+
         assert isinstance(stat, StatResultType)
         assert len(tuple(stat)) == os.stat_result.n_sequence_fields
 
@@ -53,14 +58,6 @@ class BaseTests:
     def test_stat_st_size(self):
         file1 = self.path.joinpath("file1.txt").stat()
         assert file1.st_size == 11
-
-    def test_stat_attrs(self):
-        """helps with debugging os.stat_result compatibility"""
-        s = self.path.stat()
-        attrs = {attr for attr in dir(s) if attr.startswith("st_")}
-        required_attrs = StatResultType.__protocol_attrs__
-        print(attrs)
-        assert attrs.issuperset(required_attrs)
 
     def test_chmod(self):
         with pytest.raises(NotImplementedError):
