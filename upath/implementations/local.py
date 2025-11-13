@@ -200,8 +200,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, UPath):
             return NotImplemented
+        eq_path = super().__eq__(other)
+        if eq_path is NotImplemented:
+            return NotImplemented
         return (
-            super().__eq__(other)
+            eq_path
             and self.protocol == other.protocol
             and self.storage_options == other.storage_options
         )
@@ -209,8 +212,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def __ne__(self, other: object) -> bool:
         if not isinstance(other, UPath):
             return NotImplemented
+        ne_path = super().__ne__(other)
+        if ne_path is NotImplemented:
+            return NotImplemented
         return (
-            super().__ne__(other)
+            ne_path
             or self.protocol != other.protocol
             or self.storage_options != other.storage_options
         )
