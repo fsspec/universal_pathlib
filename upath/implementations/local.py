@@ -690,7 +690,10 @@ class LocalPath(_UPathMixin, pathlib.Path):
     if not hasattr(pathlib.Path, "_copy_from"):
 
         def _copy_from(
-            self, source: ReadablePath | LocalPath, follow_symlinks: bool = True
+            self,
+            source: ReadablePath | LocalPath,
+            follow_symlinks: bool = True,
+            preserve_metadata: bool = False,
         ) -> None:
             _copy_from: Any = WritablePath._copy_from.__get__(self)
             _copy_from(source, follow_symlinks=follow_symlinks)

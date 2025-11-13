@@ -1264,6 +1264,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             target = self.with_segments(target_dir, name)
         return self.move(target)
 
+    def _copy_from(
+        self,
+        source: ReadablePath,
+        follow_symlinks: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        return super()._copy_from(source, follow_symlinks)
+
     # --- WritablePath attributes -------------------------------------
 
     def symlink_to(
