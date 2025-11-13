@@ -404,6 +404,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # todo: revisit
             return self.match(
                 pattern,  # type: ignore[arg-type]
+                case_sensitive=case_sensitive,
             )
 
         @classmethod
