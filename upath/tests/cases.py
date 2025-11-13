@@ -541,14 +541,16 @@ class BaseTests:
         assert hash(self.path)
 
     def test_storage_options_dont_affect_hash(self):
-        p0 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p1 = UPath(str(self.path), test_extra=2, **self.path.storage_options)
+        cls = type(self.path)
+        p0 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p1 = cls(str(self.path), test_extra=2, **self.path.storage_options)
         assert hash(p0) == hash(p1)
 
     def test_eq(self):
-        p0 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p1 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p2 = UPath(str(self.path), test_extra=2, **self.path.storage_options)
+        cls = type(self.path)
+        p0 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p1 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p2 = cls(str(self.path), test_extra=2, **self.path.storage_options)
         assert p0 == p1
         assert p0 != p2
         assert p1 != p2

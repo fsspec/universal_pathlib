@@ -94,6 +94,10 @@ class TestProxyPathlibPath(BaseTests):
     def test_rename2(self):
         super().test_rename2()
 
+    def test_lstat(self):
+        st = self.path.lstat()
+        assert st is not None
+
 
 def test_custom_subclass():
 
