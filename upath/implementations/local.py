@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import sys
 import warnings
 from collections.abc import Iterator
@@ -315,6 +316,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
             newline=newline,
             **fsspec_kwargs,
         )
+
+    def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:
+        if recursive is UNSET_DEFAULT or not recursive:
+            return super().rmdir()
+        else:
+            shutil.rmtree(self)
 
     if sys.version_info < (3, 14):  # noqa: C901
 

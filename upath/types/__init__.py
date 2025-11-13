@@ -61,6 +61,7 @@ UNSET_DEFAULT: Any = _DefaultValue.UNSET
 #     WritablePath.register(pathlib.Path)
 
 
+@runtime_checkable
 class StatResultType(Protocol):
     """duck-type for os.stat_result"""
 
