@@ -116,6 +116,13 @@ def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
     raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
 
 
+class _IncompatibleProtocolError(TypeError, ValueError):
+    """switch to TypeError for incompatible protocols in a backward compatible way.
+
+    !!! Do not use this exception directly !!!
+    """
+
+
 class _UPathMeta(ABCMeta):
     """metaclass for UPath to customize instance creation
 
@@ -419,11 +426,16 @@ class _UPathMixin(metaclass=_UPathMeta):
             protocol = storage_options.pop("scheme")
 
         # determine the protocol
-        pth_protocol = get_upath_protocol(
-            args[0] if args else "",
-            protocol=protocol,
-            storage_options=storage_options,
-        )
+        try:
+            pth_protocol = get_upath_protocol(
+                args[0] if args else "",
+                protocol=protocol,
+                storage_options=storage_options,
+            )
+        except ValueError as e:
+            if "incompatible with" in str(e):
+                raise _IncompatibleProtocolError(str(e)) from e
+            raise
         # determine which UPath subclass to dispatch to
         upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
@@ -1256,6 +1268,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         else:
             target = self.with_segments(target_dir, name)
         return self.move(target)
+
+    def _copy_from(
+        self,
+        source: ReadablePath,
+        follow_symlinks: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        return super()._copy_from(source, follow_symlinks)
 
     # --- WritablePath attributes -------------------------------------
 

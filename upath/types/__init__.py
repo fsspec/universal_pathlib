@@ -61,6 +61,7 @@ UNSET_DEFAULT: Any = _DefaultValue.UNSET
 #     WritablePath.register(pathlib.Path)
 
 
+@runtime_checkable
 class StatResultType(Protocol):
     """duck-type for os.stat_result"""
 
@@ -91,15 +92,12 @@ class StatResultType(Protocol):
     @property
     def st_ctime_ns(self) -> int: ...
 
-    if sys.platform == "win32":
-        if sys.version_info >= (3, 12):
-
-            @property
-            def st_birthtime(self) -> float: ...
-            @property
-            def st_birthtime_ns(self) -> int: ...
-
-    else:
+    # st_birthtime is available on Windows (3.12+), FreeBSD, and macOS
+    # On Linux it's currently unavailable
+    # see: https://discuss.python.org/t/st-birthtime-not-available/104350/2
+    if (sys.platform == "win32" and sys.version_info >= (3, 12)) or (
+        sys.platform == "darwin" or sys.platform.startswith("freebsd")
+    ):
 
         @property
         def st_birthtime(self) -> float: ...

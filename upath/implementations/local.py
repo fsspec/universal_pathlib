@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import sys
 import warnings
 from collections.abc import Iterator
@@ -196,6 +197,33 @@ class LocalPath(_UPathMixin, pathlib.Path):
     def __open_reader__(self) -> BinaryIO:
         return self.open("rb")
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, UPath):
+            return NotImplemented
+        eq_path = super().__eq__(other)
+        if eq_path is NotImplemented:
+            return NotImplemented
+        return (
+            eq_path
+            and self.protocol == other.protocol
+            and self.storage_options == other.storage_options
+        )
+
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, UPath):
+            return NotImplemented
+        ne_path = super().__ne__(other)
+        if ne_path is NotImplemented:
+            return NotImplemented
+        return (
+            ne_path
+            or self.protocol != other.protocol
+            or self.storage_options != other.storage_options
+        )
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     if sys.version_info >= (3, 14):
 
         def __open_rb__(self, buffering: int = UNSET_DEFAULT) -> BinaryIO:
@@ -315,6 +343,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
             newline=newline,
             **fsspec_kwargs,
         )
+
+    def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:
+        if recursive is UNSET_DEFAULT or not recursive:
+            return super().rmdir()
+        else:
+            shutil.rmtree(self)
 
     if sys.version_info < (3, 14):  # noqa: C901
 
@@ -656,7 +690,10 @@ class LocalPath(_UPathMixin, pathlib.Path):
     if not hasattr(pathlib.Path, "_copy_from"):
 
         def _copy_from(
-            self, source: ReadablePath | LocalPath, follow_symlinks: bool = True
+            self,
+            source: ReadablePath | LocalPath,
+            follow_symlinks: bool = True,
+            preserve_metadata: bool = False,
         ) -> None:
             _copy_from: Any = WritablePath._copy_from.__get__(self)
             _copy_from(source, follow_symlinks=follow_symlinks)

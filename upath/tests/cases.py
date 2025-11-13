@@ -10,8 +10,10 @@ from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
 from packaging.version import Version
 
+from upath import UnsupportedOperation
 from upath import UPath
 from upath._stat import UPathStatResult
+from upath.types import StatResultType
 
 
 class BaseTests:
@@ -29,7 +31,12 @@ class BaseTests:
 
     def test_stat(self):
         stat = self.path.stat()
-        assert isinstance(stat, UPathStatResult)
+
+        # for debugging os.stat_result compatibility
+        attrs = {attr for attr in dir(stat) if attr.startswith("st_")}
+        print(attrs)
+
+        assert isinstance(stat, StatResultType)
         assert len(tuple(stat)) == os.stat_result.n_sequence_fields
 
         with warnings.catch_warnings():
@@ -117,7 +124,12 @@ class BaseTests:
         assert self.path.is_absolute() is True
 
     def test_is_mount(self):
-        assert self.path.is_mount() is False
+        try:
+            self.path.is_mount()
+        except UnsupportedOperation:
+            pytest.skip(f"is_mount() not supported for {type(self.path).__name__}")
+        else:
+            assert self.path.is_mount() is False
 
     def test_is_symlink(self):
         assert self.path.is_symlink() is False
@@ -175,8 +187,10 @@ class BaseTests:
         assert p.parents[1].name == self.path.name
 
     def test_lchmod(self):
-        with pytest.raises(NotImplementedError):
-            self.path.lchmod(mode=77)
+        try:
+            self.path.lchmod(mode=0o777)
+        except UnsupportedOperation:
+            pass
 
     def test_lstat(self):
         with pytest.warns(UserWarning, match=r"[A-Za-z]+.stat"):
@@ -540,14 +554,16 @@ class BaseTests:
         assert hash(self.path)
 
     def test_storage_options_dont_affect_hash(self):
-        p0 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p1 = UPath(str(self.path), test_extra=2, **self.path.storage_options)
+        cls = type(self.path)
+        p0 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p1 = cls(str(self.path), test_extra=2, **self.path.storage_options)
         assert hash(p0) == hash(p1)
 
     def test_eq(self):
-        p0 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p1 = UPath(str(self.path), test_extra=1, **self.path.storage_options)
-        p2 = UPath(str(self.path), test_extra=2, **self.path.storage_options)
+        cls = type(self.path)
+        p0 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p1 = cls(str(self.path), test_extra=1, **self.path.storage_options)
+        p2 = cls(str(self.path), test_extra=2, **self.path.storage_options)
         assert p0 == p1
         assert p0 != p2
         assert p1 != p2

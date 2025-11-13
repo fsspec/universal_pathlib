@@ -284,22 +284,37 @@ class ProxyUPath:
         return self.__wrapped__.is_absolute()
 
     def __eq__(self, other: object) -> bool:
-        return self.__wrapped__.__eq__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__eq__(other.__wrapped__)
 
     def __hash__(self) -> int:
         return self.__wrapped__.__hash__()
 
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__ne__(other.__wrapped__)
+
     def __lt__(self, other: object) -> bool:
-        return self.__wrapped__.__lt__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__lt__(other.__wrapped__)
 
     def __le__(self, other: object) -> bool:
-        return self.__wrapped__.__le__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__le__(other.__wrapped__)
 
     def __gt__(self, other: object) -> bool:
-        return self.__wrapped__.__gt__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__gt__(other.__wrapped__)
 
     def __ge__(self, other: object) -> bool:
-        return self.__wrapped__.__ge__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.__wrapped__.__ge__(other.__wrapped__)
 
     def resolve(self, strict: bool = False) -> Self:
         return self._from_upath(self.__wrapped__.resolve(strict=strict))
@@ -313,8 +328,11 @@ class ProxyUPath:
     def unlink(self, missing_ok: bool = False) -> None:
         self.__wrapped__.unlink(missing_ok=missing_ok)
 
-    def rmdir(self, recursive: bool = True) -> None:  # fixme: non-standard
-        self.__wrapped__.rmdir(recursive=recursive)
+    def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:  # fixme: non-standard
+        kwargs: dict[str, Any] = {}
+        if recursive is not UNSET_DEFAULT:
+            kwargs["recursive"] = recursive
+        self.__wrapped__.rmdir(**kwargs)
 
     def rename(
         self,
@@ -324,9 +342,14 @@ class ProxyUPath:
         maxdepth: int | None = UNSET_DEFAULT,
         **kwargs: Any,
     ) -> Self:
+        if recursive is not UNSET_DEFAULT:
+            kwargs["recursive"] = recursive
+        if maxdepth is not UNSET_DEFAULT:
+            kwargs["maxdepth"] = maxdepth
         return self._from_upath(
             self.__wrapped__.rename(
-                target, recursive=recursive, maxdepth=maxdepth, **kwargs
+                target.__wrapped__ if isinstance(target, ProxyUPath) else target,
+                **kwargs,
             )
         )
 
