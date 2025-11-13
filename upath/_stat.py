@@ -307,6 +307,42 @@ class UPathStatResult:
                 pass
         raise AttributeError("birthtime")
 
+    @property
+    def st_atime_ns(self) -> int:
+        """time of last access in nanoseconds"""
+        try:
+            return int(self._info["atime_ns"])
+        except KeyError:
+            pass
+        atime = self.st_atime
+        if isinstance(atime, float):
+            return int(atime * 1e9)
+        return atime * 1_000_000_000
+
+    @property
+    def st_mtime_ns(self) -> int:
+        """time of last modification in nanoseconds"""
+        try:
+            return int(self._info["mtime_ns"])
+        except KeyError:
+            pass
+        mtime = self.st_mtime
+        if isinstance(mtime, float):
+            return int(mtime * 1e9)
+        return mtime * 1_000_000_000
+
+    @property
+    def st_ctime_ns(self) -> int:
+        """time of last change in nanoseconds"""
+        try:
+            return int(self._info["ctime_ns"])
+        except KeyError:
+            pass
+        ctime = self.st_ctime
+        if isinstance(ctime, float):
+            return int(ctime * 1e9)
+        return ctime * 1_000_000_000
+
     # --- extra fields ------------------------------------------------
 
     def __getattr__(self, item):
