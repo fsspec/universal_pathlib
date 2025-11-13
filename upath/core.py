@@ -116,6 +116,13 @@ def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
     raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
 
 
+class _IncompatibleProtocolError(TypeError, ValueError):
+    """switch to TypeError for incompatible protocols in a backward compatible way.
+
+    !!! Do not use this exception directly !!!
+    """
+
+
 class _UPathMeta(ABCMeta):
     """metaclass for UPath to customize instance creation
 
@@ -427,9 +434,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             )
         except ValueError as e:
             if "incompatible with" in str(e):
-                raise TypeError(
-                    f"{cls.__name__}.__new__(...) incompatible protocol"
-                ) from e
+                raise _IncompatibleProtocolError(str(e)) from e
             raise
         # determine which UPath subclass to dispatch to
         upath_cls: type[UPath] | None
