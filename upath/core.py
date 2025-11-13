@@ -419,11 +419,18 @@ class _UPathMixin(metaclass=_UPathMeta):
             protocol = storage_options.pop("scheme")
 
         # determine the protocol
-        pth_protocol = get_upath_protocol(
-            args[0] if args else "",
-            protocol=protocol,
-            storage_options=storage_options,
-        )
+        try:
+            pth_protocol = get_upath_protocol(
+                args[0] if args else "",
+                protocol=protocol,
+                storage_options=storage_options,
+            )
+        except ValueError as e:
+            if "incompatible with" in str(e):
+                raise TypeError(
+                    f"{cls.__name__}.__new__(...) incompatible protocol"
+                ) from e
+            raise
         # determine which UPath subclass to dispatch to
         upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
