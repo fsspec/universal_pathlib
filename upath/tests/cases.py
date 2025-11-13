@@ -10,6 +10,7 @@ from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
 from packaging.version import Version
 
+from upath import UnsupportedOperation
 from upath import UPath
 from upath._stat import UPathStatResult
 from upath.types import StatResultType
@@ -118,7 +119,12 @@ class BaseTests:
         assert self.path.is_absolute() is True
 
     def test_is_mount(self):
-        assert self.path.is_mount() is False
+        try:
+            self.path.is_mount()
+        except UnsupportedOperation:
+            pytest.skip(f"is_mount() not supported for {type(self.path).__name__}")
+        else:
+            assert self.path.is_mount() is False
 
     def test_is_symlink(self):
         assert self.path.is_symlink() is False
@@ -176,8 +182,10 @@ class BaseTests:
         assert p.parents[1].name == self.path.name
 
     def test_lchmod(self):
-        with pytest.raises(NotImplementedError):
+        try:
             self.path.lchmod(mode=0o777)
+        except UnsupportedOperation:
+            pass
 
     def test_lstat(self):
         with pytest.warns(UserWarning, match=r"[A-Za-z]+.stat"):

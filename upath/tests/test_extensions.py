@@ -73,9 +73,6 @@ class TestProxyPathlibPath(BaseTests):
         pytest.importorskip("pwd")
         self.path.owner()
 
-    def test_lchmod(self):
-        self.path.lchmod(0o777)
-
     def test_readlink(self):
         try:
             os.readlink
@@ -97,6 +94,12 @@ class TestProxyPathlibPath(BaseTests):
     def test_lstat(self):
         st = self.path.lstat()
         assert st is not None
+
+    def test_relative_to(self):
+        base = self.path
+        child = self.path / "folder1" / "file1.txt"
+        relative = child.relative_to(base)
+        assert str(relative) == f"folder1{os.sep}file1.txt"
 
 
 def test_custom_subclass():
