@@ -616,7 +616,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     UserWarning,
                     stacklevel=2,
                 )
-            return super().stat()
+            return super().stat()  # type: ignore[return-value]
 
         def write_text(
             self,
