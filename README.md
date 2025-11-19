@@ -691,14 +691,14 @@ For code that needs to work with different path types, use the type hints from
 `upath.types` to properly specify your requirements:
 
 ```python
+import os
 from upath import UPath
 from upath.types import (
-    JoinablePathLike,
     ReadablePathLike,
     WritablePathLike,
 )
 
-def read_only_local_file(path: os.PathLike) -> None:
+def read_only_local_file(path: os.PathLike) -> str:
     """Read a file on the local filesystem."""
     with open(path) as f:
         return f.read_text()
@@ -708,11 +708,11 @@ def write_only_local_file(path: os.PathLike) -> None:
     with open(path) as f:
         f.write_text("hello world")
 
-def read_any_file(path: WritablePathLike) -> None:
-    """Write a file on any filesystem."""
+def read_any_file(path: ReadablePathLike) -> str:
+    """Read a file on any filesystem."""
     return UPath(path).read_text()
 
-def read_any_file(path: WritablePathLike) -> None:
+def write_any_file(path: WritablePathLike) -> None:
     """Write a file on any filesystem."""
     UPath(path).write_text("hello world")
 ```
