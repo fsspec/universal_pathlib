@@ -127,6 +127,7 @@ These help ensure correct parameter names and types when configuring different f
         - S3StorageOptions
         - AzureStorageOptions
         - DataStorageOptions
+        - FTPStorageOptions
         - GitHubStorageOptions
         - HDFSStorageOptions
         - HTTPStorageOptions

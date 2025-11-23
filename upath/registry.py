@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from upath.implementations.cloud import HfPath as _HfPath
     from upath.implementations.cloud import S3Path as _S3Path
     from upath.implementations.data import DataPath as _DataPath
+    from upath.implementations.ftp import FTPPath as _FTPPath
     from upath.implementations.github import GitHubPath as _GitHubPath
     from upath.implementations.hdfs import HDFSPath as _HDFSPath
     from upath.implementations.http import HTTPPath as _HTTPPath
@@ -92,6 +93,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "az": "upath.implementations.cloud.AzurePath",
         "data": "upath.implementations.data.DataPath",
         "file": "upath.implementations.local.FilePath",
+        "ftp": "upath.implementations.ftp.FTPPath",
         "local": "upath.implementations.local.FilePath",
         "gcs": "upath.implementations.cloud.GCSPath",
         "gs": "upath.implementations.cloud.GCSPath",
@@ -225,6 +227,8 @@ if TYPE_CHECKING:  # noqa: C901
     ) -> type[_AzurePath]: ...
     @overload
     def get_upath_class(protocol: Literal["data"]) -> type[_DataPath]: ...
+    @overload
+    def get_upath_class(protocol: Literal["ftp"]) -> type[_FTPPath]: ...
     @overload
     def get_upath_class(protocol: Literal["github"]) -> type[_GitHubPath]: ...
     @overload

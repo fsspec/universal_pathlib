@@ -649,3 +649,41 @@ def hf_fixture_with_readonly_mocked_hf_api(
     hf_test_repo, mock_hf_api, mock_hf_filesystem_open
 ):
     return "hf://" + hf_test_repo
+
+
+@pytest.fixture(scope="module")
+def ftp_server(tmp_path_factory):
+    """Fixture providing a writable FTP filesystem."""
+    pytest.importorskip("pyftpdlib")
+
+    tmp_path = tmp_path_factory.mktemp("ftp-server")
+
+    P = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "pyftpdlib",
+            "-d",
+            str(tmp_path),
+            "-u",
+            "user",
+            "-P",
+            "pass",
+            "-w",
+        ]
+    )
+    try:
+        time.sleep(1)
+        yield {
+            "host": "localhost",
+            "port": 2121,
+            "username": "user",
+            "password": "pass",
+        }
+    finally:
+        P.terminate()
+        P.wait()
+        try:
+            shutil.rmtree(tmp_path)
+        except Exception:
+            pass

@@ -252,6 +252,22 @@ Data URL scheme implementation for embedded data.
 
 ---
 
+## upath.implementations.ftp
+
+::: upath.implementations.ftp.FTPPath
+    options:
+        heading_level: 3
+        show_root_heading: true
+        show_root_full_path: false
+        members: []
+        show_bases: true
+
+**Protocol:** `ftp://`
+
+FTP (File Transfer Protocol) implementation.
+
+---
+
 ## upath.implementations.cached
 
 ::: upath.implementations.cached.SimpleCachePath

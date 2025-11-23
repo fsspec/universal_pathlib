@@ -20,6 +20,7 @@ IMPLEMENTATIONS = {
     "az",
     "data",
     "file",
+    "ftp",
     "gcs",
     "gs",
     "hdfs",
