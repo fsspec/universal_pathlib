@@ -677,3 +677,41 @@ class BaseTests:
         child = self.path / "folder1" / "file1.txt"
         relative = child.relative_to(base)
         assert str(relative) == "folder1/file1.txt"
+
+    def test_trailing_slash_stripped(self):
+        cls = type(self.path)
+        uri = self.path.as_uri()
+        sopts = self.path.storage_options
+
+        if uri.endswith("/"):
+            uri_with_slash = uri + "key/"
+        else:
+            uri_with_slash = uri + "/key/"
+        uri = uri_with_slash.removeprefix("/")
+
+        a = cls(uri_with_slash, **sopts)
+        assert not a.path.endswith("/")
+
+        b = cls(uri, **sopts)
+        assert a.path == b.path
+
+    def test_trailing_slash_joinpath(self):
+
+        cls = type(self.path)
+        uri = self.path.as_uri()
+        sopts = self.path.storage_options
+
+        if uri.endswith("/"):
+            uri_with_slash = uri
+            uri = uri.removeprefix("/")
+        else:
+            uri_with_slash = uri + "/"
+
+        key = "key/"
+
+        a = cls(uri_with_slash + key, **sopts)
+        b = cls(uri_with_slash, **sopts).joinpath(key)
+        c = cls(uri_with_slash, **sopts) / key
+
+        assert not a.path.endswith("/")
+        assert a.path == b.path == c.path
