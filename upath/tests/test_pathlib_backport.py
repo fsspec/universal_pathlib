@@ -70,8 +70,28 @@ def test_signature_stat_follow_symlinks(pth_file):
     pth_file.stat(follow_symlinks=True)
 
 
-def test_signature_write_text_newline(pth):
-    _ = pth.joinpath("somename").write_text("test", newline="\n")
+@pytest.mark.parametrize(
+    "pth,ctx",
+    [
+        (
+            "",
+            (
+                pytest.warns(
+                    UserWarning,
+                    match=r".*write_text\(\) newline is currently ignored",
+                )
+                if sys.version_info < (3, 10)
+                else nullcontext()
+            ),
+        ),
+        ("file", nullcontext()),
+        ("memory", nullcontext()),
+    ],
+    indirect=["pth"],
+)
+def test_signature_write_text_newline(pth, ctx):
+    with ctx:
+        _ = pth.joinpath("somename").write_text("test", newline="\n")
 
 
 @pytest.mark.parametrize("pth", ["", "file"], indirect=True)
@@ -203,10 +223,30 @@ def test_signature_is_dir_follow_symlinks(pth):
     _ = pth.is_dir(follow_symlinks=True)
 
 
-def test_signature_read_text_newline(pth):
+@pytest.mark.parametrize(
+    "pth,ctx",
+    [
+        (
+            "",
+            (
+                pytest.warns(
+                    UserWarning,
+                    match=r".*read_text\(\): newline is currently ignored",
+                )
+                if sys.version_info < (3, 13)
+                else nullcontext()
+            ),
+        ),
+        ("file", nullcontext()),
+        ("memory", nullcontext()),
+    ],
+    indirect=["pth"],
+)
+def test_signature_read_text_newline(pth, ctx):
     p0 = pth.joinpath("test")
     p0.write_text("test")
-    _ = p0.read_text(newline="\n")
+    with ctx:
+        _ = p0.read_text(newline="\n")
 
 
 @pytest.mark.parametrize(
