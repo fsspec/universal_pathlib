@@ -696,9 +696,10 @@ class BaseTests:
 
         # test
         a = cls(path_with_slash + key, protocol=protocol, **sopts)
-        b = cls(path_with_slash, protocol=protocol, **sopts).joinpath(key)
-        c = cls(path_with_slash, protocol=protocol, **sopts) / key
-        assert a.path == b.path == c.path
+        b = cls(path_with_slash, key, protocol=protocol, **sopts)
+        c = cls(path_with_slash, protocol=protocol, **sopts).joinpath(key)
+        d = cls(path_with_slash, protocol=protocol, **sopts) / key
+        assert a.path == b.path == c.path == d.path
 
     def test_trailing_slash_is_stripped(self):
         has_meaningful_trailing_slash = getattr(
