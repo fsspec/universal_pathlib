@@ -573,12 +573,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         # FIXME: normalization needs to happen in unchain already...
         chain = Chain.from_list(Chain.from_list(segments).to_list())
         if len(args) > 1:
-            chain = chain.replace(
-                path=WrappedFileSystemFlavour.from_protocol(protocol).join(
-                    chain.active_path,
-                    *args[1:],
-                )
-            )
+            flavour = WrappedFileSystemFlavour.from_protocol(protocol)
+            joined = flavour.join(chain.active_path, *args[1:])
+            stripped = flavour.strip_protocol(joined)
+            chain = chain.replace(path=stripped)
         self._chain = chain
         self._chain_parser = chain_parser
         self._raw_urlpaths = args

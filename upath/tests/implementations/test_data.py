@@ -287,3 +287,11 @@ class TestUPathDataPath(BaseTests):
     @pytest.mark.skip(reason="DataPath does not support relative_to")
     def test_relative_to(self):
         pass
+
+    @pytest.mark.skip(reason="DataPath does not support joins")
+    def test_trailing_slash_joinpath_is_identical(self):
+        pass
+
+    @pytest.mark.skip(reason="DataPath does not support joins")
+    def test_trailing_slash_is_stripped(self):
+        pass

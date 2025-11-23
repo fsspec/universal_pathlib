@@ -677,3 +677,37 @@ class BaseTests:
         child = self.path / "folder1" / "file1.txt"
         relative = child.relative_to(base)
         assert str(relative) == "folder1/file1.txt"
+
+    def test_trailing_slash_joinpath_is_identical(self):
+        # setup
+        cls = type(self.path)
+        protocol = self.path.protocol
+        path = self.path.path
+        sopts = self.path.storage_options
+        if not path:
+            path = "something"
+            path_with_slash = "something/"
+        elif path.endswith("/"):
+            path_with_slash = path
+            path = path.removeprefix("/")
+        else:
+            path_with_slash = path + "/"
+        key = "key/"
+
+        # test
+        a = cls(path_with_slash + key, protocol=protocol, **sopts)
+        b = cls(path_with_slash, key, protocol=protocol, **sopts)
+        c = cls(path_with_slash, protocol=protocol, **sopts).joinpath(key)
+        d = cls(path_with_slash, protocol=protocol, **sopts) / key
+        assert a.path == b.path == c.path == d.path
+
+    def test_trailing_slash_is_stripped(self):
+        has_meaningful_trailing_slash = getattr(
+            self.path.parser, "has_meaningful_trailing_slash", False
+        )
+        if has_meaningful_trailing_slash:
+            assert not self.path.joinpath("key").path.endswith("/")
+            assert self.path.joinpath("key/").path.endswith("/")
+        else:
+            assert not self.path.joinpath("key").path.endswith("/")
+            assert not self.path.joinpath("key/").path.endswith("/")

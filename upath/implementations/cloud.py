@@ -72,7 +72,7 @@ class CloudPath(UPath):
 
     @property
     def path(self) -> str:
-        self_path = super().path
+        self_path = super().path.rstrip(self.parser.sep)
         if (
             self._relative_base is None
             and self_path
