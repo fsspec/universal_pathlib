@@ -127,6 +127,7 @@ if http_path.exists():
 - :fontawesome-solid-memory: `memory:` Ephemeral filesystem in RAM
 - :fontawesome-brands-microsoft: `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage _(requires `adlfs`)_
 - :fontawesome-solid-database: `data:` RFC 2397 style data URLs _(requires `fsspec>=2023.12.2`)_
+- :fontawesome-solid-network-wired: `ftp:` FTP filesystem
 - :fontawesome-brands-github: `github:` GitHub repository filesystem
 - :fontawesome-solid-globe: `http:` and `https:` HTTP(S)-based filesystem
 - :fontawesome-solid-server: `hdfs:` Hadoop distributed filesystem

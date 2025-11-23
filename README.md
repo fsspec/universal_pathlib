@@ -91,6 +91,7 @@ For more examples, see the [example notebook here][example-notebook].
 - `memory:` Ephemeral filesystem in RAM
 - `az:`, `adl:`, `abfs:` and `abfss:` Azure Storage _(requires `adlfs`)_
 - `data:` RFC 2397 style data URLs _(requires `fsspec>=2023.12.2`)_
+- `ftp:` FTP filesystem
 - `github:` GitHub repository filesystem
 - `hf:` Hugging Face filesystem _(requires `huggingface_hub`)_
 - `http:` and `https:` HTTP(S)-based filesystem
