@@ -21,6 +21,8 @@ def _convert_value_to_timestamp(value: Any) -> int | float:
     if isinstance(value, (int, float)):
         return value
     elif isinstance(value, str):
+        if len(value) == 14:
+            return datetime.strptime(value, r"%Y%m%d%H%M%S").timestamp()
         if value.endswith("Z"):
             value = value[:-1] + "+00:00"
         return datetime.fromisoformat(value).timestamp()
@@ -262,6 +264,7 @@ class UPathStatResult:
             "timeModified",
             "modificationTime",
             "modified_at",
+            "modify",
         ]:
             try:
                 raw_value = self._info[key]
