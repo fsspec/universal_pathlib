@@ -58,6 +58,7 @@ def temporary_register(protocol, cls):
     m = _registry._m.maps[0]
     try:
         m[protocol] = cls
+        get_upath_class.cache_clear()
         yield
     finally:
         m.clear()
