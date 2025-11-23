@@ -35,6 +35,8 @@
       protocol: hf
     - cls_fqn: upath.implementations.data.DataPath
       protocol: data
+    - cls_fqn: upath.implementations.ftp.FTPPath
+      protocol: ftp
     - cls_fqn: upath.implementations.github.GitHubPath
       protocol: github
     - cls_fqn: upath.implementations.hdfs.HDFSPath
@@ -112,6 +114,8 @@
       protocol: hf
     - cls_fqn: upath.implementations.data.DataPath
       protocol: data
+    - cls_fqn: upath.implementations.ftp.FTPPath
+      protocol: ftp
     - cls_fqn: upath.implementations.github.GitHubPath
       protocol: github
     - cls_fqn: upath.implementations.hdfs.HDFSPath
@@ -185,6 +189,10 @@
       cls: DataPath
       supported_example_name: use_listings_cache
       supported_example_value: False
+    - module: upath.implementations.ftp
+      cls: FTPPath
+      supported_example_name: host
+      supported_example_value: '"ftp.example.com"'
     - module: upath.implementations.github
       cls: GitHubPath
       supported_example_name: org
@@ -258,6 +266,10 @@
       cls: DataPath
       supported_example_name: use_listings_cache
       unsupported_example_value: '"blub"'
+    - module: upath.implementations.ftp
+      cls: FTPPath
+      supported_example_name: host
+      unsupported_example_value: '123'
     - module: upath.implementations.github
       cls: GitHubPath
       supported_example_name: repo
@@ -318,6 +330,8 @@
       cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
+    - module: upath.implementations.ftp
+      cls: FTPPath
     - module: upath.implementations.github
       cls: GitHubPath
     - module: upath.implementations.hdfs
@@ -367,6 +381,9 @@
     - module: upath.implementations.data
       cls: DataPath
       td: DataStorageOptions
+    - module: upath.implementations.ftp
+      cls: FTPPath
+      td: FTPStorageOptions
     - module: upath.implementations.github
       cls: GitHubPath
       td: GitHubStorageOptions

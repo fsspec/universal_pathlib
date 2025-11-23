@@ -72,6 +72,8 @@
       cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
+    - module: upath.implementations.ftp
+      cls: FTPPath
     - module: upath.implementations.github
       cls: GitHubPath
     - module: upath.implementations.hdfs
@@ -259,6 +261,8 @@
       cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
+    - module: upath.implementations.ftp
+      cls: FTPPath
     - module: upath.implementations.github
       cls: GitHubPath
     - module: upath.implementations.hdfs
@@ -576,6 +580,8 @@
       cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
+    - module: upath.implementations.ftp
+      cls: FTPPath
     - module: upath.implementations.github
       cls: GitHubPath
     - module: upath.implementations.hdfs
@@ -972,6 +978,8 @@
       cls: HfPath
     - module: upath.implementations.data
       cls: DataPath
+    - module: upath.implementations.ftp
+      cls: FTPPath
     - module: upath.implementations.github
       cls: GitHubPath
     - module: upath.implementations.hdfs
