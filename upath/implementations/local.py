@@ -449,7 +449,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def is_dir(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.is_dir() follow_symlinks=False"
+                    f"{type(self).__name__}.is_dir(): follow_symlinks=False"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -459,7 +459,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def is_file(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.is_file() follow_symlinks=False"
+                    f"{type(self).__name__}.is_file(): follow_symlinks=False"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -474,7 +474,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         ) -> str:
             if newline is not None:
                 warnings.warn(
-                    f"{type(self).__name__}.read_text() newline"
+                    f"{type(self).__name__}.read_text(): newline"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -499,7 +499,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             if case_sensitive is not None:
                 if sys.version_info < (3, 12):
                     warnings.warn(
-                        f"{type(self).__name__}.glob() case_sensitive"
+                        f"{type(self).__name__}.glob(): case_sensitive"
                         " is currently ignored.",
                         UserWarning,
                         stacklevel=2,
@@ -508,7 +508,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     kw["case_sensitive"] = case_sensitive
             if recurse_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.glob() recurse_symlinks=True"
+                    f"{type(self).__name__}.glob(): recurse_symlinks=True"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -530,7 +530,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
             if case_sensitive is not None:
                 if sys.version_info < (3, 12):
                     warnings.warn(
-                        f"{type(self).__name__}.rglob() case_sensitive"
+                        f"{type(self).__name__}.rglob(): case_sensitive"
                         " is currently ignored.",
                         UserWarning,
                         stacklevel=2,
@@ -539,7 +539,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     kw["case_sensitive"] = case_sensitive
             if recurse_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.rglob() recurse_symlinks=True"
+                    f"{type(self).__name__}.rglob(): recurse_symlinks=True"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -592,7 +592,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 pattern_str = os.fspath(path_pattern)
             if case_sensitive is not None:
                 warnings.warn(
-                    f"{type(self).__name__}.match() case_sensitive"
+                    f"{type(self).__name__}.match(): case_sensitive"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
@@ -602,7 +602,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
         def exists(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:
                 warnings.warn(
-                    f"{type(self).__name__}.exists() follow_symlinks=False"
+                    f"{type(self).__name__}.exists(): follow_symlinks=False"
                     " is currently ignored.",
                     UserWarning,
                     stacklevel=2,
