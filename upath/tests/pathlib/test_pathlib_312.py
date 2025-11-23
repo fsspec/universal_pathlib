@@ -129,12 +129,7 @@ class _BasePurePathTest(object):
         class P(_BasePurePathSubclass, self.cls):
             pass
 
-        if self.cls is UPath:
-            cm = temporary_register("", P)
-        else:
-            cm = nullcontext()
-
-        with cm:
+        with temporary_register("", P):
             p = P('foo', 'bar', session_id=42)
             self.assertEqual(42, (p / 'foo').session_id)
             self.assertEqual(42, ('foo' / p).session_id)
@@ -3280,6 +3275,15 @@ class WindowsPathTest(_BasePathTest, unittest.TestCase):
 class PathSubclassTest(_BasePathTest, unittest.TestCase):
     class cls(WindowsUPath if os.name == 'nt' else PosixUPath):
         pass
+
+    def setUp(self):
+        self._registry_cm = temporary_register("", self.cls)
+        self._registry_cm.__enter__()
+        return super().setUp()
+
+    def tearDown(self):
+        self._registry_cm.__exit__(None, None, None)
+        return super().tearDown()
 
     # repr() roundtripping is not supported in custom subclass.
     test_repr_roundtrips = None

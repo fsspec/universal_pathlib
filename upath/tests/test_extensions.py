@@ -65,6 +65,16 @@ class TestProxyPathlibPath(BaseTests):
     def test_eq(self):
         super().test_eq()
 
+    if sys.version_info < (3, 12):
+
+        def test_storage_options_dont_affect_hash(self):
+            # On Python < 3.12, storage_options trigger warnings for LocalPath
+            with pytest.warns(
+                UserWarning,
+                match=r".*on python <= \(3, 11\) ignores protocol and storage_options",
+            ):
+                super().test_storage_options_dont_affect_hash()
+
     def test_group(self):
         pytest.importorskip("grp")
         self.path.group()
@@ -91,9 +101,22 @@ class TestProxyPathlibPath(BaseTests):
     def test_rename2(self):
         super().test_rename2()
 
-    def test_lstat(self):
-        st = self.path.lstat()
-        assert st is not None
+    if sys.version_info < (3, 10):
+
+        def test_lstat(self):
+            # On Python < 3.10, stat(follow_symlinks=False) triggers warnings
+            with pytest.warns(
+                UserWarning,
+                match=r".*stat\(\) follow_symlinks=False is currently ignored",
+            ):
+                st = self.path.lstat()
+            assert st is not None
+
+    else:
+
+        def test_lstat(self):
+            st = self.path.lstat()
+            assert st is not None
 
     def test_relative_to(self):
         base = self.path

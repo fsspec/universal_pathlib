@@ -4,6 +4,7 @@ import os
 import pickle
 import re
 import tempfile
+import warnings
 from pathlib import Path
 
 import pytest
@@ -327,7 +328,12 @@ def test_path_operations_disabled_without_cwd(rel_path, method_args):
     """UPaths without .cwd() implementation should not allow path operations."""
     method, args = method_args
 
-    with pytest.raises(NotImplementedError):
+    with (
+        pytest.raises(NotImplementedError),
+        warnings.catch_warnings(),
+    ):
+        # warnings are asserted in other tests
+        warnings.simplefilter("ignore", UserWarning)
         # next only needs to be called for iterdir and glob/rglob
         # but the other raise already in the getattr call
         next(getattr(rel_path, method)(*args))
