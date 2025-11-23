@@ -678,40 +678,35 @@ class BaseTests:
         relative = child.relative_to(base)
         assert str(relative) == "folder1/file1.txt"
 
-    def test_trailing_slash_stripped(self):
+    def test_trailing_slash_joinpath_is_identical(self):
+        # setup
         cls = type(self.path)
-        uri = self.path.as_uri()
+        protocol = self.path.protocol
+        path = self.path.path
         sopts = self.path.storage_options
-
-        if uri.endswith("/"):
-            uri_with_slash = uri + "key/"
+        if not path:
+            path = "something"
+            path_with_slash = "something/"
+        elif path.endswith("/"):
+            path_with_slash = path
+            path = path.removeprefix("/")
         else:
-            uri_with_slash = uri + "/key/"
-        uri = uri_with_slash.removeprefix("/")
-
-        a = cls(uri_with_slash, **sopts)
-        assert not a.path.endswith("/")
-
-        b = cls(uri, **sopts)
-        assert a.path == b.path
-
-    def test_trailing_slash_joinpath(self):
-
-        cls = type(self.path)
-        uri = self.path.as_uri()
-        sopts = self.path.storage_options
-
-        if uri.endswith("/"):
-            uri_with_slash = uri
-            uri = uri.removeprefix("/")
-        else:
-            uri_with_slash = uri + "/"
-
+            path_with_slash = path + "/"
         key = "key/"
 
-        a = cls(uri_with_slash + key, **sopts)
-        b = cls(uri_with_slash, **sopts).joinpath(key)
-        c = cls(uri_with_slash, **sopts) / key
-
-        assert not a.path.endswith("/")
+        # test
+        a = cls(path_with_slash + key, protocol=protocol, **sopts)
+        b = cls(path_with_slash, protocol=protocol, **sopts).joinpath(key)
+        c = cls(path_with_slash, protocol=protocol, **sopts) / key
         assert a.path == b.path == c.path
+
+    def test_trailing_slash_is_stripped(self):
+        has_meaningful_trailing_slash = getattr(
+            self.path.parser, "has_meaningful_trailing_slash", False
+        )
+        if has_meaningful_trailing_slash:
+            assert not self.path.joinpath("key").path.endswith("/")
+            assert self.path.joinpath("key/").path.endswith("/")
+        else:
+            assert not self.path.joinpath("key").path.endswith("/")
+            assert not self.path.joinpath("key/").path.endswith("/")
