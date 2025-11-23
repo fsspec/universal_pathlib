@@ -21,6 +21,7 @@ __all__ = [
     "AzureStorageOptions",
     "HfStorageOptions",
     "DataStorageOptions",
+    "FTPStorageOptions",
     "GitHubStorageOptions",
     "HDFSStorageOptions",
     "HTTPStorageOptions",
@@ -202,6 +203,34 @@ class DataStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for Data URIs filesystem"""
 
     # No specific options for Data URIs at the moment
+
+
+class FTPStorageOptions(_AbstractStorageOptions, total=False):
+    """Storage options for FTP filesystem"""
+
+    # Connection settings
+    host: str  # The remote server name/ip to connect to (required)
+    port: int  # Port to connect with (default: 21)
+
+    # Authentication
+    username: (
+        str | None
+    )  # User's identifier for authentication (anonymous if not given)
+    password: str | None  # User's password on the server
+    acct: str | None  # Account string for authentication (some servers require this)
+
+    # Performance settings
+    block_size: int | None  # Read-ahead or write buffer size
+
+    # FTP-specific settings
+    tempdir: (
+        str | None
+    )  # Directory on remote to put temporary files when in a transaction
+    timeout: int  # Timeout of the FTP connection in seconds (default: 30)
+    encoding: str  # Encoding for dir and filenames in FTP connection (default: "utf-8")
+
+    # Security settings
+    tls: bool  # Use FTP-TLS (default: False)
 
 
 class GitHubStorageOptions(_AbstractStorageOptions, total=False):

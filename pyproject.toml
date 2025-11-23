@@ -63,6 +63,7 @@ dev = [
     "cheroot",
     # "hadoop-test-cluster",
     # "pyarrow",
+    "pyftpdlib",
     "typing_extensions; python_version<'3.11'",
 ]
 dev-third-party = [
