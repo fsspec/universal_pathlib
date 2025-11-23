@@ -10,6 +10,7 @@ authors = [
 ]
 description = "pathlib api extended to use fsspec backends"
 maintainers = [
+    {name = "Andreas Poehlmann"},
     {name = "Andreas Poehlmann", email = "andreas@poehlmann.io"},
     {name = "Norman Rzepka"},
 ]
