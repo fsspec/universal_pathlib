@@ -841,6 +841,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
+            protocol: Literal["ftp"],
+            **_: Any,
+        ) -> _uimpl.ftp.FTPPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
             protocol: Literal["github"],
             **_: Any,
         ) -> _uimpl.github.GitHubPath: ...
