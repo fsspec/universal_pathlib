@@ -11,6 +11,7 @@ from typing import BinaryIO
 from typing import Callable
 from typing import Literal
 from typing import TextIO
+from typing import TypeVar
 from typing import overload
 from urllib.parse import SplitResult
 
@@ -40,6 +41,8 @@ __all__ = [
     "ProxyUPath",
 ]
 
+T = TypeVar("T")
+
 
 class classmethod_or_method(classmethod):
     """A decorator that can be used as a classmethod or an instance method.
@@ -51,10 +54,10 @@ class classmethod_or_method(classmethod):
 
     def __get__(
         self,
-        instance: Any,
-        owner: type[Any] | None = None,
+        instance: T | None,
+        owner: type[T] | None = None,
         /,
-    ) -> Callable[..., Any]:
+    ) -> Callable[..., T]:
         if instance is None:
             return self.__func__.__get__(owner)
         else:
