@@ -1,3 +1,5 @@
+import functools
+
 import pytest
 from fsspec import get_filesystem_class
 
@@ -12,13 +14,44 @@ except ImportError:
     pytestmark = pytest.mark.skip
 
 
+def xfail_on_hf_service_unavailable(func):
+    """
+    Method decorator to mark test as xfail when HuggingFace service is unavailable.
+    """
+    from httpx import HTTPStatusError
+
+    @functools.wraps(func)
+    def wrapped_method(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except HTTPStatusError as err:
+            if err.response.status_code == 503:
+                pytest.xfail("HuggingFace API not reachable")
+            raise
+
+    return wrapped_method
+
+
 def test_hfpath():
     path = UPath("hf://HuggingFaceTB/SmolLM2-135M")
     assert isinstance(path, HfPath)
-    assert path.exists()
+    try:
+        assert path.exists()
+    except AssertionError:
+        from httpx import ConnectError
+        from huggingface_hub import HfApi
+
+        try:
+            HfApi().repo_info("HuggingFaceTB/SmolLM2-135M")
+        except ConnectError:
+            pytest.xfail("No internet connection")
+        except Exception as err:
+            if "Service Unavailable" in str(err):
+                pytest.xfail("HuggingFace API not reachable")
+            raise
 
 
-class TestUPathHttp(BaseTests):
+class TestUPathHf(BaseTests):
     @pytest.fixture(autouse=True, scope="function")
     def path(self, hf_fixture_with_readonly_mocked_hf_api):
         self.path = UPath(hf_fixture_with_readonly_mocked_hf_api)
