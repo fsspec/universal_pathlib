@@ -41,6 +41,26 @@ __all__ = [
 ]
 
 
+class classmethod_or_method(classmethod):
+    """A decorator that can be used as a classmethod or an instance method.
+
+    When called on the class, it behaves like a classmethod.
+    When called on an instance, it behaves like an instance method.
+
+    """
+
+    def __get__(
+        self,
+        instance: Any,
+        owner: type[Any] | None = None,
+        /,
+    ) -> Callable[..., Any]:
+        if instance is None:
+            return self.__func__.__get__(owner)
+        else:
+            return self.__func__.__get__(instance)
+
+
 class ProxyUPath:
     """ProxyUPath base class
 
@@ -380,9 +400,12 @@ class ProxyUPath:
     def samefile(self, other_path) -> bool:
         return self.__wrapped__.samefile(other_path)
 
-    @classmethod
-    def cwd(cls) -> Self:
-        raise UnsupportedOperation(".cwd() not supported")
+    @classmethod_or_method
+    def cwd(cls_or_self) -> Self:  # noqa: B902
+        if isinstance(cls_or_self, type):
+            raise UnsupportedOperation(".cwd() not supported")
+        else:
+            return cls_or_self._from_upath(cls_or_self.__wrapped__.cwd())
 
     @classmethod
     def home(cls) -> Self:

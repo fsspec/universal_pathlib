@@ -43,6 +43,11 @@ class TestProxyFilePath(BaseTests):
     def test_chmod(self):
         self.path.joinpath("file1.txt").chmod(777)
 
+    def test_cwd(self):
+        self.path.cwd()
+        with pytest.raises(UnsupportedOperation):
+            type(self.path).cwd()
+
 
 class TestProxyPathlibPath(BaseTests):
     @pytest.fixture(autouse=True)
@@ -123,6 +128,11 @@ class TestProxyPathlibPath(BaseTests):
         child = self.path / "folder1" / "file1.txt"
         relative = child.relative_to(base)
         assert str(relative) == f"folder1{os.sep}file1.txt"
+
+    def test_cwd(self):
+        self.path.cwd()
+        with pytest.raises(UnsupportedOperation):
+            type(self.path).cwd()
 
 
 def test_custom_subclass():
