@@ -652,7 +652,7 @@ def hf_fixture_with_readonly_mocked_hf_api(
 
 
 @pytest.fixture(scope="module")
-def ftp_server(tmp_path_factory):
+def ftp_server_process(tmp_path_factory):
     """Fixture providing a writable FTP filesystem."""
     pytest.importorskip("pyftpdlib")
 
@@ -674,7 +674,7 @@ def ftp_server(tmp_path_factory):
     )
     try:
         time.sleep(1)
-        yield {
+        yield str(tmp_path), {
             "host": "localhost",
             "port": 2121,
             "username": "user",
@@ -687,3 +687,23 @@ def ftp_server(tmp_path_factory):
             shutil.rmtree(tmp_path)
         except Exception:
             pass
+
+
+@pytest.fixture(scope="function")
+def ftp_server(ftp_server_process):
+    """Fixture providing a writable FTP filesystem."""
+    tmp_path, storage_options = ftp_server_process
+
+    try:
+        yield storage_options
+    finally:
+        for filename in os.listdir(tmp_path):
+            file_path = os.path.join(tmp_path, filename)
+            if os.path.isdir(file_path):
+                del_func = shutil.rmtree
+            else:
+                del_func = os.unlink
+            try:
+                del_func(file_path)
+            except Exception:
+                pass
