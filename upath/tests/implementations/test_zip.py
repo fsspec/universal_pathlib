@@ -42,7 +42,10 @@ class TestZipPath(BaseTests):
         except (ValueError, TypeError, AttributeError):
             mode = "r"
         self.path = UPath("zip://", fo=zipped_testdir_file, mode=mode)
-        # self.prepare_file_system()  done outside of UPath
+        try:
+            yield
+        finally:
+            self.path.fs.clear_instance_cache()
 
     def test_is_ZipPath(self):
         assert isinstance(self.path, ZipPath)
@@ -80,10 +83,6 @@ class TestZipPath(BaseTests):
     def test_rename(self):
         with pytest.raises(NotImplementedError):
             super().test_rename()  # delete is not implemented in fsspec
-
-    def test_rename2(self):
-        with pytest.raises(NotImplementedError):
-            super().test_rename2()  # delete is not implemented in fsspec
 
     def test_move_local(self, tmp_path):
         with pytest.raises(NotImplementedError):
@@ -145,6 +144,10 @@ class TestZipPath(BaseTests):
     @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
     def test_fsspec_compat(self):
         pass
+
+    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
+    def test_rename_with_target_absolute(self, target_factory):
+        return super().test_rename_with_target_absolute(target_factory)
 
 
 @pytest.fixture(scope="function")

@@ -128,3 +128,7 @@ class TestUPathHf(BaseTests):
     @pytest.mark.skip(reason="HfPath does not support listing repositories")
     def test_iterdir2(self, local_testdir):
         pass
+
+    @pytest.mark.skip(reason="HfPath does not currently test write")
+    def test_rename_with_target_absolute(self, target_factory):
+        return super().test_rename_with_target_absolute(target_factory)

@@ -83,6 +83,10 @@ class TestTarPath(BaseTests):
     def test_move_into_memory(self, clear_fsspec_memory_cache):
         pass
 
+    @pytest.mark.skip(reason="Only testing read on TarPath")
+    def test_rename_with_target_absolute(self, target_factory):
+        return super().test_rename_with_target_str_absolute(target_factory)
+
 
 @pytest.fixture(scope="function")
 def tarred_testdir_file_in_memory(tarred_testdir_file, clear_fsspec_memory_cache):

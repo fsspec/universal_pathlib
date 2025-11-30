@@ -126,8 +126,13 @@ class TestUPathDataPath(BaseTests):
         with pytest.raises(NotImplementedError):
             self.path.rename("newname")
 
-    def test_rename2(self):
-        self.path.rename(self.path)
+    @pytest.mark.skip("DataPath does not support rename")
+    def test_rename_with_target_relative(self):
+        pass
+
+    @pytest.mark.skip("DataPath does not support rename")
+    def test_rename_with_target_absolute(self):
+        pass
 
     def test_rglob(self, pathlib_base):
         with pytest.raises(NotImplementedError):
