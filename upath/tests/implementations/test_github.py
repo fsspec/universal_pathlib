@@ -1,3 +1,4 @@
+import functools
 import os
 import platform
 import sys
@@ -17,6 +18,56 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def has_internet_connection():
+    import requests
+
+    try:
+        requests.get("http://example.com")
+    except requests.exceptions.ConnectionError:
+        return False
+    else:
+        return True
+
+
+def xfail_on_github_rate_limit(func):
+    """
+    Method decorator to mark test as xfail when GitHub rate limit is exceeded.
+    """
+
+    @functools.wraps(func)
+    def wrapped_method(self, *args, **kwargs):
+        import requests
+
+        try:
+            return func(self, *args, **kwargs)
+        except AssertionError as e:
+            if "nodename nor servname provided, or not known" in str(e):
+                pytest.xfail(reason="No internet connection")
+            raise
+        except requests.exceptions.ConnectionError:
+            pytest.xfail(reason="No internet connection")
+        except Exception as e:
+            if "rate limit exceeded" in str(e):
+                pytest.xfail("GitHub API rate limit exceeded")
+            else:
+                raise
+
+    return wrapped_method
+
+
+def wrap_github_rate_limit_check(cls):
+    """
+    Class decorator to wrap all test methods with the
+    xfail_on_github_rate_limit decorator.
+    """
+    for attr_name in dir(cls):
+        if attr_name.startswith("test_"):
+            orig_method = getattr(cls, attr_name)
+            setattr(cls, attr_name, xfail_on_github_rate_limit(orig_method))
+    return cls
+
+
+@wrap_github_rate_limit_check
 class TestUPathGitHubPath(BaseTests):
     """
     Unit-tests for the GitHubPath implementation of UPath.
