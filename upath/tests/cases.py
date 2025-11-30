@@ -12,6 +12,7 @@ from packaging.version import Version
 
 from upath import UnsupportedOperation
 from upath import UPath
+from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.types import StatResultType
 
@@ -275,31 +276,95 @@ class BaseTests:
             self.path.readlink()
 
     def test_rename(self):
-        upath = self.path.joinpath("file1.txt")
-        target = upath.parent.joinpath("file1_renamed.txt")
-        moved = upath.rename(target)
-        assert target == moved
-        assert not upath.exists()
-        assert moved.exists()
-        # reverse with an absolute path as str
-        back = moved.rename(upath.path)
-        assert back == upath
-        assert not moved.exists()
-        assert back.exists()
+        p_source = self.path.joinpath("file1.txt")
+        p_target = self.path.joinpath("file1_renamed.txt")
 
-    def test_rename2(self):
-        upath = self.path.joinpath("folder1/file2.txt")
-        target = "file2_renamed.txt"
-        moved = upath.rename(target)
-        target_path = upath.parent.joinpath(target).resolve()
-        assert target_path == moved
-        assert not upath.exists()
-        assert moved.exists()
-        # reverse with a relative path as UPath
-        back = moved.rename(UPath("file2.txt"))
-        assert back == upath
-        assert not moved.exists()
-        assert back.exists()
+        p_moved = p_source.rename(p_target)
+        assert p_target == p_moved
+        assert not p_source.exists()
+        assert p_moved.exists()
+
+        p_revert = p_moved.rename(p_source)
+        assert p_revert == p_source
+        assert not p_moved.exists()
+        assert p_revert.exists()
+
+    @pytest.fixture
+    def supports_cwd(self):
+        # intentionally called on the instance to support ProxyUPath().cwd()
+        try:
+            self.path.cwd()
+        except UnsupportedOperation:
+            return False
+        else:
+            return True
+
+    @pytest.mark.parametrize(
+        "target_factory",
+        [
+            lambda obj, name: name,
+            lambda obj, name: UPath(name),
+            lambda obj, name: Path(name),
+            lambda obj, name: obj.joinpath(name).relative_to(obj),
+        ],
+        ids=[
+            "str_relative",
+            "plain_upath_relative",
+            "plain_path_relative",
+            "self_upath_relative",
+        ],
+    )
+    def test_rename_with_target_relative(self, supports_cwd, target_factory):
+        source = self.path.joinpath("folder1/file2.txt")
+        target = target_factory(self.path, "file2_renamed.txt")
+
+        source_text = source.read_text()
+        if supports_cwd:
+            t = source.rename(target)
+            assert (t.protocol == UPath(target).protocol) or UPath(
+                target
+            ).protocol == ""
+            assert (t.path == UPath(target).path) or (
+                t.path == UPath(target).absolute().path
+            )
+            assert t.exists()
+            assert t.read_text() == source_text
+
+        else:
+            with pytest.raises(UnsupportedOperation):
+                source.rename(target)
+
+    @pytest.mark.parametrize(
+        "target_factory",
+        [
+            lambda obj, name: str(obj.joinpath(name).absolute()),
+            lambda obj, name: UPath(obj.absolute().joinpath(name).path),
+            lambda obj, name: Path(obj.absolute().joinpath(name).path),
+            lambda obj, name: obj.absolute().joinpath(name),
+        ],
+        ids=[
+            "str_absolute",
+            "plain_upath_absolute",
+            "plain_path_absolute",
+            "self_upath_absolute",
+        ],
+    )
+    def test_rename_with_target_absolute(self, target_factory):
+        from upath._chain import Chain
+        from upath._chain import FSSpecChainParser
+
+        source = self.path.joinpath("folder1/file2.txt")
+        target = target_factory(self.path, "file2_renamed.txt")
+
+        source_text = source.read_text()
+        t = source.rename(target)
+        assert get_upath_protocol(target) in {t.protocol, ""}
+        assert (
+            t.path
+            == Chain.from_list(FSSpecChainParser().unchain(str(target))).active_path
+        )
+        assert t.exists()
+        assert t.read_text() == source_text
 
     def test_replace(self):
         pass
