@@ -32,6 +32,7 @@ from upath.types import ReadablePathLike
 from upath.types import StatResultType
 from upath.types import SupportsPathLike
 from upath.types import WritablePath
+from upath.types import WritablePathLike
 
 if TYPE_CHECKING:
     from typing import IO
@@ -132,6 +133,18 @@ class LocalPath(_UPathMixin, pathlib.Path):
     @_raw_urlpaths.setter
     def _raw_urlpaths(self, value: Sequence[JoinablePathLike]) -> None:
         pass
+
+    if sys.version_info >= (3, 14):
+
+        def rename(
+            self,
+            target: WritablePathLike,
+        ) -> Self:
+            t = super().rename(target)  # type: ignore[arg-type]
+            if not isinstance(target, type(self)):
+                return self.with_segments(t)
+            else:
+                return t
 
     if sys.version_info >= (3, 12):
 
