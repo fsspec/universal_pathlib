@@ -48,6 +48,24 @@ def clear_registry():
         _registry.clear()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def windows_current_working_directory_drive_sync(
+    monkeypatch, tmp_path, tmp_path_factory
+):
+    cwd_old = os.getcwd()
+    drive_cwd = os.path.splitdrive(cwd_old)[0]
+    drive_tmp = os.path.splitdrive(tmp_path)[0]
+    if drive_tmp != drive_cwd:
+        cwd_new = tmp_path_factory.mktemp("cwd_on_tmp_drive")
+        os.chdir(cwd_new)
+        try:
+            yield
+        finally:
+            os.chdir(cwd_old)
+    else:
+        yield
+
+
 @pytest.fixture(scope="function")
 def clear_fsspec_memory_cache():
     fs_cls = get_filesystem_class("memory")
