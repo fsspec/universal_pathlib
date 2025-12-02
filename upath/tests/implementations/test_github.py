@@ -152,3 +152,7 @@ class TestUPathGitHubPath(BaseTests):
     @pytest.mark.skip(reason="Only testing read on GithubPath")
     def test_move_into_memory(self, clear_fsspec_memory_cache):
         pass
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_rename_with_target_absolute(self, target_factory):
+        return super().test_rename_with_target_str_absolute(target_factory)

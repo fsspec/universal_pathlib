@@ -173,6 +173,10 @@ class TestUPathHttp(BaseTests):
     def test_move_into_memory(self, clear_fsspec_memory_cache):
         pass
 
+    @pytest.mark.skip(reason="Only testing read on HttpPath")
+    def test_rename_with_target_absolute(self, target_factory):
+        return super().test_rename_with_target_absolute(target_factory)
+
 
 @pytest.mark.parametrize(
     "args,parts",

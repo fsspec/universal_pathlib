@@ -43,6 +43,11 @@ class TestProxyFilePath(BaseTests):
     def test_chmod(self):
         self.path.joinpath("file1.txt").chmod(777)
 
+    def test_cwd(self):
+        self.path.cwd()
+        with pytest.raises(UnsupportedOperation):
+            type(self.path).cwd()
+
 
 class TestProxyPathlibPath(BaseTests):
     @pytest.fixture(autouse=True)
@@ -97,10 +102,6 @@ class TestProxyPathlibPath(BaseTests):
     def test_as_uri(self):
         assert self.path.as_uri().startswith("file://")
 
-    @pytest.mark.xfail(reason="need to revisit relative path .rename")
-    def test_rename2(self):
-        super().test_rename2()
-
     if sys.version_info < (3, 10):
 
         def test_lstat(self):
@@ -123,6 +124,11 @@ class TestProxyPathlibPath(BaseTests):
         child = self.path / "folder1" / "file1.txt"
         relative = child.relative_to(base)
         assert str(relative) == f"folder1{os.sep}file1.txt"
+
+    def test_cwd(self):
+        self.path.cwd()
+        with pytest.raises(UnsupportedOperation):
+            type(self.path).cwd()
 
 
 def test_custom_subclass():

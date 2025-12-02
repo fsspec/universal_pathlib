@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import posixpath
 import sys
 import warnings
 from abc import ABCMeta
@@ -11,6 +10,7 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
+from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
 from typing import TYPE_CHECKING
@@ -336,7 +336,7 @@ class _UPathMixin(metaclass=_UPathMeta):
             if (self_path := str(self)) == ".":
                 path = str(current_dir)
             else:
-                path = current_dir.parser.join(str(self), self_path)
+                path = current_dir.parser.join(str(current_dir), self_path)
             return self.parser.strip_protocol(path)
         return self._chain.active_path
 
@@ -1809,6 +1809,12 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
         Returns the new Path instance pointing to the target path.
 
+        Info
+        ----
+        For filesystems that don't have a root character, i.e. for which
+        relative paths can be ambiguous, you can explicitly indicate a
+        relative path via prefixing with `./`
+
         Warning
         -------
         This method is non-standard compared to pathlib.Path.rename(),
@@ -1819,43 +1825,53 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         running into future compatibility issues.
 
         """
+        # check protocol compatibility
         target_protocol = get_upath_protocol(target)
         if target_protocol and target_protocol != self.protocol:
             raise ValueError(
                 f"expected protocol {self.protocol!r}, got: {target_protocol!r}"
             )
-        if not isinstance(target, UPath):
-            target = str(target)
-            if target_protocol or (self.anchor and target.startswith(self.anchor)):
-                target = self.with_segments(target)
+        # ensure target is an absolute UPath
+        if not isinstance(target, type(self)):
+            if isinstance(target, (UPath, PurePath)):
+                target_str = target.as_posix()
             else:
-                target = UPath(target)
+                target_str = str(target)
+            if target_protocol:
+                # target protocol provided indicates absolute path
+                target = self.with_segments(target_str)
+            elif self.anchor and target_str.startswith(self.anchor):
+                # self.anchor can be used to indicate absolute path
+                target = self.with_segments(target_str)
+            elif not self.anchor and target_str.startswith("./"):
+                # indicate relative via "./"
+                target = (
+                    self.cwd()
+                    .joinpath(target_str.removeprefix("./"))
+                    .relative_to(self.cwd())
+                )
+            else:
+                # all other cases
+                target = self.cwd().joinpath(target_str).relative_to(self.cwd())
+        # return early if renaming to same path
         if target == self:
             return self
-        if self._relative_base is not None:
-            self = self.absolute()
-        target_protocol = get_upath_protocol(target)
-        if target_protocol:
-            target_ = target
-            # avoid calling .resolve for subclasses of UPath
-            if ".." in target_.parts or "." in target_.parts:
-                target_ = target_.resolve()
-        else:
-            parent = self.parent
-            # avoid calling .resolve for subclasses of UPath
-            if ".." in parent.parts or "." in parent.parts:
-                parent = parent.resolve()
-            target_ = parent.joinpath(posixpath.normpath(target.path))
+        # ensure source and target are absolute
+        source_abs = self.absolute()
+        target_abs = target.absolute()
+        # avoid calling .resolve for if not needed
+        if ".." in target_abs.parts or "." in target_abs.parts:
+            target_abs = target_abs.resolve()
         if recursive is not UNSET_DEFAULT:
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
             kwargs["maxdepth"] = maxdepth
         self.fs.mv(
-            self.path,
-            target_.path,
+            source_abs.path,
+            target_abs.path,
             **kwargs,
         )
-        return self.with_segments(target_)
+        return target
 
     def replace(self, target: WritablePathLike) -> Self:
         """
