@@ -44,7 +44,12 @@ class MemoryPath(UPath):
     @property
     def path(self) -> str:
         path = super().path
-        return "/" if path == "." else path
+        return "/" if path in {"", "."} else path
+
+    def is_absolute(self) -> bool:
+        if self._relative_base is None and self.__vfspath__() == "/":
+            return True
+        return super().is_absolute()
 
     def __str__(self) -> str:
         s = super().__str__()
