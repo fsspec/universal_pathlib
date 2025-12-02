@@ -6,8 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.7] - 2025-12-03
+
 ### Added
-- upath.implementations.ftp: added FTPPath support
+- upath.implementations.ftp: added FTPPath support (#485)
+- tests: added comprehensive warning checks in test suite (#487)
+- tests: added xfail handling for network connectivity issues (#492)
+
+### Fixed
+- upath: fixed trailing slash behavior for cloud paths (#488)
+- upath.core: fixed rename implementation for relative paths (#493)
+- upath.implementations.memory: fixed MemoryPath root (#495)
+- upath.implementations.ftp: added support for FTP modification time info format (#485)
+- upath.implementations.local: fixed rename return type on Python 3.14+ (#493)
+- upath.extensions: fixed .cwd() behavior for ProxyUPath (#493)
+- upath.extensions: fixed typing of .cwd() method (#493)
+- docs: fixed typing example in README (#484)
+- pypi: fixed maintainer display on PyPI (#486)
+
+### Changed
+- upath.core: deprecated keyword arguments for UPath.rename() (#496)
+- ci: updated development dependencies (dvc, huggingface-hub)
 
 ## [0.3.6] - 2025-11-13
 ### Added
@@ -293,7 +313,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/fsspec/universal_pathlib/compare/v0.3.3...v0.3.4
