@@ -79,6 +79,13 @@ class TestUpath(BaseTests):
         # so this test would need to have an iterdir fix.
         super().test_iterdir_no_dir()
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="mock fs is not well defined on windows",
+    )
+    def test_parents_are_absolute(self):
+        return super().test_parents_are_absolute()
+
 
 def test_multiple_backend_paths(local_testdir):
     path = "s3://bucket/"
