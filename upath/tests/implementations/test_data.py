@@ -300,3 +300,7 @@ class TestUPathDataPath(BaseTests):
     @pytest.mark.skip(reason="DataPath does not support joins")
     def test_trailing_slash_is_stripped(self):
         pass
+
+    @pytest.mark.skip(reason="DataPath does not support joins")
+    def test_parents_are_absolute(self):
+        pass
