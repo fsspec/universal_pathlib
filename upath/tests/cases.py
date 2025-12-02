@@ -782,3 +782,9 @@ class BaseTests:
         else:
             assert not self.path.joinpath("key").path.endswith("/")
             assert not self.path.joinpath("key/").path.endswith("/")
+
+    def test_parents_are_absolute(self):
+        # this is a cross implementation compatible way to ensure that
+        # the path representing the root is absolute
+        is_absolute = [p.is_absolute() for p in self.path.parents]
+        assert all(is_absolute)
