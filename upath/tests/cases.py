@@ -314,12 +314,19 @@ class BaseTests:
             "self_upath_relative",
         ],
     )
-    def test_rename_with_target_relative(self, supports_cwd, target_factory):
+    def test_rename_with_target_relative(
+        self, request, monkeypatch, supports_cwd, target_factory, tmp_path
+    ):
         source = self.path.joinpath("folder1/file2.txt")
         target = target_factory(self.path, "file2_renamed.txt")
 
         source_text = source.read_text()
         if supports_cwd:
+            cid = request.node.callspec.id
+            cwd = tmp_path.joinpath(cid)
+            cwd.mkdir(parents=True, exist_ok=True)
+            monkeypatch.chdir(cwd)
+
             t = source.rename(target)
             assert (t.protocol == UPath(target).protocol) or UPath(
                 target
@@ -337,7 +344,7 @@ class BaseTests:
     @pytest.mark.parametrize(
         "target_factory",
         [
-            lambda obj, name: str(obj.joinpath(name).absolute()),
+            lambda obj, name: obj.joinpath(name).absolute().as_posix(),
             lambda obj, name: UPath(obj.absolute().joinpath(name).path),
             lambda obj, name: Path(obj.absolute().joinpath(name).path),
             lambda obj, name: obj.absolute().joinpath(name),
@@ -359,10 +366,9 @@ class BaseTests:
         source_text = source.read_text()
         t = source.rename(target)
         assert get_upath_protocol(target) in {t.protocol, ""}
-        assert (
-            t.path
-            == Chain.from_list(FSSpecChainParser().unchain(str(target))).active_path
-        )
+        assert t.path == Chain.from_list(
+            FSSpecChainParser().unchain(str(target))
+        ).active_path.replace("\\", "/")
         assert t.exists()
         assert t.read_text() == source_text
 

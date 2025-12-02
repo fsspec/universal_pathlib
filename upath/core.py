@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
+from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
 from typing import TYPE_CHECKING
@@ -1832,23 +1833,26 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             )
         # ensure target is an absolute UPath
         if not isinstance(target, type(self)):
-            target = str(target)
+            if isinstance(target, (UPath, PurePath)):
+                target_str = target.as_posix()
+            else:
+                target_str = str(target)
             if target_protocol:
                 # target protocol provided indicates absolute path
-                target = self.with_segments(target)
-            elif self.anchor and target.startswith(self.anchor):
+                target = self.with_segments(target_str)
+            elif self.anchor and target_str.startswith(self.anchor):
                 # self.anchor can be used to indicate absolute path
-                target = self.with_segments(target)
-            elif not self.anchor and target.startswith("./"):
+                target = self.with_segments(target_str)
+            elif not self.anchor and target_str.startswith("./"):
                 # indicate relative via "./"
                 target = (
                     self.cwd()
-                    .joinpath(target.removeprefix("./"))
+                    .joinpath(target_str.removeprefix("./"))
                     .relative_to(self.cwd())
                 )
             else:
                 # all other cases
-                target = self.cwd().joinpath(target).relative_to(self.cwd())
+                target = self.cwd().joinpath(target_str).relative_to(self.cwd())
         # return early if renaming to same path
         if target == self:
             return self

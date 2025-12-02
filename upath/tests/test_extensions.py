@@ -102,10 +102,6 @@ class TestProxyPathlibPath(BaseTests):
     def test_as_uri(self):
         assert self.path.as_uri().startswith("file://")
 
-    @pytest.mark.xfail(reason="need to revisit relative path .rename")
-    def test_rename2(self):
-        super().test_rename2()
-
     if sys.version_info < (3, 10):
 
         def test_lstat(self):

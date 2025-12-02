@@ -48,10 +48,8 @@ def clear_registry():
         _registry.clear()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def windows_current_working_directory_drive_sync(
-    monkeypatch, tmp_path, tmp_path_factory
-):
+@pytest.fixture(scope="function")
+def windows_working_directory_drive_sync(monkeypatch, tmp_path, tmp_path_factory):
     cwd_old = os.getcwd()
     drive_cwd = os.path.splitdrive(cwd_old)[0]
     drive_tmp = os.path.splitdrive(tmp_path)[0]
