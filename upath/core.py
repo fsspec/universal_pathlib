@@ -1862,9 +1862,30 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         # avoid calling .resolve for if not needed
         if ".." in target_abs.parts or "." in target_abs.parts:
             target_abs = target_abs.resolve()
+        if kwargs:
+            warnings.warn(
+                "Passing additional keyword arguments to "
+                f"{type(self).__name__}.rename() is deprecated and will be"
+                " removed in future univeral-pathlib versions.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         if recursive is not UNSET_DEFAULT:
+            warnings.warn(
+                f"{type(self).__name__}.rename()'s `recursive` keyword argument is"
+                " deprecated and will be removed in future universal-pathlib versions."
+                f" Please use {type(self).__name__}.move() or .move_into() instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             kwargs["recursive"] = recursive
         if maxdepth is not UNSET_DEFAULT:
+            warnings.warn(
+                f"{type(self).__name__}.rename()'s `maxdepth` keyword argument is"
+                " deprecated and will be removed in future universal-pathlib versions.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             kwargs["maxdepth"] = maxdepth
         self.fs.mv(
             source_abs.path,
