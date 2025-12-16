@@ -286,7 +286,7 @@ def http_server(tmp_path_factory):
     requests = pytest.importorskip("requests")
     pytest.importorskip("http.server")
     proc = subprocess.Popen(
-        shlex.split(f"python -m http.server --directory {http_tempdir} 18080")
+        shlex.split(f"{sys.executable} -m http.server --directory {http_tempdir} 18080")
     )
     try:
         url = "http://127.0.0.1:18080/folder"
