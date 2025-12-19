@@ -166,44 +166,37 @@ if s3path.is_file():
     print("It's a file!")
 ```
 
-### Following pathlib behavior for listing virtual directories on S3
-Prefixes (PRE) on S3 protocol are not posix directories with the traditional meaning.
+### How does UPath handle S3 prefixes that don't exist?
 
-When `is_dir()` is invoked from a UPath object, it will use `s3fs` lower level handling
-when trying to list a PRE for a non-existing bucket:
+S3 prefixes aren't traditional POSIX directories. UPath follows `pathlib` conventions—checking a non-existent path returns `False`:
 
 ```python
 from upath import UPath
 
-fake_uri_dir = "s3://one-bucket-that-doesnt-exists-for-sure/my-dir/"
-_s3_obj = UPath(
-    fake_uri_dir,
-)
-print(_s3_obj.is_dir())
-> False
+# Non-existent bucket returns False, just like pathlib
+fake_path = UPath("s3://bucket-that-doesnt-exist/my-dir/")
+print(fake_path.is_dir())
+# False
 ```
-The former behavior aligns with how `pathlib` handles non-existing directories:
+
+This matches standard `pathlib` behavior:
+
 ```python
 import pathlib
-assert pathlib.Path('/some-path/that-does-not-exist').is_dir() is False  # unix
-assert pathlib.Path('Y:/some-drive-and-path/that-does-not-exist').is_dir() is False  # windows
 
-assert pathlib.Path('/some-path/that-does-not-exist').exists() is False  # unix
-assert pathlib.Path('Y:/some-drive-and-path/that-does-not-exist').exists() is False  # windows
+# pathlib also returns False for non-existent paths
+assert pathlib.Path('/path/that/does/not/exist').is_dir() is False
+assert pathlib.Path('/path/that/does/not/exist').exists() is False
 ```
 
-Though, if the bucket exists but authentication is not provided an Auth exception will be raised
-```python
-from upath import UPath
+!!! warning "Authentication Required"
+    If the bucket exists but you lack credentials, an authentication exception will be raised:
 
-uri_dir = "s3://my-bucket/my-dir/"
-#my-bucket exists and requires auth at: https://my-bucket.s3.eu-central-1.amazonaws.com
-
-_s3_obj = UPath(
-    uri_dir,
-)
-print(_s3_obj.is_dir()) #This raises an Auth exception
-```
+    ```python
+    # This bucket exists but requires authentication
+    s3_path = UPath("s3://my-private-bucket/data/")
+    s3_path.is_dir()  # Raises authentication exception
+    ```
 
 ### How do I search for files matching a pattern?
 
