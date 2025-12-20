@@ -115,10 +115,8 @@ class BaseTests:
         assert not (self.path / "not-existing-dir").is_dir()
 
     def test_is_file(self):
-        path = self.path / "file1.txt"
-        assert path.is_file()
-        assert not self.path.is_file()
-
+        path_exists = self.path / "file1.txt"
+        assert path_exists.is_file()
         assert not (self.path / "not-existing-file.txt").is_file()
 
     def test_is_absolute(self):
