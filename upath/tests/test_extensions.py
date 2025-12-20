@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import nullcontext
 
 import pytest
 
@@ -131,7 +132,12 @@ class TestProxyPathlibPath(BaseTests):
             type(self.path).cwd()
 
     def test_lchmod(self):
-        self.path.lchmod(mode=0o777)
+        if hasattr(os, "lchmod") and os.lchmod in os.supports_follow_symlinks:
+            cm = nullcontext()
+        else:
+            cm = pytest.raises(UnsupportedOperation)
+        with cm:
+            self.path.lchmod(mode=0o777)
 
     def test_symlink_to(self):
         self.path.joinpath("link").symlink_to(self.path)
