@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -14,10 +13,8 @@ if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -87,11 +84,6 @@ class CloudPath(UPath):
         if not parents and not exist_ok and self.exists():
             raise FileExistsError(self.path)
         super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
-
-    def iterdir(self) -> Iterator[Self]:
-        if self.is_file():
-            raise NotADirectoryError(str(self))
-        yield from super().iterdir()
 
 
 class GCSPath(CloudPath):

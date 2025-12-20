@@ -62,8 +62,6 @@ class TarPath(UPath):
         return UPathStatResult.from_info(info)
 
     def iterdir(self) -> Iterator[Self]:
-        if self.is_file():
-            raise NotADirectoryError(str(self))
         it = iter(super().iterdir())
         p0 = next(it)
         if p0.name != "":

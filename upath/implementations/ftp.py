@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
 from ftplib import error_perm as FTPPermanentError  # nosec B402
 from typing import TYPE_CHECKING
 
@@ -52,12 +51,6 @@ class FTPPath(UPath):
             if e.args[0].startswith("550") and exist_ok:
                 return
             raise FileExistsError(str(self)) from e
-
-    def iterdir(self) -> Iterator[Self]:
-        if not self.is_dir():
-            raise NotADirectoryError(str(self))
-        else:
-            return super().iterdir()
 
     def rename(
         self,

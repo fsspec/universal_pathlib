@@ -65,40 +65,6 @@ class HTTPPath(UPath):
         sr = urlsplit(super().path)
         return sr._replace(path=sr.path or "/").geturl()
 
-    def is_file(self, *, follow_symlinks: bool = True) -> bool:
-        if not follow_symlinks:
-            warnings.warn(
-                f"{type(self).__name__}.is_file(follow_symlinks=False):"
-                " is currently ignored.",
-                UserWarning,
-                stacklevel=2,
-            )
-        try:
-            next(super().iterdir())
-        except (StopIteration, NotADirectoryError):
-            return True
-        except FileNotFoundError:
-            return False
-        else:
-            return False
-
-    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
-        if not follow_symlinks:
-            warnings.warn(
-                f"{type(self).__name__}.is_dir(follow_symlinks=False):"
-                " is currently ignored.",
-                UserWarning,
-                stacklevel=2,
-            )
-        try:
-            next(super().iterdir())
-        except (StopIteration, NotADirectoryError):
-            return False
-        except FileNotFoundError:
-            return False
-        else:
-            return True
-
     def stat(self, follow_symlinks: bool = True) -> StatResultType:
         if not follow_symlinks:
             warnings.warn(

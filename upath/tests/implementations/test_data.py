@@ -61,7 +61,7 @@ class TestUPathDataPath(BaseTests):
         assert self.path.is_file()
 
     def test_iterdir(self):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(NotADirectoryError):
             list(self.path.iterdir())
 
     @pytest.mark.skip(reason="DataPath does not have directories")

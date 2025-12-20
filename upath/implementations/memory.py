@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from upath.core import UPath
@@ -11,10 +10,8 @@ if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -35,11 +32,6 @@ class MemoryPath(UPath):
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Unpack[MemoryStorageOptions],
         ) -> None: ...
-
-    def iterdir(self) -> Iterator[Self]:
-        if not self.is_dir():
-            raise NotADirectoryError(str(self))
-        yield from super().iterdir()
 
     @property
     def path(self) -> str:
