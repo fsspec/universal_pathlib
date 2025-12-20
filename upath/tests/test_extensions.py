@@ -130,6 +130,18 @@ class TestProxyPathlibPath(BaseTests):
         with pytest.raises(UnsupportedOperation):
             type(self.path).cwd()
 
+    def test_lchmod(self):
+        self.path.lchmod(mode=0o777)
+
+    def test_symlink_to(self):
+        self.path.joinpath("link").symlink_to(self.path)
+
+    def test_hardlink_to(self):
+        try:
+            self.path.joinpath("link").hardlink_to(self.path)
+        except PermissionError:
+            pass  # hardlink may require elevated permissions
+
 
 def test_custom_subclass():
 

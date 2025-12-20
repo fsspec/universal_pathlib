@@ -619,12 +619,6 @@ class WritablePathTests:
         with pytest.raises(UnsupportedOperation):
             self.path.joinpath("link").hardlink_to("target")
 
-    if sys.version_info < (3, 12):
-
-        def test_link_to(self):
-            with pytest.raises(UnsupportedOperation):
-                self.path.link_to("link")
-
 
 class ReadWritePathTests:
     """Tests requiring both ReadablePath and WritablePath interfaces.
