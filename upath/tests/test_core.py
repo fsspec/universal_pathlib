@@ -17,7 +17,6 @@ from upath.types import WritablePath
 from .cases import BaseTests
 from .utils import only_on_windows
 from .utils import skip_on_windows
-from .utils import xfail_if_version
 
 
 @skip_on_windows
@@ -72,12 +71,6 @@ class TestUpath(BaseTests):
             match=r".+Path[.]home\(\) is unsupported",
         ):
             type(self.path).home()
-
-    @xfail_if_version("fsspec", reason="", ge="2024.2.0")
-    def test_iterdir_no_dir(self):
-        # the mock filesystem is basically just LocalFileSystem,
-        # so this test would need to have an iterdir fix.
-        super().test_iterdir_no_dir()
 
     @pytest.mark.skipif(
         sys.platform.startswith("win"),
