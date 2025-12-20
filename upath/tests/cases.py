@@ -16,10 +16,6 @@ from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
 from upath.types import StatResultType
 
-# =============================================================================
-# JoinablePathTests: Tests for pure path operations (no I/O)
-# =============================================================================
-
 
 class JoinablePathTests:
     """Tests for JoinablePath interface.
@@ -219,11 +215,6 @@ class JoinablePathTests:
         assert p1.protocol == p2.protocol
 
 
-# =============================================================================
-# ReadablePathTests: Tests for readable path operations
-# =============================================================================
-
-
 class ReadablePathTests:
     """Tests for ReadablePath interface.
 
@@ -378,6 +369,14 @@ class ReadablePathTests:
             st = self.path.lstat()
             assert st is not None
 
+    def test_cwd(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.cwd()
+
+    def test_home(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.home()
+
     def test_open(self):
         p = self.path.joinpath("file1.txt")
         with p.open(mode="r") as f:
@@ -488,6 +487,18 @@ class ReadablePathTests:
         with fs.open(path) as f:
             assert f.read() == b"hello world"
 
+    def test_readlink(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.readlink()
+
+    def test_group(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.group()
+
+    def test_owner(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.owner()
+
 
 # =============================================================================
 # WritablePathTests: Tests for writable path operations
@@ -592,16 +603,27 @@ class WritablePathTests:
         path.write_text(s)
         assert path.read_text() == s
 
+    def test_chmod(self):
+        with pytest.raises(NotImplementedError):
+            self.path.joinpath("file1.txt").chmod(777)
+
+    def test_lchmod(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.lchmod(mode=0o777)
+
     def test_symlink_to(self):
-        pass
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").symlink_to("target")
 
-    def test_link_to(self):
-        pass
+    def test_hardlink_to(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").hardlink_to("target")
 
+    if sys.version_info < (3, 12):
 
-# =============================================================================
-# ReadWritePathTests: Tests requiring both read and write operations
-# =============================================================================
+        def test_link_to(self):
+            with pytest.raises(UnsupportedOperation):
+                self.path.link_to("link")
 
 
 class ReadWritePathTests:
@@ -828,63 +850,11 @@ class ReadWritePathTests:
         file2.write_bytes(b"hello world")
 
 
-# =============================================================================
-# UPathNotImplementedTests: Tests for UPath-specific unsupported operations
-# =============================================================================
-
-
-class UPathNotImplementedTests:
-    """Tests for UPath operations that are typically not implemented.
-
-    These tests verify that operations not supported by most UPath
-    implementations raise the appropriate exceptions (NotImplementedError
-    or UnsupportedOperation).
-    """
-
-    path: UPath
-
-    def test_cwd(self):
-        with pytest.raises(NotImplementedError):
-            self.path.cwd()
-
-    def test_home(self):
-        with pytest.raises(NotImplementedError):
-            self.path.home()
-
-    def test_chmod(self):
-        with pytest.raises(NotImplementedError):
-            self.path.joinpath("file1.txt").chmod(777)
-
-    def test_group(self):
-        with pytest.raises(NotImplementedError):
-            self.path.group()
-
-    def test_lchmod(self):
-        try:
-            self.path.lchmod(mode=0o777)
-        except UnsupportedOperation:
-            pass
-
-    def test_owner(self):
-        with pytest.raises(NotImplementedError):
-            self.path.owner()
-
-    def test_readlink(self):
-        with pytest.raises(NotImplementedError):
-            self.path.readlink()
-
-
-# =============================================================================
-# BaseTests: Composite test suite for full UPath functionality
-# =============================================================================
-
-
 class BaseTests(
     JoinablePathTests,
     ReadablePathTests,
     WritablePathTests,
     ReadWritePathTests,
-    UPathNotImplementedTests,
 ):
     """Comprehensive test suite combining all path operation tests.
 
@@ -897,7 +867,6 @@ class BaseTests(
     - ReadablePathTests: Read-only operations
     - WritablePathTests: Write-only operations
     - ReadWritePathTests: Operations requiring both read and write
-    - UPathNotImplementedTests: Tests for unsupported operations
 
     Example usage for a read-only UPath:
 
