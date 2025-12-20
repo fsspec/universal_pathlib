@@ -132,13 +132,19 @@ class TestProxyPathlibPath(BaseTests):
             type(self.path).cwd()
 
     def test_lchmod(self):
+        # setup
+        a = self.path.joinpath("a")
+        b = self.path.joinpath("b")
+        a.touch()
+        b.symlink_to(a)
+
         # see: https://github.com/python/cpython/issues/108660#issuecomment-1854645898
         if hasattr(os, "lchmod") or os.chmod in os.supports_follow_symlinks:
             cm = nullcontext()
         else:
             cm = pytest.raises(UnsupportedOperation)
         with cm:
-            self.path.lchmod(mode=0o777)
+            b.lchmod(mode=0o777)
 
     def test_symlink_to(self):
         self.path.joinpath("link").symlink_to(self.path)
