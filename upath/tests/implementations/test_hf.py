@@ -1,5 +1,3 @@
-import functools
-
 import pytest
 from fsspec import get_filesystem_class
 
@@ -12,24 +10,6 @@ try:
     get_filesystem_class("hf")
 except ImportError:
     pytestmark = pytest.mark.skip
-
-
-def xfail_on_hf_service_unavailable(func):
-    """
-    Method decorator to mark test as xfail when HuggingFace service is unavailable.
-    """
-    from httpx import HTTPStatusError
-
-    @functools.wraps(func)
-    def wrapped_method(self, *args, **kwargs):
-        try:
-            return func(self, *args, **kwargs)
-        except HTTPStatusError as err:
-            if err.response.status_code == 503:
-                pytest.xfail("HuggingFace API not reachable")
-            raise
-
-    return wrapped_method
 
 
 def test_hfpath():

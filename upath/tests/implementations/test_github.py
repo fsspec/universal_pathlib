@@ -18,17 +18,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def has_internet_connection():
-    import requests
-
-    try:
-        requests.get("http://example.com")
-    except requests.exceptions.ConnectionError:
-        return False
-    else:
-        return True
-
-
 def xfail_on_github_rate_limit(func):
     """
     Method decorator to mark test as xfail when GitHub rate limit is exceeded.
