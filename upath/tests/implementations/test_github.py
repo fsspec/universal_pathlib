@@ -32,6 +32,8 @@ def xfail_on_github_rate_limit(func):
         except AssertionError as e:
             if "nodename nor servname provided, or not known" in str(e):
                 pytest.xfail(reason="No internet connection")
+            if "rate limit exceeded" in str(e):
+                pytest.xfail("GitHub API rate limit exceeded")
             raise
         except requests.exceptions.ConnectionError:
             pytest.xfail(reason="No internet connection")
