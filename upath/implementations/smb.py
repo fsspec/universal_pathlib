@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 import warnings
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -72,12 +71,6 @@ class SMBPath(UPath):
                 raise FileExistsError(str(self))
             if not self.is_dir():
                 raise FileExistsError(str(self))
-
-    def iterdir(self) -> Iterator[Self]:
-        if not self.is_dir():
-            raise NotADirectoryError(str(self))
-        else:
-            return super().iterdir()
 
     def rename(
         self,
