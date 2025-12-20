@@ -166,6 +166,38 @@ if s3path.is_file():
     print("It's a file!")
 ```
 
+### How does UPath handle S3 prefixes that don't exist?
+
+S3 prefixes aren't traditional POSIX directories. UPath follows `pathlib` conventions—checking a non-existent path returns `False`:
+
+```python
+from upath import UPath
+
+# Non-existent bucket returns False, just like pathlib
+fake_path = UPath("s3://bucket-that-doesnt-exist/my-dir/")
+print(fake_path.is_dir())
+# False
+```
+
+This matches standard `pathlib` behavior:
+
+```python
+import pathlib
+
+# pathlib also returns False for non-existent paths
+assert pathlib.Path('/path/that/does/not/exist').is_dir() is False
+assert pathlib.Path('/path/that/does/not/exist').exists() is False
+```
+
+!!! warning "Authentication Required"
+    If the bucket exists but you lack credentials, an authentication exception will be raised:
+
+    ```python
+    # This bucket exists but requires authentication
+    s3_path = UPath("s3://my-private-bucket/data/")
+    s3_path.is_dir()  # Raises authentication exception
+    ```
+
 ### How do I search for files matching a pattern?
 
 Use `glob()` for pattern matching:
