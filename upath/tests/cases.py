@@ -9,6 +9,7 @@ import pytest
 from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
 from packaging.version import Version
+from pathlib_abc import PathParser
 
 from upath import UnsupportedOperation
 from upath import UPath
@@ -29,6 +30,15 @@ class JoinablePathTests:
     """
 
     path: UPath
+
+    def test_parser(self):
+        parser = self.path.parser
+        assert isinstance(parser, PathParser)
+        assert isinstance(parser.sep, str)
+        assert parser.altsep is None or isinstance(parser.altsep, str)
+        assert callable(parser.split)
+        assert callable(parser.splitext)
+        assert callable(parser.normcase)
 
     def test_is_absolute(self):
         assert self.path.is_absolute() is True
