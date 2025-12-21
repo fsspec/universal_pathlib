@@ -25,16 +25,12 @@ def xfail_on_github_rate_limit(func):
 
     @functools.wraps(func)
     def wrapped_method(self, *args, **kwargs):
-        import requests
-
         try:
             return func(self, *args, **kwargs)
         except AssertionError as e:
             if "nodename nor servname provided, or not known" in str(e):
                 pytest.xfail(reason="No internet connection")
             raise
-        except requests.exceptions.ConnectionError:
-            pytest.xfail(reason="No internet connection")
         except Exception as e:
             if "rate limit exceeded" in str(e):
                 pytest.xfail("GitHub API rate limit exceeded")
@@ -49,10 +45,18 @@ def wrap_github_rate_limit_check(cls):
     Class decorator to wrap all test methods with the
     xfail_on_github_rate_limit decorator.
     """
+    import requests
+
+    try:
+        requests.get("http://example.com")
+    except requests.exceptions.ConnectionError:
+        wrapper = pytest.mark.xfail(reason="No internet connection")
+    else:
+        wrapper = xfail_on_github_rate_limit
     for attr_name in dir(cls):
         if attr_name.startswith("test_"):
             orig_method = getattr(cls, attr_name)
-            setattr(cls, attr_name, xfail_on_github_rate_limit(orig_method))
+            setattr(cls, attr_name, wrapper(orig_method))
     return cls
 
 
@@ -69,16 +73,6 @@ class TestUPathGitHubPath(BaseTests):
         """
         path = "github://ap--:universal_pathlib@test_data/data"
         self.path = UPath(path)
-
-    @pytest.fixture(autouse=True)
-    def _xfail_on_rate_limit_errors(self):
-        try:
-            yield
-        except Exception as e:
-            if "rate limit exceeded" in str(e):
-                pytest.xfail("GitHub API rate limit exceeded")
-            else:
-                raise
 
     def test_is_GitHubPath(self):
         """
