@@ -142,7 +142,7 @@ class TestProxyPathlibPath(BaseTests):
         if hasattr(os, "lchmod") or os.chmod in os.supports_follow_symlinks:
             cm = nullcontext()
         else:
-            cm = pytest.raises(UnsupportedOperation)
+            cm = pytest.raises((UnsupportedOperation, NotImplementedError))
         with cm:
             b.lchmod(mode=0o777)
 
