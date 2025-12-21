@@ -40,6 +40,11 @@ class JoinablePathTests:
         assert callable(parser.splitext)
         assert callable(parser.normcase)
 
+    def test_with_segments(self):
+        p = self.path.with_segments(self.path.__vfspath__(), "folder", "file.txt")
+        assert p.parts[-2:] == ("folder", "file.txt")
+        assert type(p) is type(self.path)
+
     def test_is_absolute(self):
         assert self.path.is_absolute() is True
 
