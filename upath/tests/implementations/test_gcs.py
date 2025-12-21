@@ -5,12 +5,14 @@ from upath import UPath
 from upath.implementations.cloud import GCSPath
 
 from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import extends_base
+from ..utils import overrides_base
 from ..utils import skip_on_windows
 
 
 @skip_on_windows
-@pytest.mark.usefixtures("path")
-class TestGCSPath(BaseTests):
+class TestGCSPath(BaseTests, metaclass=OverrideMeta):
     SUPPORTS_EMPTY_DIRS = False
 
     @pytest.fixture(autouse=True, scope="function")
@@ -18,9 +20,11 @@ class TestGCSPath(BaseTests):
         path, endpoint_url = gcs_fixture
         self.path = UPath(path, endpoint_url=endpoint_url, token="anon")
 
-    def test_is_GCSPath(self):
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, GCSPath)
 
+    @extends_base
     def test_rmdir(self):
         dirname = "rmdir_test"
         mock_dir = self.path.joinpath(dirname)
@@ -30,10 +34,6 @@ class TestGCSPath(BaseTests):
         assert not mock_dir.exists()
         with pytest.raises(NotADirectoryError):
             self.path.joinpath("file1.txt").rmdir()
-
-    @pytest.mark.skip
-    def test_makedirs_exist_ok_false(self):
-        pass
 
 
 @skip_on_windows
