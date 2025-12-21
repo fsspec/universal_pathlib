@@ -1,43 +1,24 @@
 import pytest
 
 from upath import UPath
-from upath.tests.cases import BaseTests
-from upath.tests.utils import skip_on_windows
-from upath.tests.utils import xfail_if_version
+from upath.implementations.sftp import SFTPPath
 
-_xfail_old_fsspec = xfail_if_version(
-    "fsspec",
-    lt="2022.7.0",
-    reason="fsspec<2022.7.0 sftp does not support create_parents",
-)
+from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
+from ..utils import skip_on_windows
 
 
 @skip_on_windows
-class TestUPathSFTP(BaseTests):
+class TestUPathSFTP(BaseTests, metaclass=OverrideMeta):
 
     @pytest.fixture(autouse=True)
     def path(self, ssh_fixture):
         self.path = UPath(ssh_fixture)
 
-    @_xfail_old_fsspec
-    def test_mkdir(self):
-        super().test_mkdir()
-
-    @_xfail_old_fsspec
-    def test_mkdir_exists_ok_true(self):
-        super().test_mkdir_exists_ok_true()
-
-    @_xfail_old_fsspec
-    def test_mkdir_exists_ok_false(self):
-        super().test_mkdir_exists_ok_false()
-
-    @_xfail_old_fsspec
-    def test_mkdir_parents_true_exists_ok_false(self):
-        super().test_mkdir_parents_true_exists_ok_false()
-
-    @_xfail_old_fsspec
-    def test_mkdir_parents_true_exists_ok_true(self):
-        super().test_mkdir_parents_true_exists_ok_true()
+    @overrides_base
+    def test_is_correct_class(self):
+        assert isinstance(self.path, SFTPPath)
 
 
 @pytest.mark.parametrize(
