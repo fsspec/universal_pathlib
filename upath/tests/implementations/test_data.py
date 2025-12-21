@@ -3,6 +3,7 @@ import stat
 import fsspec
 import pytest
 
+from upath import UnsupportedOperation
 from upath import UPath
 from upath.implementations.data import DataPath
 from upath.tests.cases import BaseTests
@@ -32,6 +33,10 @@ class TestUPathDataPath(BaseTests):
         Test that the path is a GitHubPath instance.
         """
         assert isinstance(self.path, DataPath)
+
+    def test_with_segments(self):
+        with pytest.raises(UnsupportedOperation):
+            super().test_with_segments()
 
     @pytest.mark.skip(reason="DataPath does not have directories")
     def test_stat_dir_st_mode(self):
