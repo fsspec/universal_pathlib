@@ -52,6 +52,11 @@ class JoinablePathTests:
         str_path = vfspath(self.path)
         assert isinstance(str_path, str)
 
+    def test_anchor(self):
+        anchor = self.path.anchor
+        assert isinstance(anchor, str)
+        assert anchor == self.path.drive + self.path.root
+
     def test_is_absolute(self):
         assert self.path.is_absolute() is True
 
