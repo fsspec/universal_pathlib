@@ -132,3 +132,11 @@ class TestUPathGitHubPath(BaseTests):
     @pytest.mark.skip(reason="Only testing read on GithubPath")
     def test_rename_with_target_absolute(self, target_factory):
         return super().test_rename_with_target_str_absolute(target_factory)
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_write_text_encoding(self):
+        return super().test_write_text_encoding()
+
+    @pytest.mark.skip(reason="Only testing read on GithubPath")
+    def test_write_text_errors(self):
+        return super().test_write_text_errors()

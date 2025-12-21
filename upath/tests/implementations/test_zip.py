@@ -149,6 +149,14 @@ class TestZipPath(BaseTests):
     def test_rename_with_target_absolute(self, target_factory):
         return super().test_rename_with_target_absolute(target_factory)
 
+    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
+    def test_write_text_encoding(self):
+        return super().test_write_text_encoding()
+
+    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
+    def test_write_text_errors(self):
+        return super().test_write_text_errors()
+
 
 @pytest.fixture(scope="function")
 def zipped_testdir_file_in_memory(zipped_testdir_file, clear_fsspec_memory_cache):

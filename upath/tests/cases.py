@@ -9,6 +9,8 @@ import pytest
 from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
 from packaging.version import Version
+from pathlib_abc import PathParser
+from pathlib_abc import vfspath
 
 from upath import UnsupportedOperation
 from upath import UPath
@@ -29,6 +31,31 @@ class JoinablePathTests:
     """
 
     path: UPath
+
+    def test_parser(self):
+        parser = self.path.parser
+        assert isinstance(parser, PathParser)
+        assert isinstance(parser.sep, str)
+        assert parser.altsep is None or isinstance(parser.altsep, str)
+        assert callable(parser.split)
+        assert callable(parser.splitext)
+        assert callable(parser.normcase)
+
+    def test_with_segments(self):
+        p = self.path.with_segments(self.path.__vfspath__(), "folder", "file.txt")
+        assert p.parts[-2:] == ("folder", "file.txt")
+        assert type(p) is type(self.path)
+
+    def test___vfspath__(self):
+        assert hasattr(self.path, "__vfspath__")
+        assert callable(self.path.__vfspath__)
+        str_path = vfspath(self.path)
+        assert isinstance(str_path, str)
+
+    def test_anchor(self):
+        anchor = self.path.anchor
+        assert isinstance(anchor, str)
+        assert anchor == self.path.drive + self.path.root
 
     def test_is_absolute(self):
         assert self.path.is_absolute() is True
@@ -165,6 +192,21 @@ class JoinablePathTests:
         child = self.path / "folder1" / "file1.txt"
         relative = child.relative_to(base)
         assert str(relative) == "folder1/file1.txt"
+
+    def test_is_relative_to(self):
+        base = self.path
+        child = self.path / "folder1" / "file1.txt"
+        other = UPath("/some/other/path")
+
+        assert child.is_relative_to(base) is True
+        assert base.is_relative_to(child) is False
+        assert child.is_relative_to(other) is False
+
+    def test_full_match(self):
+        p = self.path / "folder" / "file.txt"
+        assert p.full_match("**/*") is True
+        assert p.full_match("**/*.txt") is True
+        assert p.full_match("*.doesnotexist") is False
 
     def test_trailing_slash_joinpath_is_identical(self):
         # setup
@@ -409,11 +451,51 @@ class ReadablePathTests:
             upath.read_text() == Path(local_testdir).joinpath("file1.txt").read_text()
         )
 
+    def test_read_text_encoding(self):
+        upath = self.path.joinpath("file1.txt")
+        content = upath.read_text(encoding="utf-8")
+        assert content == "hello world"
+
+    def test_read_text_errors(self):
+        upath = self.path.joinpath("file1.txt")
+        content = upath.read_text(encoding="ascii", errors="strict")
+        assert content == "hello world"
+
     def test_rglob(self, pathlib_base):
         pattern = "*.txt"
         result = [*self.path.rglob(pattern)]
         expected = [*pathlib_base.rglob(pattern)]
         assert len(result) == len(expected)
+
+    def test_walk(self, local_testdir):
+        # collect walk results from UPath
+        upath_walk = []
+        for dirpath, dirnames, filenames in self.path.walk():
+            rel_dirpath = dirpath.relative_to(self.path)
+            upath_walk.append((str(rel_dirpath), sorted(dirnames), sorted(filenames)))
+        upath_walk.sort()
+
+        # collect walk results using os.walk (compatible with Python 3.9+)
+        os_walk = []
+        for dirpath, dirnames, filenames in os.walk(local_testdir):
+            rel_dirpath = os.path.relpath(dirpath, local_testdir)
+            os_walk.append((rel_dirpath, sorted(dirnames), sorted(filenames)))
+        os_walk.sort()
+
+        assert upath_walk == os_walk
+
+    def test_walk_top_down_false(self):
+        # test walk with top_down=False returns directories after their contents
+        paths_seen = []
+        for dirpath, _, _ in self.path.walk(top_down=False):
+            paths_seen.append(dirpath)
+
+        # in bottom-up walk, parent directories should come after children
+        for i, path in enumerate(paths_seen):
+            for _, other in enumerate(paths_seen[i + 1 :], start=i + 1):
+                # if path is a parent of other, path should come after other
+                if other.is_relative_to(path) and other != path:
+                    pytest.fail(f"In bottom-up walk, {path} should come after {other}")
 
     def test_samefile(self):
         f1 = self.path.joinpath("file1.txt")
@@ -602,6 +684,20 @@ class WritablePathTests:
         path = self.path.joinpath(fn)
         path.write_text(s)
         assert path.read_text() == s
+
+    def test_write_text_encoding(self):
+        fn = "test_write_text_enc.txt"
+        s = "hello_world"
+        path = self.path.joinpath(fn)
+        path.write_text(s, encoding="utf-8")
+        assert path.read_text(encoding="utf-8") == s
+
+    def test_write_text_errors(self):
+        fn = "test_write_text_errors.txt"
+        s = "hello_world"
+        path = self.path.joinpath(fn)
+        path.write_text(s, encoding="ascii", errors="strict")
+        assert path.read_text(encoding="ascii") == s
 
     def test_chmod(self):
         with pytest.raises(NotImplementedError):
