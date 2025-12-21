@@ -193,6 +193,15 @@ class JoinablePathTests:
         relative = child.relative_to(base)
         assert str(relative) == "folder1/file1.txt"
 
+    def test_is_relative_to(self):
+        base = self.path
+        child = self.path / "folder1" / "file1.txt"
+        other = UPath("/some/other/path")
+
+        assert child.is_relative_to(base) is True
+        assert base.is_relative_to(child) is False
+        assert child.is_relative_to(other) is False
+
     def test_trailing_slash_joinpath_is_identical(self):
         # setup
         cls = type(self.path)

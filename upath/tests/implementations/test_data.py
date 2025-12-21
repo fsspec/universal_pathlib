@@ -38,6 +38,10 @@ class TestUPathDataPath(BaseTests):
         with pytest.raises(UnsupportedOperation):
             super().test_with_segments()
 
+    def test_is_relative_to(self):
+        with pytest.raises(UnsupportedOperation):
+            super().test_is_relative_to()
+
     @pytest.mark.skip(reason="DataPath does not have directories")
     def test_stat_dir_st_mode(self):
         super().test_stat_dir_st_mode()
