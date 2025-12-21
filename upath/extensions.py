@@ -431,6 +431,8 @@ class ProxyUPath:
         )
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
+        if not isinstance(other, str):
+            other = vfspath(other)
         return self.__wrapped__.is_relative_to(other, *_deprecated)
 
     def hardlink_to(self, target: ReadablePathLike) -> None:
