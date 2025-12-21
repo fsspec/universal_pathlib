@@ -4,12 +4,14 @@ from upath import UPath
 from upath.implementations.cloud import AzurePath
 
 from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import extends_base
+from ..utils import overrides_base
 from ..utils import skip_on_windows
 
 
 @skip_on_windows
-@pytest.mark.usefixtures("path")
-class TestAzurePath(BaseTests):
+class TestAzurePath(BaseTests, metaclass=OverrideMeta):
     SUPPORTS_EMPTY_DIRS = False
 
     @pytest.fixture(autouse=True, scope="function")
@@ -23,9 +25,18 @@ class TestAzurePath(BaseTests):
         self.path = UPath(azure_fixture, **self.storage_options)
         self.prepare_file_system()
 
-    def test_is_AzurePath(self):
-        assert isinstance(self.path, AzurePath)
+    @overrides_base
+    def test_is_correct_class(self):
+        return isinstance(self.path, AzurePath)
 
+    @overrides_base
+    def test_protocol(self):
+        # test all valid protocols for azure...
+        protocol = self.path.protocol
+        protocols = ["abfs", "abfss", "adl", "az"]
+        assert protocol in protocols
+
+    @extends_base
     def test_rmdir(self):
         new_dir = self.path / "new_dir_rmdir"
         new_dir.mkdir()
@@ -38,11 +49,7 @@ class TestAzurePath(BaseTests):
         with pytest.raises(NotADirectoryError):
             (self.path / "a" / "file.txt").rmdir()
 
-    def test_protocol(self):
-        # test all valid protocols for azure...
-        protocol = self.path.protocol
-        assert protocol in ["abfs", "abfss", "adl", "az"]
-
+    @extends_base
     def test_broken_mkdir(self):
         path = UPath(
             "az://new-container/",
