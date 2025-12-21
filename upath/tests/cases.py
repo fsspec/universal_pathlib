@@ -32,6 +32,9 @@ class JoinablePathTests:
 
     path: UPath
 
+    def test_is_correct_class(self):
+        raise NotImplementedError("must override")
+
     def test_parser(self):
         parser = self.path.parser
         assert isinstance(parser, PathParser)
