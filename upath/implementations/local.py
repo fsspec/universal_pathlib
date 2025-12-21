@@ -642,7 +642,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         def hardlink_to(self, target: ReadablePathLike) -> None:
             try:
-                os.link(target, self)  # type: ignore[arg-type]
+                os.link(os.fspath(target), os.fspath(self))  # type: ignore[arg-type]
             except AttributeError:
                 raise UnsupportedOperation("hardlink operation not supported")
 

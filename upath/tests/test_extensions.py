@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import nullcontext
 
 import pytest
 
@@ -129,6 +130,30 @@ class TestProxyPathlibPath(BaseTests):
         self.path.cwd()
         with pytest.raises(UnsupportedOperation):
             type(self.path).cwd()
+
+    def test_lchmod(self):
+        # setup
+        a = self.path.joinpath("a")
+        b = self.path.joinpath("b")
+        a.touch()
+        b.symlink_to(a)
+
+        # see: https://github.com/python/cpython/issues/108660#issuecomment-1854645898
+        if hasattr(os, "lchmod") or os.chmod in os.supports_follow_symlinks:
+            cm = nullcontext()
+        else:
+            cm = pytest.raises((UnsupportedOperation, NotImplementedError))
+        with cm:
+            b.lchmod(mode=0o777)
+
+    def test_symlink_to(self):
+        self.path.joinpath("link").symlink_to(self.path)
+
+    def test_hardlink_to(self):
+        try:
+            self.path.joinpath("link").hardlink_to(self.path)
+        except PermissionError:
+            pass  # hardlink may require elevated permissions
 
 
 def test_custom_subclass():
