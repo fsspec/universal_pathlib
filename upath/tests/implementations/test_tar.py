@@ -87,6 +87,14 @@ class TestTarPath(BaseTests):
     def test_rename_with_target_absolute(self, target_factory):
         return super().test_rename_with_target_str_absolute(target_factory)
 
+    @pytest.mark.skip(reason="Only testing read on TarPath")
+    def test_write_text_encoding(self):
+        return super().test_write_text_encoding()
+
+    @pytest.mark.skip(reason="Only testing read on TarPath")
+    def test_write_text_errors(self):
+        return super().test_write_text_errors()
+
 
 @pytest.fixture(scope="function")
 def tarred_testdir_file_in_memory(tarred_testdir_file, clear_fsspec_memory_cache):
