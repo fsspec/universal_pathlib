@@ -10,6 +10,7 @@ from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
 from packaging.version import Version
 from pathlib_abc import PathParser
+from pathlib_abc import vfspath
 
 from upath import UnsupportedOperation
 from upath import UPath
@@ -44,6 +45,12 @@ class JoinablePathTests:
         p = self.path.with_segments(self.path.__vfspath__(), "folder", "file.txt")
         assert p.parts[-2:] == ("folder", "file.txt")
         assert type(p) is type(self.path)
+
+    def test___vfspath__(self):
+        assert hasattr(self.path, "__vfspath__")
+        assert callable(self.path.__vfspath__)
+        str_path = vfspath(self.path)
+        assert isinstance(str_path, str)
 
     def test_is_absolute(self):
         assert self.path.is_absolute() is True
