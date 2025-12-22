@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
+from fsspec import get_filesystem_class
 from packaging.version import Version
 from pathlib_abc import PathParser
 from pathlib_abc import vfspath
@@ -131,7 +132,7 @@ class JoinablePathTests:
         assert path.drive == copy_path.drive
         assert path.root == copy_path.root
         assert path.parts == copy_path.parts
-        assert path.fs.storage_options == copy_path.fs.storage_options
+        assert path.storage_options == copy_path.storage_options
 
     def test_pickling(self):
         path = self.path
@@ -140,7 +141,7 @@ class JoinablePathTests:
 
         assert type(path) is type(recovered_path)
         assert str(path) == str(recovered_path)
-        assert path.fs.storage_options == recovered_path.fs.storage_options
+        assert path.storage_options == recovered_path.storage_options
 
     def test_pickling_child_path(self):
         path = self.path / "subfolder" / "subsubfolder"
@@ -152,7 +153,6 @@ class JoinablePathTests:
         assert path.drive == recovered_path.drive
         assert path.root == recovered_path.root
         assert path.parts == recovered_path.parts
-        assert path.fs.storage_options == recovered_path.fs.storage_options
         assert path.storage_options == recovered_path.storage_options
 
     def test_as_uri(self):
@@ -164,13 +164,10 @@ class JoinablePathTests:
 
     def test_protocol(self):
         protocol = self.path.protocol
-        protocols = [p] if isinstance((p := type(self.path.fs).protocol), str) else p
+        fs_cls = get_filesystem_class(protocol)
+        protocols = [p] if isinstance((p := fs_cls.protocol), str) else p
         print(protocol, protocols)
         assert protocol in protocols
-
-    def test_storage_options(self):
-        storage_options = self.path.storage_options
-        assert storage_options == self.path.fs.storage_options
 
     def test_hashable(self):
         assert hash(self.path)
@@ -272,6 +269,10 @@ class ReadablePathTests:
     """
 
     path: UPath
+
+    def test_storage_options_match_fsspec(self):
+        storage_options = self.path.storage_options
+        assert storage_options == self.path.fs.storage_options
 
     def test_stat(self):
         stat_ = self.path.stat()
@@ -471,9 +472,12 @@ class ReadablePathTests:
         assert len(result) == len(expected)
 
     def test_walk(self, local_testdir):
+        def _raise(x):
+            raise x
+
         # collect walk results from UPath
         upath_walk = []
-        for dirpath, dirnames, filenames in self.path.walk():
+        for dirpath, dirnames, filenames in self.path.walk(on_error=_raise):
             rel_dirpath = dirpath.relative_to(self.path)
             upath_walk.append((str(rel_dirpath), sorted(dirnames), sorted(filenames)))
         upath_walk.sort()
@@ -488,9 +492,12 @@ class ReadablePathTests:
         assert upath_walk == os_walk
 
     def test_walk_top_down_false(self):
+        def _raise(x):
+            raise x
+
         # test walk with top_down=False returns directories after their contents
         paths_seen = []
-        for dirpath, _, _ in self.path.walk(top_down=False):
+        for dirpath, _, _ in self.path.walk(top_down=False, on_error=_raise):
             paths_seen.append(dirpath)
 
         # in bottom-up walk, parent directories should come after children
