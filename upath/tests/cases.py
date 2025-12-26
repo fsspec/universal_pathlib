@@ -598,7 +598,57 @@ class ReadablePathTests:
 # =============================================================================
 
 
-class WritablePathTests:
+class _CommonWritablePathTests:
+
+    SUPPORTS_EMPTY_DIRS = True
+
+    path: UPath
+
+    def test_chmod(self):
+        with pytest.raises(NotImplementedError):
+            self.path_file.chmod(777)
+
+    def test_lchmod(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.lchmod(mode=0o777)
+
+    def test_symlink_to(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.symlink_to("target")
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").symlink_to("target")
+
+    def test_hardlink_to(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.symlink_to("target")
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").hardlink_to("target")
+
+
+class NonWritablePathTests(_CommonWritablePathTests):
+
+    def test_mkdir_raises(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.mkdir()
+
+    def test_touch_raises(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.touch()
+
+    def test_unlink(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.unlink()
+
+    def test_write_bytes(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.write_bytes(b"abc")
+
+    def test_write_text(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.write_text("abc")
+
+
+class WritablePathTests(_CommonWritablePathTests):
     """Tests for WritablePath interface.
 
     These tests verify operations that write to the filesystem:
@@ -607,10 +657,6 @@ class WritablePathTests:
     - Writing file contents (write_bytes, write_text)
     - Removing files/directories (unlink, rmdir)
     """
-
-    SUPPORTS_EMPTY_DIRS = True
-
-    path: UPath
 
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
@@ -709,22 +755,6 @@ class WritablePathTests:
         path = self.path.joinpath(fn)
         path.write_text(s, encoding="ascii", errors="strict")
         assert path.read_text(encoding="ascii") == s
-
-    def test_chmod(self):
-        with pytest.raises(NotImplementedError):
-            self.path.joinpath("file1.txt").chmod(777)
-
-    def test_lchmod(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.lchmod(mode=0o777)
-
-    def test_symlink_to(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.joinpath("link").symlink_to("target")
-
-    def test_hardlink_to(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.joinpath("link").hardlink_to("target")
 
 
 class ReadWritePathTests:
