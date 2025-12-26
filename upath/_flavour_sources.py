@@ -341,7 +341,8 @@ class DataFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_version__ = '2025.10.0'
     protocol = ('data',)
     root_marker = ''
-    sep = '/'
+    sep = ""  # type: ignore[assignment]
+    altsep = " "  # type: ignore[assignment]
 
 
 class DatabricksFileSystemFlavour(AbstractFileSystemFlavour):
