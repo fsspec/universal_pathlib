@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from fsspec.asyn import sync
 
+from upath import UnsupportedOperation
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import JoinablePathLike
@@ -124,3 +125,26 @@ class HTTPPath(UPath):
                     break
 
         return resolved_path
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
