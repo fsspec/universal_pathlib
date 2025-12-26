@@ -270,6 +270,10 @@ class ReadablePathTests:
 
     path: UPath
 
+    @pytest.fixture(autouse=True)
+    def path_file(self, path):
+        self.path_file = self.path.joinpath("file1.txt")
+
     def test_storage_options_match_fsspec(self):
         storage_options = self.path.storage_options
         assert storage_options == self.path.fs.storage_options
@@ -297,11 +301,11 @@ class ReadablePathTests:
         assert stat.S_ISDIR(base.st_mode)
 
     def test_stat_file_st_mode(self):
-        file1 = self.path.joinpath("file1.txt").stat()
+        file1 = self.path_file.stat()
         assert stat.S_ISREG(file1.st_mode)
 
     def test_stat_st_size(self):
-        file1 = self.path.joinpath("file1.txt").stat()
+        file1 = self.path_file.stat()
         assert file1.st_size == 11
 
     @pytest.mark.parametrize(
@@ -424,44 +428,41 @@ class ReadablePathTests:
             self.path.home()
 
     def test_open(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r") as f:
             assert f.read() == "hello world"
         with p.open(mode="rb") as f:
             assert f.read() == b"hello world"
 
     def test_open_buffering(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         p.open(buffering=-1)
 
     def test_open_block_size(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r", block_size=8192) as f:
             assert f.read() == "hello world"
 
     def test_open_errors(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r", encoding="ascii", errors="strict") as f:
             assert f.read() == "hello world"
 
-    def test_read_bytes(self, pathlib_base):
+    def test_read_bytes(self):
         mock = self.path.joinpath("file2.txt")
-        pl = pathlib_base.joinpath("file2.txt")
-        assert mock.read_bytes() == pl.read_bytes()
+        assert mock.read_bytes() == b"hello world"
 
-    def test_read_text(self, local_testdir):
+    def test_read_text(self):
         upath = self.path.joinpath("file1.txt")
-        assert (
-            upath.read_text() == Path(local_testdir).joinpath("file1.txt").read_text()
-        )
+        assert upath.read_text() == "hello world"
 
     def test_read_text_encoding(self):
-        upath = self.path.joinpath("file1.txt")
+        upath = self.path_file
         content = upath.read_text(encoding="utf-8")
         assert content == "hello world"
 
     def test_read_text_errors(self):
-        upath = self.path.joinpath("file1.txt")
+        upath = self.path_file
         content = upath.read_text(encoding="ascii", errors="strict")
         assert content == "hello world"
 
@@ -532,7 +533,7 @@ class ReadablePathTests:
     def test_copy_local(self, tmp_path: Path):
         target = UPath(tmp_path) / "target-file1.txt"
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy(target)
         assert target.exists()
@@ -542,16 +543,16 @@ class ReadablePathTests:
         target_dir = UPath(tmp_path) / "target-dir"
         target_dir.mkdir()
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy_into(target_dir)
-        target = target_dir / "file1.txt"
+        target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
 
     def test_copy_memory(self, clear_fsspec_memory_cache):
         target = UPath("memory:///target-file1.txt")
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy(target)
         assert target.exists()
@@ -561,15 +562,15 @@ class ReadablePathTests:
         target_dir = UPath("memory:///target-dir")
         target_dir.mkdir()
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy_into(target_dir)
-        target = target_dir / "file1.txt"
+        target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
 
     def test_read_with_fsspec(self):
-        p = self.path.joinpath("file2.txt")
+        p = self.path_file
 
         protocol = p.protocol
         storage_options = p.storage_options
