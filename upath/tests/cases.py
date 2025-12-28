@@ -394,6 +394,8 @@ class ReadablePathTests:
 
         assert len(up_iter) == len(pl_iter)
         assert {p.name for p in pl_iter} == {u.name for u in up_iter}
+
+    def test_iterdir_parent_iteration(self):
         assert next(self.path.parent.iterdir()).exists()
 
     def test_iterdir2(self, local_testdir):
@@ -407,7 +409,6 @@ class ReadablePathTests:
 
         assert len(up_iter) == len(pl_iter)
         assert {p.name for p in pl_iter} == {u.name for u in up_iter}
-        assert next(self.path.parent.iterdir()).exists()
 
     def test_iterdir_trailing_slash(self):
         files_noslash = list(self.path.joinpath("folder1").iterdir())
