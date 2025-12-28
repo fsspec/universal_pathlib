@@ -15,7 +15,9 @@ from upath.types import ReadablePath
 from upath.types import WritablePath
 
 from .cases import BaseTests
+from .utils import OverrideMeta
 from .utils import only_on_windows
+from .utils import overrides_base
 from .utils import skip_on_windows
 
 
@@ -43,7 +45,7 @@ def test_UPath_file_protocol_no_warning():
         assert len(w) == 0
 
 
-class TestUpath(BaseTests):
+class TestUpath(BaseTests, metaclass=OverrideMeta):
     @pytest.fixture(autouse=True)
     def path(self, local_testdir):
         with warnings.catch_warnings():
@@ -55,29 +57,20 @@ class TestUpath(BaseTests):
             root = "/" if sys.platform.startswith("win") else ""
             self.path = UPath(f"mock:{root}{local_testdir}")
 
-    def test_fsspec_compat(self):
-        pass
+    @overrides_base
+    def test_is_correct_class(self):
+        # testing dynamically created UPath classes
+        from upath.implementations._experimental import _MockPath
 
-    def test_cwd(self):
-        with pytest.raises(
-            NotImplementedError,
-            match=r".+Path[.]cwd\(\) is unsupported",
-        ):
-            type(self.path).cwd()
+        assert isinstance(self.path, _MockPath)
 
-    def test_home(self):
-        with pytest.raises(
-            NotImplementedError,
-            match=r".+Path[.]home\(\) is unsupported",
-        ):
-            type(self.path).home()
-
+    @overrides_base
     @pytest.mark.skipif(
         sys.platform.startswith("win"),
         reason="mock fs is not well defined on windows",
     )
     def test_parents_are_absolute(self):
-        return super().test_parents_are_absolute()
+        super().test_parents_are_absolute()
 
 
 def test_multiple_backend_paths(local_testdir):
