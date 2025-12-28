@@ -8,6 +8,7 @@ import sys
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
@@ -56,3 +57,29 @@ class GitHubPath(UPath):
             return parts[1:]
         else:
             return parts
+
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("GitHubPath does not support writing")
