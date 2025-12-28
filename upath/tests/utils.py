@@ -63,3 +63,82 @@ def temporary_register(protocol, cls):
     finally:
         m.clear()
         get_upath_class.cache_clear()
+
+
+def extends_base(method):
+    """Decorator to ensure a method extends the base class and does NOT
+    override a method in base classes.
+
+    Use this decorator in implementation-specific test classes to ensure that
+    test methods don't accidentally override methods defined in test base classes.
+
+    Example:
+        class TestSpecificImpl(TestBaseClass, metaclass=OverrideMeta):
+            @extends_base
+            def test_something(self):  # Raises TypeError if base has this method
+                ...
+
+            @extends_base
+            def test_new_method(self):  # This is fine - no override
+                ...
+    """
+    method.__override_check__ = False
+    return method
+
+
+def overrides_base(method):
+    """Decorator to ensure a method DOES override a method in base classes.
+
+    Use this decorator in implementation-specific test classes to ensure that
+    test methods intentionally override methods defined in test base classes.
+
+    Example:
+        class TestSpecificImpl(TestBaseClass, metaclass=OverrideMeta):
+            @overrides_base
+            def test_something(self):  # Raises TypeError if base lacks this method
+                ...
+
+            @overrides_base
+            def test_new_method(self):  # Raises TypeError - no method to override
+                ...
+    """
+    method.__override_check__ = True
+    return method
+
+
+class OverrideMeta(type):
+    """Metaclass that enforces @extends_base and @overrides_base decorator constraints.
+
+    When a class uses this metaclass:
+    - Methods decorated with @extends_base are checked to ensure they don't
+      override a method from any base class.
+    - Methods decorated with @overrides_base are checked to ensure they do
+      override a method from at least one base class.
+    """
+
+    def __new__(mcs, name, bases, namespace):
+        for attr_name, attr_value in namespace.items():
+            if not callable(attr_value):
+                continue
+
+            check = getattr(attr_value, "__override_check__", None)
+            if check is None:
+                continue
+
+            has_in_base = any(hasattr(base, attr_name) for base in bases)
+
+            if check is False and has_in_base:
+                base_name = next(b.__name__ for b in bases if hasattr(b, attr_name))
+                raise TypeError(
+                    f"Method '{attr_name}' in class '{name}' is decorated "
+                    f"with @extends_base but overrides a method from base "
+                    f"class '{base_name}'"
+                )
+            elif check is True and not has_in_base:
+                raise TypeError(
+                    f"Method '{attr_name}' in class '{name}' is decorated "
+                    f"with @overrides_base but does not override any method from "
+                    f"base classes"
+                )
+
+        return super().__new__(mcs, name, bases, namespace)

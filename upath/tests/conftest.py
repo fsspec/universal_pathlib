@@ -585,12 +585,16 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
     hf_file_system = pytest.importorskip(
         "huggingface_hub.hf_file_system", reason="hf tests require huggingface_hub"
     )
+    httpx = pytest.importorskip("httpx")
 
     class MockedHfApi(huggingface_hub.HfApi):
 
         def repo_info(self, repo_id, *args, repo_type=None, **kwargs):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id,
+                    response=httpx.Response(404, request=...),
+                )
             elif repo_type is None or repo_type == "model":
                 return huggingface_hub.hf_api.ModelInfo(id=repo_id)
             elif repo_type == "dataset":
@@ -602,7 +606,10 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
 
         def get_paths_info(self, repo_id, paths, *args, **kwargs):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id,
+                    response=httpx.Response(404, request=...),
+                )
             paths_info = []
             for path in paths:
                 if path:
@@ -628,7 +635,9 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
             self, repo_id, path_in_repo, *args, recursive=False, **kwargs
         ):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id, response=httpx.Response(404, request=...)
+                )
             pathlib_dir = pathlib_base / path_in_repo if path_in_repo else pathlib_base
             for path in pathlib_dir.rglob("*") if recursive else pathlib_dir.glob("*"):
                 if path.is_file():

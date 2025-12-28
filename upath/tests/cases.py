@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from fsspec import __version__ as fsspec_version
 from fsspec import filesystem
+from fsspec import get_filesystem_class
 from packaging.version import Version
 from pathlib_abc import PathParser
 from pathlib_abc import vfspath
@@ -31,6 +32,9 @@ class JoinablePathTests:
     """
 
     path: UPath
+
+    def test_is_correct_class(self):
+        raise NotImplementedError("must override")
 
     def test_parser(self):
         parser = self.path.parser
@@ -128,7 +132,7 @@ class JoinablePathTests:
         assert path.drive == copy_path.drive
         assert path.root == copy_path.root
         assert path.parts == copy_path.parts
-        assert path.fs.storage_options == copy_path.fs.storage_options
+        assert path.storage_options == copy_path.storage_options
 
     def test_pickling(self):
         path = self.path
@@ -137,7 +141,7 @@ class JoinablePathTests:
 
         assert type(path) is type(recovered_path)
         assert str(path) == str(recovered_path)
-        assert path.fs.storage_options == recovered_path.fs.storage_options
+        assert path.storage_options == recovered_path.storage_options
 
     def test_pickling_child_path(self):
         path = self.path / "subfolder" / "subsubfolder"
@@ -149,7 +153,6 @@ class JoinablePathTests:
         assert path.drive == recovered_path.drive
         assert path.root == recovered_path.root
         assert path.parts == recovered_path.parts
-        assert path.fs.storage_options == recovered_path.fs.storage_options
         assert path.storage_options == recovered_path.storage_options
 
     def test_as_uri(self):
@@ -161,13 +164,10 @@ class JoinablePathTests:
 
     def test_protocol(self):
         protocol = self.path.protocol
-        protocols = [p] if isinstance((p := type(self.path.fs).protocol), str) else p
+        fs_cls = get_filesystem_class(protocol)
+        protocols = [p] if isinstance((p := fs_cls.protocol), str) else p
         print(protocol, protocols)
         assert protocol in protocols
-
-    def test_storage_options(self):
-        storage_options = self.path.storage_options
-        assert storage_options == self.path.fs.storage_options
 
     def test_hashable(self):
         assert hash(self.path)
@@ -270,6 +270,14 @@ class ReadablePathTests:
 
     path: UPath
 
+    @pytest.fixture(autouse=True)
+    def path_file(self, path):
+        self.path_file = self.path.joinpath("file1.txt")
+
+    def test_storage_options_match_fsspec(self):
+        storage_options = self.path.storage_options
+        assert storage_options == self.path.fs.storage_options
+
     def test_stat(self):
         stat_ = self.path.stat()
 
@@ -293,11 +301,11 @@ class ReadablePathTests:
         assert stat.S_ISDIR(base.st_mode)
 
     def test_stat_file_st_mode(self):
-        file1 = self.path.joinpath("file1.txt").stat()
+        file1 = self.path_file.stat()
         assert stat.S_ISREG(file1.st_mode)
 
     def test_stat_st_size(self):
-        file1 = self.path.joinpath("file1.txt").stat()
+        file1 = self.path_file.stat()
         assert file1.st_size == 11
 
     @pytest.mark.parametrize(
@@ -386,6 +394,8 @@ class ReadablePathTests:
 
         assert len(up_iter) == len(pl_iter)
         assert {p.name for p in pl_iter} == {u.name for u in up_iter}
+
+    def test_iterdir_parent_iteration(self):
         assert next(self.path.parent.iterdir()).exists()
 
     def test_iterdir2(self, local_testdir):
@@ -399,7 +409,6 @@ class ReadablePathTests:
 
         assert len(up_iter) == len(pl_iter)
         assert {p.name for p in pl_iter} == {u.name for u in up_iter}
-        assert next(self.path.parent.iterdir()).exists()
 
     def test_iterdir_trailing_slash(self):
         files_noslash = list(self.path.joinpath("folder1").iterdir())
@@ -420,44 +429,41 @@ class ReadablePathTests:
             self.path.home()
 
     def test_open(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r") as f:
             assert f.read() == "hello world"
         with p.open(mode="rb") as f:
             assert f.read() == b"hello world"
 
     def test_open_buffering(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         p.open(buffering=-1)
 
     def test_open_block_size(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r", block_size=8192) as f:
             assert f.read() == "hello world"
 
     def test_open_errors(self):
-        p = self.path.joinpath("file1.txt")
+        p = self.path_file
         with p.open(mode="r", encoding="ascii", errors="strict") as f:
             assert f.read() == "hello world"
 
-    def test_read_bytes(self, pathlib_base):
+    def test_read_bytes(self):
         mock = self.path.joinpath("file2.txt")
-        pl = pathlib_base.joinpath("file2.txt")
-        assert mock.read_bytes() == pl.read_bytes()
+        assert mock.read_bytes() == b"hello world"
 
-    def test_read_text(self, local_testdir):
+    def test_read_text(self):
         upath = self.path.joinpath("file1.txt")
-        assert (
-            upath.read_text() == Path(local_testdir).joinpath("file1.txt").read_text()
-        )
+        assert upath.read_text() == "hello world"
 
     def test_read_text_encoding(self):
-        upath = self.path.joinpath("file1.txt")
+        upath = self.path_file
         content = upath.read_text(encoding="utf-8")
         assert content == "hello world"
 
     def test_read_text_errors(self):
-        upath = self.path.joinpath("file1.txt")
+        upath = self.path_file
         content = upath.read_text(encoding="ascii", errors="strict")
         assert content == "hello world"
 
@@ -468,9 +474,12 @@ class ReadablePathTests:
         assert len(result) == len(expected)
 
     def test_walk(self, local_testdir):
+        def _raise(x):
+            raise x
+
         # collect walk results from UPath
         upath_walk = []
-        for dirpath, dirnames, filenames in self.path.walk():
+        for dirpath, dirnames, filenames in self.path.walk(on_error=_raise):
             rel_dirpath = dirpath.relative_to(self.path)
             upath_walk.append((str(rel_dirpath), sorted(dirnames), sorted(filenames)))
         upath_walk.sort()
@@ -485,9 +494,12 @@ class ReadablePathTests:
         assert upath_walk == os_walk
 
     def test_walk_top_down_false(self):
+        def _raise(x):
+            raise x
+
         # test walk with top_down=False returns directories after their contents
         paths_seen = []
-        for dirpath, _, _ in self.path.walk(top_down=False):
+        for dirpath, _, _ in self.path.walk(top_down=False, on_error=_raise):
             paths_seen.append(dirpath)
 
         # in bottom-up walk, parent directories should come after children
@@ -522,7 +534,7 @@ class ReadablePathTests:
     def test_copy_local(self, tmp_path: Path):
         target = UPath(tmp_path) / "target-file1.txt"
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy(target)
         assert target.exists()
@@ -532,16 +544,16 @@ class ReadablePathTests:
         target_dir = UPath(tmp_path) / "target-dir"
         target_dir.mkdir()
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy_into(target_dir)
-        target = target_dir / "file1.txt"
+        target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
 
     def test_copy_memory(self, clear_fsspec_memory_cache):
         target = UPath("memory:///target-file1.txt")
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy(target)
         assert target.exists()
@@ -551,15 +563,15 @@ class ReadablePathTests:
         target_dir = UPath("memory:///target-dir")
         target_dir.mkdir()
 
-        source = self.path / "file1.txt"
+        source = self.path_file
         content = source.read_text()
         source.copy_into(target_dir)
-        target = target_dir / "file1.txt"
+        target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
 
     def test_read_with_fsspec(self):
-        p = self.path.joinpath("file2.txt")
+        p = self.path_file
 
         protocol = p.protocol
         storage_options = p.storage_options
@@ -587,7 +599,57 @@ class ReadablePathTests:
 # =============================================================================
 
 
-class WritablePathTests:
+class _CommonWritablePathTests:
+
+    SUPPORTS_EMPTY_DIRS = True
+
+    path: UPath
+
+    def test_chmod(self):
+        with pytest.raises(NotImplementedError):
+            self.path_file.chmod(777)
+
+    def test_lchmod(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.lchmod(mode=0o777)
+
+    def test_symlink_to(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.symlink_to("target")
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").symlink_to("target")
+
+    def test_hardlink_to(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.symlink_to("target")
+        with pytest.raises(UnsupportedOperation):
+            self.path.joinpath("link").hardlink_to("target")
+
+
+class NonWritablePathTests(_CommonWritablePathTests):
+
+    def test_mkdir_raises(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.mkdir()
+
+    def test_touch_raises(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.touch()
+
+    def test_unlink(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path.unlink()
+
+    def test_write_bytes(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.write_bytes(b"abc")
+
+    def test_write_text(self):
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.write_text("abc")
+
+
+class WritablePathTests(_CommonWritablePathTests):
     """Tests for WritablePath interface.
 
     These tests verify operations that write to the filesystem:
@@ -596,10 +658,6 @@ class WritablePathTests:
     - Writing file contents (write_bytes, write_text)
     - Removing files/directories (unlink, rmdir)
     """
-
-    SUPPORTS_EMPTY_DIRS = True
-
-    path: UPath
 
     def test_mkdir(self):
         new_dir = self.path.joinpath("new_dir")
@@ -698,22 +756,6 @@ class WritablePathTests:
         path = self.path.joinpath(fn)
         path.write_text(s, encoding="ascii", errors="strict")
         assert path.read_text(encoding="ascii") == s
-
-    def test_chmod(self):
-        with pytest.raises(NotImplementedError):
-            self.path.joinpath("file1.txt").chmod(777)
-
-    def test_lchmod(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.lchmod(mode=0o777)
-
-    def test_symlink_to(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.joinpath("link").symlink_to("target")
-
-    def test_hardlink_to(self):
-        with pytest.raises(UnsupportedOperation):
-            self.path.joinpath("link").hardlink_to("target")
 
 
 class ReadWritePathTests:

@@ -3,10 +3,16 @@ import zipfile
 
 import pytest
 
+from upath import UnsupportedOperation
 from upath import UPath
 from upath.implementations.zip import ZipPath
 
-from ..cases import BaseTests
+from ..cases import JoinablePathTests
+from ..cases import NonWritablePathTests
+from ..cases import ReadablePathTests
+from ..utils import OverrideMeta
+from ..utils import extends_base
+from ..utils import overrides_base
 
 
 @pytest.fixture(scope="function")
@@ -33,8 +39,12 @@ def empty_zipped_testdir_file(tmp_path):
     return str(zip_path)
 
 
-class TestZipPath(BaseTests):
-
+class TestZipPath(
+    JoinablePathTests,
+    ReadablePathTests,
+    NonWritablePathTests,
+    metaclass=OverrideMeta,
+):
     @pytest.fixture(autouse=True)
     def path(self, zipped_testdir_file, request):
         try:
@@ -47,115 +57,18 @@ class TestZipPath(BaseTests):
         finally:
             self.path.fs.clear_instance_cache()
 
-    def test_is_ZipPath(self):
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, ZipPath)
 
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_mkdir(self):
-        super().test_mkdir()
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_mkdir_exists_ok_true(self):
-        super().test_mkdir_exists_ok_true()
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_mkdir_exists_ok_false(self):
-        super().test_mkdir_exists_ok_false()
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_mkdir_parents_true_exists_ok_true(self):
-        super().test_mkdir_parents_true_exists_ok_true()
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_mkdir_parents_true_exists_ok_false(self):
-        super().test_mkdir_parents_true_exists_ok_false()
-
-    def test_rename(self):
-        with pytest.raises(NotImplementedError):
-            super().test_rename()  # delete is not implemented in fsspec
-
-    def test_move_local(self, tmp_path):
-        with pytest.raises(NotImplementedError):
-            super().test_move_local(tmp_path)  # delete is not implemented in fsspec
-
-    def test_move_into_local(self, tmp_path):
-        with pytest.raises(NotImplementedError):
-            super().test_move_into_local(
-                tmp_path
-            )  # delete is not implemented in fsspec
-
-    def test_move_memory(self, clear_fsspec_memory_cache):
-        with pytest.raises(NotImplementedError):
-            super().test_move_memory(clear_fsspec_memory_cache)
-
-    def test_move_into_memory(self, clear_fsspec_memory_cache):
-        with pytest.raises(NotImplementedError):
-            super().test_move_into_memory(clear_fsspec_memory_cache)
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_touch(self):
-        super().test_touch()
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_touch_unlink(self):
-        with pytest.raises(NotImplementedError):
-            super().test_touch_unlink()  # delete is not implemented in fsspec
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_write_bytes(self):
-        fn = "test_write_bytes.txt"
-        s = b"hello_world"
-        path = self.path.joinpath(fn)
-        path.write_bytes(s)
-        so = {**path.storage_options, "mode": "r"}
-        urlpath = str(path)
-        path.fs.close()
-        assert UPath(urlpath, **so).read_bytes() == s
-
-    @pytest.mark.parametrize(
-        "path", [("w",)], ids=["zipfile_mode_write"], indirect=True
-    )
-    def test_write_text(self):
-        fn = "test_write_text.txt"
-        s = "hello_world"
-        path = self.path.joinpath(fn)
-        path.write_text(s)
-        so = {**path.storage_options, "mode": "r"}
-        urlpath = str(path)
-        path.fs.close()
-        assert UPath(urlpath, **so).read_text() == s
-
-    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
-    def test_fsspec_compat(self):
-        pass
-
-    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
-    def test_rename_with_target_absolute(self, target_factory):
-        return super().test_rename_with_target_absolute(target_factory)
-
-    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
-    def test_write_text_encoding(self):
-        return super().test_write_text_encoding()
-
-    @pytest.mark.skip(reason="fsspec zipfile filesystem is either read xor write mode")
-    def test_write_text_errors(self):
-        return super().test_write_text_errors()
+    @extends_base
+    def test_write_mode_is_disabled(self, tmp_path):
+        with pytest.raises(UnsupportedOperation):
+            UPath("zip://", fo=tmp_path.joinpath("myzip.zip"), mode="a")
+        with pytest.raises(UnsupportedOperation):
+            UPath("zip://", fo=tmp_path.joinpath("myzip.zip"), mode="x")
+        with pytest.raises(UnsupportedOperation):
+            UPath("zip://", fo=tmp_path.joinpath("myzip.zip"), mode="w")
 
 
 @pytest.fixture(scope="function")

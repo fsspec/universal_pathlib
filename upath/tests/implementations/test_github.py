@@ -7,10 +7,15 @@ import pytest
 
 from upath import UPath
 from upath.implementations.github import GitHubPath
-from upath.tests.cases import BaseTests
+
+from ..cases import JoinablePathTests
+from ..cases import NonWritablePathTests
+from ..cases import ReadablePathTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("CI")
+    os.environ.get("CI", False)
     and not (
         platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
     ),
@@ -54,7 +59,12 @@ def wrap_all_tests(decorator):
 
 
 @wrap_all_tests(xfail_on_github_connection_error)
-class TestUPathGitHubPath(BaseTests):
+class TestUPathGitHubPath(
+    JoinablePathTests,
+    ReadablePathTests,
+    NonWritablePathTests,
+    metaclass=OverrideMeta,
+):
     """
     Unit-tests for the GitHubPath implementation of UPath.
     """
@@ -67,76 +77,6 @@ class TestUPathGitHubPath(BaseTests):
         path = "github://ap--:universal_pathlib@test_data/data"
         self.path = UPath(path)
 
-    def test_is_GitHubPath(self):
-        """
-        Test that the path is a GitHubPath instance.
-        """
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, GitHubPath)
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir_exists_ok_false(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir_parents_true_exists_ok_false(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_rename(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_rename2(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_touch(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_touch_unlink(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_write_bytes(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_write_text(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_fsspec_compat(self):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_into_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_into_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_rename_with_target_absolute(self, target_factory):
-        return super().test_rename_with_target_str_absolute(target_factory)
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_write_text_encoding(self):
-        return super().test_write_text_encoding()
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_write_text_errors(self):
-        return super().test_write_text_errors()
