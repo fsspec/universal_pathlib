@@ -171,6 +171,11 @@ class TestUPathDataPath(
             self.path.iterdir()
 
     @overrides_base
+    def test_iterdir_parent_iteration(self):
+        with pytest.raises(NotADirectoryError):
+            super().test_iterdir_parent_iteration()
+
+    @overrides_base
     def test_iterdir2(self):
         # DataPath does not have directories, or joins
         with pytest.raises(NotADirectoryError):
