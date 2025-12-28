@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
+from upath import UnsupportedOperation
 from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
@@ -13,8 +15,10 @@ if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
+        from typing import Self
         from typing import Unpack
     else:
+        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -166,3 +170,35 @@ class HfPath(CloudPath):
         super().__init__(
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
         )
+
+    def iterdir(self) -> Iterator[Self]:
+        try:
+            yield from super().iterdir()
+        except NotImplementedError:
+            raise UnsupportedOperation
+
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
