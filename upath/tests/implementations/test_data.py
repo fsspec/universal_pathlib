@@ -1,240 +1,219 @@
 import stat
 
-import fsspec
 import pytest
 
 from upath import UnsupportedOperation
 from upath import UPath
 from upath.implementations.data import DataPath
-from upath.tests.cases import BaseTests
 
-from ..utils import xfail_if_version
+from ..cases import JoinablePathTests
+from ..cases import NonWritablePathTests
+from ..cases import ReadablePathTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
 
-pytestmark = xfail_if_version(
-    "fsspec", lt="2023.12.2", reason="fsspec<2023.12.2 does not support data"
-)
 
-
-class TestUPathDataPath(BaseTests):
+class TestUPathDataPath(
+    JoinablePathTests,
+    ReadablePathTests,
+    NonWritablePathTests,
+    metaclass=OverrideMeta,
+):
     """
     Unit-tests for the DataPath implementation of UPath.
     """
 
     @pytest.fixture(autouse=True)
     def path(self):
-        """
-        Fixture for the UPath instance to be tested.
-        """
-        path = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVQI12PYeuECAASTAlbqXbfWAAAAAElFTkSuQmCC"  # noqa: E501
+        path = "data:text/plain;base64,aGVsbG8gd29ybGQ="
         self.path = UPath(path)
 
-    def test_is_DataPath(self):
-        """
-        Test that the path is a GitHubPath instance.
-        """
+    @pytest.fixture(autouse=True)
+    def path_file(self, path):
+        self.path_file = self.path
+
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, DataPath)
 
+    @overrides_base
     def test_with_segments(self):
+        # DataPath does not support joins, so in all usual cases it'll raise
         with pytest.raises(UnsupportedOperation):
-            super().test_with_segments()
+            self.path.with_segments("data:text/plain;base64,", "aGVsbG8K")
+        # but you can instantiate with a single full url
+        self.path.with_segments("data:text/plain;base64,aGVsbG8K")
 
-    def test_is_relative_to(self):
-        with pytest.raises(UnsupportedOperation):
-            super().test_is_relative_to()
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_stat_dir_st_mode(self):
-        super().test_stat_dir_st_mode()
-
-    def test_stat_file_st_mode(self):
-        assert self.path.is_file()
-        assert stat.S_ISREG(self.path.stat().st_mode)
-
-    def test_stat_st_size(self):
-        assert self.path.stat().st_size == 69
-
-    def test_exists(self):
-        # datapath exists is always true...
-        path = self.path
-        assert path.exists()
-
-    @pytest.mark.skip(reason="DataPath does support joins or globs")
-    def test_glob(self, pathlib_base):
-        with pytest.raises(NotImplementedError):
-            pathlib_base.glob("*")
-
-    def test_is_dir(self):
-        assert not self.path.is_dir()
-
-    def test_is_file(self):
-        assert self.path.is_file()
-
-    def test_iterdir(self):
-        with pytest.raises(NotADirectoryError):
-            list(self.path.iterdir())
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_iterdir2(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_iterdir_trailing_slash(self):
-        pass
-
-    def test_mkdir(self):
-        with pytest.raises(FileExistsError):
-            self.path.mkdir()
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_mkdir_exists_ok_true(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_mkdir_exists_ok_false(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_mkdir_parents_true_exists_ok_true(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not have directories")
-    def test_mkdir_parents_true_exists_ok_false(self):
-        pass
-
-    def test_open(self):
-        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        with p.open(mode="r") as f:
-            assert f.read() == "hello world"
-        with p.open(mode="rb") as f:
-            assert f.read() == b"hello world"
-
-    def test_open_buffering(self):
-        self.path.open(buffering=-1)
-
-    def test_open_block_size(self):
-        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        with p.open(mode="r", block_size=8192) as f:
-            assert f.read() == "hello world"
-
-    def test_open_errors(self):
-        p = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        with p.open(mode="r", encoding="ascii", errors="strict") as f:
-            assert f.read() == "hello world"
-
-    def test_read_bytes(self, pathlib_base):
-        assert len(self.path.read_bytes()) == 69
-
-    def test_read_text(self, local_testdir):
-        assert UPath("data:base64,SGVsbG8gV29ybGQ=").read_text() == "Hello World"
-
+    @overrides_base
     def test_parents(self):
-        with pytest.raises(NotImplementedError):
-            self.path.parents[0]
+        # DataPath is always a absolute path with no parents
+        assert self.path.parents == []
 
-    def test_rename(self):
-        with pytest.raises(NotImplementedError):
-            self.path.rename("newname")
-
-    @pytest.mark.skip("DataPath does not support rename")
-    def test_rename_with_target_relative(self):
-        pass
-
-    @pytest.mark.skip("DataPath does not support rename")
-    def test_rename_with_target_absolute(self):
-        pass
-
-    def test_rglob(self, pathlib_base):
-        with pytest.raises(NotImplementedError):
-            list(self.path.rglob("*"))
-
-    def test_touch(self):
-        self.path.touch()
-
-    def test_touch_exists_ok_false(self):
-        with pytest.raises(FileExistsError):
-            self.path.touch(exist_ok=False)
-
-    def test_touch_exists_ok_true(self):
-        self.path.touch()
-
-    def test_touch_unlink(self):
-        self.path.touch()
-        with pytest.raises(NotImplementedError):
-            self.path.unlink()
-
-    def test_write_bytes(self, pathlib_base):
-        with pytest.raises(NotImplementedError):
-            self.path.write_bytes(b"test")
-
-    def test_write_text(self, pathlib_base):
-        with pytest.raises(NotImplementedError):
-            self.path.write_text("test")
-
-    def test_read_with_fsspec(self):
-        pth = self.path
-        fs = fsspec.filesystem(pth.protocol, **pth.storage_options)
-        assert fs.cat_file(pth.path) == pth.read_bytes()
-
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_pickling_child_path(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_child_path(self):
-        pass
-
+    @overrides_base
     def test_with_name(self):
-        with pytest.raises(NotImplementedError):
+        # DataPath does not support name changes
+        with pytest.raises(UnsupportedOperation):
             self.path.with_name("newname")
 
+    @overrides_base
     def test_with_suffix(self):
-        with pytest.raises(NotImplementedError):
+        # DataPath does not support suffix changes
+        with pytest.raises(UnsupportedOperation):
             self.path.with_suffix(".new")
 
-    def test_suffix(self):
-        assert self.path.suffix == ""
-
-    def test_suffixes(self):
-        assert self.path.suffixes == []
-
+    @overrides_base
     def test_with_stem(self):
-        with pytest.raises(NotImplementedError):
+        # DataPath does not support stem changes
+        with pytest.raises(UnsupportedOperation):
             self.path.with_stem("newname")
 
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_repr_after_with_suffix(self):
-        pass
+    @overrides_base
+    def test_suffix(self):
+        # DataPath does not have suffixes
+        assert self.path.suffix == ""
 
-    @pytest.mark.skip(reason="DataPath does not support joins")
+    @overrides_base
+    def test_suffixes(self):
+        # DataPath does not have suffixes
+        assert self.path.suffixes == []
+
+    @overrides_base
     def test_repr_after_with_name(self):
-        pass
+        with pytest.raises(UnsupportedOperation):
+            repr(self.path.with_name("data:,ABC"))
 
-    @pytest.mark.skip(reason="DataPath does not support directories")
-    def test_rmdir_no_dir(self):
-        pass
+    @overrides_base
+    def test_repr_after_with_suffix(self):
+        with pytest.raises(UnsupportedOperation):
+            repr(self.path.with_suffix(""))
 
-    @pytest.mark.skip(reason="DataPath does not support directories")
-    def test_iterdir_no_dir(self):
-        pass
+    @overrides_base
+    def test_child_path(self):
+        # DataPath does not support joins, so child paths are unsupported
+        with pytest.raises(UnsupportedOperation):
+            super().test_child_path()
 
-    @pytest.mark.skip(reason="DataPath does not support joins")
+    @overrides_base
+    def test_pickling_child_path(self):
+        # DataPath does not support joins, so child paths are unsupported
+        with pytest.raises(UnsupportedOperation):
+            super().test_pickling_child_path()
+
+    @overrides_base
+    def test_relative_to(self):
+        # DataPath only relative_to with itself
+        with pytest.raises(ValueError):
+            self.path.relative_to("data:,ABC")
+        self.path.relative_to(self.path)
+
+    @overrides_base
+    def test_is_relative_to(self):
+        # DataPath only relative_to with itself
+        assert not self.path.is_relative_to("data:,ABC")
+        assert self.path.is_relative_to(self.path)
+
+    @overrides_base
+    def test_full_match(self):
+        assert self.path.full_match("*")
+        assert not self.path.full_match("xxx")
+
+    @overrides_base
+    def test_trailing_slash_joinpath_is_identical(self):
+        # DataPath has no slashes, and is not joinable
+        with pytest.raises(UnsupportedOperation):
+            super().test_trailing_slash_joinpath_is_identical()
+
+    @overrides_base
+    def test_trailing_slash_is_stripped(self):
+        # DataPath has no slashes, and is not joinable
+        with pytest.raises(UnsupportedOperation):
+            super().test_trailing_slash_is_stripped()
+
+    @overrides_base
     def test_private_url_attr_in_sync(self):
-        pass
+        # DataPath does not support joins, so we check on self.path
+        assert self.path._url
 
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_fsspec_compat(self):
-        pass
+    @overrides_base
+    def test_stat_dir_st_mode(self):
+        # DataPath does not have directories
+        assert not stat.S_ISDIR(self.path.stat().st_mode)
 
-    def test_rmdir_not_empty(self):
+    @overrides_base
+    def test_exists(self):
+        # A valid DataPath always exists
+        assert self.path.exists()
+
+    @overrides_base
+    def test_glob(self):
+        # DataPath does not have dirs, joins or globs
+        assert list(self.path.glob("*")) == []
+
+    @overrides_base
+    def test_rglob(self):
+        # DataPath does not have dirs, joins or globs
+        assert list(self.path.rglob("*")) == []
+
+    @overrides_base
+    def test_is_dir(self):
+        # DataPath does not have directories
+        assert not self.path.is_dir()
+
+    @overrides_base
+    def test_is_file(self):
+        # DataPath is always a file
+        assert self.path.is_file()
+
+    @overrides_base
+    def test_iterdir(self):
+        # DataPath does not have directories
         with pytest.raises(NotADirectoryError):
-            self.path.rmdir()
+            self.path.iterdir()
 
+    @overrides_base
+    def test_iterdir2(self):
+        # DataPath does not have directories, or joins
+        with pytest.raises(NotADirectoryError):
+            self.path_file.iterdir()
+
+    @overrides_base
+    def test_iterdir_trailing_slash(self):
+        # DataPath does not have directories, or joins
+        with pytest.raises(UnsupportedOperation):
+            super().test_iterdir_trailing_slash()
+
+    @overrides_base
+    def test_read_bytes(self):
+        assert self.path.read_bytes() == b"hello world"
+
+    @overrides_base
+    def test_read_text(self):
+        assert self.path.read_text() == "hello world"
+
+    @overrides_base
+    def test_walk(self):
+        # DataPath does not have directories
+        assert list(self.path.walk()) == []
+
+    @overrides_base
+    def test_walk_top_down_false(self):
+        # DataPath does not have directories
+        assert list(self.path.walk(top_down=False)) == []
+
+    @overrides_base
     def test_samefile(self):
-        f1 = self.path
+        # DataPath doesn't have joins, so only identical paths are samefile
+        f1 = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
+        f2 = UPath("data:text/plain;base64,SGVsbG8gd29ybGQ=")
 
+        assert f1.samefile(f2) is False
+        assert f1.samefile(f2.path) is False
         assert f1.samefile(f1) is True
+        assert f1.samefile(f1.path) is True
 
+    @overrides_base
     def test_info(self):
+        # DataPath info checks
         p0 = self.path
 
         assert p0.info.exists() is True
@@ -242,102 +221,19 @@ class TestUPathDataPath(BaseTests):
         assert p0.info.is_dir() is False
         assert p0.info.is_symlink() is False
 
-    def test_copy_local(self, tmp_path):
-        target = UPath(tmp_path) / "target-file1.txt"
+    @overrides_base
+    def test_mkdir_raises(self):
+        # DataPaths always exist and are files
+        with pytest.raises(FileExistsError):
+            self.path_file.mkdir()
 
-        source = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        content = source.read_text()
-        source.copy(target)
-        assert target.exists()
-        assert target.read_text() == content
+    @overrides_base
+    def test_touch_raises(self):
+        # DataPaths always exist, so touch is a noop
+        self.path_file.touch()
 
-    def test_copy_into_local(self, tmp_path):
-        target_dir = UPath(tmp_path) / "target-dir"
-        target_dir.mkdir()
-
-        source = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        content = source.read_text()
-        source.copy_into(target_dir)
-        target = target_dir / source.name
-        assert target.exists()
-        assert target.read_text() == content
-
-    def test_copy_memory(self, clear_fsspec_memory_cache):
-        target = UPath("memory:///target-file1.txt")
-
-        source = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        content = source.read_text()
-        source.copy(target)
-        assert target.exists()
-        assert target.read_text() == content
-
-    def test_copy_into_memory(self, clear_fsspec_memory_cache):
-        target_dir = UPath("memory:///target-dir")
-        target_dir.mkdir()
-
-        source = UPath("data:text/plain;base64,aGVsbG8gd29ybGQ=")
-        content = source.read_text()
-        source.copy_into(target_dir)
-        target = target_dir / source.name
-        assert target.exists()
-        assert target.read_text() == content
-
-    @pytest.mark.skip(reason="DataPath does not support unlink")
-    def test_move_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support unlink")
-    def test_move_into_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support unlink")
-    def test_move_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support unlink")
-    def test_move_into_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support relative_to")
-    def test_relative_to(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_trailing_slash_joinpath_is_identical(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_trailing_slash_is_stripped(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support joins")
-    def test_parents_are_absolute(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support write_text")
-    def test_write_text_encoding(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support write_text")
-    def test_write_text_errors(self):
-        pass
-
-    @pytest.mark.skip(reason="base test incompatible with DataPath")
-    def test_read_text_encoding(self):
-        pass
-
-    @pytest.mark.skip(reason="base test incompatible with DataPath")
-    def test_read_text_errors(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support walk")
-    def test_walk(self, local_testdir):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support walk")
-    def test_walk_top_down_false(self):
-        pass
-
-    @pytest.mark.skip(reason="DataPath does not support full_match")
-    def test_full_match(self):
-        pass
+    @overrides_base
+    def test_unlink(self):
+        # DataPaths can't be deleted
+        with pytest.raises(UnsupportedOperation):
+            self.path_file.unlink()
