@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sys
 from typing import TYPE_CHECKING
-from zipfile import ZipInfo
 
+from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
@@ -35,41 +35,36 @@ class ZipPath(UPath):
             **storage_options: Unpack[ZipStorageOptions],
         ) -> None: ...
 
-    if sys.version_info >= (3, 11):
+    @classmethod
+    def _transform_init_args(cls, args, protocol, storage_options):
+        if storage_options.get("mode") in {"a", "x", "w"}:
+            raise UnsupportedOperation(
+                "ZipPath write mode disabled in universal-pathlib"
+            )
+        return super()._transform_init_args(args, protocol, storage_options)
 
-        def mkdir(
-            self,
-            mode: int = 0o777,
-            parents: bool = False,
-            exist_ok: bool = False,
-        ) -> None:
-            is_dir = self.is_dir()
-            if is_dir and not exist_ok:
-                raise FileExistsError(f"File exists: {self.path!r}")
-            elif not is_dir:
-                zipfile = self.fs.zip
-                zipfile.mkdir(self.path, mode)
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
 
-    else:
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+    ) -> None:
+        raise UnsupportedOperation
 
-        def mkdir(
-            self,
-            mode: int = 0o777,
-            parents: bool = False,
-            exist_ok: bool = False,
-        ) -> None:
-            is_dir = self.is_dir()
-            if is_dir and not exist_ok:
-                raise FileExistsError(f"File exists: {self.path!r}")
-            elif not is_dir:
-                dirname = self.path
-                if dirname and not dirname.endswith("/"):
-                    dirname += "/"
-                zipfile = self.fs.zip
-                zinfo = ZipInfo(dirname)
-                zinfo.compress_size = 0
-                zinfo.CRC = 0
-                zinfo.external_attr = ((0o40000 | mode) & 0xFFFF) << 16
-                zinfo.file_size = 0
-                zinfo.external_attr |= 0x10
-                zipfile.writestr(zinfo, b"")
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
