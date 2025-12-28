@@ -126,6 +126,9 @@ class HTTPPath(UPath):
 
         return resolved_path
 
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
     def mkdir(
         self,
         mode: int = 0o777,
