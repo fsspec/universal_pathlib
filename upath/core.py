@@ -1755,7 +1755,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if exists and not exist_ok:
             raise FileExistsError(str(self))
         if not exists:
-            self.fs.touch(self.path, truncate=True)
+            try:
+                self.fs.touch(self.path, truncate=True)
+            except NotImplementedError:
+                _raise_unsupported(type(self).__name__, "touch")
         else:
             try:
                 self.fs.touch(self.path, truncate=False)
