@@ -1754,16 +1754,16 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         exists = self.fs.exists(self.path)
         if exists and not exist_ok:
             raise FileExistsError(str(self))
-        try:
-            if not exists:
+        if not exists:
+            try:
                 self.fs.touch(self.path, truncate=True)
-            else:
-                try:
-                    self.fs.touch(self.path, truncate=False)
-                except ValueError:
-                    pass  # unsupported by filesystem
-        except NotImplementedError:
-            _raise_unsupported(type(self).__name__, "touch")
+            except NotImplementedError:
+                _raise_unsupported(type(self).__name__, "touch")
+        else:
+            try:
+                self.fs.touch(self.path, truncate=False)
+            except (NotImplementedError, ValueError):
+                pass  # unsupported by filesystem
 
     def lchmod(self, mode: int) -> None:
         _raise_unsupported(type(self).__name__, "lchmod")
