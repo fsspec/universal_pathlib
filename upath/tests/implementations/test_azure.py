@@ -27,7 +27,7 @@ class TestAzurePath(BaseTests, metaclass=OverrideMeta):
 
     @overrides_base
     def test_is_correct_class(self):
-        return isinstance(self.path, AzurePath)
+        assert isinstance(self.path, AzurePath)
 
     @overrides_base
     def test_protocol(self):
