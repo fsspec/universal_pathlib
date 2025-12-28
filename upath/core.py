@@ -785,7 +785,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     if TYPE_CHECKING:  # noqa: C901
         _chain: Chain
         _chain_parser: FSSpecChainParser
-        _fs_cached: bool
+        _fs_cached: AbstractFileSystem
         _raw_urlpaths: Sequence[JoinablePathLike]
         _relative_base: str | None
 
@@ -965,6 +965,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             protocol=self._protocol,
             **self._storage_options,
         )
+        if hasattr(self, "_fs_cached"):
+            new_instance._fs_cached = self._fs_cached
 
         if is_relative:
             new_instance._relative_base = self._relative_base
