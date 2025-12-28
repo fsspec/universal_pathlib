@@ -274,7 +274,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
 
     @property
     def altsep(self) -> str | None:  # type: ignore[override]
-        return None
+        return getattr(self._spec, "altsep", None)
 
     def isabs(self, path: JoinablePathLike) -> bool:
         path = self.strip_protocol(path)
