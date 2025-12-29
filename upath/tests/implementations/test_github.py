@@ -37,6 +37,7 @@ def xfail_on_github_connection_error(func):
             elif (
                 "nodename nor servname provided, or not known" in str_e
                 or "Network is unreachable" in str_e
+                or "NameResolutionError" in str_e
             ):
                 pytest.xfail("No internet connection")
             else:
