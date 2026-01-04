@@ -132,6 +132,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             "https",
         },
         "root_marker_override": {
+            "smb": "/",
             "ssh": "/",
             "sftp": "/",
         },
