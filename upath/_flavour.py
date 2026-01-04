@@ -317,6 +317,9 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             tail = stripped_path[1:]
         elif head:
             tail = stripped_path[len(head) + 1 :]
+        elif self.netloc_is_anchor:  # and not head
+            head = stripped_path
+            tail = ""
         else:
             tail = stripped_path
         if (
