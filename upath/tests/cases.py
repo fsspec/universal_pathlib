@@ -248,9 +248,15 @@ class JoinablePathTests:
         is_absolute = [p.is_absolute() for p in self.path.parents]
         assert all(is_absolute)
 
-    def tests_parents_end_at_anchor(self):
+    def test_parents_end_at_anchor(self):
         p = self.path.joinpath("folder1", "file1.txt")
         assert p.parents[-1].path == p.anchor
+
+    def test_anchor_is_its_own_parent(self):
+        p = self.path.joinpath("folder1", "file1.txt")
+        p0 = p.parents[-1]
+        assert p0.path == p.anchor
+        assert p0.parent.path == p.anchor
 
     def test_private_url_attr_in_sync(self):
         p = self.path
