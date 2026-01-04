@@ -253,7 +253,7 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
 
     def strip_protocol(self, pth: JoinablePathLike) -> str:
         pth = self.stringify_path(pth)
-        return self._spec._strip_protocol(pth)
+        return self._spec._strip_protocol(pth) or self.root_marker
 
     def get_kwargs_from_url(self, url: JoinablePathLike) -> dict[str, Any]:
         # NOTE: the public variant is _from_url not _from_urls
