@@ -179,6 +179,10 @@ class HfPath(CloudPath):
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
         )
 
+    @property
+    def root(self) -> str:
+        return ""
+
     def iterdir(self) -> Iterator[Self]:
         try:
             yield from super().iterdir()
