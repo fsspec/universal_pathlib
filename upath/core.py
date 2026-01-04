@@ -1121,8 +1121,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     break
                 parent = parent.parent
                 parents.append(parent)
-            return parents
-        return super().parents
+            return tuple(parents)
+        else:
+            # todo: this is not the correct fix. The actual
+            #   fix would be to correctly implement split
+            #   for all URI flavours to return the anchor
+            #   as the head of the (head, tail) tuple.
+            parents = []
+            anchor = self.anchor
+            for p in super().parents:
+                parents.append(p)
+                if p.path == anchor:
+                    break
+            return tuple(parents)
 
     def joinpath(self, *pathsegments: JoinablePathLike) -> Self:
         """Combine this path with one or several arguments, and return a new path.
