@@ -130,6 +130,12 @@ class TestUPathDataPath(
             super().test_trailing_slash_is_stripped()
 
     @overrides_base
+    def tests_parents_end_at_anchor(self):
+        # DataPath does not support joins
+        with pytest.raises(UnsupportedOperation):
+            super().tests_parents_end_at_anchor()
+
+    @overrides_base
     def test_private_url_attr_in_sync(self):
         # DataPath does not support joins, so we check on self.path
         assert self.path._url
