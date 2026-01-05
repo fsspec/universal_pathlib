@@ -551,6 +551,16 @@ class ReadablePathTests:
         assert target.exists()
         assert target.read_text() == content
 
+    def test_copy_into__file_to_str_tempdir(self, tmp_path: Path):
+        target_dir = str(tmp_path / "target-dir")
+
+        source = self.path_file
+        source.copy_into(target_dir)
+        target = tmp_path.joinpath("target-dir", source.name)
+
+        assert target.exists()
+        assert target.read_text() == source.read_text()
+
     def test_copy_into_local(self, tmp_path: Path):
         target_dir = UPath(tmp_path) / "target-dir"
         target_dir.mkdir()
