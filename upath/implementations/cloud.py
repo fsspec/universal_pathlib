@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterator
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -81,6 +82,13 @@ class CloudPath(UPath):
         ):
             return self_path + self.root
         return self_path
+
+    @property
+    def parts(self) -> Sequence[str]:
+        parts = super().parts
+        if self._relative_base is None and len(parts) == 2 and not parts[1]:
+            return parts[:1]
+        return parts
 
     def mkdir(
         self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
@@ -170,6 +178,10 @@ class HfPath(CloudPath):
         super().__init__(
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
         )
+
+    @property
+    def root(self) -> str:
+        return ""
 
     def iterdir(self) -> Iterator[Self]:
         try:

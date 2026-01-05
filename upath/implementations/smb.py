@@ -42,6 +42,9 @@ class SMBPath(UPath):
         path = super().path
         if len(path) > 1:
             return path.removesuffix("/")
+        # At root level, return "/" to match anchor
+        if not path and self._relative_base is None:
+            return self.anchor
         return path
 
     def __str__(self) -> str:

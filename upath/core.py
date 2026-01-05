@@ -573,7 +573,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         # FIXME: normalization needs to happen in unchain already...
         chain = Chain.from_list(Chain.from_list(segments).to_list())
         if len(args) > 1:
-            flavour = WrappedFileSystemFlavour.from_protocol(protocol)
+            flavour = WrappedFileSystemFlavour.from_protocol(chain.active_path_protocol)
             joined = flavour.join(chain.active_path, *args[1:])
             stripped = flavour.strip_protocol(joined)
             chain = chain.replace(path=stripped)
@@ -963,7 +963,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         new_instance = type(self)(
             *pathsegments,
             protocol=self._protocol,
-            **self._storage_options,
+            **self.storage_options,
         )
         if hasattr(self, "_fs_cached"):
             new_instance._fs_cached = self._fs_cached
@@ -1090,7 +1090,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     self._relative_base,
                     str(self),
                     protocol=self._protocol,
-                    **self._storage_options,
+                    **self.storage_options,
                 )
                 parent = pth.parent
                 parent._relative_base = self._relative_base
@@ -1121,7 +1121,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     break
                 parent = parent.parent
                 parents.append(parent)
-            return parents
+            return tuple(parents)
         return super().parents
 
     def joinpath(self, *pathsegments: JoinablePathLike) -> Self:
@@ -1945,14 +1945,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             args = (self.__vfspath__(),)
             kwargs = {
                 "protocol": self._protocol,
-                **self._storage_options,
+                **self.storage_options,
             }
         else:
             args = (self._relative_base, self.__vfspath__())
             # Include _relative_base in the state if it's set
             kwargs = {
                 "protocol": self._protocol,
-                **self._storage_options,
+                **self.storage_options,
                 "_relative_base": self._relative_base,
             }
         return _make_instance, (type(self), args, kwargs)

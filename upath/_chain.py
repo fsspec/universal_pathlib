@@ -231,14 +231,14 @@ class FSSpecChainParser:
                 proto0 is None or bit == proto0
             ):  # exact match a fsspec protocol
                 proto = bit
-                path_bit = ""
+                path_bit = None
                 extra_so = {}
             elif bit in (m := set(available_implementations(fallback=True))) and (
                 proto0 is None or bit == proto0
             ):
                 self.known_protocols = m
                 proto = bit
-                path_bit = ""
+                path_bit = None
                 extra_so = {}
             else:
                 proto = get_upath_protocol(bit, protocol=proto0)
@@ -246,8 +246,8 @@ class FSSpecChainParser:
                 path_bit = flavour.strip_protocol(bit)
                 extra_so = flavour.get_kwargs_from_url(bit)
             if proto in {"blockcache", "filecache", "simplecache"}:
-                if path_bit:
-                    next_path_overwrite = path_bit
+                if path_bit is not None:
+                    next_path_overwrite = path_bit or "/"
                 path_bit = None
             elif next_path_overwrite is not None:
                 path_bit = next_path_overwrite

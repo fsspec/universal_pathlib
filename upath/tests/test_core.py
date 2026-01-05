@@ -72,6 +72,22 @@ class TestUpath(BaseTests, metaclass=OverrideMeta):
     def test_parents_are_absolute(self):
         super().test_parents_are_absolute()
 
+    @overrides_base
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="mock fs is not well defined on windows",
+    )
+    def test_anchor_is_its_own_parent(self):
+        super().test_anchor_is_its_own_parent()
+
+    @overrides_base
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="mock fs is not well defined on windows",
+    )
+    def test_parents_end_at_anchor(self):
+        super().test_parents_end_at_anchor()
+
 
 def test_multiple_backend_paths(local_testdir):
     path = "s3://bucket/"

@@ -17,6 +17,7 @@ from upath import UnsupportedOperation
 from upath import UPath
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
+from upath.tests.utils import posixify
 from upath.types import StatResultType
 
 
@@ -247,6 +248,16 @@ class JoinablePathTests:
         # the path representing the root is absolute
         is_absolute = [p.is_absolute() for p in self.path.parents]
         assert all(is_absolute)
+
+    def test_parents_end_at_anchor(self):
+        p = self.path.joinpath("folder1", "file1.txt")
+        assert p.parents[-1].path == posixify(p.anchor)
+
+    def test_anchor_is_its_own_parent(self):
+        p = self.path.joinpath("folder1", "file1.txt")
+        p0 = p.parents[-1]
+        assert p0.path == posixify(p.anchor)
+        assert p0.parent.path == posixify(p.anchor)
 
     def test_private_url_attr_in_sync(self):
         p = self.path
