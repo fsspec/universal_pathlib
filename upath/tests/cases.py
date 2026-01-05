@@ -615,6 +615,30 @@ class ReadablePathTests:
         assert target.exists()
         assert target.read_text() == content
 
+    def test_copy_exceptions(self, tmp_path: Path):
+        source = self.path_file
+        # target is a directory
+        target = UPath(tmp_path) / "target-folder"
+        target.mkdir()
+        with pytest.raises(IsADirectoryError):
+            source.copy(target)
+        # target parent does not exist
+        target = UPath(tmp_path) / "nonexistent-dir" / "target-file1.txt"
+        with pytest.raises(FileNotFoundError):
+            source.copy(target)
+
+    def test_copy_into_exceptions(self, tmp_path: Path):
+        source = self.path_file
+        # target is not a directory
+        target_file = UPath(tmp_path) / "target-file.txt"
+        target_file.write_text("content")
+        with pytest.raises(NotADirectoryError):
+            source.copy_into(target_file)
+        # target dir does not exist
+        target_dir = UPath(tmp_path) / "nonexistent-dir"
+        with pytest.raises(FileNotFoundError):
+            source.copy_into(target_dir)
+
     def test_read_with_fsspec(self):
         p = self.path_file
 
