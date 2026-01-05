@@ -551,10 +551,12 @@ class ReadablePathTests:
         assert target.exists()
         assert target.read_text() == content
 
-    def test_copy_into__file_to_str_tempdir(self, tmp_path: Path):
+    @pytest.mark.parametrize("target_type", [str, Path, UPath])
+    def test_copy_into__file_to_str_tempdir(self, tmp_path: Path, target_type):
         tmp_path = tmp_path.joinpath("somewhere")
         tmp_path.mkdir()
-        target_dir = str(tmp_path)
+        target_dir = target_type(tmp_path)
+        assert isinstance(target_dir, target_type)
 
         source = self.path_file
         source.copy_into(target_dir)
@@ -563,10 +565,12 @@ class ReadablePathTests:
         assert target.exists()
         assert target.read_text() == source.read_text()
 
-    def test_copy_into__dir_to_str_tempdir(self, tmp_path: Path):
+    @pytest.mark.parametrize("target_type", [str, Path, UPath])
+    def test_copy_into__dir_to_str_tempdir(self, tmp_path: Path, target_type):
         tmp_path = tmp_path.joinpath("somewhere")
         tmp_path.mkdir()
-        target_dir = str(tmp_path)
+        target_dir = target_type(tmp_path)
+        assert isinstance(target_dir, target_type)
 
         source_dir = self.path.joinpath("folder1")
         assert source_dir.is_dir()
