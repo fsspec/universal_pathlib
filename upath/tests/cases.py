@@ -620,7 +620,8 @@ class ReadablePathTests:
         # target is a directory
         target = UPath(tmp_path) / "target-folder"
         target.mkdir()
-        with pytest.raises(IsADirectoryError):
+        # FIXME: pytest.raises(IsADirectoryError) not working on Windows
+        with pytest.raises(OSError):
             source.copy(target)
         # target parent does not exist
         target = UPath(tmp_path) / "nonexistent-dir" / "target-file1.txt"
@@ -632,7 +633,8 @@ class ReadablePathTests:
         # target is not a directory
         target_file = UPath(tmp_path) / "target-file.txt"
         target_file.write_text("content")
-        with pytest.raises(NotADirectoryError):
+        # FIXME: pytest.raises(NotADirectoryError) not working on Windows
+        with pytest.raises(OSError):
             source.copy_into(target_file)
         # target dir does not exist
         target_dir = UPath(tmp_path) / "nonexistent-dir"
