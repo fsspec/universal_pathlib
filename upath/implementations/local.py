@@ -21,6 +21,7 @@ from upath._chain import Chain
 from upath._chain import ChainSegment
 from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
+from upath._protocol import get_upath_protocol
 from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.core import _UPathMixin
@@ -377,10 +378,17 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # hacky workaround for missing pathlib.Path.copy in python < 3.14
             # todo: revisit
             _copy: Any = ReadablePath.copy.__get__(self)
-            if not isinstance(target, UPath):
-                return _copy(self.with_segments(str(target)), **kwargs)
-            else:
-                return _copy(target, **kwargs)
+            if isinstance(target, str):
+                proto = get_upath_protocol(target)
+                if proto != self.protocol:
+                    target = UPath(target)
+                else:
+                    target = self.with_segments(target)
+            elif not isinstance(target, UPath):
+                target = UPath(target)
+            if target.is_dir():
+                raise IsADirectoryError(str(target))
+            return _copy(target, **kwargs)
 
         @overload
         def copy_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
@@ -398,10 +406,15 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # hacky workaround for missing pathlib.Path.copy_into in python < 3.14
             # todo: revisit
             _copy_into: Any = ReadablePath.copy_into.__get__(self)
-            if not isinstance(target_dir, UPath):
-                return _copy_into(self.with_segments(str(target_dir)), **kwargs)
-            else:
-                return _copy_into(target_dir, **kwargs)
+            if isinstance(target_dir, str):
+                proto = get_upath_protocol(target_dir)
+                if proto != self.protocol:
+                    target_dir = UPath(target_dir)
+                else:
+                    target_dir = self.with_segments(target_dir)
+            elif not isinstance(target_dir, UPath):
+                target_dir = UPath(target_dir)
+            return _copy_into(target_dir, **kwargs)
 
         @overload
         def move(self, target: _WT, **kwargs: Any) -> _WT: ...
@@ -432,8 +445,15 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 raise ValueError(f"{self!r} has an empty name")
             elif hasattr(target_dir, "with_segments"):
                 target = target_dir.with_segments(str(target_dir), name)  # type: ignore
+            elif isinstance(target_dir, pathlib.PurePath):
+                target = UPath(target_dir, name)
             else:
                 target = self.with_segments(str(target_dir), name)
+            td = target.parent
+            if not td.exists():
+                raise FileNotFoundError(str(td))
+            elif not td.is_dir():
+                raise NotADirectoryError(str(td))
             return self.move(target)
 
         @property

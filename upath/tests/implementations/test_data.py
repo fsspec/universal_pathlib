@@ -253,3 +253,8 @@ class TestUPathDataPath(
         # DataPaths can't be deleted
         with pytest.raises(UnsupportedOperation):
             self.path_file.unlink()
+
+    @overrides_base
+    def test_copy_into__dir_to_str_tempdir(self):
+        # There are no directories in DataPath
+        assert not self.path.is_dir()

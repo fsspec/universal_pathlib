@@ -551,6 +551,40 @@ class ReadablePathTests:
         assert target.exists()
         assert target.read_text() == content
 
+    @pytest.mark.parametrize("target_type", [str, Path, UPath])
+    def test_copy_into__file_to_str_tempdir(self, tmp_path: Path, target_type):
+        tmp_path = tmp_path.joinpath("somewhere")
+        tmp_path.mkdir()
+        target_dir = target_type(tmp_path)
+        assert isinstance(target_dir, target_type)
+
+        source = self.path_file
+        source.copy_into(target_dir)
+        target = tmp_path.joinpath(source.name)
+
+        assert target.exists()
+        assert target.read_text() == source.read_text()
+
+    @pytest.mark.parametrize("target_type", [str, Path, UPath])
+    def test_copy_into__dir_to_str_tempdir(self, tmp_path: Path, target_type):
+        tmp_path = tmp_path.joinpath("somewhere")
+        tmp_path.mkdir()
+        target_dir = target_type(tmp_path)
+        assert isinstance(target_dir, target_type)
+
+        source_dir = self.path.joinpath("folder1")
+        assert source_dir.is_dir()
+        source_dir.copy_into(target_dir)
+        target = tmp_path.joinpath(source_dir.name)
+
+        assert target.exists()
+        assert target.is_dir()
+        for item in source_dir.iterdir():
+            target_item = target.joinpath(item.name)
+            assert target_item.exists()
+            if item.is_file():
+                assert target_item.read_text() == item.read_text()
+
     def test_copy_into_local(self, tmp_path: Path):
         target_dir = UPath(tmp_path) / "target-dir"
         target_dir.mkdir()
@@ -580,6 +614,32 @@ class ReadablePathTests:
         target = target_dir / source.name
         assert target.exists()
         assert target.read_text() == content
+
+    def test_copy_exceptions(self, tmp_path: Path):
+        source = self.path_file
+        # target is a directory
+        target = UPath(tmp_path) / "target-folder"
+        target.mkdir()
+        # FIXME: pytest.raises(IsADirectoryError) not working on Windows
+        with pytest.raises(OSError):
+            source.copy(target)
+        # target parent does not exist
+        target = UPath(tmp_path) / "nonexistent-dir" / "target-file1.txt"
+        with pytest.raises(FileNotFoundError):
+            source.copy(target)
+
+    def test_copy_into_exceptions(self, tmp_path: Path):
+        source = self.path_file
+        # target is not a directory
+        target_file = UPath(tmp_path) / "target-file.txt"
+        target_file.write_text("content")
+        # FIXME: pytest.raises(NotADirectoryError) not working on Windows
+        with pytest.raises(OSError):
+            source.copy_into(target_file)
+        # target dir does not exist
+        target_dir = UPath(tmp_path) / "nonexistent-dir"
+        with pytest.raises(FileNotFoundError):
+            source.copy_into(target_dir)
 
     def test_read_with_fsspec(self):
         p = self.path_file
