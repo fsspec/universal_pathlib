@@ -385,7 +385,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 else:
                     target = self.with_segments(target)
             elif not isinstance(target, UPath):
-                target = self.with_segments(str(target))
+                target = UPath(target)
             return _copy(target, **kwargs)
 
         @overload
@@ -411,7 +411,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 else:
                     target_dir = self.with_segments(target_dir)
             elif not isinstance(target_dir, UPath):
-                target_dir = self.with_segments(str(target_dir))
+                target_dir = UPath(target_dir)
             return _copy_into(target_dir, **kwargs)
 
         @overload
@@ -443,6 +443,8 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 raise ValueError(f"{self!r} has an empty name")
             elif hasattr(target_dir, "with_segments"):
                 target = target_dir.with_segments(str(target_dir), name)  # type: ignore
+            elif isinstance(target_dir, pathlib.PurePath):
+                target = UPath(target_dir, name)
             else:
                 target = self.with_segments(str(target_dir), name)
             td = target.parent

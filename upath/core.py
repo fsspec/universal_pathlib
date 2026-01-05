@@ -1228,7 +1228,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             else:
                 target = self.with_segments(target)
         elif not isinstance(target, UPath):
-            target = self.with_segments(str(target))
+            target = UPath(target)
         if target.exists():
             raise FileExistsError(str(target))
         return super().copy(target, **kwargs)
@@ -1252,7 +1252,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             else:
                 target_dir = self.with_segments(target_dir)
         elif not isinstance(target_dir, UPath):
-            target_dir = self.with_segments(str(target_dir))
+            target_dir = UPath(target_dir)
         if not target_dir.exists():
             raise FileNotFoundError(str(target_dir))
         if not target_dir.is_dir():
@@ -1290,6 +1290,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise ValueError(f"{self!r} has an empty name")
         elif hasattr(target_dir, "with_segments"):
             target = target_dir.with_segments(target_dir, name)  # type: ignore
+        elif isinstance(target_dir, PurePath):
+            target = UPath(target_dir, name)
         else:
             target = self.with_segments(target_dir, name)
         td = target.parent
