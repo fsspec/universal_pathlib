@@ -386,6 +386,8 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     target = self.with_segments(target)
             elif not isinstance(target, UPath):
                 target = UPath(target)
+            if target.is_dir():
+                raise IsADirectoryError(str(target))
             return _copy(target, **kwargs)
 
         @overload

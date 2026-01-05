@@ -1229,8 +1229,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 target = self.with_segments(target)
         elif not isinstance(target, UPath):
             target = UPath(target)
-        if target.exists():
-            raise FileExistsError(str(target))
+        if target.is_dir():
+            raise IsADirectoryError(str(target))
         return super().copy(target, **kwargs)
 
     @overload
