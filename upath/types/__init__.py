@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import sys
+from collections.abc import Callable
 from os import PathLike
 from typing import TYPE_CHECKING
 from typing import Any
@@ -35,6 +36,7 @@ __all__ = [
     "PathParser",
     "UPathParser",
     "UNSET_DEFAULT",
+    "OnIsFileAndDirHandler",
 ]
 
 
@@ -124,3 +126,8 @@ class UPathParser(PathParser, Protocol):
     def splitdrive(self, path: JoinablePathLike) -> tuple[str, str]: ...
 
     def splitroot(self, path: JoinablePathLike) -> tuple[str, str, str]: ...
+
+
+OnNameCollisionFunc: TypeAlias = Callable[
+    [ReadablePath, WritablePath], tuple[WritablePath | None, WritablePath | None]
+]

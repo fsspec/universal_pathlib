@@ -41,6 +41,7 @@ from upath._stat import UPathStatResult
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
+from upath.types import OnNameCollisionFunc
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
@@ -1305,9 +1306,48 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         self,
         source: ReadablePath,
         follow_symlinks: bool = True,
+        on_name_collision: OnNameCollisionFunc | None = None,
         **kwargs: Any,
     ) -> None:
-        return super()._copy_from(source, follow_symlinks)
+        """
+        UPath custom:: Recursively copy the given path to this path.
+        """
+        # fixme: it would be best if this would be upstreamed
+        from pathlib_abc import vfsopen
+        from pathlib_abc import vfspath
+        from pathlib_abc._os import copyfileobj
+        from pathlib_abc._os import ensure_different_files
+
+        stack: list[tuple[ReadablePath, WritablePath]] = [(source, self)]
+        while stack:
+            src, dst = stack.pop()
+            info = src.info
+            if not follow_symlinks and info.is_symlink():
+                dst.symlink_to(vfspath(src.readlink()), src.info.is_dir())
+            elif on_name_collision and info.is_file() and info.is_dir():
+                dst_file, dst_dir = on_name_collision(src, dst)
+                if dst_file is not None:
+                    ensure_different_files(src, dst_file)
+                    with vfsopen(src, "rb") as source_f:
+                        with vfsopen(dst_file, "wb") as target_f:
+                            copyfileobj(source_f, target_f)
+                if dst_dir is not None:
+                    children = src.iterdir()
+                    dst_dir.mkdir()
+                    # feed through dict.fromkeys to remove duplicates
+                    for child in dict.fromkeys(children):
+                        stack.append((child, dst_dir.joinpath(child.name)))
+            elif info.is_dir():
+                children = src.iterdir()
+                dst.mkdir()
+                # feed through dict.fromkeys to remove duplicates
+                for child in dict.fromkeys(children):
+                    stack.append((child, dst.joinpath(child.name)))
+            else:
+                ensure_different_files(src, dst)
+                with vfsopen(src, "rb") as source_f:
+                    with vfsopen(dst, "wb") as target_f:
+                        copyfileobj(source_f, target_f)
 
     # --- WritablePath attributes -------------------------------------
 
