@@ -1,6 +1,7 @@
 """see upath/tests/conftest.py for fixtures"""
 
 import sys
+import warnings
 
 import fsspec
 import pytest
@@ -165,3 +166,50 @@ def test_pathlib_consistent_join():
     b1 = UPath("s3://mybucket/withkey").joinpath("subfolder/myfile.txt")
     assert b0 == b1
     assert "s3://mybucket/withkey/subfolder/myfile.txt" == str(b0) == str(b1)
+
+
+def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
+    anon, s3so = s3_server
+    s3so["use_listings_cache"] = False
+
+    s3 = fsspec.filesystem("s3", anon=False, **s3so)
+    bucket = "copy_into_collision_bucket"
+    s3.mkdir(bucket + "/src" + "/common_prefix/")
+    # object under common prefix as key
+    s3.pipe_file(f"{bucket}/src/common_prefix", b"hello world")
+    # store more objects with same prefix
+    s3.pipe_file(f"{bucket}/src/common_prefix/file1.txt", b"1")
+    s3.pipe_file(f"{bucket}/src/common_prefix/file2.txt", b"2")
+
+    # make sure the sources have a collision
+    assert s3.isdir(f"{bucket}/src/common_prefix")
+    assert s3.isfile(f"{bucket}/src/common_prefix")
+    assert s3.isfile(f"{bucket}/src/common_prefix/file1.txt")
+    assert s3.isfile(f"{bucket}/src/common_prefix/file2.txt")
+    # prepare source and destination
+    src = UPath(f"s3://{bucket}/src", anon=anon)
+    dst = UPath(tmp_path)
+
+    def on_collision_rename_file(src, dst):
+        warnings.warn(
+            f"{src!s} collides with prefix. Renaming target file object to {dst!s}",
+            UserWarning,
+            stacklevel=3,
+        )
+        return (
+            dst.with_suffix(dst.suffix + ".COLLISION"),
+            dst,
+        )
+
+    # perform copy
+    src.copy_into(dst, on_collision=on_collision_rename_file)
+
+    # check results
+    dst_files = sorted(str(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
+    assert dst_files == [
+        "src",
+        "src/common_prefix",
+        "src/common_prefix.COLLISION",
+        "src/common_prefix/file1.txt",
+        "src/common_prefix/file2.txt",
+    ]
