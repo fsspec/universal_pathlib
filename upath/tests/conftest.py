@@ -238,9 +238,19 @@ def docker_gcs():
         pytest.skip("docker not installed")
 
     container = "gcsfs_test"
-    cmd = (
-        "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
-        "http -public-host http://localhost:4443 -external-url http://localhost:4443"  # noqa: E501
+    cmd = " ".join(
+        [
+            "docker",
+            "run",
+            "-d",
+            "-p 4443:4443",
+            "--name gcsfs_test",
+            "fsouza/fake-gcs-server:latest",
+            "-scheme http",
+            "-public-host http://localhost:4443",
+            "-external-url http://localhost:4443",
+            "-backend memory",
+        ]
     )
     stop_docker(container)
     subprocess.check_output(shlex.split(cmd))
@@ -385,8 +395,8 @@ def docker_azurite(azurite_credentials):
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"
     cmd = (
-        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}"  # noqa: E501
-        " azurite-blob --loose --blobHost 0.0.0.0"  # noqa: E501
+        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}:latest"  # noqa: E501
+        " azurite-blob --loose --blobHost 0.0.0.0 --skipApiVersionCheck"  # noqa: E501
     )
     url = f"http://localhost:{AZURITE_PORT}"
 

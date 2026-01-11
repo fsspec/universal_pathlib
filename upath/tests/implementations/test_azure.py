@@ -1,3 +1,6 @@
+import warnings
+
+import fsspec
 import pytest
 
 from upath import UPath
@@ -7,6 +10,7 @@ from ..cases import BaseTests
 from ..utils import OverrideMeta
 from ..utils import extends_base
 from ..utils import overrides_base
+from ..utils import posixify
 from ..utils import skip_on_windows
 
 
@@ -61,3 +65,56 @@ class TestAzurePath(BaseTests, metaclass=OverrideMeta):
 
         (path / "file").write_text("foo")
         assert path.exists()
+
+
+@skip_on_windows
+@pytest.mark.xfail(reason="adlfs returns isdir false")
+def test_copy__object_key_collides_with_dir_prefix(azurite_credentials, tmp_path):
+    account_name, connection_string = azurite_credentials
+    storage_options = {
+        "account_name": account_name,
+        "connection_string": connection_string,
+    }
+
+    az = fsspec.filesystem("az", **storage_options, use_listings_cache=False)
+    container = "copy-into-collision-container"
+    az.mkdir(container)
+    # store more objects with same prefix
+    az.pipe_file(f"{container}/src/common_prefix/file1.txt", b"1")
+    az.pipe_file(f"{container}/src/common_prefix/file2.txt", b"2")
+    # object under common prefix as key
+    az.pipe_file(f"{container}/src/common_prefix", b"hello world")
+    az.invalidate_cache()
+
+    # make sure the sources have a collision
+    assert az.isfile(f"{container}/src/common_prefix")
+    assert az.isdir(f"{container}/src/common_prefix")
+    assert az.isfile(f"{container}/src/common_prefix/file1.txt")
+    assert az.isfile(f"{container}/src/common_prefix/file2.txt")
+    # prepare source and destination
+    src = UPath(f"az://{container}/src", **storage_options)
+    dst = UPath(tmp_path)
+
+    def on_collision_rename_file(src, dst):
+        warnings.warn(
+            f"{src!s} collides with prefix. Renaming target file object to {dst!s}",
+            UserWarning,
+            stacklevel=3,
+        )
+        return (
+            dst.with_suffix(dst.suffix + ".COLLISION"),
+            dst,
+        )
+
+    # perform copy
+    src.copy_into(dst, on_name_collision=on_collision_rename_file)
+
+    # check results
+    dst_files = sorted(posixify(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
+    assert dst_files == [
+        "src",
+        "src/common_prefix",
+        "src/common_prefix.COLLISION",
+        "src/common_prefix/file1.txt",
+        "src/common_prefix/file2.txt",
+    ]
