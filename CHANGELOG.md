@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-01-11
+
+### Added
+- tests: add missing pathlib abc tests (#511)
+- tests: split base test cases into joinable/readable/writable tests (#507)
+- docs: describe UPath/s3fs behavior with `is_dir()` (#503)
+
+### Fixed
+- upath.implementations.cloud: fix S3Path copy to local with name collision of file/dir (#533)
+- upath.core: fix behaviour of `UPath.parent` and `UPath.parents` (#529)
+- upath.implementations.github: adjust GitHubPath error reporting (#522)
+- upath.implementations.cloud: fix error handling on HfPath (#521)
+- upath.implementations.zip: disable write mode in universal-pathlib (#520)
+- upath.implementations.tar: fix error handling for write methods (#519)
+- upath.implementations.http: fix HTTPPath error handling for unsupported methods (#518)
+- upath.implementations.data: fix DataPath error handling for unsupported methods (#517)
+- upath.core: fix `touch()` method (#515)
+- upath.extensions: fix `is_relative_to()` for extensions (#510)
+- upath.extensions: fix error behavior for `hardlink_to()` backport and `symlink_to()` (#508)
+- upath: fix `iterdir()` behaviour when raising NotADirectoryError for all UPath subclasses (#506)
+- tests: xfail on name resolution error in github suite (#523)
+- tests: fix GitHub tests without a network connection (#509)
+
+### Changed
+- upath: adjust behavior of `UPath.copy()` and `UPath.copy_into()` with str and Path targets (#530)
+- upath.core: handover cached fs instances in `with_segments()` (#516)
+- tests: split test suite according to abcs and cleanup tests (#513)
+- tests: remove two unused helper functions introduced in #492 (#505)
+- ci: do not hardcode Python executable name (#504)
+- ci: updated development dependencies (#501)
+
 ## [0.3.7] - 2025-12-03
 
 ### Added
@@ -313,7 +344,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/fsspec/universal_pathlib/compare/v0.3.4...v0.3.5
