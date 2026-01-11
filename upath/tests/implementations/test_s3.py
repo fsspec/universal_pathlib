@@ -13,6 +13,7 @@ from ..cases import BaseTests
 from ..utils import OverrideMeta
 from ..utils import extends_base
 from ..utils import overrides_base
+from ..utils import posixify
 
 
 def silence_botocore_datetime_deprecation(cls):
@@ -204,7 +205,7 @@ def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
     src.copy_into(dst, on_name_collision=on_collision_rename_file)
 
     # check results
-    dst_files = sorted(str(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
+    dst_files = sorted(posixify(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
     assert dst_files == [
         "src",
         "src/common_prefix",
