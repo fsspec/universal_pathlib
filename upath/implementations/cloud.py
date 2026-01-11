@@ -174,7 +174,8 @@ class S3Path(CloudPath):
             protocol=self.protocol,  # type: ignore
             **sopts,
         )
-        return super(type(self), new_self).copy(target, **kwargs)
+        assert type(self) is type(new_self)
+        return super(type(new_self), new_self).copy(target, **kwargs)
 
 
 class AzurePath(CloudPath):
