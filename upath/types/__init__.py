@@ -6,6 +6,7 @@ from collections.abc import Callable
 from os import PathLike
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Optional
 from typing import Protocol
 from typing import Union
 from typing import runtime_checkable
@@ -129,5 +130,5 @@ class UPathParser(PathParser, Protocol):
 
 
 OnNameCollisionFunc: TypeAlias = Callable[
-    [ReadablePath, WritablePath], tuple[WritablePath | None, WritablePath | None]
+    [ReadablePath, WritablePath], tuple[Optional[WritablePath], Optional[WritablePath]]
 ]
