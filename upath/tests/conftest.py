@@ -238,9 +238,19 @@ def docker_gcs():
         pytest.skip("docker not installed")
 
     container = "gcsfs_test"
-    cmd = (
-        "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
-        "http -public-host http://localhost:4443 -external-url http://localhost:4443"  # noqa: E501
+    cmd = " ".join(
+        [
+            "docker",
+            "run",
+            "-d",
+            "-p 4443:4443",
+            "--name gcsfs_test",
+            "fsouza/fake-gcs-server:latest",
+            "-scheme http",
+            "-public-host http://localhost:4443",
+            "-external-url http://localhost:4443",
+            "-backend memory",
+        ]
     )
     stop_docker(container)
     subprocess.check_output(shlex.split(cmd))
