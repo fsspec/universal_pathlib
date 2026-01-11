@@ -364,6 +364,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
         else:
             shutil.rmtree(self)
 
+    # we need to override pathlib.Path._copy_from to support it as a
+    # WritablePath._copy_from target with support for on_name_collision
+    # Issue: https://github.com/barneygale/pathlib-abc/issues/48
+    _copy_from = UPath._copy_from
+
     if sys.version_info < (3, 14):  # noqa: C901
 
         @overload
@@ -719,17 +724,6 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     stacklevel=2,
                 )
             return super().chmod(mode)
-
-    if not hasattr(pathlib.Path, "_copy_from"):
-
-        def _copy_from(
-            self,
-            source: ReadablePath | LocalPath,
-            follow_symlinks: bool = True,
-            preserve_metadata: bool = False,
-        ) -> None:
-            _copy_from: Any = WritablePath._copy_from.__get__(self)
-            _copy_from(source, follow_symlinks=follow_symlinks)
 
 
 UPath.register(LocalPath)

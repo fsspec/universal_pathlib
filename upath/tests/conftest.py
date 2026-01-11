@@ -385,8 +385,8 @@ def docker_azurite(azurite_credentials):
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"
     cmd = (
-        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}"  # noqa: E501
-        " azurite-blob --loose --blobHost 0.0.0.0"  # noqa: E501
+        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}:latest"  # noqa: E501
+        " azurite-blob --loose --blobHost 0.0.0.0 --skipApiVersionCheck"  # noqa: E501
     )
     url = f"http://localhost:{AZURITE_PORT}"
 

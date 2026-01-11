@@ -5,15 +5,19 @@ from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import overload
 
 from upath import UnsupportedOperation
 from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 from upath.types import JoinablePathLike
+from upath.types import SupportsPathLike
+from upath.types import WritablePath
 
 if TYPE_CHECKING:
     from typing import Literal
+    from typing import TypeVar
 
     if sys.version_info >= (3, 11):
         from typing import Self
@@ -27,6 +31,8 @@ if TYPE_CHECKING:
     from upath.types.storage_options import GCSStorageOptions
     from upath.types.storage_options import HfStorageOptions
     from upath.types.storage_options import S3StorageOptions
+
+    _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "CloudPath",
@@ -146,6 +152,30 @@ class S3Path(CloudPath):
         )
         if not self.drive and len(self.parts) > 1:
             raise ValueError("non key-like path provided (bucket/container missing)")
+
+    @overload
+    def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def copy(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def copy(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        """
+        Recursively copy this file or directory tree to the given destination.
+        """
+        # to allow _copy_from to check if a path isfile AND isdir
+        # we need to disable s3fs's dircache mechanism because it
+        # currently implements a XOR relation the two for objects
+        # ref: fsspec/s3fs#999
+        sopts = dict(self.storage_options)
+        sopts["use_listings_cache"] = False
+        new_self = type(self)(
+            self.path,
+            protocol=self.protocol,  # type: ignore
+            **sopts,
+        )
+        assert type(self) is type(new_self)
+        return super(type(new_self), new_self).copy(target, **kwargs)
 
 
 class AzurePath(CloudPath):
