@@ -170,9 +170,8 @@ def test_pathlib_consistent_join():
 
 def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
     anon, s3so = s3_server
-    s3so["use_listings_cache"] = False
 
-    s3 = fsspec.filesystem("s3", anon=False, **s3so)
+    s3 = fsspec.filesystem("s3", anon=anon, **{**s3so, "use_listings_cache": False})
     bucket = "copy_into_collision_bucket"
     s3.mkdir(bucket + "/src" + "/common_prefix/")
     # object under common prefix as key
@@ -187,7 +186,7 @@ def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
     assert s3.isfile(f"{bucket}/src/common_prefix/file1.txt")
     assert s3.isfile(f"{bucket}/src/common_prefix/file2.txt")
     # prepare source and destination
-    src = UPath(f"s3://{bucket}/src", anon=anon)
+    src = UPath(f"s3://{bucket}/src", anon=anon, **s3so)
     dst = UPath(tmp_path)
 
     def on_collision_rename_file(src, dst):
@@ -202,7 +201,7 @@ def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
         )
 
     # perform copy
-    src.copy_into(dst, on_collision=on_collision_rename_file)
+    src.copy_into(dst, on_name_collision=on_collision_rename_file)
 
     # check results
     dst_files = sorted(str(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
