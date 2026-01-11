@@ -12,8 +12,6 @@ from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 from upath.types import JoinablePathLike
-from upath.types import OnNameCollisionFunc
-from upath.types import ReadablePath
 from upath.types import SupportsPathLike
 from upath.types import WritablePath
 
@@ -154,31 +152,6 @@ class S3Path(CloudPath):
         )
         if not self.drive and len(self.parts) > 1:
             raise ValueError("non key-like path provided (bucket/container missing)")
-
-    def _copy_from(
-        self,
-        source: ReadablePath,
-        follow_symlinks: bool = True,
-        on_name_collision: OnNameCollisionFunc | None = None,
-        **kwargs: Any,
-    ) -> None:
-        # to allow _copy_from to check if a path isfile AND isdir
-        # we need to disable s3fs's dircache mechanism because it
-        # currently implements a XOR relation the two for objects
-        # ref: fsspec/s3fs#999
-        sopts = dict(self.storage_options)
-        sopts["use_listings_cache"] = False
-        new_self = type(self)(
-            self.path,
-            protocol=self.protocol,  # type: ignore
-            **sopts,
-        )
-        new_self._copy_from(
-            source,
-            follow_symlinks=follow_symlinks,
-            on_name_collision=on_name_collision,
-            **kwargs,
-        )
 
     @overload
     def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
