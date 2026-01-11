@@ -37,7 +37,7 @@ __all__ = [
     "PathParser",
     "UPathParser",
     "UNSET_DEFAULT",
-    "OnIsFileAndDirHandler",
+    "OnNameCollisionFunc",
 ]
 
 
