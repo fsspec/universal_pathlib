@@ -213,3 +213,59 @@ def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
         "src/common_prefix/file1.txt",
         "src/common_prefix/file2.txt",
     ]
+
+
+@pytest.fixture
+def s3_with_explicit_directory_marker(s3_server):
+    """issue #226: path.iterdir() yields path itself as the first item (with S3)
+
+    Creates a bucket with an explicit directory marker (zero-byte object with
+    trailing slash) plus files. This simulates folders created via the AWS
+    Console, which creates actual zero-byte objects as directory markers.
+
+    Given objects on S3:
+        s3://my-bucket/my-directory/       (zero-byte directory marker)
+        s3://my-bucket/my-directory/0.txt
+        s3://my-bucket/my-directory/1.txt
+    """
+    import boto3
+
+    anon, s3so = s3_server
+    bucket = "iterdir_issue_226_marker_bucket"
+    s3_client = boto3.client("s3", **s3so["client_kwargs"])
+    s3_client.create_bucket(Bucket=bucket)
+    # Create an explicit directory marker (zero-byte object with trailing slash)
+    # Use boto3 directly to ensure the trailing slash is preserved in the key
+    # This is what the AWS Console creates when you "Create folder"
+    s3_client.put_object(Bucket=bucket, Key="my-directory/", Body=b"")
+    # Then create files inside the directory
+    s3_client.put_object(Bucket=bucket, Key="my-directory/0.txt", Body=b"content 0")
+    s3_client.put_object(Bucket=bucket, Key="my-directory/1.txt", Body=b"content 1")
+    yield bucket, anon, s3so
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_with_explicit_directory_marker__issue_226(
+    s3_with_explicit_directory_marker,
+):
+    """issue #226: path.iterdir() yields path itself as the first item (with S3)
+
+    See: https://github.com/fsspec/universal_pathlib/issues/226
+    See: https://medium.com/cyberark-engineering/the-strange-case-of-amazon-s3-bucket-folders-c8d113a8dd01  # noqa: E501
+    """
+    bucket, anon, s3so = s3_with_explicit_directory_marker
+    directory_path = UPath(f"s3://{bucket}/my-directory", anon=anon, **s3so)
+
+    children = list(directory_path.iterdir())
+
+    assert directory_path not in children
+
+    expected_files = {
+        directory_path / "0.txt",
+        directory_path / "1.txt",
+    }
+    assert set(children) == expected_files, (
+        f"iterdir() should yield only the files in the directory. "
+        f"Expected: {[str(f) for f in expected_files]}, "
+        f"Got: {[str(c) for c in children]}"
+    )
