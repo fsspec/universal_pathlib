@@ -456,6 +456,10 @@ class ProxyUPath:
         return self.__wrapped__.fs
 
     @property
+    def fsid(self) -> str | None:
+        return self.__wrapped__.fsid
+
+    @property
     def path(self) -> str:
         return self.__wrapped__.path
 

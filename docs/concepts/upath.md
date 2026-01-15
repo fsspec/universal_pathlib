@@ -239,9 +239,70 @@ process_file(
 )
 ```
 
+## Path Equality and Filesystem Identity
+
+Unlike `pathlib.Path` which compares paths by their string representation alone, `UPath` considers **filesystem identity** when comparing paths. Two UPaths are equal if they refer to the same file on the same filesystem.
+
+### How Equality Works
+
+```python
+from upath import UPath
+
+# Same path, same filesystem -> equal (even with different options)
+UPath('s3://bucket/file.txt') == UPath('s3://bucket/file.txt', anon=True)  # True
+
+# Same path, different filesystem -> not equal
+UPath('s3://bucket/file.txt') != UPath('s3://bucket/file.txt',
+    endpoint_url='http://localhost:9000')  # True
+```
+
+### Filesystem Identity (fsid)
+
+UPath uses **fsid** (filesystem identifier) to determine if two paths are on the same filesystem. If a cached filesystem exists and implements fsid, that value is used. Otherwise, fsid is computed from the protocol, storage_options, and fsspec global config (`fsspec.config.conf`), **without instantiating the filesystem**. This allows path comparison to work abstractly without requiring credentials or network access.
+
+Unlike fsspec filesystems which raise `NotImplementedError` when fsid is not implemented, `UPath.fsid` returns `None` if the filesystem identity cannot be determined (e.g., for unknown protocols or wrapper filesystems). When fsid is `None`, path comparison falls back to comparing `storage_options` directly:
+
+| Filesystem | Identity Based On |
+|------------|-------------------|
+| Local (`file://`, paths) | Always `"local"` |
+| HTTP/HTTPS | Always `"http"` |
+| S3 | `endpoint_url` (AWS endpoints normalized) |
+| GCS | Always `"gcs"` (single global endpoint) |
+| Azure Blob | `account_name` |
+| SFTP/SSH | `host` + `port` |
+| SMB | `host` + `port` |
+
+Options like authentication (`anon`, `key`, `token`), performance settings (`block_size`), and behavior flags (`auto_mkdir`) don't affect filesystem identity.
+
+### Impact on Path Operations
+
+Filesystem identity affects `relative_to()`, `is_relative_to()`, and parent comparisons:
+
+```python
+from upath import UPath
+
+base = UPath('s3://bucket/data')
+child = UPath('s3://bucket/data/file.txt', anon=True)
+
+# Works: same filesystem despite different storage_options
+child.relative_to(base)     # PurePosixPath('file.txt')
+child.is_relative_to(base)  # True
+base in child.parents       # True
+```
+
+### Comparison with pathlib.Path
+
+| Aspect | `pathlib.Path` | `UPath` |
+|--------|----------------|---------|
+| Equality based on | Path string only | Protocol + path + filesystem identity |
+| `storage_options` | N/A | Ignored if fsid can be determined |
+| Different credentials | N/A | Equal (same filesystem) |
+| Different endpoints | N/A | Not equal (different filesystem) |
+
 ## Learn More
 
 - **pathlib concepts**: See [pathlib.md](pathlib.md) for details on the pathlib API
 - **fsspec backends**: See [filesystems.md](fsspec.md) for information about available filesystems
 - **API reference**: Check the [API documentation](../api/index.md) for complete method details
 - **fsspec details**: Visit [fsspec documentation](https://filesystem-spec.readthedocs.io/) for filesystem-specific options
+- **Migration guide**: See [migration.md](../migration.md) for version-specific changes
