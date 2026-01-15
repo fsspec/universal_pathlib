@@ -30,6 +30,7 @@ from fsspec.spec import AbstractFileSystem
 from upath._chain import DEFAULT_CHAIN_PARSER
 from upath._chain import Chain
 from upath._chain import FSSpecChainParser
+from upath._fsid import _fallback_fsid
 from upath._flavour import LazyFlavourDescriptor
 from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
@@ -301,6 +302,47 @@ class _UPathMixin(metaclass=_UPathMeta):
                 str(self), self.protocol, self.storage_options
             )
             return fs
+
+    @property
+    def fsid(self) -> str | None:
+        """The filesystem identifier for this path.
+
+        Returns a string that identifies the filesystem this path is on,
+        or None if the filesystem identity cannot be determined. Used by
+        __eq__, relative_to, and is_relative_to to compare paths.
+
+        The fsid ignores storage_options that don't affect which filesystem
+        is accessed (e.g., auth, performance settings). Options that do
+        affect identity (e.g., endpoint_url for S3) are included.
+
+        Note
+        ----
+        This property does not instantiate the filesystem. If a cached
+        filesystem exists and implements fsid, that value is used. Otherwise,
+        fsid is computed from protocol, storage_options, and fsspec global
+        config (``fsspec.config.conf``) without filesystem access.
+
+        Unlike fsspec filesystems which raise NotImplementedError when fsid
+        is not implemented, UPath.fsid returns None if the filesystem identity
+        cannot be determined (e.g., for unknown protocols or wrapper filesystems).
+        When fsid is None, path comparison falls back to comparing storage_options
+        directly.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> UPath('/tmp/file.txt').fsid
+        'local'
+        >>> UPath('s3://bucket/key').fsid
+        's3_aws'
+        >>> UPath('s3://bucket/key', endpoint_url='http://localhost:9000').fsid
+        's3_...'  # Different hash for non-AWS endpoint
+
+        """
+        try:
+            return self._fs_cached.fsid
+        except (AttributeError, NotImplementedError):
+            return _fallback_fsid(self.protocol, self.storage_options)
 
     @property
     def path(self) -> str:
@@ -1696,8 +1738,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             return self.parser.isabs(self.__vfspath__())
 
     def __eq__(self, other: object) -> bool:
-        """UPaths are considered equal if their protocol, path and
-        storage_options are equal."""
+        """Check equality based on protocol, path, and filesystem identity.
+
+        Two UPaths are equal if they refer to the same file on the same
+        filesystem. Filesystem identity is determined by fsid, which ignores
+        options that don't affect which filesystem is accessed (e.g., auth,
+        performance settings). Options that do affect identity (e.g.,
+        endpoint_url for S3) will make paths unequal.
+
+        For filesystems where fsid cannot be determined, falls back to
+        comparing storage_options directly.
+        """
         if not isinstance(other, UPath):
             return NotImplemented
 
@@ -1716,11 +1767,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 # One is relative, one is not - they can't be equal
                 return False
 
-        return (
-            self.__vfspath__() == other.__vfspath__()
-            and self.protocol == other.protocol
-            and self.storage_options == other.storage_options
-        )
+        if self.__vfspath__() != other.__vfspath__() or self.protocol != other.protocol:
+            return False
+
+        fsid1, fsid2 = self.fsid, other.fsid
+        if fsid1 is not None and fsid2 is not None:
+            return fsid1 == fsid2
+
+        return self.storage_options == other.storage_options
 
     def __hash__(self) -> int:
         """The returned hash is based on the protocol and path only.
@@ -2063,7 +2117,11 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     "incompatible protocols:"
                     f" {self.protocol!r} != {other.protocol!r}"
                 )
-            if self.storage_options != other.storage_options:
+            fsid1, fsid2 = self.fsid, other.fsid
+            if fsid1 is not None and fsid2 is not None:
+                if fsid1 != fsid2:
+                    raise ValueError(f"incompatible filesystems: {fsid1!r} != {fsid2!r}")
+            elif self.storage_options != other.storage_options:
                 raise ValueError(
                     "incompatible storage_options:"
                     f" {self.storage_options!r} != {other.storage_options!r}"
@@ -2087,8 +2145,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         *_deprecated: Any,
     ) -> bool:  # type: ignore[override]
         """Return True if the path is relative to another path identified."""
-        if isinstance(other, UPath) and self.storage_options != other.storage_options:
-            return False
+        if isinstance(other, UPath):
+            fsid1, fsid2 = self.fsid, other.fsid
+            if fsid1 is not None and fsid2 is not None:
+                if fsid1 != fsid2:
+                    return False
+            elif self.storage_options != other.storage_options:
+                return False
         elif isinstance(other, str):
             other = self.with_segments(other)
         return self == other or other in self.parents
