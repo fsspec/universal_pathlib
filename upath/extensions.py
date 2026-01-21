@@ -583,7 +583,8 @@ class ProxyUPath:
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
-        return UPath.__get_pydantic_core_schema__.__func__(cls, source_type, handler)
+        cs = UPath.__get_pydantic_core_schema__.__func__  # type: ignore[attr-defined]
+        return cs(cls, source_type, handler)
 
 
 UPath.register(ProxyUPath)
