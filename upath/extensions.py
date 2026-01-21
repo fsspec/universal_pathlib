@@ -38,6 +38,9 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import Self
 
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core.core_schema import CoreSchema
+
 __all__ = [
     "ProxyUPath",
 ]
@@ -575,6 +578,12 @@ class ProxyUPath:
         case_sensitive: bool | None = None,
     ) -> bool:
         return self.__wrapped__.full_match(pattern, case_sensitive=case_sensitive)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return UPath.__get_pydantic_core_schema__.__func__(cls, source_type, handler)
 
 
 UPath.register(ProxyUPath)
