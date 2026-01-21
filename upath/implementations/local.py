@@ -220,11 +220,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
         eq_path = super().__eq__(other)
         if eq_path is NotImplemented:
             return NotImplemented
-        return (
-            eq_path
-            and self.protocol == other.protocol
-            and self.storage_options == other.storage_options
-        )
+        if not eq_path or self.protocol != other.protocol:
+            return False
+        fsid1, fsid2 = self.fsid, other.fsid
+        if fsid1 is not None and fsid2 is not None:
+            return fsid1 == fsid2
+        return self.storage_options == other.storage_options
 
     def __ne__(self, other: object) -> bool:
         if not isinstance(other, UPath):
@@ -232,11 +233,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
         ne_path = super().__ne__(other)
         if ne_path is NotImplemented:
             return NotImplemented
-        return (
-            ne_path
-            or self.protocol != other.protocol
-            or self.storage_options != other.storage_options
-        )
+        if ne_path or self.protocol != other.protocol:
+            return True
+        fsid1, fsid2 = self.fsid, other.fsid
+        if fsid1 is not None and fsid2 is not None:
+            return fsid1 != fsid2
+        return self.storage_options != other.storage_options
 
     def __hash__(self) -> int:
         return super().__hash__()

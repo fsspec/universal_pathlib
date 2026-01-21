@@ -342,10 +342,13 @@ def test_relative_to():
     with pytest.raises(ValueError):
         UPath("s3://test_bucket/file.txt").relative_to(UPath("gcs://test_bucket"))
 
-    with pytest.raises(ValueError):
+    # S3 paths with different auth options but same endpoint should work
+    # (they have the same fsid "s3_aws")
+    assert "file.txt" == str(
         UPath("s3://test_bucket/file.txt", anon=True).relative_to(
             UPath("s3://test_bucket", anon=False)
         )
+    )
 
 
 def test_uri_parsing():
