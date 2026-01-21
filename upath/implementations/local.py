@@ -48,6 +48,9 @@ if TYPE_CHECKING:
         from typing_extensions import Self
         from typing_extensions import Unpack
 
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core.core_schema import CoreSchema
+
     from upath.types.storage_options import FileStorageOptions
 
     _WT = TypeVar("_WT", bound="WritablePath")
@@ -724,6 +727,13 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     stacklevel=2,
                 )
             return super().chmod(mode)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        cs = UPath.__get_pydantic_core_schema__.__func__  # type: ignore[attr-defined]
+        return cs(cls, source_type, handler)
 
 
 UPath.register(LocalPath)

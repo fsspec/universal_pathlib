@@ -7,6 +7,12 @@ import pytest
 from fsspec.implementations.http import get_client
 
 from upath import UPath
+from upath.implementations.local import FilePath
+from upath.implementations.local import PosixUPath
+from upath.implementations.local import WindowsUPath
+
+from .utils import only_on_windows
+from .utils import skip_on_windows
 
 
 @pytest.mark.parametrize(
@@ -111,6 +117,43 @@ def test_dump_non_serializable_json():
         pydantic.TypeAdapter(UPath).dump_python(
             UPath("https://www.example.com", get_client=get_client), mode="json"
         )
+
+
+def test_proxyupath_serialization():
+    from upath.extensions import ProxyUPath
+
+    u = ProxyUPath("memory://my/path", some_option=True)
+
+    ta = pydantic.TypeAdapter(ProxyUPath)
+    dumped = ta.dump_python(u, mode="python")
+    loaded = ta.validate_python(dumped)
+
+    assert isinstance(loaded, ProxyUPath)
+    assert loaded.path == u.path
+    assert loaded.protocol == u.protocol
+    assert loaded.storage_options == u.storage_options
+
+
+@pytest.mark.parametrize(
+    "path,cls",
+    [
+        pytest.param("/my/path", PosixUPath, marks=skip_on_windows(None)),
+        pytest.param("C:\\my\\path", WindowsUPath, marks=only_on_windows(None)),
+        ("file:///my/path", FilePath),
+    ],
+)
+def test_localpath_serialization(path, cls):
+    u = UPath(path)
+    assert type(u) is cls
+
+    ta = pydantic.TypeAdapter(cls)
+    dumped = ta.dump_python(u, mode="python")
+    loaded = ta.validate_python(dumped)
+
+    assert isinstance(loaded, cls)
+    assert loaded.path == u.path
+    assert loaded.protocol == u.protocol
+    assert loaded.storage_options == u.storage_options
 
 
 def test_json_schema():
