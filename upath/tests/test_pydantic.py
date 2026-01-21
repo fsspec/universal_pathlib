@@ -113,6 +113,21 @@ def test_dump_non_serializable_json():
         )
 
 
+def test_proxyupath_serialization():
+    from upath.extensions import ProxyUPath
+
+    u = ProxyUPath("memory://my/path", some_option=True)
+
+    ta = pydantic.TypeAdapter(ProxyUPath)
+    dumped = ta.dump_python(u, mode="python")
+    loaded = ta.validate_python(dumped)
+
+    assert isinstance(loaded, ProxyUPath)
+    assert loaded.path == u.path
+    assert loaded.protocol == u.protocol
+    assert loaded.storage_options == u.storage_options
+
+
 def test_json_schema():
     ta = pydantic.TypeAdapter(UPath)
     ta.json_schema()
