@@ -1226,15 +1226,26 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         base_path = base.path
         if not fs.isdir(base_path):
             raise NotADirectoryError(str(self))
-        for name in fs.listdir(base_path):
+        name: str
+        for info in fs.listdir(base_path):
             # fsspec returns dictionaries
-            if isinstance(name, dict):
-                name = name.get("name")
+            if isinstance(info, dict):
+                name = info["name"]
+            else:
+                name, info = info, {}  # type: ignore[assignment]
+            # skip the base path itself if a zero-length name
+            name = name.removesuffix(sep)
+            if (
+                name == base_path
+                and info.get("size", -1) == 0
+                and info.get("Key", None) == base_path + sep
+            ):
+                continue  # skip empty names
+            # only want the path name with iterdir
+            _, _, name = name.rpartition(self.parser.sep)
             if name in {".", ".."}:
                 # Yielding a path object for these makes little sense
                 continue
-            # only want the path name with iterdir
-            _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
             yield base.with_segments(base_path, name)
 
     def __open_reader__(self) -> BinaryIO:
