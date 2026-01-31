@@ -155,6 +155,7 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
             )
         if not item or item in self._m:
             get_upath_class.cache_clear()  # type: ignore[attr-defined]
+            _get_implementation_protocols.cache_clear()  # type: ignore[attr-defined]
         self._m[item] = value
 
     def __delitem__(self, __v: str) -> None:
@@ -209,6 +210,25 @@ def register_implementation(
     if not clobber and protocol in _registry:
         raise ValueError(f"{protocol!r} is already in registry and clobber is False!")
     _registry[protocol] = cls
+
+
+@lru_cache  # type: ignore[misc]
+def _get_implementation_protocols(cls: type[upath.UPath]) -> list[str]:
+    """return protocols registered for a given UPath class without triggering imports"""
+    if not issubclass(cls, upath.UPath):
+        raise ValueError(f"{cls!r} is not a UPath subclass")
+    loaded = (p for p, c in _registry._m.maps[0].items() if c is cls)
+    known = (
+        p
+        for p, fqn in _registry.known_implementations.items()
+        if fqn == f"{cls.__module__}.{cls.__name__}"
+    )
+    eps = (
+        p
+        for p, ep in _registry._entries.items()
+        if ep.module == cls.__module__ and ep.attr == cls.__name__
+    )
+    return list(dict.fromkeys((*loaded, *known, *eps)))
 
 
 # --- get_upath_class type overloads ------------------------------------------
