@@ -38,6 +38,7 @@ from upath._info import UPathInfo
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
+from upath.registry import _get_implementation_protocols
 from upath.registry import available_implementations
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
@@ -405,7 +406,7 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     _protocol_dispatch: bool | None = None
 
-    def __new__(
+    def __new__(  # noqa C901
         cls,
         *args: JoinablePathLike,
         protocol: str | None = None,
@@ -436,6 +437,27 @@ class _UPathMixin(metaclass=_UPathMeta):
             if "incompatible with" in str(e):
                 raise _IncompatibleProtocolError(str(e)) from e
             raise
+
+        # subclasses should default to their own protocol
+        if protocol is None and cls is not UPath:
+            impl_protocols = _get_implementation_protocols(cls)
+            if not pth_protocol and impl_protocols:
+                pth_protocol = impl_protocols[0]
+            elif pth_protocol and pth_protocol not in impl_protocols:
+                msg_protocol = pth_protocol
+                if not pth_protocol:
+                    msg_protocol = "'' (empty string)"
+                msg = (
+                    f"{cls.__name__!s}(...) detected protocol {msg_protocol!s}"
+                    f" which is incompatible with {cls.__name__}."
+                )
+                if not pth_protocol or pth_protocol not in available_implementations():
+                    msg += (
+                        " Did you forget to register the subclass for this protocol"
+                        " with upath.registry.register_implementation()?"
+                    )
+                raise _IncompatibleProtocolError(msg)
+
         # determine which UPath subclass to dispatch to
         upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
@@ -471,12 +493,17 @@ class _UPathMixin(metaclass=_UPathMeta):
         else:
             msg_protocol = pth_protocol
             if not pth_protocol:
-                msg_protocol += " (empty string)"
+                msg_protocol = "'' (empty string)"
             msg = (
                 f"{cls.__name__!s}(...) detected protocol {msg_protocol!s}"
                 f" which is incompatible with {cls.__name__}."
             )
-            if not pth_protocol or pth_protocol not in available_implementations():
+            if (
+                # find a better way
+                (not pth_protocol and cls.__name__ not in ["CloudPath", "LocalPath"])
+                or pth_protocol
+                and pth_protocol not in available_implementations()
+            ):
                 msg += (
                     " Did you forget to register the subclass for this protocol"
                     " with upath.registry.register_implementation()?"
@@ -514,7 +541,6 @@ class _UPathMixin(metaclass=_UPathMeta):
             Additional storage options for the path.
 
         """
-
         # todo: avoid duplicating this call from __new__
         protocol = get_upath_protocol(
             args[0] if args else "",
@@ -532,6 +558,12 @@ class _UPathMixin(metaclass=_UPathMeta):
         #   is really necessary though. A warning might be enough...
         if not compatible_protocol(protocol, *args):
             raise ValueError("can't combine incompatible UPath protocols")
+
+        # subclasses should default to their own protocol
+        if not protocol:
+            impl_protocols = _get_implementation_protocols(type(self))
+            if impl_protocols:
+                protocol = impl_protocols[0]
 
         if args:
             args0 = args[0]
