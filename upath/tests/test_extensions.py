@@ -214,3 +214,34 @@ def test_protocol_dispatch_deprecation_warning():
         a = MyPath(".", protocol="memory")
 
     assert isinstance(a, MyPath)
+
+
+# Protocol to sample URI mapping for compatibility tests
+_PROTOCOL_URIS = {
+    "s3": "s3://bucket/folder",
+    "gs": "gs://bucket/folder",
+    "memory": "memory://folder",
+    "file": "file:/tmp/folder",
+    "http": "http://example.com/path",
+    "": "/tmp/folder",
+}
+
+# Generate incompatible combinations
+_PROXY_INCOMPATIBLE_CASES = [
+    (_PROTOCOL_URIS[uri_protocol], target_protocol)
+    for target_protocol in _PROTOCOL_URIS
+    for uri_protocol in _PROTOCOL_URIS
+    if target_protocol != uri_protocol and uri_protocol != ""
+]
+
+
+@pytest.mark.parametrize("uri,protocol", _PROXY_INCOMPATIBLE_CASES)
+def test_proxy_subclass_incompatible_protocol_uri(uri, protocol):
+    """Test that ProxyUPath subclasses raise TypeError for incompatible protocols."""
+
+    class MyProxyPath(ProxyUPath):
+        pass
+
+    # ProxyUPath wraps the underlying path, so it should also raise TypeError
+    with pytest.raises(TypeError, match=r".*incompatible with"):
+        MyProxyPath(uri, protocol=protocol)
