@@ -11,6 +11,7 @@ import pytest
 from upath import UPath
 from upath.implementations.cloud import GCSPath
 from upath.implementations.cloud import S3Path
+from upath.registry import get_upath_class
 from upath.types import ReadablePath
 from upath.types import WritablePath
 
@@ -483,3 +484,18 @@ def test_constructor_compatible_protocol_uri(uri, protocol):
 def test_constructor_incompatible_protocol_uri(uri, protocol):
     with pytest.raises(ValueError, match=r".*incompatible with"):
         UPath(uri, protocol=protocol)
+
+
+@pytest.mark.parametrize(
+    "uri,protocol",
+    [
+        ("s3://bucket/folder", "gs"),
+        ("gs://bucket/folder", "s3"),
+        ("memory://folder", "s3"),
+        ("file:/tmp/folder", "s3"),
+    ],
+)
+def test_subclass_constructor_incompatible_protocol_uri(uri, protocol):
+    cls = get_upath_class(protocol)
+    with pytest.raises(ValueError, match=r".*incompatible with"):
+        cls(uri)
