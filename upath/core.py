@@ -38,6 +38,7 @@ from upath._info import UPathInfo
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
+from upath.registry import available_implementations
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
@@ -468,26 +469,19 @@ class _UPathMixin(metaclass=_UPathMeta):
             raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
 
         else:
-            msg_protocol = repr(pth_protocol)
+            msg_protocol = pth_protocol
             if not pth_protocol:
                 msg_protocol += " (empty string)"
             msg = (
-                f"{cls.__name__!s}(...) detected protocol {msg_protocol!s} and"
-                f" returns a {upath_cls.__name__} instance that isn't a direct"
-                f" subclass of {cls.__name__}. This will raise an exception in"
-                " future universal_pathlib versions. To prevent the issue, use"
-                " UPath(...) to create instances of unrelated protocols or you"
-                f" can instead derive your subclass {cls.__name__!s}(...) from"
-                f" {upath_cls.__name__} or alternatively override behavior via"
-                f" registering the {cls.__name__} implementation with protocol"
-                f" {msg_protocol!s} replacing the default implementation."
+                f"{cls.__name__!s}(...) detected protocol {msg_protocol!s}"
+                f" which is incompatible with {cls.__name__}."
             )
-            warnings.warn(
-                msg,
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            upath_cls = cls
+            if not pth_protocol or pth_protocol not in available_implementations():
+                msg += (
+                    " Did you forget to register the subclass for this protocol"
+                    " with upath.registry.register_implementation()?"
+                )
+            raise _IncompatibleProtocolError(msg)
 
         return object.__new__(upath_cls)
 
