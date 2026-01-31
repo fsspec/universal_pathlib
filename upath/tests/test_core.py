@@ -12,6 +12,7 @@ from upath import UPath
 from upath.implementations.cloud import GCSPath
 from upath.implementations.cloud import S3Path
 from upath.registry import get_upath_class
+from upath.registry import register_implementation
 from upath.types import ReadablePath
 from upath.types import WritablePath
 
@@ -113,12 +114,35 @@ def test_subclass(local_testdir):
     class MyPath(UPath):
         pass
 
-    with pytest.warns(
-        DeprecationWarning, match=r"MyPath\(...\) detected protocol '' .*"
-    ):
-        path = MyPath(local_testdir)
-    assert str(path) == pathlib.Path(local_testdir).as_posix()
+    with pytest.raises(ValueError, match=r".*incompatible with"):
+        MyPath(local_testdir)
+
+
+@pytest.fixture(scope="function")
+def upath_registry_snapshot():
+    """Save and restore the upath registry state around a test."""
+    from upath.registry import _registry
+
+    # Save the current state of the registry's mutable mapping
+    saved_m = _registry._m.maps[0].copy()
+    try:
+        yield
+    finally:
+        # Restore the registry state
+        _registry._m.maps[0].clear()
+        _registry._m.maps[0].update(saved_m)
+        get_upath_class.cache_clear()
+
+
+def test_subclass_registered(upath_registry_snapshot):
+    class MyPath(UPath):
+        pass
+
+    register_implementation("memory", MyPath, clobber=True)
+    path = MyPath("memory:///test_path")
+    assert str(path) == "memory:///test_path"
     assert issubclass(MyPath, UPath)
+    assert isinstance(path, MyPath)
     assert isinstance(path, pathlib_abc.ReadablePath)
     assert isinstance(path, pathlib_abc.WritablePath)
     assert not isinstance(path, pathlib.Path)
