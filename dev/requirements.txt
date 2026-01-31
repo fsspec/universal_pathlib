@@ -10,8 +10,8 @@ ocifs==1.3.4
 webdav4[fsspec]==0.10.0
 # gfrivefs @ git+https://github.com/fsspec/gdrivefs@master broken ...
 morefs[asynclocalfs]==0.2.2
-dvc==3.64.2
-huggingface_hub==1.2.1
+dvc==3.65.0
+huggingface_hub==1.2.3
 lakefs-spec==0.12.0
 ossfs==2025.5.0
 fsspec-xrootd==0.5.1
