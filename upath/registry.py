@@ -220,7 +220,11 @@ def _get_implementation_protocols(cls: type[upath.UPath]) -> list[str]:
     if cls.__module__ == "upath.implementations._experimental":
         # experimental fallback implementations have no registry entry
         return [cls.__name__[1:-4].lower()]
-    loaded = (p for p, c in _registry._m.maps[0].items() if c is cls)
+    loaded = (
+        p
+        for p, c in _registry._m.maps[0].items()  # type: ignore[attr-defined]
+        if c is cls
+    )
     known = (
         p
         for p, fqn in _registry.known_implementations.items()
