@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-01-31
+
+### Fixed
+- upath.core: raise TypeError if using subclass directly with wrong protocol (#541)
+- upath.core: (backcompat) TypeError on protocol incompatibility (#540)
+- upath.extensions: Pydantic serialize ProxyUPath (#538)
+
+### Changed
+- upath: updated flavours (#512)
+
 ## [0.3.8] - 2026-01-11
 
 ### Added
@@ -344,7 +354,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/fsspec/universal_pathlib/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/fsspec/universal_pathlib/compare/v0.3.5...v0.3.6
