@@ -121,7 +121,17 @@ class _IncompatibleProtocolError(TypeError, ValueError):
     """switch to TypeError for incompatible protocols in a backward compatible way.
 
     !!! Do not use this exception directly !!!
+    Catch TypeError instead, if you need to handle incompatible protocol errors.
+
+    We'll do the switch in a future major release.
     """
+
+    # evil: make this look like a built-in TypeError
+    __module__ = "builtins"
+    __qualname__ = "TypeError"
+
+    def __repr__(self) -> str:
+        return f"TypeError({', '.join(map(repr, self.args))})"
 
 
 class _UPathMeta(ABCMeta):
