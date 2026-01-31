@@ -55,6 +55,24 @@ def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     except KeyError:
         raise ValueError(f"Protocol not known: {p1!r}")
 
+    if o0 == o1:
+        return True
+
+    if isinstance(o0, dict):
+        o0 = o0.get("class")
+    elif isinstance(o0, type):
+        if o0.__module__ is not None:
+            o0 = o0.__module__ + "." + o0.__name__
+        else:
+            o0 = o0.__name__
+    if isinstance(o1, dict):
+        o1 = o1.get("class")
+    elif isinstance(o1, type):
+        if o1.__module__ is not None:
+            o1 = o1.__module__ + "." + o1.__name__
+        else:
+            o1 = o1.__name__
+
     return o0 == o1
 
 

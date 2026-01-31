@@ -217,6 +217,9 @@ def _get_implementation_protocols(cls: type[upath.UPath]) -> list[str]:
     """return protocols registered for a given UPath class without triggering imports"""
     if not issubclass(cls, upath.UPath):
         raise ValueError(f"{cls!r} is not a UPath subclass")
+    if cls.__module__ == "upath.implementations._experimental":
+        # experimental fallback implementations have no registry entry
+        return [cls.__name__[1:-4].lower()]
     loaded = (p for p, c in _registry._m.maps[0].items() if c is cls)
     known = (
         p
