@@ -11,6 +11,8 @@ import pytest
 from upath import UPath
 from upath.implementations.cloud import GCSPath
 from upath.implementations.cloud import S3Path
+from upath.registry import get_upath_class
+from upath.registry import register_implementation
 from upath.types import ReadablePath
 from upath.types import WritablePath
 
@@ -112,12 +114,35 @@ def test_subclass(local_testdir):
     class MyPath(UPath):
         pass
 
-    with pytest.warns(
-        DeprecationWarning, match=r"MyPath\(...\) detected protocol '' .*"
-    ):
-        path = MyPath(local_testdir)
-    assert str(path) == pathlib.Path(local_testdir).as_posix()
+    with pytest.raises(ValueError, match=r".*incompatible with"):
+        MyPath(local_testdir)
+
+
+@pytest.fixture(scope="function")
+def upath_registry_snapshot():
+    """Save and restore the upath registry state around a test."""
+    from upath.registry import _registry
+
+    # Save the current state of the registry's mutable mapping
+    saved_m = _registry._m.maps[0].copy()
+    try:
+        yield
+    finally:
+        # Restore the registry state
+        _registry._m.maps[0].clear()
+        _registry._m.maps[0].update(saved_m)
+        get_upath_class.cache_clear()
+
+
+def test_subclass_registered(upath_registry_snapshot):
+    class MyPath(UPath):
+        pass
+
+    register_implementation("memory", MyPath, clobber=True)
+    path = MyPath("memory:///test_path")
+    assert str(path) == "memory:///test_path"
     assert issubclass(MyPath, UPath)
+    assert isinstance(path, MyPath)
     assert isinstance(path, pathlib_abc.ReadablePath)
     assert isinstance(path, pathlib_abc.WritablePath)
     assert not isinstance(path, pathlib.Path)
@@ -453,14 +478,48 @@ def test_open_a_local_upath(tmp_path, protocol):
 @pytest.mark.parametrize(
     "uri,protocol",
     [
+        # s3 compatible protocols
         ("s3://bucket/folder", "s3"),
-        ("gs://bucket/folder", "gs"),
+        ("s3a://bucket/folder", "s3a"),
         ("bucket/folder", "s3"),
+        # gcs compatible
+        ("gs://bucket/folder", "gs"),
+        ("gcs://bucket/folder", "gcs"),
+        ("bucket/folder", "gs"),
+        # azure compatible
+        ("az://container/blob", "az"),
+        ("abfs://container/blob", "abfs"),
+        ("abfss://container/blob", "abfss"),
+        ("adl://container/blob", "adl"),
+        # memory
         ("memory://folder", "memory"),
+        ("/folder", "memory"),
+        # file/local
         ("file:/tmp/folder", "file"),
         ("/tmp/folder", "file"),
+        ("file:/tmp/folder", "local"),
+        ("/tmp/folder", "local"),
         ("/tmp/folder", ""),
         ("a/b/c", ""),
+        # http/https
+        ("http://example.com/path", "http"),
+        ("https://example.com/path", "https"),
+        # ftp
+        ("ftp://example.com/path", "ftp"),
+        # sftp/ssh
+        ("sftp://example.com/path", "sftp"),
+        ("ssh://example.com/path", "ssh"),
+        # smb
+        ("smb://server/share/path", "smb"),
+        # hdfs
+        ("hdfs://namenode/path", "hdfs"),
+        # webdav - requires base_url, skip for now
+        # github
+        ("github://owner:repo@branch/path", "github"),
+        # data
+        ("data:text/plain;base64,SGVsbG8=", "data"),
+        # huggingface
+        ("hf://datasets/user/repo/path", "hf"),
     ],
 )
 def test_constructor_compatible_protocol_uri(uri, protocol):
@@ -468,18 +527,50 @@ def test_constructor_compatible_protocol_uri(uri, protocol):
     assert p.protocol == protocol
 
 
-@pytest.mark.parametrize(
-    "uri,protocol",
-    [
-        ("s3://bucket/folder", "gs"),
-        ("gs://bucket/folder", "s3"),
-        ("memory://folder", "s3"),
-        ("file:/tmp/folder", "s3"),
-        ("s3://bucket/folder", ""),
-        ("memory://folder", ""),
-        ("file:/tmp/folder", ""),
-    ],
-)
+# Protocol to sample URI mapping
+_PROTOCOL_URIS = {
+    "s3": "s3://bucket/folder",
+    "gs": "gs://bucket/folder",
+    "az": "az://container/blob",
+    "memory": "memory://folder",
+    "file": "file:/tmp/folder",
+    "http": "http://example.com/path",
+    "ftp": "ftp://example.com/path",
+    "sftp": "sftp://example.com/path",
+    "smb": "smb://server/share/path",
+    "hdfs": "hdfs://namenode/path",
+}
+
+# Generate incompatible combinations: each protocol with URIs from other protocols
+_INCOMPATIBLE_CASES = [
+    (_PROTOCOL_URIS[uri_protocol], target_protocol)
+    for target_protocol in _PROTOCOL_URIS
+    for uri_protocol in _PROTOCOL_URIS
+    if target_protocol != uri_protocol
+]
+
+# Also test explicit empty protocol with protocol-prefixed URIs
+_INCOMPATIBLE_CASES.extend([(uri, "") for uri in _PROTOCOL_URIS.values()])
+
+
+@pytest.mark.parametrize("uri,protocol", _INCOMPATIBLE_CASES)
 def test_constructor_incompatible_protocol_uri(uri, protocol):
-    with pytest.raises(ValueError, match=r".*incompatible with"):
+    with pytest.raises(TypeError, match=r".*incompatible with"):
         UPath(uri, protocol=protocol)
+
+
+# Test subclass instantiation with incompatible URIs
+# Use protocols that have registered implementations we can get via get_upath_class
+_SUBCLASS_INCOMPATIBLE_CASES = [
+    (_PROTOCOL_URIS[uri_protocol], target_protocol)
+    for target_protocol in _PROTOCOL_URIS
+    for uri_protocol in _PROTOCOL_URIS
+    if target_protocol != uri_protocol
+]
+
+
+@pytest.mark.parametrize("uri,protocol", _SUBCLASS_INCOMPATIBLE_CASES)
+def test_subclass_constructor_incompatible_protocol_uri(uri, protocol):
+    cls = get_upath_class(protocol)
+    with pytest.raises(TypeError, match=r".*incompatible with"):
+        cls(uri)
