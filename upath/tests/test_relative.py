@@ -98,10 +98,18 @@ def test_relative_path_validation():
     with pytest.raises(ValueError, match="incompatible protocols"):
         p.relative_to(UPath("s3://bucket"))
 
-    # Different storage options should fail
-    with pytest.raises(ValueError, match="incompatible storage_options"):
+    # S3 paths with different auth options but same endpoint should work
+    # (they have the same fsid "s3_aws")
+    assert "file" == str(
         UPath("s3://bucket/file", anon=True).relative_to(
             UPath("s3://bucket", anon=False)
+        )
+    )
+
+    # Different endpoints should fail (different fsid)
+    with pytest.raises(ValueError, match="incompatible filesystems"):
+        UPath("s3://bucket/file").relative_to(
+            UPath("s3://bucket", endpoint_url="http://localhost:9000")
         )
 
 
