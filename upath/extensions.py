@@ -24,6 +24,7 @@ from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
+from upath.types import OnNameCollisionFunc
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
@@ -519,10 +520,14 @@ class ProxyUPath:
             data, encoding=encoding, errors=errors, newline=newline
         )
 
-    def _copy_from(
-        self, source: ReadablePath | Self, follow_symlinks: bool = True
-    ) -> None:
-        self.__wrapped__._copy_from(source, follow_symlinks=follow_symlinks)  # type: ignore  # noqa: E501
+    def _copy_from( 
+        self, 
+        source: ReadablePath, 
+        follow_symlinks: bool = True, 
+        on_name_collision: OnNameCollisionFunc | None = None, 
+        **kwargs: Any, 
+    ) -> None: 
+        self.__wrapped__._copy_from(source, follow_symlinks=follow_symlinks, on_name_collision=on_name_collision, **kwargs)  # type: ignore  # noqa: E501
 
     @property
     def anchor(self) -> str:
