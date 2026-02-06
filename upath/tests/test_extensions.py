@@ -245,3 +245,33 @@ def test_proxy_subclass_incompatible_protocol_uri(uri, protocol):
     # ProxyUPath wraps the underlying path, so it should also raise TypeError
     with pytest.raises(TypeError, match=r".*incompatible with"):
         MyProxyPath(uri, protocol=protocol)
+
+
+def test_proxy_upath_copy_from_local(tmp_path, s3_fixture       ):
+    """Test thats ProxyPath can accept extra kwargs in _copy_from() without breaking on Python 3.14.
+
+    Regression test for https://github.com/fsspec/universal_pathlib/issues/546
+    """
+    bucket, anon, s3so = s3_fixture
+
+    class MyProxyPath(ProxyUPath):
+        def __init__(self, path, **kwargs):
+            self._lazy = UPath(path, **kwargs)
+
+        @property
+        def __wrapped__(self):
+            return self._lazy
+
+        @classmethod
+        def _from_upath(cls, upath, /):
+            obj = object.__new__(cls)
+            obj._lazy = upath
+            return obj
+
+    source = UPath(tmp_path / "test.txt")
+    source.write_text("hello")
+
+    destination = MyProxyPath(f"{bucket}/test_copy_from.txt", anon=anon, **s3so)
+    source.move(destination)
+
+    assert destination.read_text() == "hello"
