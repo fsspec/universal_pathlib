@@ -18,6 +18,7 @@ try:
 except ImportError:
     pytestmark = pytest.mark.skip
 
+pytestmark = pytest.mark.network
 
 @pytest.fixture
 def internet_connection():
