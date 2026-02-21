@@ -520,13 +520,13 @@ class ProxyUPath:
             data, encoding=encoding, errors=errors, newline=newline
         )
 
-    def _copy_from( 
-        self, 
-        source: ReadablePath, 
-        follow_symlinks: bool = True, 
-        on_name_collision: OnNameCollisionFunc | None = None, 
-        **kwargs: Any, 
-    ) -> None: 
+    def _copy_from(
+        self,
+        source: ReadablePath,
+        follow_symlinks: bool = True,
+        on_name_collision: OnNameCollisionFunc | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.__wrapped__._copy_from(source, follow_symlinks=follow_symlinks, on_name_collision=on_name_collision, **kwargs)  # type: ignore  # noqa: E501
 
     @property
