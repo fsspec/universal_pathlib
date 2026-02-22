@@ -522,7 +522,7 @@ class ProxyUPath:
 
     def _copy_from(
         self,
-        source: ReadablePath,
+        source: ReadablePath | Self,
         follow_symlinks: bool = True,
         on_name_collision: OnNameCollisionFunc | None = None,
         **kwargs: Any,
