@@ -13,12 +13,13 @@ from ..utils import overrides_base
 from ..utils import skip_on_windows
 from ..utils import xfail_if_no_ssl_connection
 
+pytestmark = pytest.mark.network
+
 try:
     get_filesystem_class("http")
 except ImportError:
     pytestmark = pytest.mark.skip
 
-pytestmark = pytest.mark.network
 
 @pytest.fixture
 def internet_connection():
