@@ -170,6 +170,7 @@ def test_pathlib_consistent_join():
 
 
 def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
+    pytest.importorskip("s3fs")
     anon, s3so = s3_server
 
     s3 = fsspec.filesystem("s3", anon=anon, **{**s3so, "use_listings_cache": False})

@@ -35,6 +35,10 @@ def test_protocol_storage_options_fs_preserved(protocol, storage_options, path, 
 
     assert rel.protocol == protocol
     assert dict(**rel.storage_options) == storage_options
+    try:
+        rel.fs
+    except ImportError:
+        pytest.skip(reason=f"{protocol} not available")
     assert isinstance(rel.fs, type(p.fs))
 
 
