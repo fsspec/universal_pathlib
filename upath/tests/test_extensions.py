@@ -245,3 +245,21 @@ def test_proxy_subclass_incompatible_protocol_uri(uri, protocol):
     # ProxyUPath wraps the underlying path, so it should also raise TypeError
     with pytest.raises(TypeError, match=r".*incompatible with"):
         MyProxyPath(uri, protocol=protocol)
+
+
+def test_proxy_upath_copy_from_local(tmp_path):
+    """Test ProxyUPath accepts extra kwargs in _copy_from()
+
+    Regression test for https://github.com/fsspec/universal_pathlib/issues/546
+    """
+
+    class MyProxyPath(ProxyUPath):
+        pass
+
+    source = UPath(tmp_path / "test.txt")
+    source.write_text("hello")
+
+    destination = MyProxyPath("memory://bla/test_copy_from.txt")
+    source.move(destination)
+
+    assert destination.read_text() == "hello"
