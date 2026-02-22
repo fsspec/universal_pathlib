@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-02-22
+
+### Fixed
+- upath.extensions: fix ProxyUPath as copy or move target on 3.14+ (#547)
+
+### Changed
+- upath: updated flavours (#545)
+- ci: updated development dependencies (#550)
+
 ## [0.3.9] - 2026-01-31
 
 ### Fixed
@@ -354,7 +363,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/fsspec/universal_pathlib/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/fsspec/universal_pathlib/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/fsspec/universal_pathlib/compare/v0.3.6...v0.3.7
