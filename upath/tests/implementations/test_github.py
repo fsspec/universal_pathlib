@@ -14,13 +14,16 @@ from ..cases import ReadablePathTests
 from ..utils import OverrideMeta
 from ..utils import overrides_base
 
-pytestmark = pytest.mark.skipif(
-    os.environ.get("CI", False)
-    and not (
-        platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
+pytestmark = [
+    pytest.mark.skipif(
+        os.environ.get("CI", False)
+        and not (
+            platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
+        ),
+        reason="Skipping GitHubPath tests to prevent rate limiting on GitHub API.",
     ),
-    reason="Skipping GitHubPath tests to prevent rate limiting on GitHub API.",
-)
+    pytest.mark.network,
+]
 
 
 def xfail_on_github_connection_error(func):

@@ -128,6 +128,7 @@ addopts = "-ra -m 'not hdfs' -p no:pytest-mypy-plugins"
 markers = [
   "hdfs: mark test as hdfs",
   "pathlib: mark cpython pathlib tests",
+  "network: mark test as requiring access to the internet",
 ]
 
 [tool.coverage.run]
