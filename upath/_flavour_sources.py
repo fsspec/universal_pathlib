@@ -974,7 +974,7 @@ class WebHDFSFlavour(AbstractFileSystemFlavour):
 
 class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'webdav4.fsspec.WebdavFileSystem'
-    __orig_version__ = '0.10.0'
+    __orig_version__ = '0.11.0'
     protocol = ('webdav', 'dav')
     root_marker = ''
     sep = '/'
@@ -983,7 +983,7 @@ class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
     def _strip_protocol(cls, path: str) -> str:
         """Strips protocol from the given path, overriding for type-casting."""
         stripped = super()._strip_protocol(path)
-        return cast(str, stripped)
+        return cast("str", stripped)
 
 
 class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
