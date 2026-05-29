@@ -1880,7 +1880,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             return
         self.fs.rm(self.path, recursive=False)
 
-    def rmdir(self, recursive: bool = True) -> None:  # fixme: non-standard
+    def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:  # fixme: non-standard
         """
         Remove this directory.
 
@@ -1896,7 +1896,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         """
         if not self.is_dir():
             raise NotADirectoryError(str(self))
-        if not recursive and next(self.iterdir()):  # type: ignore[arg-type]
+
+        has_contents = bool(next(self.iterdir()))
+
+        if recursive is UNSET_DEFAULT:
+            if has_contents:
+                warnings.warn(
+                    "This function will change behavior in a future version.",
+                    FutureWarning,
+                )
+            recursive = True
+
+        if not recursive and has_contents:
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
