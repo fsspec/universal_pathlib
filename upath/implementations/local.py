@@ -362,10 +362,13 @@ class LocalPath(_UPathMixin, pathlib.Path):
         )
 
     def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:
-        if recursive is UNSET_DEFAULT or not recursive:
-            return super().rmdir()
-        else:
-            shutil.rmtree(self)
+        if recursive is UNSET_DEFAULT:
+            warnings.warn(
+                "This function will change behavior in a future version.", FutureWarning
+            )
+            recursive = True
+
+        return shutil.rmtree(self) if recursive else super().rmdir()
 
     # we need to override pathlib.Path._copy_from to support it as a
     # WritablePath._copy_from target with support for on_name_collision
