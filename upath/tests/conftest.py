@@ -775,11 +775,11 @@ def xrootd_fixture(local_testdir, xrootd_server):
     pth_testdir = Path(local_testdir)
     dirname = pth_testdir.parent
     # XRootD filesystem does not support put() so copy files the hard way
-    for pth_tup in Path(local_testdir).walk():
-        tdir = xrootd_url + "/" + str(pth_tup[0].relative_to(dirname))
-        fs.mkdir("/shared/" + str(pth_tup[0].relative_to(dirname)))
+    for pth_tup in os.walk(local_testdir):
+        tdir = xrootd_url + "/" + str(Path(pth_tup[0]).relative_to(dirname))
+        fs.mkdir("/shared/" + str(Path(pth_tup[0]).relative_to(dirname)))
         for fpath in pth_tup[2]:
-            with (pth_tup[0] / fpath).open("rb") as infile:
+            with (Path(pth_tup[0]) / fpath).open("rb") as infile:
                 with fsspec.open(tdir + "/" + fpath, mode="wb") as outfile:
                     outfile.write(infile.read())
 
