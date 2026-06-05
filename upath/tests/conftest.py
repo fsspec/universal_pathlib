@@ -742,3 +742,48 @@ def ftp_server(ftp_server_process):
                 del_func(file_path)
             except Exception:
                 pass
+
+
+@pytest.fixture(scope="module")
+def xrootd_server():
+    if shutil.which("docker") is None:
+        pytest.skip("docker not installed")
+
+    name = "fsspec_test_xrootd"
+    stop_docker(name)
+    cmd = (
+        "docker run"
+        " -d"
+        f" --name {name}"
+        f" -u {os.getuid()}"
+        " -p 1094:1094"
+        " --tmpfs /shared"
+        " ponyisi/xrootd_docker xrootd /shared"
+    )
+    try:
+        subprocess.run(shlex.split(cmd))
+        yield "root://localhost//shared"
+    finally:
+        stop_docker(name)
+
+
+@pytest.fixture
+def xrootd_fixture(local_testdir, xrootd_server):
+    xrootd_url = xrootd_server
+    fs = fsspec.filesystem("root", hostid="localhost")
+    fs.clear_instance_cache()
+    pth_testdir = Path(local_testdir)
+    dirname = pth_testdir.parent
+    # XRootD filesystem does not support put() so copy files the hard way
+    for pth_tup in os.walk(local_testdir):
+        tdir = xrootd_url + "/" + str(Path(pth_tup[0]).relative_to(dirname))
+        fs.mkdir("/shared/" + str(Path(pth_tup[0]).relative_to(dirname)))
+        for fpath in pth_tup[2]:
+            with (Path(pth_tup[0]) / fpath).open("rb") as infile:
+                with fsspec.open(tdir + "/" + fpath, mode="wb") as outfile:
+                    outfile.write(infile.read())
+
+    try:
+        yield xrootd_url + "/" + Path(local_testdir).name
+    finally:
+        fs.rm("/shared/" + Path(local_testdir).name, recursive=True)

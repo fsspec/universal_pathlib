@@ -29,6 +29,7 @@ IMPLEMENTATIONS = {
     "https",
     "local",
     "memory",
+    "root",
     "s3",
     "s3a",
     "simplecache",
