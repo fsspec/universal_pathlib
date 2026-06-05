@@ -58,6 +58,7 @@ dev = [
     "adlfs >=2024",
     "huggingface_hub",
     "webdav4[fsspec]",
+    "fsspec-xrootd",
     # testing
     "moto[s3,server]",
     "wsgidav",

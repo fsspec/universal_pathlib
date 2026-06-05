@@ -297,7 +297,12 @@ class FSSpecChainParser:
                 if segment.path.startswith(f"{segment.protocol}:/"):
                     urlpath = segment.path
                 else:
-                    urlpath = f"{segment.protocol}://{segment.path}"
+                    # If "hostid" is specified in the storage options then insert it
+                    # relevant for XRootDPath
+                    if (hostid := segment.storage_options.get("hostid")) is not None:
+                        urlpath = f"{segment.protocol}://{hostid}/{segment.path}"
+                    else:
+                        urlpath = f"{segment.protocol}://{segment.path}"
             elif segment.protocol:
                 urlpath = segment.protocol
             elif segment.path is not None:
