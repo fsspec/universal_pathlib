@@ -1192,6 +1192,25 @@ class PosixPathAsPureTest(PurePosixPathTest, unittest.TestCase):
 class WindowsPathAsPureTest(PureWindowsPathTest, unittest.TestCase):
     cls = WindowsUPath
 
+    def test_as_uri(self):
+        # UPath keeps the server of a UNC path in the URI path
+        # (file:////server/share) where pathlib uses file://server/share,
+        # because fsspec reads file://server/share as a relative path
+        P = self.cls
+        with self.assertRaises(ValueError):
+            P('/a/b').as_uri()
+        with self.assertRaises(ValueError):
+            P('c:a/b').as_uri()
+        self.assertEqual(P('c:/').as_uri(), 'file:///c:/')
+        self.assertEqual(P('c:/a/b.c').as_uri(), 'file:///c:/a/b.c')
+        self.assertEqual(P('c:/a/b%#c').as_uri(), 'file:///c:/a/b%25%23c')
+        self.assertEqual(P('c:/a/b\xe9').as_uri(), 'file:///c:/a/b%C3%A9')
+        self.assertEqual(P('//some/share/').as_uri(), 'file:////some/share/')
+        self.assertEqual(P('//some/share/a/b.c').as_uri(),
+                         'file:////some/share/a/b.c')
+        self.assertEqual(P('//some/share/a/b%#c\xe9').as_uri(),
+                         'file:////some/share/a/b%25%23c%C3%A9')
+
     def test_owner(self):
         P = self.cls
         with self.assertRaises(NotImplementedError):

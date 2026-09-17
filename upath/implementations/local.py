@@ -758,6 +758,16 @@ else:
     class WindowsUPath(LocalPath, pathlib.WindowsPath):
         __slots__ = ()
 
+        def as_uri(self) -> str:
+            uri = super().as_uri()
+            # pathlib writes UNC paths as file://server/share/..., but fsspec
+            # reads the part after file:// as a path, so that URI would point
+            # at a local server/share/... directory. Keep the server in the
+            # path instead: file:////server/share/...
+            if uri.startswith("file://") and not uri.startswith("file:///"):
+                uri = "file:////" + uri[len("file://") :]
+            return uri
+
         if os.name != "nt":
 
             def __new__(

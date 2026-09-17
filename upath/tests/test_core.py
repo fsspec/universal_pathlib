@@ -33,6 +33,15 @@ def test_windows_path(local_testdir):
     assert isinstance(UPath(local_testdir), pathlib.WindowsPath)
 
 
+@only_on_windows
+def test_windows_unc_path_as_uri_round_trip():
+    # https://github.com/fsspec/universal_pathlib/issues/557
+    pth = UPath(r"\\server\share\file")
+    uri = pth.as_uri()
+    assert uri == "file:////server/share/file"
+    assert UPath(uri).path == "//server/share/file"
+
+
 def test_UPath_untested_protocol_warning(clear_registry):
     with warnings.catch_warnings(record=True) as w:
         _ = UPath("mock:/")
