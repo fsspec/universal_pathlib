@@ -80,6 +80,15 @@ class TestProxyPathlibPath(BaseTests, metaclass=OverrideMeta):
         self.path.joinpath("file1.txt").chmod(777)
 
     @overrides_base
+    def test_rmdir_not_empty_warns_about_the_future_default(self):
+        # wrapping a pathlib.Path, whose rmdir() already raises on a
+        # non-empty directory: there is no future change to warn about
+        p = self.path.joinpath("folder1")
+        with pytest.raises(OSError):
+            p.rmdir()
+        assert p.exists()
+
+    @overrides_base
     @pytest.mark.skipif(
         sys.version_info < (3, 12), reason="storage options only handled in 3.12+"
     )
