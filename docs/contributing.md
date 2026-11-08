@@ -224,7 +224,7 @@ This runs tests using your current Python version only.
 ### Run Specific Test Files
 
 ```bash
-nox --session=tests -- tests/test_core.py
+nox --session=tests -- upath/tests/test_core.py
 ```
 
 ### Run Tests with Coverage
@@ -283,8 +283,8 @@ This runs:
 ### Type Checking
 
 ```bash
-nox --session=type_checking
-nox --session=typesafety
+nox --session=type-checking
+nox --session=type-safety
 ```
 
 !!! tip "Pre-commit Hooks"
@@ -392,7 +392,7 @@ How was this tested?
 
 ```bash
 # Run specific test with verbose output
-nox --session=tests -- tests/test_core.py::test_name -v
+nox --session=tests -- upath/tests/test_core.py::test_name -v
 
 # Drop into debugger on failure
 nox --session=tests -- --pdb
