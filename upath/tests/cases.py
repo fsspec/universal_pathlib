@@ -253,6 +253,22 @@ class JoinablePathTests:
             assert not self.path.joinpath("key").path.endswith("/")
             assert not self.path.joinpath("key/").path.endswith("/")
 
+    def test_joinpath_empty_segment(self):
+        # see: docs/concepts/special-paths.md
+        p = self.path.joinpath("folder")
+        if getattr(self.path.parser, "has_meaningful_trailing_slash", False):
+            assert p.joinpath("") == self.path.joinpath("folder/")
+        else:
+            assert p.joinpath("") == p
+        assert p / "" == p.joinpath("")
+
+    def test_joinpath_dotdot_is_lexical(self):
+        # ".." is a regular segment until the path is resolved
+        p = self.path.joinpath("folder", "..")
+        assert p.name == ".."
+        assert p.parent == self.path.joinpath("folder")
+        assert p != self.path
+
     def test_parents_are_absolute(self):
         # this is a cross implementation compatible way to ensure that
         # the path representing the root is absolute

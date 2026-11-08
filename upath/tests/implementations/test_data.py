@@ -135,6 +135,18 @@ class TestUPathDataPath(
             super().test_trailing_slash_is_stripped()
 
     @overrides_base
+    def test_joinpath_empty_segment(self):
+        # DataPath is not joinable
+        with pytest.raises(UnsupportedOperation):
+            super().test_joinpath_empty_segment()
+
+    @overrides_base
+    def test_joinpath_dotdot_is_lexical(self):
+        # DataPath is not joinable
+        with pytest.raises(UnsupportedOperation):
+            super().test_joinpath_dotdot_is_lexical()
+
+    @overrides_base
     def test_parents_end_at_anchor(self):
         # DataPath does not support joins
         with pytest.raises(UnsupportedOperation):
