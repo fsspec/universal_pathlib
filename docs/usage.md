@@ -219,6 +219,39 @@ assert pathlib.Path('/path/that/does/not/exist').exists() is False
     s3_path.is_dir()  # Raises authentication exception
     ```
 
+### Why can `is_file()` and `is_dir()` both return `True`?
+
+On a local filesystem a path is either a file or a directory. Many remote filesystems don't make this distinction, so `is_file()` and `is_dir()` are **not mutually exclusive**:
+
+- **HTTP(S)** has no real directories. A "directory" is an HTML page (for example a server generated index page) with links to other resources. It's a file, because you can read the HTML, and a directory, because you can list the linked resources.
+- **Object stores** like S3, GCS or Azure Blob Storage emulate directories via common key prefixes. An object `data` and objects below `data/` can exist at the same time. In that case `data` is both a file and a directory.
+
+```python
+from upath import UPath
+
+index = UPath("https://data.lsdb.io/hats/")
+index.is_dir()   # True: the index page links to the entries in this "directory"
+index.is_file()  # True: the index page itself can be read
+```
+
+To write code that works across filesystems:
+
+- Don't infer one from the other: `not path.is_dir()` doesn't imply that `path` is a file, and `not path.is_file()` doesn't imply that it's a directory.
+- Ask the question your code actually needs answered. Check `is_dir()` before listing children and `is_file()` before reading content. If your code handles directories and files differently, check `is_dir()` first:
+
+    ```python
+    def describe(path: UPath) -> str:
+        # directories can also be files on http and object stores
+        if path.is_dir():
+            return "directory"
+        elif path.is_file():
+            return "file"
+        else:
+            return "missing"
+    ```
+
+- To traverse a directory tree, use `iterdir()`, `walk()`, `glob()` or `rglob()` and let the filesystem report its children, instead of classifying every path yourself.
+
 ### How do I search for files matching a pattern?
 
 Use `glob()` for pattern matching:
