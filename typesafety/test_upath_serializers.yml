@@ -1,0 +1,38 @@
+- case: upath_serializers_to_dict
+  disable_cache: false
+  main: |
+    from upath import UPath
+    from upath.serializers import SerializedUPath
+    from upath.serializers import upath_to_dict
+
+    data: SerializedUPath = upath_to_dict(UPath("abc"))
+    path: str = data["path"]
+    upath_to_dict("abc")  # E: Argument 1 to "upath_to_dict" has incompatible type "str"; expected "UPath"  [arg-type]
+
+- case: upath_serializers_from_dict
+  disable_cache: false
+  main: |
+    from typing import Any
+    from upath.serializers import SerializedUPath
+    from upath.serializers import upath_from_dict
+
+    a: SerializedUPath = {"path": "abc", "protocol": "memory"}
+    b: dict[str, Any] = {"path": "abc"}
+    reveal_type(upath_from_dict(a))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(upath_from_dict(b))  # N: Revealed type is "upath.core.UPath"
+    reveal_type(upath_from_dict({"path": "abc"}))  # N: Revealed type is "upath.core.UPath"
+
+- case: upath_serializers_from_dict_cls
+  disable_cache: false
+  main: |
+    from upath.implementations.cloud import S3Path
+    from upath.serializers import upath_from_dict
+
+    upath_from_dict({"path": "bucket/key"}, cls=S3Path)
+
+- case: upath_serializers_from_dict_invalid
+  disable_cache: false
+  main: |
+    from upath.serializers import upath_from_dict
+
+    upath_from_dict("abc")  # E: Argument 1 to "upath_from_dict" has incompatible type "str"; expected "Mapping[str, Any]"  [arg-type]

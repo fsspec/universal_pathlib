@@ -2360,6 +2360,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     ) -> CoreSchema:
         from pydantic_core import core_schema
 
+        from upath.serializers import upath_from_dict
+        from upath.serializers import upath_to_dict
+
         str_schema = core_schema.chain_schema(
             [
                 core_schema.str_schema(),
@@ -2405,21 +2408,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             [
                 core_schema.union_schema([str_schema, object_schema]),
                 core_schema.no_info_plain_validator_function(
-                    lambda dct: cls(
-                        dct.pop("path"),
-                        protocol=dct.pop("protocol"),
-                        **dct["storage_options"],
-                    )
+                    lambda dct: upath_from_dict(dct, cls=cls)
                 ),
             ]
         )
 
         serialization_schema = core_schema.plain_serializer_function_ser_schema(
-            lambda u: {
-                "path": u.path,
-                "protocol": u.protocol,
-                "storage_options": dict(u.storage_options),
-            }
+            upath_to_dict
         )
 
         return core_schema.json_or_python_schema(
