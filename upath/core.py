@@ -1911,8 +1911,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
 
         Removing a non-empty directory without passing `recursive`
         raises a FutureWarning: in universal-pathlib 0.4.0 the default
-        becomes non-recursive, matching pathlib.Path.rmdir(), and
-        `.delete()` will remove a directory and its contents.
+        becomes non-recursive, matching pathlib.Path.rmdir(). Pass
+        `recursive=True` explicitly to keep removing a directory and
+        its contents.
 
         """
         if not self.is_dir():
@@ -1928,9 +1929,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     FutureWarning,
                     stacklevel=2,
                 )
-        elif not recursive and next(self.iterdir(), None) is not None:
-            raise OSError(f"Not recursive and directory not empty: {self}")
+        elif not recursive:
+            if next(self.iterdir(), None) is not None:
+                raise OSError(f"Not recursive and directory not empty: {self}")
+            self._rmdir_empty()
+            return
         self.fs.rm(self.path, recursive=recursive)
+
+    def _rmdir_empty(self) -> None:
+        # some filesystems refuse to rm a directory without recursive=True,
+        # but recursively removing an empty directory only removes itself
+        self.fs.rm(self.path, recursive=True)
 
     def rename(  # noqa: C901
         self,

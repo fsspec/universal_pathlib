@@ -893,5 +893,9 @@ class FilePath(UPath):
     ) -> None:
         return os.chmod(self.path, mode, follow_symlinks=follow_symlinks)
 
+    def _rmdir_empty(self) -> None:
+        # os.rmdir atomically refuses to remove non-empty directories
+        self.fs.rmdir(self.path)
+
 
 LocalPath.register(FilePath)
