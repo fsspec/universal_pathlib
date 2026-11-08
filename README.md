@@ -771,7 +771,7 @@ to pass paths and their storage options to these libraries, and how to replace
 
 #### Extending UPath via `_protocol_dispatch=False`
 
-If you previously used `_protocol_dipatch=False` to enable extension of the
+If you previously used `_protocol_dispatch=False` to enable extension of the
 UPath API, we now recommend to subclass `upath.extensions.ProxyUPath`. See
 the example in the main docs.
 

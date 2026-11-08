@@ -264,7 +264,37 @@ See also: [pola-rs/polars#24921](https://github.com/pola-rs/polars/issues/24921)
 
 ### Extending UPath via `_protocol_dispatch=False`
 
-If you previously used `_protocol_dispatch=False` to enable extension of the UPath API, we now recommend subclassing `upath.extensions.ProxyUPath`. See the advanced usage documentation for examples.
+Setting `_protocol_dispatch = False` on a UPath subclass was a workaround to make `MyPath(...)` return instances of `MyPath` for all protocols. It's deprecated, emits a `DeprecationWarning`, and will be removed in a future version. Because it bypasses the protocol specific UPath implementations, it can lead to incorrect behavior, for example for relative local paths.
+
+Subclass `upath.extensions.ProxyUPath` instead. It wraps the correct UPath implementation for every protocol and returns instances of your class from all path operations:
+
+```python
+# OLD (deprecated)
+from upath import UPath
+
+class MyPath(UPath):
+    _protocol_dispatch = False
+
+    def hello(self) -> str:
+        return f"Hello {self.name}!"
+
+
+# NEW
+from upath.extensions import ProxyUPath
+
+class MyPath(ProxyUPath):
+
+    def hello(self) -> str:
+        return f"Hello {self.name}!"
+
+
+p = MyPath("relative/file.txt")
+assert str(p) == "relative/file.txt"
+assert isinstance(p.parent, MyPath)
+assert MyPath("s3://bucket/file.txt").hello() == "Hello file.txt!"
+```
+
+See [How do I add custom methods to UPath?](usage.md#how-do-i-add-custom-methods-to-upath) and the [ProxyUPath API reference](api/extensions.md) for more examples.
 
 ## Migrating to v0.2.0
 

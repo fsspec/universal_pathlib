@@ -350,6 +350,8 @@ The key difference: `ProxyUPath` wraps a `UPath` instance and delegates to it, w
 
 If your methods only work with some filesystems, set `supported_protocols = ("s3", "gcs")` on your class. Creating an instance for any other protocol then raises a `TypeError`. See [Extensions](api/extensions.md#restricting-supported-protocols) for details.
 
+!!! note "Replaces `_protocol_dispatch = False`"
+    Subclassing `UPath` and setting `_protocol_dispatch = False` to get your class for all protocols is deprecated. Subclass `ProxyUPath` instead, see the [migration guide](migration.md#extending-upath-via-_protocol_dispatchfalse).
 
 ---
 
