@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -9,6 +10,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
 from typing import Callable
+from typing import ClassVar
 from typing import Literal
 from typing import TextIO
 from typing import TypeVar
@@ -20,8 +22,11 @@ from pathlib_abc import vfspath
 
 from upath._chain import Chain
 from upath._chain import ChainSegment
+from upath._protocol import _fsspec_protocol_equals
+from upath._protocol import get_upath_protocol
 from upath.core import UnsupportedOperation
 from upath.core import UPath
+from upath.core import _IncompatibleProtocolError
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
 from upath.types import OnNameCollisionFunc
@@ -79,9 +84,32 @@ class ProxyUPath:
     interface with additional methods, but still want to support
     all supported upath implementations.
 
+    Subclasses can restrict the protocols they support via the
+    `supported_protocols` class attribute, or the equivalent class
+    keyword argument. Creating an instance with an unsupported protocol
+    raises a `TypeError`. Protocols are considered equal if fsspec maps
+    them to the same filesystem, i.e. `"gcs"` also supports `"gs"`,
+    and `"file"` also supports `"local"` and local paths without protocol.
+    The restriction is inherited by subclasses.
+
+    Examples
+    --------
+    >>> from upath.extensions import ProxyUPath
+    >>> class MyUPath(ProxyUPath):
+    ...     supported_protocols = ("s3", "gcs", "file")
+    ...
+    >>> MyUPath("gs://bucket/file.txt")
+    MyUPath('bucket/file.txt', protocol='gs')
+    >>> MyUPath("memory:///file.txt")
+    Traceback (most recent call last):
+    ...
+    TypeError: protocol 'memory' is incompatible with MyUPath ...
+
     """
 
     __slots__ = ("__wrapped__",)
+
+    supported_protocols: ClassVar[tuple[str, ...] | None] = None
 
     # TODO: think about if and how to handle these
     #  _transform_init_args
@@ -89,13 +117,67 @@ class ProxyUPath:
     #  _fs_factory
     #  _protocol_dispatch
 
+    def __init_subclass__(
+        cls,
+        *,
+        supported_protocols: tuple[str, ...] | None = UNSET_DEFAULT,
+        **kwargs: Any,
+    ) -> None:
+        super().__init_subclass__(**kwargs)
+        if supported_protocols is not UNSET_DEFAULT:
+            if "supported_protocols" in cls.__dict__:
+                raise TypeError(
+                    f"{cls.__name__}: provide supported_protocols either as"
+                    " class keyword argument or as class attribute, not both"
+                )
+            cls.supported_protocols = supported_protocols
+
+        protocols = cls.__dict__.get("supported_protocols")
+        if protocols is not None:
+            if not isinstance(protocols, str) and isinstance(protocols, Iterable):
+                protocols = tuple(protocols)
+            if not isinstance(protocols, tuple) or not all(
+                isinstance(p, str) for p in protocols
+            ):
+                raise TypeError(
+                    f"{cls.__name__}.supported_protocols must be a tuple of"
+                    f" protocol strings or None, got: {protocols!r}"
+                )
+            cls.supported_protocols = protocols
+
     # === non-public methods / attributes =============================
+
+    @classmethod
+    def _check_protocol(cls, protocol: str) -> None:
+        supported = cls.supported_protocols
+        if supported is None or protocol in supported:
+            return
+        for p in supported:
+            try:
+                if _fsspec_protocol_equals(protocol, p):
+                    return
+            except ValueError:
+                # protocol unknown to fsspec
+                continue
+        raise _IncompatibleProtocolError(
+            f"protocol {protocol!r} is incompatible with {cls.__name__}"
+            f" (supported_protocols={supported!r})"
+        )
+
+    def _check_target_protocol(self, target: WritablePathLike) -> None:
+        # copy and move return paths of type(self) pointing to the target,
+        # so check its protocol before modifying any filesystem
+        if self.supported_protocols is not None:
+            self._check_protocol(get_upath_protocol(target))
 
     @classmethod
     def _from_upath(cls, upath: UPath, /) -> Self:
         if isinstance(upath, cls):
             return upath  # type: ignore[unreachable]
         else:
+            if cls.supported_protocols is not None:
+                # upath might be a pathlib.Path returned from local copy/move
+                cls._check_protocol(get_upath_protocol(upath))
             obj = object.__new__(cls)
             obj.__wrapped__ = upath
             return obj
@@ -121,7 +203,9 @@ class ProxyUPath:
         protocol: str | None = None,
         **storage_options: Any,
     ) -> None:
-        self.__wrapped__ = UPath(*args, protocol=protocol, **storage_options)
+        wrapped = UPath(*args, protocol=protocol, **storage_options)
+        self._check_protocol(wrapped.protocol)
+        self.__wrapped__ = wrapped
 
     @property
     def parser(self) -> UPathParser:
@@ -503,15 +587,21 @@ class ProxyUPath:
             yield self._from_upath(pth), dirnames, filenames
 
     def copy(self, target: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        self._check_target_protocol(target)
         return self._from_upath(self.__wrapped__.copy(target, **kwargs))
 
     def copy_into(self, target_dir: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        self._check_target_protocol(target_dir)
         return self._from_upath(self.__wrapped__.copy_into(target_dir, **kwargs))
 
     def move(self, target: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        self._check_target_protocol(target)
         return self._from_upath(self.__wrapped__.move(target, **kwargs))
 
     def move_into(self, target_dir: WritablePathLike, **kwargs: Any) -> Self:  # type: ignore[override]  # noqa: E501
+        if not isinstance(target_dir, str):
+            # str target dirs are joined with self, so the protocol can't change
+            self._check_target_protocol(target_dir)
         return self._from_upath(self.__wrapped__.move_into(target_dir, **kwargs))
 
     def write_bytes(self, data: bytes) -> int:
