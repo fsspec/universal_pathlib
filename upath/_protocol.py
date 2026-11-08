@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from collections import ChainMap
 from pathlib import PurePath
 from typing import TYPE_CHECKING
@@ -52,6 +53,21 @@ def _match_rootless_protocol(pth: str) -> str:
 _fsspec_registry_map = ChainMap(_registry, _known_implementations)
 
 
+def _fsspec_impl(obj: Any) -> type | str | None:
+    """return the class or class path of a fsspec registry entry"""
+    if isinstance(obj, dict):
+        obj = obj.get("class")
+    if isinstance(obj, str):
+        # known_implementations often reference re-exported classes, i.e.
+        # 's3fs.S3FileSystem' instead of 's3fs.core.S3FileSystem', so use
+        # the class itself if it's available without importing
+        module_name, _, cls_name = obj.rpartition(".")
+        module = sys.modules.get(module_name)
+        if module is not None:
+            return getattr(module, cls_name, obj)
+    return obj
+
+
 def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     """check if two fsspec protocols are equivalent"""
     p0 = p0 or "file"
@@ -71,16 +87,17 @@ def _fsspec_protocol_equals(p0: str, p1: str) -> bool:
     if o0 == o1:
         return True
 
-    if isinstance(o0, dict):
-        o0 = o0.get("class")
-    elif isinstance(o0, type):
+    o0 = _fsspec_impl(o0)
+    o1 = _fsspec_impl(o1)
+    if o0 == o1:
+        return True
+
+    if isinstance(o0, type):
         if o0.__module__:
             o0 = o0.__module__ + "." + o0.__name__
         else:
             o0 = o0.__name__
-    if isinstance(o1, dict):
-        o1 = o1.get("class")
-    elif isinstance(o1, type):
+    if isinstance(o1, type):
         if o1.__module__:
             o1 = o1.__module__ + "." + o1.__name__
         else:

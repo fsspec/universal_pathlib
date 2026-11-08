@@ -536,6 +536,19 @@ def test_constructor_compatible_protocol_uri(uri, protocol):
     assert p.protocol == protocol
 
 
+def test_protocol_aliases_compatible_after_filesystem_import(monkeypatch):
+    s3fs = pytest.importorskip("s3fs")
+    from fsspec.registry import _registry
+
+    # fsspec registers the imported filesystem class only for the
+    # requested protocol, while the alias still refers to 's3fs.S3FileSystem'
+    monkeypatch.setitem(_registry, "s3", s3fs.S3FileSystem)
+    monkeypatch.delitem(_registry, "s3a", raising=False)
+
+    assert UPath("s3a://bucket/folder", protocol="s3").protocol == "s3"
+    assert UPath("s3://bucket/folder", protocol="s3a").protocol == "s3a"
+
+
 # Protocol to sample URI mapping
 _PROTOCOL_URIS = {
     "s3": "s3://bucket/folder",
