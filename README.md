@@ -629,6 +629,30 @@ assert e1.some_extra_method() == "hello world baz.txt"
 assert isinstance(e1, ExtraUPath)
 ```
 
+If your extension only supports a subset of filesystems, you can restrict the
+protocols via the `supported_protocols` class attribute (or the equivalent
+class keyword argument). Instantiating the class with an unsupported protocol
+raises a `TypeError`. Aliases of the same fsspec filesystem are considered
+equal, i.e. `"gcs"` also allows `"gs://"` paths and `"file"` also allows local
+paths without a protocol:
+
+```python
+from upath.extensions import ProxyUPath
+
+class CloudUPath(ProxyUPath):
+    supported_protocols = ("s3", "gcs", "az")
+
+# or equivalently:
+# class CloudUPath(ProxyUPath, supported_protocols=("s3", "gcs", "az")): ...
+
+c0 = CloudUPath("gs://bucket/foo.txt")
+
+try:
+    CloudUPath("memory://bar/baz.txt")
+except TypeError as err:
+    print(err)  # protocol 'memory' is incompatible with CloudUPath (...)
+```
+
 ## Migration Guide
 
 UPath's internal implementation is converging towards a more stable state,
