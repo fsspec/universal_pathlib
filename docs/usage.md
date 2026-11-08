@@ -269,6 +269,39 @@ for tif_file in paris_data.glob("**.TIF"):
 !!! note "Glob Syntax"
     The glob syntax follows [fsspec conventions](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.spec.AbstractFileSystem.glob), which may differ slightly from pathlib's glob.
 
+### How do I copy or move files between filesystems?
+
+Use `copy()`, `copy_into()`, `move()` and `move_into()`. They work for files and directory trees, within one filesystem and across different filesystems. The target can be a `UPath`, a `pathlib.Path`, or a URI string:
+
+```python
+from upath import UPath
+
+source = UPath("memory:///project/report.txt")
+source.write_text("hello world")
+
+downloads = UPath("downloads")
+downloads.mkdir(exist_ok=True)  # like in pathlib, the target's parent must exist
+
+# copy a file to a local directory
+local = source.copy(downloads / "report.txt")
+assert local.read_text() == "hello world"
+
+# copy a directory tree recursively
+UPath("memory:///project/data/2024/january.csv").write_text("a,b\n1,2\n")
+UPath("memory:///project/data").copy(downloads / "data")
+assert (downloads / "data" / "2024" / "january.csv").exists()
+
+# copy into an existing directory, keeping the name
+source.copy_into(downloads / "data")
+assert (downloads / "data" / "report.txt").exists()
+
+# move a file to another filesystem, the source is removed afterwards
+local.move(UPath("memory:///archive/report.txt"))
+assert not local.exists()
+```
+
+Copying between different filesystems streams the data through your Python process, so it works for any combination of filesystems, for example `UPath("data.csv").copy(UPath("s3://my-bucket/data.csv"))`. For large transfers between the local filesystem and a remote filesystem, the fsspec methods `path.fs.put()` and `path.fs.get()` can be faster.
+
 ---
 
 ## Advanced Usage
