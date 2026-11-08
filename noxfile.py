@@ -50,6 +50,18 @@ def FSSPEC_MIN_VERSION() -> str:
     raise RuntimeError("Could not find fsspec minimum version in pyproject.toml")
 
 
+# the minimum supported fsspec version, roughly one release every six months
+# since, and the latest release
+FSSPEC_TEST_VERSIONS = [
+    FSSPEC_MIN_VERSION,
+    "2024.12.0",
+    "2025.5.1",
+    "2025.12.0",
+    "2026.6.0",
+    "latest",
+]
+
+
 def coverage_file(session: nox.Session) -> str:
     """Return a coverage data file name unique per platform and session."""
     name = re.sub(r"[^A-Za-z0-9.]+", "-", session.name).strip("-")
@@ -88,6 +100,19 @@ def tests_minversion(session: nox.Session) -> None:
 
 
 tests_minversion.__doc__ = f"Run the test suite with fsspec=={FSSPEC_MIN_VERSION}."
+
+
+@nox.session(python=BASE_PYTHON, name="tests-fsspec")
+@nox.parametrize("fsspec", FSSPEC_TEST_VERSIONS, ids=FSSPEC_TEST_VERSIONS)
+def tests_fsspec(session: nox.Session, fsspec: str) -> None:
+    """Run the test suite against a specific fsspec version."""
+    # s3fs and gcsfs require a matching fsspec, so uv resolves them accordingly
+    if fsspec == "latest":
+        session.install("--upgrade", "fsspec", ".[tests,dev]")
+    else:
+        session.install(f"fsspec=={fsspec}", ".[tests,dev]")
+    session.run("uv", "pip", "freeze", silent=not running_in_ci)
+    session.run("pytest", "-m", "not hdfs", *session.posargs)
 
 
 @nox.session(python=BASE_PYTHON)
