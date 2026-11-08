@@ -802,6 +802,11 @@ class LocalPath(_UPathMixin, pathlib.Path):
         cs = UPath.__get_pydantic_core_schema__.__func__  # type: ignore[attr-defined]
         return cs(cls, source_type, handler)
 
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Callable[[Any], Any]]:
+        gv = UPath.__get_validators__.__func__  # type: ignore[attr-defined]
+        return gv(cls)
+
 
 UPath.register(LocalPath)
 

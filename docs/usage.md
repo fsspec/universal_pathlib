@@ -290,6 +290,55 @@ with fs.open(path_str, 'rb') as f:
     data = f.read()
 ```
 
+### How do I use UPath with pydantic?
+
+`UPath` works as a field type in [pydantic](https://docs.pydantic.dev/) models.
+Paths are validated from strings or dictionaries and serialized as a dictionary
+containing their `path`, `protocol` and `storage_options`:
+
+```python
+from pydantic import BaseModel
+from upath import UPath
+
+class Settings(BaseModel):
+    data_dir: UPath
+
+settings = Settings(data_dir="s3://bucket/data")
+print(settings.model_dump_json())
+# {"data_dir":{"path":"bucket/data","protocol":"s3","storage_options":{}}}
+```
+
+Pydantic v1 models (including `pydantic.v1` shipped with pydantic v2) validate
+`UPath` fields as well, but need `upath.serializers.upath_to_dict` registered
+as a JSON encoder to serialize them:
+
+```python
+from pydantic.v1 import BaseModel
+from upath import UPath
+from upath.serializers import upath_to_dict
+
+class Settings(BaseModel):
+    data_dir: UPath
+
+    class Config:
+        json_encoders = {UPath: upath_to_dict}
+
+settings = Settings(data_dir="s3://bucket/data")
+print(settings.json())
+# {"data_dir": {"path": "bucket/data", "protocol": "s3", "storage_options": {}}}
+```
+
+!!! note "local paths in pydantic v1"
+
+    Pydantic v1 selects `json_encoders` by walking the class hierarchy of a value.
+    Local paths (`PosixUPath` and `WindowsUPath`) subclass `pathlib.Path` and are
+    only virtual subclasses of `UPath`, so pydantic v1 encodes them as plain
+    strings, which validate back into the same local path. `ProxyUPath`
+    subclasses need to be added to `json_encoders` explicitly.
+
+See the [Serializers API reference](api/serializers.md) for converting paths
+to and from dictionaries without pydantic.
+
 ### How do I create a custom UPath for a new filesystem?
 
 Let's say you have an fsspec filesystem with protocol `myproto` and the default

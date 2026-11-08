@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 import warnings
 from abc import ABCMeta
@@ -18,6 +19,7 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import BinaryIO
+from typing import Callable
 from typing import Literal
 from typing import NoReturn
 from typing import TextIO
@@ -2424,3 +2426,33 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             ),
             serialization=serialization_schema,
         )
+
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Callable[[Any], Any]]:
+        """Yield the validators for using UPath in pydantic v1 models
+
+        Values can be `str`, `os.PathLike`, `UPath` instances or dictionaries
+        in the `upath.serializers.SerializedUPath` format. Pydantic v1 has no
+        serialization hook for custom types, so use
+        `upath.serializers.upath_to_dict` in the model's `json_encoders`.
+        Pydantic v2 uses `__get_pydantic_core_schema__` instead.
+        """
+        from upath.serializers import upath_from_dict
+
+        def validate_serialized(value: Any) -> Any:
+            if isinstance(value, Mapping):
+                return upath_from_dict(value, cls=cls)
+            return value
+
+        def validate_upath(value: Any) -> UPath:
+            if isinstance(value, cls):
+                return value
+            if isinstance(value, (str, os.PathLike, UPath)):
+                return cls(value)
+            raise TypeError(
+                "expected a str, os.PathLike, UPath or serialized UPath dict,"
+                f" got {type(value).__name__!r}"
+            )
+
+        yield validate_serialized
+        yield validate_upath

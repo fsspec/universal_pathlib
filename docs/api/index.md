@@ -93,4 +93,5 @@ from upath import UPath
 - [Registry](registry.md) - The upath implementation registry
 - [Implementations](implementations.md) - UPath subclasses
 - [Extensions](extensions.md) - Extending UPath functionality
+- [Serializers](serializers.md) - Converting UPath instances to and from dictionaries
 - [Types](types.md) - Type hints and protocols

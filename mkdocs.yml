@@ -55,6 +55,7 @@ nav:
     - Registry: api/registry.md
     - Implementations: api/implementations.md
     - Extensions: api/extensions.md
+    - Serializers: api/serializers.md
     - Types: api/types.md
   - Migration Guide: migration.md
 

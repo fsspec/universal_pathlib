@@ -395,6 +395,78 @@ it a bug.
 - ❌ = Not available in this version
 - ⚠️ = Currently raises unsupported error for UPath implementations
 
+## Pydantic support
+
+`UPath` can be used as a field type in [pydantic](https://docs.pydantic.dev/)
+models. Fields accept strings, `UPath` instances and dictionaries, and are
+serialized as a dictionary containing the `path`, `protocol` and
+`storage_options` of the instance:
+
+```python
+from pydantic import BaseModel
+from upath import UPath
+
+class Settings(BaseModel):
+    data_dir: UPath
+
+settings = Settings(data_dir="s3://bucket/data")
+assert settings.model_dump(mode="json") == {
+    "data_dir": {"path": "bucket/data", "protocol": "s3", "storage_options": {}}
+}
+restored = Settings.model_validate_json(settings.model_dump_json())
+assert restored.data_dir == settings.data_dir
+```
+
+The `upath.serializers` module provides `upath_to_dict` and `upath_from_dict`
+to convert between `UPath` instances and this dictionary format
+(`upath.serializers.SerializedUPath`) outside of pydantic:
+
+```python
+from upath import UPath
+from upath.serializers import upath_from_dict, upath_to_dict
+
+path = UPath("memory:///data/file.txt", foo="bar")
+data = upath_to_dict(path)
+assert data == {
+    "path": "/data/file.txt",
+    "protocol": "memory",
+    "storage_options": {"foo": "bar"},
+}
+assert upath_from_dict(data) == path
+```
+
+### Pydantic v1
+
+Pydantic v1 models (including the `pydantic.v1` module shipped with pydantic v2)
+validate `UPath` fields from strings, `os.PathLike` objects, `UPath` instances
+and serialized dictionaries. Pydantic v1 has no serialization hook for custom
+types, so register `upath_to_dict` as a JSON encoder in your model's config:
+
+```python
+from pydantic.v1 import BaseModel
+from upath import UPath
+from upath.serializers import upath_to_dict
+
+class Settings(BaseModel):
+    data_dir: UPath
+
+    class Config:
+        json_encoders = {UPath: upath_to_dict}
+
+settings = Settings(data_dir="s3://bucket/data")
+assert settings.json() == (
+    '{"data_dir": {"path": "bucket/data", "protocol": "s3", "storage_options": {}}}'
+)
+restored = Settings.parse_raw(settings.json())
+assert restored.data_dir == settings.data_dir
+```
+
+Please note that pydantic v1 selects `json_encoders` by walking the class
+hierarchy of a value. Local paths (`PosixUPath` and `WindowsUPath`) subclass
+`pathlib.Path` and are only virtual subclasses of `UPath`, so pydantic v1
+encodes them as plain strings, which validate back into the same local path.
+`ProxyUPath` subclasses need to be added to `json_encoders` explicitly.
+
 ## Advanced Usage
 
 If you want to create your own UPath implementations, there are multiple ways to
