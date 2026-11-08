@@ -439,3 +439,20 @@
 #   out: |
 #     \\.\\..*
 #     main:3: error: Unexpected keyword argument "idontexist" to "{{ cls }}".*
+
+- case: proxyupath_supported_protocols
+  disable_cache: false
+  main: |
+    from upath.extensions import ProxyUPath
+
+    class A(ProxyUPath):
+        supported_protocols = ("s3", "gcs")
+
+    class B(ProxyUPath, supported_protocols=("s3", "gcs")):
+        pass
+
+    class C(ProxyUPath, supported_protocols=None):
+        pass
+
+    class D(ProxyUPath, supported_protocols="s3"):  # ER: Argument "supported_protocols" to "__init_subclass__" of "ProxyUPath" has incompatible type "str".*
+        pass
