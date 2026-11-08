@@ -97,11 +97,18 @@ class CloudPath(UPath):
         return parts
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         if not parents and not exist_ok and self.exists():
             raise FileExistsError(self.path)
-        super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        super().mkdir(
+            mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+        )
 
 
 class GCSPath(CloudPath):
@@ -121,10 +128,17 @@ class GCSPath(CloudPath):
             raise ValueError("non key-like path provided (bucket/container missing)")
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         try:
-            super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+            super().mkdir(
+                mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+            )
         except TypeError as err:
             if "unexpected keyword argument 'create_parents'" in str(err):
                 self.fs.mkdir(self.path)
@@ -227,6 +241,8 @@ class HfPath(CloudPath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         raise UnsupportedOperation
 
