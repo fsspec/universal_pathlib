@@ -7,6 +7,8 @@ from ..cases import BaseTests
 from ..utils import OverrideMeta
 from ..utils import overrides_base
 
+pytest.importorskip("fsspec_xrootd")
+
 
 class TestUPathXRootD(BaseTests, metaclass=OverrideMeta):
     @pytest.fixture(autouse=True, scope="function")

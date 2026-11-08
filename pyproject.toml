@@ -58,7 +58,7 @@ dev = [
     "adlfs >=2024",
     "huggingface_hub",
     "webdav4[fsspec]",
-    "fsspec-xrootd",
+    "fsspec-xrootd; sys_platform != 'win32'",  # no xrootd wheels for windows
     # testing
     "moto[s3,server]",
     "wsgidav",

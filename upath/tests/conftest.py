@@ -751,11 +751,12 @@ def xrootd_server():
 
     name = "fsspec_test_xrootd"
     stop_docker(name)
+    user = f" -u {os.getuid()}" if hasattr(os, "getuid") else ""
     cmd = (
         "docker run"
         " -d"
         f" --name {name}"
-        f" -u {os.getuid()}"
+        f"{user}"
         " -p 1094:1094"
         " --tmpfs /shared"
         " ponyisi/xrootd_docker xrootd /shared"
