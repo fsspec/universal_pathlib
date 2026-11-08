@@ -56,6 +56,26 @@
     p = UPath("abc")
     reveal_type(p._url)  # NR: Revealed type is "[Tt]uple\[(builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, fallback=urllib.parse.SplitResult(\[(builtins\.)?str\])?\]"
 
+- case: upath_special_cloudpath_key
+  disable_cache: false
+  parametrized:
+    - cls: CloudPath
+    - cls: S3Path
+    - cls: GCSPath
+    - cls: AzurePath
+  main: |
+    from upath.implementations.cloud import {{ cls }}
+
+    p = {{ cls }}("bucket/abc")
+    reveal_type(p.key)  # NR: Revealed type is "(builtins\.)?str"
+
+- case: upath_special_key_not_on_upath
+  disable_cache: false
+  main: |
+    from upath import UPath
+
+    UPath("abc").key  # E: "UPath" has no attribute "key"  [attr-defined]
+
 # === upath pathlib.PurePath interface ================================
 
 - case: upath_parts
