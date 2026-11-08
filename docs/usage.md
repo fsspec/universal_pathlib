@@ -150,6 +150,31 @@ print(str(readme))
 print(readme.path)
 ```
 
+### How do I get the object key of a cloud storage path?
+
+Paths on bucket based object storage (`s3://`, `gs://`, `az://`, ...) provide a
+`key` property, which returns the object key (or blob name) without the bucket:
+
+```python
+path = UPath("gs://my-bucket/data/2024/results.csv")
+
+print(path.path)    # "my-bucket/data/2024/results.csv"
+print(path.anchor)  # "my-bucket/"
+print(path.key)     # "data/2024/results.csv"
+
+# the bucket root has an empty key
+print(UPath("s3://my-bucket/").key)  # ""
+
+# and you can go back via the bucket keyword argument
+same_path = UPath(path.key, protocol="gs", bucket=path.drive)
+```
+
+The key is computed from `path` and therefore follows the same normalization,
+i.e. trailing slashes are not preserved. Relative paths (as returned by
+`relative_to()`) don't have a key. `key` is not available on `hf://` paths,
+because the repository id can not be split from the path without querying the
+Hugging Face Hub.
+
 ### How do I join paths?
 
 Use the `/` operator, just like pathlib:

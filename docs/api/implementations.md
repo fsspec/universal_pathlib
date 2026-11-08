@@ -6,6 +6,20 @@ protocol-specific functionality.
 
 ## upath.implementations.cloud
 
+::: upath.implementations.cloud.CloudPath
+    options:
+        heading_level: 3
+        show_root_heading: true
+        show_root_full_path: false
+        members:
+        - key
+        show_bases: true
+
+Base class for bucket based object storage implementations. In addition to the
+`UPath` interface, cloud paths provide the `key` property, returning the object
+key (blob name) of the path without the bucket or container. `HfPath` does not
+support `key`.
+
 ::: upath.implementations.cloud.S3Path
     options:
         heading_level: 3
