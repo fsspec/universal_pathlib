@@ -2,6 +2,7 @@
 
 import glob
 import os
+import re
 import sys
 
 import nox
@@ -49,6 +50,12 @@ def FSSPEC_MIN_VERSION() -> str:
     raise RuntimeError("Could not find fsspec minimum version in pyproject.toml")
 
 
+def coverage_file(session: nox.Session) -> str:
+    """Return a coverage data file name unique per platform and session."""
+    name = re.sub(r"[^A-Za-z0-9.]+", "-", session.name).strip("-")
+    return f".coverage.{sys.platform}.{name}"
+
+
 @nox.session(python=SUPPORTED_PYTHONS)
 def tests(session: nox.Session) -> None:
     """Run the test suite."""
@@ -61,7 +68,7 @@ def tests(session: nox.Session) -> None:
         "--cov",
         "--cov-config=pyproject.toml",
         *session.posargs,
-        env={"COVERAGE_FILE": f".coverage.{session.python}"},
+        env={"COVERAGE_FILE": coverage_file(session)},
     )
 
 
@@ -76,11 +83,31 @@ def tests_minversion(session: nox.Session) -> None:
         "--cov",
         "--cov-config=pyproject.toml",
         *session.posargs,
-        env={"COVERAGE_FILE": f".coverage.{session.python}"},
+        env={"COVERAGE_FILE": coverage_file(session)},
     )
 
 
 tests_minversion.__doc__ = f"Run the test suite with fsspec=={FSSPEC_MIN_VERSION}."
+
+
+@nox.session(python=BASE_PYTHON)
+def coverage(session: nox.Session) -> None:
+    """Combine the coverage data of test sessions and report."""
+    session.install("coverage[toml]")
+    if glob.glob(".coverage.*"):
+        session.run("coverage", "combine")
+    session.run("coverage", "html", "--skip-covered", "--skip-empty")
+    if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(summary, "a") as f:
+            session.run(
+                "coverage",
+                "report",
+                "--format=markdown",
+                "--skip-covered",
+                "--skip-empty",
+                stdout=f,
+            )
+    session.run("coverage", "report", *session.posargs)
 
 
 @nox.session

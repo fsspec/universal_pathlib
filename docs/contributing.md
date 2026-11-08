@@ -229,11 +229,17 @@ nox --session=tests -- tests/test_core.py
 
 ### Run Tests with Coverage
 
+The test sessions always collect coverage data. To combine the data of all
+test sessions you ran and create a report, run:
+
 ```bash
-nox --session=tests -- --cov=upath --cov-report=html
+nox --session=tests-3.13
+nox --session=coverage
 ```
 
-Then open `htmlcov/index.html` to view the coverage report.
+Then open `htmlcov/index.html` to view the coverage report. In CI, the coverage
+data of all test jobs is combined the same way and the report is added to the
+workflow run summary.
 
 ### List All Available Sessions
 
