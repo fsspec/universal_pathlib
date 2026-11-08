@@ -13,6 +13,7 @@ from typing import Callable
 from typing import Literal
 from typing import overload
 from urllib.parse import SplitResult
+from urllib.parse import unquote_to_bytes
 
 from fsspec import AbstractFileSystem
 
@@ -485,7 +486,26 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         @classmethod
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
-            return UPath(uri, **storage_options)  # type: ignore[return-value]
+            # backport of pathlib.Path.from_uri from python 3.13
+            if not uri.startswith("file:"):
+                raise ValueError(f"URI does not start with 'file:': {uri!r}")
+            path = uri[5:]
+            if path[:3] == "///":
+                # Remove empty authority
+                path = path[2:]
+            elif path[:12] == "//localhost/":
+                # Remove 'localhost' authority
+                path = path[11:]
+            if path[:3] == "///" or (path[:1] == "/" and path[2:3] in ":|"):
+                # Remove slash before DOS device/UNC path
+                path = path[1:]
+            if path[1:2] == "|":
+                # Replace bar with colon in DOS drive
+                path = path[:1] + ":" + path[2:]
+            pth = cls(os.fsdecode(unquote_to_bytes(path)), **storage_options)
+            if not pth.is_absolute():
+                raise ValueError(f"URI is not absolute: {uri!r}")
+            return pth
 
         def is_dir(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:

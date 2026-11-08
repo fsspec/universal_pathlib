@@ -8,6 +8,7 @@ from upath.implementations.local import LocalPath
 
 from ..cases import BaseTests
 from ..utils import OverrideMeta
+from ..utils import only_on_windows
 from ..utils import overrides_base
 from ..utils import xfail_if_version
 
@@ -48,6 +49,33 @@ class TestRayIOFSSpecLocal(TestFSSpecLocal):
     def path(self, local_testdir):
         path = f"local://{local_testdir}"
         self.path = UPath(path)
+
+
+@pytest.mark.parametrize("name", ["file.txt", "a b#%é?.txt"])
+def test_local_from_uri_roundtrip(tmp_path, name):
+    pth = UPath(tmp_path).joinpath(name)
+    uri = pth.as_uri()
+    assert type(pth).from_uri(uri) == pth
+    assert type(type(pth).from_uri(uri)) is type(pth)
+
+
+@pytest.mark.parametrize("uri", ["s3://bucket/file.txt", "file:relative/file.txt"])
+def test_local_from_uri_invalid(uri):
+    with pytest.raises(ValueError):
+        type(UPath(".")).from_uri(uri)
+
+
+@only_on_windows
+@pytest.mark.parametrize(
+    "uri", ["file://server/share/file.txt", "file:////server/share/file.txt"]
+)
+def test_local_from_uri_unc_paths(uri):
+    # https://github.com/fsspec/universal_pathlib/issues/557
+    from upath.implementations.local import WindowsUPath
+
+    pth = WindowsUPath.from_uri(uri)
+    assert pth == WindowsUPath(r"\\server\share\file.txt")
+    assert WindowsUPath.from_uri(pth.as_uri()) == pth
 
 
 @pytest.mark.parametrize(

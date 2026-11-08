@@ -34,16 +34,24 @@ local_path = UPath(tmp.name)
 assert isinstance(local_path, (pathlib.PosixPath, pathlib.WindowsPath))
 ```
 
-Want to rely on fsspec for local filesystems too? Use a `file://` URI:
+Want to rely on fsspec for local filesystems too? Pass `protocol="file"`:
 
 ```python
-local_uri = local_path.absolute().as_uri()
-# Result: 'file:///tmp/tmpXXXXXX'
-
-local_upath = UPath(local_uri)
+local_upath = UPath(local_path, protocol="file")
 # Now it uses fsspec backend
 assert isinstance(local_upath, UPath)
+str(local_upath)
+# Result: 'file:///tmp/tmpXXXXXX'
 ```
+
+!!! warning "`as_uri()` returns an RFC 8089 file URI, not an fsspec urlpath"
+    `PosixUPath.as_uri()` and `WindowsUPath.as_uri()` behave exactly like
+    `pathlib.Path.as_uri()`: special characters are percent-encoded and UNC paths use
+    the URI authority (`file://server/share/file`). fsspec, and therefore
+    `UPath("file://...")`, treats everything after `file://` literally as a path.
+    So `UPath(local_path.as_uri())` points to a different file if the path contains
+    characters like spaces, `#` or `%`, or if it's a UNC path. Use
+    `type(local_path).from_uri(uri)` to convert a file URI back to a local path.
 
 ### How do I connect to cloud storage or remote filesystems?
 
