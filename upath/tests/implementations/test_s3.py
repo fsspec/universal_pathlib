@@ -158,7 +158,7 @@ def s3_with_double_fwd_slash_files(s3_server):
     anon, s3so = s3_server
     s3 = fsspec.filesystem("s3", anon=False, **s3so)
     bucket = "double_fwd_slash_bucket"
-    s3.mkdir(bucket + "/")
+    s3.makedirs(bucket, exist_ok=True)
     s3.pipe_file(f"{bucket}//key.txt", b"hello world")
     try:
         yield bucket, anon, s3so
@@ -314,3 +314,12 @@ def test_iterdir_with_file_dir_name_collision(s3_with_file_dir_name_collision):
 
     # listing the parent populated s3fs' dircache with both entries
     assert list(children[0].iterdir()) == [root / "my-directory" / "0.txt"]
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_skips_empty_named_prefix(s3_with_double_fwd_slash_files):
+    """issue #144: a key starting with "/" creates an empty-named prefix"""
+    bucket, anon, s3so = s3_with_double_fwd_slash_files
+    root = UPath(f"s3://{bucket}", anon=anon, **s3so)
+    # the empty-named child can't be represented as a UPath child of root
+    assert root.joinpath(bucket) not in list(root.iterdir())

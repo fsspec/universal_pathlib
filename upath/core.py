@@ -1243,6 +1243,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 raise NotADirectoryError(str(self))
         name: str
         seen: set[str] = set()
+        base_name = base_path.removesuffix(sep)
         for info in fs.listdir(base_path):
             # fsspec returns dictionaries
             if isinstance(info, dict):
@@ -1250,12 +1251,9 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             else:
                 name, info = info, {}  # type: ignore[assignment]
             name = name.removesuffix(sep)
-            # skip the directory marker of the base path itself (i.e. s3)
-            if (
-                name == base_path
-                and info.get("size", -1) == 0
-                and info.get("Key", None) == base_path + sep
-            ):
+            if name == base_name:
+                # the directory itself is not a child, i.e. s3 directory
+                # markers or empty-named prefixes from keys containing "//"
                 continue
             # only want the path name with iterdir
             _, _, name = name.rpartition(self.parser.sep)
