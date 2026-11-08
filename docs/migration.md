@@ -145,65 +145,120 @@ assert not is_local(UPath("s3://bucket/file.txt"))
 
 Upcasting `pathlib.Path` instances to `UPath` has little downside: `PosixUPath` and `WindowsUPath` behave like their `pathlib` base classes, and additionally backport newer `pathlib` features to older Python versions.
 
-### Working with Polars and Object Store
+### Using UPath with pandas, pyarrow and polars
 
-When using UPath with [Polars](https://pola.rs/), be aware that Polars uses Rust's [object-store](https://docs.rs/object_store/) library instead of fsspec. This requires special handling to preserve storage options.
+Before `v0.3.0` many data libraries accepted UPath instances, because they converted them to a string via `os.fspath()`. Now, passing a non-local UPath directly to them fails, for example with:
 
-!!! warning "Don't Rely on Implicit String Conversion"
-    Avoid passing UPath instances directly to functions that implicitly cast them to strings via `os.fspath()` or `os.path.expanduser()`. This loses storage options and can lead to authentication failures.
+- pandas: `ValueError: Invalid file path or buffer object type: <class 'upath.implementations.cloud.S3Path'>`
+- pyarrow: `TypeError: cannot construct a FileSource from s3://bucket/file.parquet`
+- polars: `TypeError: Object does not have a .read() method.`
 
-**Problematic Pattern:**
+Even when it worked, the conversion silently dropped all storage options. Instead, pass the information these libraries need explicitly. The examples below use this path:
 
 ```python
-import polars as pl
 from upath import UPath
 
-# This loses storage_options when implicitly converted to string!
-path = UPath('s3://bucket/file.parquet', anon=True)
-df = pl.read_parquet(path)  # anon=True is lost!
+path = UPath(
+    "s3://bucket/data/file.parquet",
+    key="ACCESS_KEY",
+    secret="SECRET_KEY",
+    endpoint_url="https://s3.example.com",
+)
 ```
 
-**Recommended Approaches:**
+!!! warning "`str(path)` and `path.as_uri()` drop the storage options"
+    Both return only the protocol and the path, i.e. `"s3://bucket/data/file.parquet"`. Credentials, endpoints and all other `storage_options` are not part of the string, so you have to pass them on separately. Also note that `as_uri()` raises a `ValueError` for relative UPaths (for example the result of `relative_to()`).
 
-**Option 1: Use fsspec/s3fs as the Backend** (via file handle)
+#### pandas
+
+pandas uses fsspec to access URLs and accepts fsspec storage options via its `storage_options` argument:
 
 ```python
-import polars as pl
-from upath import UPath
+import pandas as pd
 
-path = UPath("s3://bucket/file.parquet", anon=True)
-
-# Open file handle with fsspec, preserving storage_options
-df = pl.scan_parquet(path.open('rb'))
+df = pd.read_parquet(path.as_uri(), storage_options=dict(path.storage_options))
+df.to_parquet(path.as_uri(), storage_options=dict(path.storage_options))
 ```
 
-**Option 2: Use Polars' Native Rust Backend** (with object-store options)
+The same works for `read_csv()`, `to_excel()` and all other pandas I/O functions with a `storage_options` argument. Alternatively, open the file via UPath and pass the file object:
+
+```python
+with path.open("rb") as f:
+    df = pd.read_parquet(f)
+```
+
+#### pyarrow
+
+pyarrow accepts fsspec filesystem instances via its `filesystem` argument and wraps them automatically. Pass the filesystem `path.fs` together with `path.path`, the path without the protocol:
+
+```python
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+
+table = pq.read_table(path.path, filesystem=path.fs)
+pq.write_table(table, path.path, filesystem=path.fs)
+
+dataset = ds.dataset(path.parent.path, filesystem=path.fs, format="parquet")
+```
+
+This also works for pandas with the pyarrow engine: `pd.read_parquet(path.path, filesystem=path.fs)`.
+
+#### polars
+
+Polars doesn't use fsspec for cloud storage, but Rust's [object-store](https://docs.rs/object_store/) library. You have two options.
+
+**Option 1: Use fsspec for I/O** by passing a file object. This works for every filesystem supported by UPath, but might be slower than polars' native readers:
 
 ```python
 import polars as pl
-from upath import UPath
 
-path = UPath("s3://bucket/file.parquet", key="ACCESS_KEY", secret="SECRET_KEY")
+with path.open("rb") as f:
+    df = pl.read_parquet(f)
 
-# Convert fsspec storage_options to object-store format
-object_store_options = {
-    "aws_access_key_id": path.storage_options.get("key"),
-    "aws_secret_access_key": path.storage_options.get("secret"),
-    # Add other options as needed
-}
+with path.with_name("output.parquet").open("wb") as f:
+    df.write_parquet(f)
+```
 
-df = pl.scan_parquet(path.as_uri(), storage_options=object_store_options)
+**Option 2: Use polars' native object-store backend** by passing the URI and translating the fsspec storage options to object-store configuration keys:
+
+```python
+import polars as pl
+
+
+def s3_object_store_options(path: UPath) -> dict:
+    """Translate common s3fs storage options to object-store config keys."""
+    so = path.storage_options
+    keys = {
+        "key": "aws_access_key_id",
+        "secret": "aws_secret_access_key",
+        "token": "aws_session_token",
+        "endpoint_url": "aws_endpoint",
+    }
+    options = {new: so[old] for old, new in keys.items() if old in so}
+    if "region_name" in so.get("client_kwargs", {}):
+        options["aws_region"] = so["client_kwargs"]["region_name"]
+    if so.get("anon"):
+        options["aws_skip_signature"] = "true"
+    return options
+
+
+df = pl.read_parquet(path.as_uri(), storage_options=s3_object_store_options(path))
+lf = pl.scan_parquet(path.as_uri(), storage_options=s3_object_store_options(path))
 ```
 
 !!! info "Storage Options Mapping"
-    Polars uses [object-store configuration keys](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html), which differ from fsspec's naming:
+    Polars uses [object-store configuration keys](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html), which differ from fsspec's naming. For S3 the most common ones are:
 
     | fsspec/s3fs | object-store |
     |-------------|--------------|
     | `key` | `aws_access_key_id` |
     | `secret` | `aws_secret_access_key` |
+    | `token` | `aws_session_token` |
     | `endpoint_url` | `aws_endpoint` |
-    | `region_name` | `aws_region` |
+    | `client_kwargs={"region_name": ...}` | `aws_region` |
+    | `anon=True` | `aws_skip_signature="true"` |
+
+    For Google Cloud Storage and Azure, see object-store's [GoogleConfigKey](https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html) and [AzureConfigKey](https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html). A helper method to convert storage options to the object-store format is planned (see [#459](https://github.com/fsspec/universal_pathlib/issues/459)).
 
 See also: [pola-rs/polars#24921](https://github.com/pola-rs/polars/issues/24921)
 

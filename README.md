@@ -759,6 +759,16 @@ path = UPath("memory:///file.txt")
 os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
 ```
 
+#### Using UPath with pandas, pyarrow, polars and `isinstance` checks
+
+Libraries like pandas, pyarrow and polars no longer accept non-local UPath
+instances directly, and remote UPath instances are no longer `pathlib.Path`
+instances. The [migration guide][migration-guide] in the documentation shows how
+to pass paths and their storage options to these libraries, and how to replace
+`isinstance(path, pathlib.Path)` checks.
+
+[migration-guide]: https://universal-pathlib.readthedocs.io/en/latest/migration/
+
 #### Extending UPath via `_protocol_dispatch=False`
 
 If you previously used `_protocol_dipatch=False` to enable extension of the
