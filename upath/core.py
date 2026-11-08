@@ -74,7 +74,25 @@ if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
-    import upath.implementations as _uimpl
+    from upath.implementations.cached import SimpleCachePath as _SimpleCachePath
+    from upath.implementations.cloud import AzurePath as _AzurePath
+    from upath.implementations.cloud import GCSPath as _GCSPath
+    from upath.implementations.cloud import HfPath as _HfPath
+    from upath.implementations.cloud import S3Path as _S3Path
+    from upath.implementations.data import DataPath as _DataPath
+    from upath.implementations.ftp import FTPPath as _FTPPath
+    from upath.implementations.github import GitHubPath as _GitHubPath
+    from upath.implementations.hdfs import HDFSPath as _HDFSPath
+    from upath.implementations.http import HTTPPath as _HTTPPath
+    from upath.implementations.local import FilePath as _FilePath
+    from upath.implementations.local import PosixUPath as _PosixUPath
+    from upath.implementations.local import WindowsUPath as _WindowsUPath
+    from upath.implementations.memory import MemoryPath as _MemoryPath
+    from upath.implementations.sftp import SFTPPath as _SFTPPath
+    from upath.implementations.smb import SMBPath as _SMBPath
+    from upath.implementations.tar import TarPath as _TarPath
+    from upath.implementations.webdav import WebdavPath as _WebdavPath
+    from upath.implementations.zip import ZipPath as _ZipPath
 
     _MT = TypeVar("_MT")
 
@@ -201,20 +219,25 @@ class _UPathMeta(ABCMeta):
         def __getitem__(cls, key):
             return cls
 
-    def __call__(cls: type[_MT], *args: Any, **kwargs: Any) -> _MT:
-        # create a copy if UPath class
-        try:
-            (arg0,) = args
-        except ValueError:
-            pass
-        else:
-            if isinstance(arg0, UPath) and not kwargs:
-                return copy(arg0)  # type: ignore[return-value]
-        # We do this call manually, because cls could be a registered
-        # subclass of UPath that is not directly inheriting from UPath.
-        inst = cls.__new__(cls, *args, **kwargs)
-        inst.__init__(*args, **kwargs)  # type: ignore[misc]
-        return inst
+    # hidden from static type checkers: some of them (e.g. ty) use the
+    # return type of an annotated metaclass __call__ instead of the
+    # overloaded UPath.__new__, which breaks narrowing on `protocol=...`
+    if not TYPE_CHECKING:
+
+        def __call__(cls: type[_MT], *args: Any, **kwargs: Any) -> _MT:
+            # create a copy if UPath class
+            try:
+                (arg0,) = args
+            except ValueError:
+                pass
+            else:
+                if isinstance(arg0, UPath) and not kwargs:
+                    return copy(arg0)  # type: ignore[return-value]
+            # We do this call manually, because cls could be a registered
+            # subclass of UPath that is not directly inheriting from UPath.
+            inst = cls.__new__(cls, *args, **kwargs)
+            inst.__init__(*args, **kwargs)  # type: ignore[misc]
+            return inst
 
 
 class _UPathMixin(metaclass=_UPathMeta):
@@ -906,119 +929,119 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             *args: JoinablePathLike,
             protocol: Literal["simplecache"],
             **_: Any,
-        ) -> _uimpl.cached.SimpleCachePath: ...
+        ) -> _SimpleCachePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["gcs", "gs"],
             **_: Any,
-        ) -> _uimpl.cloud.GCSPath: ...
+        ) -> _GCSPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["s3", "s3a"],
             **_: Any,
-        ) -> _uimpl.cloud.S3Path: ...
+        ) -> _S3Path: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["az", "abfs", "abfss", "adl"],
             **_: Any,
-        ) -> _uimpl.cloud.AzurePath: ...
+        ) -> _AzurePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["hf"],
             **_: Any,
-        ) -> _uimpl.cloud.HfPath: ...
+        ) -> _HfPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["data"],
             **_: Any,
-        ) -> _uimpl.data.DataPath: ...
+        ) -> _DataPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["ftp"],
             **_: Any,
-        ) -> _uimpl.ftp.FTPPath: ...
+        ) -> _FTPPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["github"],
             **_: Any,
-        ) -> _uimpl.github.GitHubPath: ...
+        ) -> _GitHubPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["hdfs"],
             **_: Any,
-        ) -> _uimpl.hdfs.HDFSPath: ...
+        ) -> _HDFSPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["http", "https"],
             **_: Any,
-        ) -> _uimpl.http.HTTPPath: ...
+        ) -> _HTTPPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["file", "local"],
             **_: Any,
-        ) -> _uimpl.local.FilePath: ...
+        ) -> _FilePath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["memory"],
             **_: Any,
-        ) -> _uimpl.memory.MemoryPath: ...
+        ) -> _MemoryPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["sftp", "ssh"],
             **_: Any,
-        ) -> _uimpl.sftp.SFTPPath: ...
+        ) -> _SFTPPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["smb"],
             **_: Any,
-        ) -> _uimpl.smb.SMBPath: ...
+        ) -> _SMBPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["tar"],
             **_: Any,
-        ) -> _uimpl.tar.TarPath: ...
+        ) -> _TarPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["webdav", "webdav+http", "webdav+https"],
             **_: Any,
-        ) -> _uimpl.webdav.WebdavPath: ...
+        ) -> _WebdavPath: ...
         @overload  # noqa: E301
         def __new__(
             cls,
             *args: JoinablePathLike,
             protocol: Literal["zip"],
             **_: Any,
-        ) -> _uimpl.zip.ZipPath: ...
+        ) -> _ZipPath: ...
 
         if sys.platform == "win32":
 
@@ -1028,7 +1051,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 *args: JoinablePathLike,
                 protocol: Literal[""],
                 **_: Any,
-            ) -> _uimpl.local.WindowsUPath: ...
+            ) -> _WindowsUPath: ...
 
         else:
 
@@ -1038,7 +1061,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 *args: JoinablePathLike,
                 protocol: Literal[""],
                 **_: Any,
-            ) -> _uimpl.local.PosixUPath: ...
+            ) -> _PosixUPath: ...
 
         @overload  # noqa: E301
         def __new__(
