@@ -478,6 +478,11 @@ can use this implementation already as is. If you want a call to `UPath(...)` to
 return your custom implementation when the detected protocol is `"myproto"`, you
 need to register your implementation. The next section explains your options.
 
+Note that a custom `UPath` implementation still requires an fsspec filesystem
+registered for its protocol (see Case 1), because the `UPath` methods delegate
+all filesystem access to it, and the filesystem class defines how its URIs are
+parsed.
+
 Also note: In case you develop a custom `UPath` implementation, please feel free
 to open an issue to discuss integrating it in `universal_pathlib`.
 

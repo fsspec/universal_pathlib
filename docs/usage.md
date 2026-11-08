@@ -452,6 +452,49 @@ register_implementation("myproto", MyCustomPath)
 my_path = UPath("myproto://server/path")
 ```
 
+!!! warning "A UPath subclass needs an fsspec filesystem"
+    A UPath implementation doesn't access the storage on its own. All filesystem methods delegate to `self.fs`, the fsspec filesystem registered for the protocol, and the fsspec filesystem class also defines how URIs of the protocol are parsed. Without a registered fsspec filesystem, path parsing falls back to a generic implementation, and every method using the filesystem raises `ValueError: Protocol not known: myproto`.
+
+If you need a new protocol that behaves like an existing filesystem, subclass the fsspec filesystem and the matching UPath implementation, and register both. For example, an in-memory `untitled://` protocol, separate from `memory://`:
+
+```python
+from fsspec.implementations.memory import MemoryFileSystem
+from fsspec.registry import register_implementation as fsspec_register_implementation
+
+from upath import UPath
+from upath.implementations.memory import MemoryPath
+from upath.registry import register_implementation as upath_register_implementation
+
+
+class UntitledFileSystem(MemoryFileSystem):
+    store = {}  # don't share the store with the memory filesystem
+    pseudo_dirs = [""]
+    protocol = "untitled"
+    root_marker = "/"
+
+    @classmethod
+    def _strip_protocol(cls, path):
+        if path.startswith("untitled://"):
+            path = path[len("untitled://") :]
+        return super()._strip_protocol(path)
+
+
+class UntitledPath(MemoryPath):
+    pass
+
+
+fsspec_register_implementation("untitled", UntitledFileSystem)
+upath_register_implementation("untitled", UntitledPath)
+
+path = UPath("untitled:///notes/todo.txt")
+assert isinstance(path, UntitledPath)
+assert isinstance(path.fs, UntitledFileSystem)
+
+path.write_text("write docs")
+assert path.read_text() == "write docs"
+assert not UPath("memory:///notes/todo.txt").exists()
+```
+
 !!! note "don't extend the API in your subclass"
 
     You should not extend the API in your UPath subclass.
