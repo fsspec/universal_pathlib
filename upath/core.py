@@ -60,19 +60,23 @@ else:
     UnsupportedOperation = NotImplementedError
     """Raised when an unsupported operation is called on a path object."""
 
-if TYPE_CHECKING:
-    import upath.implementations as _uimpl
-
-    if sys.version_info >= (3, 11):
-        from typing import Self
-    else:
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
         from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
+if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
+    import upath.implementations as _uimpl
+
     _MT = TypeVar("_MT")
-    _WT = TypeVar("_WT", bound="WritablePath")
+
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "UPath",

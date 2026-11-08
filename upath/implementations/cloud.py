@@ -3,9 +3,9 @@ from __future__ import annotations
 import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
+from typing import TypeVar
 from typing import overload
 
 from upath import UnsupportedOperation
@@ -25,13 +25,13 @@ if sys.version_info >= (3, 11):
     from typing import Self
     from typing import Unpack
 else:
-    from typing_extensions import Self
-    from typing_extensions import Unpack
+    try:
+        from typing_extensions import Self
+        from typing_extensions import Unpack
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
-if TYPE_CHECKING:
-    from typing import TypeVar
-
-    _WT = TypeVar("_WT", bound="WritablePath")
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "CloudPath",
