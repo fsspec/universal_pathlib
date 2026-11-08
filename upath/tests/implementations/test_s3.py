@@ -5,6 +5,7 @@ import warnings
 
 import fsspec
 import pytest
+from packaging.version import Version
 
 from upath import UPath
 from upath.implementations.cloud import S3Path
@@ -43,6 +44,17 @@ class TestUPathS3(BaseTests, metaclass=OverrideMeta):
     @overrides_base
     def test_is_correct_class(self):
         assert isinstance(self.path, S3Path)
+
+    @overrides_base
+    @pytest.mark.xfail(
+        Version(fsspec.__version__) >= Version("2026.6.0"),
+        reason="fsspec>=2026.6.0 AbstractFileSystem.mv(recursive=True) raises"
+        " FileNotFoundError when copying the pseudo-directory key",
+        raises=FileNotFoundError,
+        strict=False,
+    )
+    def test_rename_directory(self):
+        super().test_rename_directory()
 
     @extends_base
     def test_rmdir(self):

@@ -1900,7 +1900,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
-    def rename(
+    def rename(  # noqa: C901
         self,
         target: WritablePathLike,
         *,  # note: non-standard compared to pathlib
@@ -1995,6 +1995,15 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 stacklevel=2,
             )
             kwargs["maxdepth"] = maxdepth
+        if "recursive" not in kwargs:
+            # without recursive=True some filesystems (i.e. memory, s3)
+            # fail to move directories or silently move nothing at all
+            try:
+                is_dir = self.fs.info(source_abs.path)["type"] == "directory"
+            except FileNotFoundError:
+                is_dir = False
+            if is_dir:
+                kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
             target_abs.path,
