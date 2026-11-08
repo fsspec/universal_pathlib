@@ -323,6 +323,32 @@ s3_path = UPath(
 public_s3 = UPath("s3://spacenet-dataset", anon=True)
 ```
 
+These keyword arguments are called **storage options**. UPath passes them to the fsspec filesystem class (here `s3fs.S3FileSystem`), so check the documentation of your filesystem implementation for the supported options.
+
+### What's the difference between storage options and `open()` keyword arguments?
+
+There are two places to pass fsspec options, and they are not interchangeable:
+
+- **Storage options** are keyword arguments of the `UPath` constructor. They configure the *filesystem*: credentials, endpoints, and filesystem-wide defaults like `default_cache_type` or `default_block_size` for s3fs.
+- **`open()` keyword arguments** configure a *single file object*. `UPath.open()` passes additional keyword arguments to the `open()` method of the fsspec filesystem, which forwards them to its file implementation. Examples are `block_size`, `cache_type` or `cache_options`.
+
+```python
+from upath import UPath
+
+# configure a single file object via open()
+path = UPath("s3://my-bucket/large-file.bin", anon=True)
+with path.open("rb", cache_type="first", block_size=2**20) as f:
+    header = f.read(1024)
+
+# configure the default for all files via a storage option
+path = UPath("s3://my-bucket/large-file.bin", anon=True, default_cache_type="first")
+with path.open("rb") as f:
+    header = f.read(1024)
+```
+
+!!! warning "File options are not storage options"
+    `UPath("s3://my-bucket/file.bin", cache_type="first")` passes `cache_type` to `S3FileSystem`, which fails as soon as the filesystem is used with `TypeError: AioSession.__init__() got an unexpected keyword argument 'cache_type'`.
+
 ### How do I access the underlying filesystem?
 
 UPath gives you access to the fsspec filesystem when you need lower-level control:
@@ -343,6 +369,63 @@ options = path.storage_options
 with fs.open(path_str, 'rb') as f:
     data = f.read()
 ```
+
+### How do I use an existing fsspec filesystem instance?
+
+`UPath` can't be created from a filesystem instance, and there's no `fs=` keyword argument. All keyword arguments are storage options and get passed to the filesystem class, so `UPath(..., fs=my_fs)` doesn't do what you'd expect. For example, for S3 it fails as soon as the filesystem is used with `TypeError: AioSession.__init__() got an unexpected keyword argument 'fs'`.
+
+Instead, pass the storage options of your filesystem instance:
+
+```python
+import fsspec
+from upath import UPath
+
+fs = fsspec.filesystem("s3", anon=True, endpoint_url="https://s3.example.com")
+
+path = UPath("s3://my-bucket/data.csv", **fs.storage_options)
+assert path.storage_options == {"anon": True, "endpoint_url": "https://s3.example.com"}
+```
+
+fsspec caches filesystem instances by their storage options, so `path.fs` is usually the same instance as `fs`.
+
+### How do I store a path together with its storage options?
+
+A resource on an fsspec filesystem is defined by three pieces of information: the `protocol`, the `storage_options` and the `path`. The string representation (`str(path)` or `path.as_uri()`) only contains the protocol and the path. Storage options like credentials, endpoints or account names are not part of it, and in general they can't be encoded in a URL without ambiguity.
+
+To persist a path, store all three and recreate the UPath from them:
+
+```python
+from upath import UPath
+
+path = UPath("s3://my-bucket/data.csv", endpoint_url="https://s3.example.com", anon=True)
+
+record = {
+    "protocol": path.protocol,
+    "path": path.path,
+    "storage_options": dict(path.storage_options),
+}
+
+restored = UPath(record["path"], protocol=record["protocol"], **record["storage_options"])
+assert restored == path
+assert restored.storage_options == path.storage_options
+```
+
+UPath instances can also be pickled, and if you use [pydantic](https://docs.pydantic.dev/), UPath fields serialize to the same structure:
+
+```python
+from pydantic import BaseModel
+
+class Config(BaseModel):
+    data: UPath
+
+config = Config(data=path)
+print(config.model_dump_json())
+# {"data":{"path":"my-bucket/data.csv","protocol":"s3","storage_options":{"endpoint_url":"https://s3.example.com","anon":true}}}
+assert Config.model_validate_json(config.model_dump_json()).data == path
+```
+
+!!! warning "Storage options can contain secrets"
+    Credentials are storage options too. Be careful where you store or log them.
 
 ### How do I create a custom UPath for a new filesystem?
 
