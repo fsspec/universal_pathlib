@@ -19,6 +19,12 @@ In Python, `os.PathLike` objects and `pathlib.Path` subclasses represent **local
 
 Prior to `v0.3.0`, all UPath instances incorrectly implemented `os.PathLike`, which could lead to runtime errors when non-local paths were passed to functions expecting local paths. Starting with `v0.3.0`, only local UPath implementations (`PosixUPath`, `WindowsUPath`, and `FilePath`) implement `os.PathLike`.
 
+**Why was `__fspath__` removed from non-local paths?**
+
+- `os.fspath()` promises a path on the *local* filesystem. Functions like `open()`, `os.stat()` or `shutil.copy()` use the returned string to access local files, and can't do anything sensible with `"s3://bucket/file.txt"`.
+- The string returned by the old `__fspath__` only contained the protocol and the path. The `storage_options` of the UPath (credentials, endpoints, account names, ...) can't be represented in that string. Libraries that converted a UPath via `os.fspath()` and then opened the URI with their own I/O layer (for example pandas, pyarrow, or polars) silently dropped these options, which caused authentication errors or requests to the wrong endpoint.
+- `UPath` is built on the `pathlib_abc` base classes `JoinablePath`, `ReadablePath` and `WritablePath`. Following the standard library model, only paths that point to the local filesystem implement `os.PathLike`.
+
 ### Migration Strategies
 
 If your code passes UPath instances to functions expecting `os.PathLike` objects, you have several options:
@@ -94,6 +100,50 @@ path = UPath("memory:///file.txt")
 # In v0.3.0 this correctly fails at type-check time
 os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
 ```
+
+### Code That Checks `isinstance(path, pathlib.Path)`
+
+Remote UPath implementations like `S3Path` are no longer subclasses of `pathlib.Path`. Only the implementations returned for local paths **without** a protocol are:
+
+| Example | Returned class | `pathlib.Path` subclass | `os.PathLike` |
+|:--------|:---------------|:-----------------------:|:-------------:|
+| `UPath("/tmp/file.txt")` | `PosixUPath` / `WindowsUPath` | ✅ | ✅ |
+| `UPath("file:///tmp/file.txt")` | `FilePath` | ❌ | ✅ |
+| `UPath("memory:///file.txt")` | `MemoryPath` | ❌ | ❌ |
+| `UPath("s3://bucket/file.txt")` | `S3Path` | ❌ | ❌ |
+
+`PosixUPath` and `WindowsUPath` subclass `pathlib.PosixPath` and `pathlib.WindowsPath`, and they will stay `pathlib.Path` subclasses for the foreseeable future. `FilePath` and all remote implementations are not `pathlib.Path` subclasses.
+
+An `isinstance(path, pathlib.Path)` check usually tries to answer one of two questions. Replace it with a check that answers the question you actually have:
+
+```python
+import os
+import pathlib
+
+from upath import UPath
+
+
+def as_upath(path) -> UPath:
+    """Use the pathlib API for local and remote paths."""
+    if isinstance(path, UPath):
+        return path
+    # upcasts str and pathlib.Path; local paths become PosixUPath/WindowsUPath
+    return UPath(path)
+
+
+def is_local(path) -> bool:
+    """Can the path be passed to open(), os.stat(), shutil.copy(), ...?"""
+    return isinstance(path, os.PathLike)
+
+
+p = as_upath(pathlib.Path("/tmp/file.txt"))
+assert isinstance(p, UPath) and isinstance(p, pathlib.Path)
+assert is_local(p)
+assert is_local(UPath("file:///tmp/file.txt"))
+assert not is_local(UPath("s3://bucket/file.txt"))
+```
+
+Upcasting `pathlib.Path` instances to `UPath` has little downside: `PosixUPath` and `WindowsUPath` behave like their `pathlib` base classes, and additionally backport newer `pathlib` features to older Python versions.
 
 ### Working with Polars and Object Store
 
