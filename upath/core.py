@@ -1236,27 +1236,36 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         fs = base.fs
         base_path = base.path
         if not fs.isdir(base_path):
-            raise NotADirectoryError(str(self))
+            # cached listings can misreport a directory that collides with a
+            # file of the same name (i.e. s3fs), so check again without cache
+            fs.invalidate_cache(base_path)
+            if not fs.isdir(base_path):
+                raise NotADirectoryError(str(self))
         name: str
+        seen: set[str] = set()
         for info in fs.listdir(base_path):
             # fsspec returns dictionaries
             if isinstance(info, dict):
                 name = info["name"]
             else:
                 name, info = info, {}  # type: ignore[assignment]
-            # skip the base path itself if a zero-length name
             name = name.removesuffix(sep)
+            # skip the directory marker of the base path itself (i.e. s3)
             if (
                 name == base_path
                 and info.get("size", -1) == 0
                 and info.get("Key", None) == base_path + sep
             ):
-                continue  # skip empty names
+                continue
             # only want the path name with iterdir
             _, _, name = name.rpartition(self.parser.sep)
             if name in {".", ".."}:
                 # Yielding a path object for these makes little sense
                 continue
+            if name in seen:
+                # a file and a directory can share a name on object stores
+                continue
+            seen.add(name)
             yield base.with_segments(base_path, name)
 
     def __open_reader__(self) -> BinaryIO:

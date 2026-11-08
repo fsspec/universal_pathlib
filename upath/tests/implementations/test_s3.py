@@ -282,3 +282,35 @@ def test_iterdir_with_explicit_directory_marker__issue_226(
         f"Expected: {[str(f) for f in expected_files]}, "
         f"Got: {[str(c) for c in children]}"
     )
+
+
+@pytest.fixture
+def s3_with_file_dir_name_collision(s3_server):
+    """an object key that is also the prefix of other objects
+
+    Given objects on S3:
+        s3://my-bucket/my-directory        (zero-byte object without trailing slash)
+        s3://my-bucket/my-directory/0.txt
+    """
+    import boto3
+
+    anon, s3so = s3_server
+    bucket = "iterdir_file_dir_collision_bucket"
+    s3_client = boto3.client("s3", **s3so["client_kwargs"])
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key="my-directory", Body=b"")
+    s3_client.put_object(Bucket=bucket, Key="my-directory/0.txt", Body=b"content 0")
+    yield bucket, anon, s3so
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_with_file_dir_name_collision(s3_with_file_dir_name_collision):
+    bucket, anon, s3so = s3_with_file_dir_name_collision
+    root = UPath(f"s3://{bucket}/", anon=anon, **s3so)
+
+    # the listing contains a file and a directory entry with the same name
+    children = list(root.iterdir())
+    assert children == [root / "my-directory"]
+
+    # listing the parent populated s3fs' dircache with both entries
+    assert list(children[0].iterdir()) == [root / "my-directory" / "0.txt"]
