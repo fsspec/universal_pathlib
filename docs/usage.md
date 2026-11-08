@@ -360,6 +360,8 @@ path.download("/tmp/data.csv")
 
 The key difference: `ProxyUPath` wraps a `UPath` instance and delegates to it, while keeping your custom methods separate from the core pathlib API.
 
+If your methods only work with some filesystems, set `supported_protocols = ("s3", "gcs")` on your class. Creating an instance for any other protocol then raises a `TypeError`. See [Extensions](api/extensions.md#restricting-supported-protocols) for details.
+
 
 ---
 
