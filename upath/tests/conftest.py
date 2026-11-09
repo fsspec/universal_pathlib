@@ -226,6 +226,12 @@ def stop_docker(container):
         subprocess.call(["docker", "rm", "-f", "-v", cid])
 
 
+# recent gcsfs defaults to an experimental filesystem that queries the bucket
+# layout via gRPC before most operations. fake-gcs-server only speaks HTTP, so
+# every lookup stalls until its retries time out. Must be set before importing gcsfs.
+os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
+
+
 @pytest.fixture(scope="session")
 def docker_gcs():
     if "STORAGE_EMULATOR_HOST" in os.environ:
@@ -364,6 +370,8 @@ def webdav_fixture(local_testdir, webdav_server):
     # switch to new test directory
     fs_provider = app.provider_map["/"]
     fs_provider.root_folder_path = os.path.abspath(local_testdir)
+    # wsgidav>=4.4.0 checks access against the resolved root path
+    fs_provider.root_folder_path_real = os.path.realpath(local_testdir)
     try:
         yield webdav_url
     finally:
@@ -661,6 +669,11 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
                         path=path.relative_to(pathlib_base).as_posix(),
                         oid="oid",
                     )
+
+        def _iter_repo_tree_pages(self, repo_id, path_in_repo=None, **kwargs):
+            # used by HfFileSystem in huggingface_hub>=2.3 instead of list_repo_tree
+            kwargs = {k: v for k, v in kwargs.items() if k == "recursive"}
+            yield list(self.list_repo_tree(repo_id, path_in_repo, **kwargs)), True
 
     hf_file_system.HfFileSystem.clear_instance_cache()
     monkeypatch.setattr(hf_file_system, "HfApi", MockedHfApi)
