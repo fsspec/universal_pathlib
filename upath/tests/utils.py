@@ -1,5 +1,7 @@
 import operator
 import sys
+import urllib.error
+import urllib.request
 from contextlib import contextmanager
 
 import pytest
@@ -37,14 +39,14 @@ def xfail_if_version(module, *, reason, **conditions):
 
 
 def xfail_if_no_ssl_connection(func):
+    # use urllib instead of requests: like aiohttp it verifies certificates
+    # with python's default ssl context, while requests bundles certifi
     try:
-        import requests
-    except ImportError:
-        return pytest.mark.skip(reason="requests not installed")(func)
-    try:
-        requests.get("https://example.com")
-    except (requests.exceptions.ConnectionError, requests.exceptions.SSLError):
-        return pytest.mark.xfail(reason="No SSL connection")(func)
+        urllib.request.urlopen("https://example.com", timeout=30).close()
+    except urllib.error.HTTPError:
+        return func
+    except OSError as err:
+        return pytest.mark.xfail(reason=f"No SSL connection: {err}")(func)
     else:
         return func
 
