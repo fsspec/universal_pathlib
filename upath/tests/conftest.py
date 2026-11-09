@@ -580,7 +580,10 @@ def ssh_fixture(ssh_container, local_testdir, monkeypatch):
     else:
         raise RuntimeError("issue with openssh-container startup")
 
-    fs.put(local_testdir, "/app/testdir", recursive=True)
+    with monkeypatch.context() as m:
+        # fsspec>=2026.3.0 SFTPFileSystem.put_file can't handle directories
+        m.setattr(cls, "put_file", fsspec.AbstractFileSystem.put_file)
+        fs.put(local_testdir, "/app/testdir", recursive=True)
     try:
         yield "ssh://{username}:{password}@{host}:{port}/app/testdir/".format(
             **ssh_container
