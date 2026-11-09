@@ -8,6 +8,7 @@ from fsspec.implementations.memory import MemoryFileSystem
 
 from upath import UPath
 from upath._chain import FSSpecChainParser
+from upath.tests.utils import xfail_if_version
 
 
 @pytest.mark.parametrize(
@@ -137,18 +138,35 @@ def test_chain_parser_roundtrip(urlpath: str):
     assert kw == {}
 
 
+_xfail_cached_fo = xfail_if_version(
+    "fsspec",
+    lt="2025.10.0",
+    reason="fsspec<2025.10.0 keeps 'fo' in CachingFileSystem.storage_options",
+)
+
+
 @pytest.mark.parametrize(
     "urlpath,storage_options",
     [
-        ("simplecache::memory://a/b", {"simplecache": {"same_names": True}}),
-        ("simplecache::memory://a/b", {"same_names": True}),
-        (
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"simplecache": {"same_names": True}},
+            marks=_xfail_cached_fo,
+        ),
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"same_names": True},
+            marks=_xfail_cached_fo,
+        ),
+        pytest.param(
             "simplecache::memory://a/b",
             {"simplecache": {"same_names": True}, "same_names": False},
+            marks=_xfail_cached_fo,
         ),
-        (
+        pytest.param(
             "simplecache::memory://a/b",
             {"simplecache": {"same_names": True}, "memory": {"key": "value"}},
+            marks=_xfail_cached_fo,
         ),
         ("memory://a/b", {"memory": {"key": "value"}}),
     ],
