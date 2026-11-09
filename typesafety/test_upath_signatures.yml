@@ -115,7 +115,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.parts)       # N: Revealed type is "typing.Sequence[builtins.str]"
+    reveal_type(p.parts)       # NR: Revealed type is "typing.Sequence\[(builtins\.)?str\]"
 
 - case: upath_attribute_anchor
   disable_cache: false
@@ -123,7 +123,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.anchor)      # N: Revealed type is "builtins.str"
+    reveal_type(p.anchor)      # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_name
   disable_cache: false
@@ -131,7 +131,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.name)        # N: Revealed type is "builtins.str"
+    reveal_type(p.name)        # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_stem
   disable_cache: false
@@ -139,7 +139,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.stem)        # N: Revealed type is "builtins.str"
+    reveal_type(p.stem)        # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_suffix
   disable_cache: false
@@ -147,7 +147,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.suffix)      # N: Revealed type is "builtins.str"
+    reveal_type(p.suffix)      # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_suffixes
   disable_cache: false
@@ -155,7 +155,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.suffixes)    # N: Revealed type is "builtins.list[builtins.str]"
+    reveal_type(p.suffixes)    # NR: Revealed type is "(builtins\.)?list\[(builtins\.)?str\]"
 
 - case: upath_attribute_root
   disable_cache: false
@@ -163,7 +163,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.root)        # N: Revealed type is "builtins.str"
+    reveal_type(p.root)        # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_drive
   disable_cache: false
@@ -171,7 +171,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.drive)       # N: Revealed type is "builtins.str"
+    reveal_type(p.drive)       # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_parent
   disable_cache: false
@@ -195,7 +195,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.path)        # N: Revealed type is "builtins.str"
+    reveal_type(p.path)        # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_protocol
   disable_cache: false
@@ -203,7 +203,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.protocol)    # N: Revealed type is "builtins.str"
+    reveal_type(p.protocol)    # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_attribute_storage_options
   disable_cache: false
@@ -211,7 +211,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.storage_options)  # N: Revealed type is "typing.Mapping[builtins.str, Any]"
+    reveal_type(p.storage_options)  # NR: Revealed type is "typing.Mapping\[(builtins\.)?str, Any\]"
 
 - case: upath_attribute__url
   disable_cache: false
@@ -219,7 +219,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p._url)        # N: Revealed type is "tuple[builtins.str, builtins.str, builtins.str, builtins.str, builtins.str, fallback=urllib.parse.SplitResult]"
+    reveal_type(p._url)        # NR: Revealed type is "tuple\[(builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, fallback=urllib.parse.SplitResult\]"
 
 # FIXME fsspec types are not available
 # - case: upath_attribute_fs
@@ -293,19 +293,19 @@
     from {{ module }} import {{ cls }}
 
     p = {{ cls }}("")
-    reveal_type(p.parts)             # NR: Revealed type is "(typing\.Sequence|builtins\.tuple)\[builtins\.str(, ...)?\]"
-    reveal_type(p.anchor)            # N: Revealed type is "builtins.str"
-    reveal_type(p.name)              # N: Revealed type is "builtins.str"
-    reveal_type(p.stem)              # N: Revealed type is "builtins.str"
-    reveal_type(p.suffix)            # N: Revealed type is "builtins.str"
-    reveal_type(p.suffixes)          # N: Revealed type is "builtins.list[builtins.str]"
-    reveal_type(p.root)              # N: Revealed type is "builtins.str"
-    reveal_type(p.drive)             # N: Revealed type is "builtins.str"
+    reveal_type(p.parts)             # NR: Revealed type is "(typing\.Sequence|(builtins\.)?tuple)\[(builtins\.)?str(, ...)?\]"
+    reveal_type(p.anchor)            # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.name)              # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.stem)              # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.suffix)            # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.suffixes)          # NR: Revealed type is "(builtins\.)?list\[(builtins\.)?str\]"
+    reveal_type(p.root)              # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.drive)             # NR: Revealed type is "(builtins\.)?str"
     reveal_type(p.parent)            # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.parents)           # N: Revealed type is "typing.Sequence[{{ module }}.{{ cls }}]"
-    reveal_type(p.path)              # N: Revealed type is "builtins.str"
-    reveal_type(p.protocol)          # N: Revealed type is "builtins.str"
-    reveal_type(p.storage_options)   # N: Revealed type is "typing.Mapping[builtins.str, Any]"
+    reveal_type(p.path)              # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.protocol)          # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.storage_options)   # NR: Revealed type is "typing.Mapping\[(builtins\.)?str, Any\]"
     # reveal_type(p.fs)
     # reveal_type(p.parser)
     reveal_type(p.info)              # NR: Revealed type is ".*PathInfo"
@@ -324,7 +324,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.__vfspath__())  # N: Revealed type is "builtins.str"
+    reveal_type(p.__vfspath__())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_with_name
   disable_cache: false
@@ -382,7 +382,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.full_match("*.txt"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.full_match("*.txt"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_open_reader
   disable_cache: false
@@ -410,7 +410,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.read_bytes())  # N: Revealed type is "builtins.bytes"
+    reveal_type(p.read_bytes())  # NR: Revealed type is "(builtins\.)?bytes"
 
 - case: upath_method_read_text
   disable_cache: false
@@ -418,7 +418,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.read_text())  # N: Revealed type is "builtins.str"
+    reveal_type(p.read_text())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_iterdir
   disable_cache: false
@@ -442,7 +442,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.walk())  # N: Revealed type is "typing.Iterator[tuple[upath.core.UPath, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+    reveal_type(p.walk())  # NR: Revealed type is "typing.Iterator\[tuple\[upath.core.UPath, (builtins\.)?list\[(builtins\.)?str\], (builtins\.)?list\[(builtins\.)?str\]\]\]"
 
 - case: upath_method_readlink
   disable_cache: false
@@ -511,7 +511,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.write_bytes(b"data"))  # N: Revealed type is "builtins.int"
+    reveal_type(p.write_bytes(b"data"))  # NR: Revealed type is "(builtins\.)?int"
 
 - case: upath_method_write_text
   disable_cache: false
@@ -519,7 +519,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.write_text("data"))  # N: Revealed type is "builtins.int"
+    reveal_type(p.write_text("data"))  # NR: Revealed type is "(builtins\.)?int"
 
 - case: upath_method_copy_from
   disable_cache: false
@@ -544,7 +544,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(str(p))  # N: Revealed type is "builtins.str"
+    reveal_type(str(p))  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_repr
   disable_cache: false
@@ -552,7 +552,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(repr(p))  # N: Revealed type is "builtins.str"
+    reveal_type(repr(p))  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_open
   disable_cache: false
@@ -646,7 +646,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.exists())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.exists())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_dir
   disable_cache: false
@@ -654,7 +654,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_dir())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_dir())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_file
   disable_cache: false
@@ -662,7 +662,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_file())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_file())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_mount
   disable_cache: false
@@ -670,7 +670,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_mount())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_mount())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_symlink
   disable_cache: false
@@ -678,7 +678,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_symlink())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_symlink())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_junction
   disable_cache: false
@@ -686,7 +686,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_junction())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_junction())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_block_device
   disable_cache: false
@@ -694,7 +694,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_block_device())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_block_device())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_char_device
   disable_cache: false
@@ -702,7 +702,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_char_device())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_char_device())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_fifo
   disable_cache: false
@@ -710,7 +710,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_fifo())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_fifo())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_socket
   disable_cache: false
@@ -718,7 +718,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_socket())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_socket())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_is_reserved
   disable_cache: false
@@ -726,7 +726,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_reserved())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_reserved())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_expanduser
   disable_cache: false
@@ -750,7 +750,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.owner())  # N: Revealed type is "builtins.str"
+    reveal_type(p.owner())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_group
   disable_cache: false
@@ -758,7 +758,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.group())  # N: Revealed type is "builtins.str"
+    reveal_type(p.group())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_absolute
   disable_cache: false
@@ -774,7 +774,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_absolute())  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_absolute())  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_eq
   disable_cache: false
@@ -782,7 +782,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p == UPath("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p == UPath("other"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_hash
   disable_cache: false
@@ -790,7 +790,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(hash(p))  # N: Revealed type is "builtins.int"
+    reveal_type(hash(p))  # NR: Revealed type is "(builtins\.)?int"
 
 - case: upath_method_lt
   disable_cache: false
@@ -798,7 +798,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p < UPath("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p < UPath("other"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_le
   disable_cache: false
@@ -806,7 +806,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p <= UPath("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p <= UPath("other"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_gt
   disable_cache: false
@@ -814,7 +814,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p > UPath("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p > UPath("other"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_ge
   disable_cache: false
@@ -822,7 +822,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p >= UPath("other"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p >= UPath("other"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_resolve
   disable_cache: false
@@ -888,7 +888,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.as_uri())  # N: Revealed type is "builtins.str"
+    reveal_type(p.as_uri())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_as_posix
   disable_cache: false
@@ -896,7 +896,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.as_posix())  # N: Revealed type is "builtins.str"
+    reveal_type(p.as_posix())  # NR: Revealed type is "(builtins\.)?str"
 
 - case: upath_method_samefile
   disable_cache: false
@@ -904,8 +904,8 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.samefile("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.samefile(UPath("other")))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.samefile("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.samefile(UPath("other")))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_classmethod_cwd
   disable_cache: false
@@ -943,8 +943,8 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.is_relative_to("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_relative_to(UPath("other")))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.is_relative_to("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_relative_to(UPath("other")))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_method_hardlink_to
   disable_cache: false
@@ -961,7 +961,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p.match("*.txt"))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.match("*.txt"))  # NR: Revealed type is "(builtins\.)?bool"
 
 - case: upath_subclass_methods
   disable_cache: false
@@ -1013,7 +1013,7 @@
 
     # Path manipulation methods
     reveal_type(p.with_segments("foo", "bar"))  # N: Revealed type is "{{ module }}.{{ cls }}"
-    reveal_type(p.__vfspath__())  # N: Revealed type is "builtins.str"
+    reveal_type(p.__vfspath__())  # NR: Revealed type is "(builtins\.)?str"
     reveal_type(p.with_name("newname"))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.with_stem("newstem"))  # N: Revealed type is "{{ module }}.{{ cls }}"
     reveal_type(p.with_suffix(".txt"))  # N: Revealed type is "{{ module }}.{{ cls }}"
@@ -1024,42 +1024,42 @@
     reveal_type("foo" / p)  # N: Revealed type is "{{ module }}.{{ cls }}"
 
     # Boolean methods
-    reveal_type(p.full_match("*.txt"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.exists())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_dir())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_file())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_mount())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_symlink())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_junction())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_block_device())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_char_device())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_fifo())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_socket())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_reserved())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_absolute())  # N: Revealed type is "builtins.bool"
-    reveal_type(p.match("*.txt"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_relative_to("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.is_relative_to({{ cls }}("other")))  # N: Revealed type is "builtins.bool"
+    reveal_type(p.full_match("*.txt"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.exists())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_dir())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_file())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_mount())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_symlink())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_junction())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_block_device())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_char_device())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_fifo())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_socket())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_reserved())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_absolute())  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.match("*.txt"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_relative_to("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.is_relative_to({{ cls }}("other")))  # NR: Revealed type is "(builtins\.)?bool"
 
     # File I/O methods
     reveal_type(p.__open_reader__())  # N: Revealed type is "typing.BinaryIO"
     reveal_type(p.__open_writer__("a"))  # N: Revealed type is "typing.BinaryIO"
     reveal_type(p.__open_writer__("w"))  # N: Revealed type is "typing.BinaryIO"
     reveal_type(p.__open_writer__("x"))  # N: Revealed type is "typing.BinaryIO"
-    reveal_type(p.read_bytes())  # N: Revealed type is "builtins.bytes"
-    reveal_type(p.read_text())  # N: Revealed type is "builtins.str"
+    reveal_type(p.read_bytes())  # NR: Revealed type is "(builtins\.)?bytes"
+    reveal_type(p.read_text())  # NR: Revealed type is "(builtins\.)?str"
     reveal_type(p.open())  # NR: Revealed type is ".*TextIO.*"
     reveal_type(p.open("w"))  # NR: Revealed type is ".*TextIO.*"
     reveal_type(p.open("rb"))  # NR: Revealed type is ".*(BinaryIO|BufferedReader).*"
     reveal_type(p.open("wb"))  # NR: Revealed type is ".*(BinaryIO|BufferedWriter).*"
-    reveal_type(p.write_bytes(b"data"))  # N: Revealed type is "builtins.int"
-    reveal_type(p.write_text("data"))  # N: Revealed type is "builtins.int"
+    reveal_type(p.write_bytes(b"data"))  # NR: Revealed type is "(builtins\.)?int"
+    reveal_type(p.write_text("data"))  # NR: Revealed type is "(builtins\.)?int"
 
     # Iterator methods
     reveal_type(p.iterdir())  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
     reveal_type(p.glob("*.txt"))  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
     reveal_type(p.rglob("*.txt"))  # NR: Revealed type is "typing\.(Iterator|Generator)\[{{ module }}\.{{ cls }}.*\]"
-    reveal_type(p.walk())  # N: Revealed type is "typing.Iterator[tuple[{{ module }}.{{ cls }}, builtins.list[builtins.str], builtins.list[builtins.str]]]"
+    reveal_type(p.walk())  # NR: Revealed type is "typing.Iterator\[tuple\[{{ module }}.{{ cls }}, (builtins\.)?list\[(builtins\.)?str\], (builtins\.)?list\[(builtins\.)?str\]\]\]"
 
     # Path resolution methods
     reveal_type(p.readlink())  # N: Revealed type is "{{ module }}.{{ cls }}"
@@ -1086,12 +1086,12 @@
     reveal_type(p.joinuri({{ cls }}("other")))  # NR: Revealed type is "(upath.core.UPath|upath.extensions.ProxyUPath)"
 
     # String returning methods
-    reveal_type(str(p))  # N: Revealed type is "builtins.str"
-    reveal_type(repr(p))  # N: Revealed type is "builtins.str"
-    reveal_type(p.as_uri())  # N: Revealed type is "builtins.str"
-    reveal_type(p.as_posix())  # N: Revealed type is "builtins.str"
-    reveal_type(p.owner())  # N: Revealed type is "builtins.str"
-    reveal_type(p.group())  # N: Revealed type is "builtins.str"
+    reveal_type(str(p))  # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(repr(p))  # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.as_uri())  # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.as_posix())  # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.owner())  # NR: Revealed type is "(builtins\.)?str"
+    reveal_type(p.group())  # NR: Revealed type is "(builtins\.)?str"
 
     # Stat methods
     reveal_type(p.stat())  # NR: Revealed type is ".*(StatResultType|stat_result).*"
@@ -1111,14 +1111,14 @@
     reveal_type(p.hardlink_to({{ cls }}("target")))  # N: Revealed type is "None"
 
     # Comparison methods
-    reveal_type(p == {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(hash(p))  # N: Revealed type is "builtins.int"
-    reveal_type(p < {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p <= {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p > {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p >= {{ cls }}("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.samefile("other"))  # N: Revealed type is "builtins.bool"
-    reveal_type(p.samefile({{ cls }}("other")))  # N: Revealed type is "builtins.bool"
+    reveal_type(p == {{ cls }}("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(hash(p))  # NR: Revealed type is "(builtins\.)?int"
+    reveal_type(p < {{ cls }}("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p <= {{ cls }}("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p > {{ cls }}("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p >= {{ cls }}("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.samefile("other"))  # NR: Revealed type is "(builtins\.)?bool"
+    reveal_type(p.samefile({{ cls }}("other")))  # NR: Revealed type is "(builtins\.)?bool"
 
     # Class methods
     reveal_type({{ cls }}.cwd())  # N: Revealed type is "{{ module }}.{{ cls }}"

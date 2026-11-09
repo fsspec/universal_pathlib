@@ -6,6 +6,7 @@ import sys
 import warnings
 from collections.abc import Mapping
 from functools import lru_cache
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypedDict
@@ -293,6 +294,10 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
                 *map(self.stringify_path, paths),
             )
             return p if os.name != "nt" else p.replace("\\", "/")
+        # convert windows separators like pathlib does (see python/cpython#103631)
+        paths = tuple(
+            pth.as_posix() if isinstance(pth, PureWindowsPath) else pth for pth in paths
+        )
         if self.netloc_is_anchor:
             drv, p0 = self.splitdrive(path)
             pN = list(map(self.stringify_path, paths))

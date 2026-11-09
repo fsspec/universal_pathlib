@@ -48,7 +48,6 @@ repos:
           - flake8-bugbear==24.1.17
           - flake8-comprehensions==3.14.0
           - flake8-debugger==4.1.2
-          - flake8-string-format==0.3.0
   - repo: https://github.com/pycqa/bandit
     rev: 1.8.3
     hooks:
