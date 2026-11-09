@@ -6,6 +6,9 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import overload
+from urllib.parse import urlsplit
+
+from fsspec.registry import get_filesystem_class
 
 from upath import UnsupportedOperation
 from upath._chain import DEFAULT_CHAIN_PARSER
@@ -16,6 +19,7 @@ from upath.types import SupportsPathLike
 from upath.types import WritablePath
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from typing import Literal
     from typing import TypeVar
 
@@ -25,6 +29,8 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import Self
         from typing_extensions import Unpack
+
+    from fsspec import AbstractFileSystem
 
     from upath._chain import FSSpecChainParser
     from upath.types.storage_options import AzureStorageOptions
@@ -38,6 +44,7 @@ __all__ = [
     "CloudPath",
     "GCSPath",
     "S3Path",
+    "S3HttpPath",
     "AzurePath",
     "HfPath",
 ]
@@ -175,7 +182,86 @@ class S3Path(CloudPath):
             **sopts,
         )
         assert type(self) is type(new_self)
-        return super(type(new_self), new_self).copy(target, **kwargs)
+        return super(S3Path, new_self).copy(target, **kwargs)
+
+
+class S3HttpPath(S3Path):
+    """S3 compatible storage at an explicit endpoint
+
+    Supports `s3+http://endpoint/bucket/key` and `s3+https://endpoint/bucket/key`
+    urls as defined in https://github.com/jbms/url-pipeline. The endpoint is
+    stored in the `endpoint_url` storage option and the first path segment is
+    always interpreted as the bucket.
+    """
+
+    __slots__ = ()
+
+    def __init__(
+        self,
+        *args: JoinablePathLike,
+        protocol: Literal["s3+http", "s3+https"] | None = None,
+        chain_parser: FSSpecChainParser = DEFAULT_CHAIN_PARSER,
+        **storage_options: Unpack[S3StorageOptions],
+    ) -> None:
+        super().__init__(
+            *args,
+            protocol=protocol,  # type: ignore[arg-type]
+            chain_parser=chain_parser,
+            **storage_options,
+        )
+        endpoint_url = self.storage_options.get("endpoint_url")
+        if not endpoint_url:
+            raise ValueError(
+                f"must provide `endpoint_url` storage option for args: {args!r}"
+            )
+        url = urlsplit(endpoint_url)
+        if (
+            f"s3+{url.scheme}" != self.protocol
+            or not url.netloc
+            or url.path.strip("/")
+            or url.query
+            or url.fragment
+        ):
+            raise ValueError(
+                f"endpoint_url={endpoint_url!r} can't be expressed"
+                f" as a {self.protocol!r} url"
+            )
+
+    @classmethod
+    def _parse_storage_options(
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        so = super()._parse_storage_options(urlpath, protocol, storage_options)
+        if urlpath.startswith(("s3+http://", "s3+https://")):
+            url = urlsplit(urlpath)
+            url_endpoint = f"{url.scheme.partition('+')[2]}://{url.netloc}"
+            endpoint_url = so.setdefault("endpoint_url", url_endpoint)
+            if endpoint_url.rstrip("/") != url_endpoint:
+                raise ValueError(
+                    f"endpoint_url={endpoint_url!r} conflicts with"
+                    f" endpoint in url {urlpath!r}"
+                )
+        return so
+
+    @classmethod
+    def _fs_factory(
+        cls,
+        urlpath: str,
+        protocol: str,
+        storage_options: Mapping[str, Any],
+    ) -> AbstractFileSystem:
+        fs_cls = get_filesystem_class("s3")
+        return fs_cls(**storage_options)
+
+    def __str__(self) -> str:
+        endpoint_url = self.storage_options.get("endpoint_url")
+        if self._relative_base is not None or not endpoint_url:
+            return super().__str__()
+        netloc = urlsplit(endpoint_url).netloc
+        return f"{self.protocol}://{netloc}/{self.path}"
 
 
 class AzurePath(CloudPath):

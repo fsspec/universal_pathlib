@@ -134,6 +134,7 @@ if http_path.exists():
 - :fontawesome-brands-google: `gs:` and `gcs:` Google Cloud Storage _(requires `gcsfs`)_
 - :simple-huggingface: `hf:` Hugging Face Hub _(requires `huggingface_hub`)_
 - :fontawesome-brands-aws: `s3:` and `s3a:` AWS S3 _(requires `s3fs`)_
+- :fontawesome-brands-aws: `s3+http:` and `s3+https:` S3-compatible storage at a custom endpoint _(requires `s3fs`)_
 - :fontawesome-solid-network-wired: `sftp:` and `ssh:` SFTP and SSH filesystems _(requires `paramiko`)_
 - :fontawesome-solid-share-nodes: `smb:` SMB filesystems _(requires `smbprotocol`)_
 - :fontawesome-solid-cloud: `webdav:`, `webdav+http:` and `webdav+https:` WebDAV _(requires `webdav4[fsspec]`)_

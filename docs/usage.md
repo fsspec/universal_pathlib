@@ -232,6 +232,14 @@ s3_path = UPath(
     secret="SECRET_KEY"
 )
 
+# S3-compatible storage with the endpoint in the url
+# (equivalent to the example above)
+s3_path = UPath(
+    "s3+https://s3.custom-domain.com/my-bucket/file.txt",
+    key="ACCESS_KEY",
+    secret="SECRET_KEY"
+)
+
 # Anonymous access to public buckets
 public_s3 = UPath("s3://spacenet-dataset", anon=True)
 ```

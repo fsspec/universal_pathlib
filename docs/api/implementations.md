@@ -18,6 +18,23 @@ protocol-specific functionality.
 
 Amazon S3 compatible object storage implementation.
 
+::: upath.implementations.cloud.S3HttpPath
+    options:
+        heading_level: 3
+        show_root_heading: true
+        show_root_full_path: false
+        members: []
+        show_bases: true
+
+**Protocols:** `s3+http://`, `s3+https://`
+
+S3 compatible object storage at an explicit endpoint, using
+`s3+http(s)://endpoint/bucket/key` urls as defined in
+[url-pipeline](https://github.com/jbms/url-pipeline). The endpoint is stored
+in the `endpoint_url` storage option and the first path segment is always
+interpreted as the bucket. `str()` and `as_uri()` return the
+`s3+http(s)://endpoint/bucket/key` form.
+
 ::: upath.implementations.cloud.GCSPath
     options:
         heading_level: 3
