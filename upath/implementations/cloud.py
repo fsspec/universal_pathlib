@@ -216,7 +216,10 @@ class HfPath(CloudPath):
     def iterdir(self) -> Iterator[Self]:
         try:
             yield from super().iterdir()
-        except NotImplementedError:
+        except (NotImplementedError, ValueError):
+            # listing a namespace (e.g. a user's repositories) is unsupported:
+            # older huggingface_hub raises NotImplementedError, newer versions
+            # reject the single-segment repository id with a ValueError
             raise UnsupportedOperation
 
     def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
