@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
+from fnmatch import fnmatchcase
 from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
@@ -2256,7 +2257,21 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 UserWarning,
                 stacklevel=2,
             )
-        return self.full_match(path_pattern.replace("**", "*"))
+        path_pattern = path_pattern.replace("**", "*")
+        if self.full_match(path_pattern):
+            return True
+        # Like pathlib, a relative pattern is matched from the right, so
+        # UPath("s3://bucket/a/b").match("b") is True.
+        if path_pattern.startswith("/") or "://" in path_pattern:
+            return False
+        pattern_parts = path_pattern.rstrip("/").split("/")
+        path_parts = self.parts[1:] if self.anchor else self.parts
+        if len(pattern_parts) > len(path_parts):
+            return False
+        return all(
+            fnmatchcase(part, pat)
+            for part, pat in zip(reversed(path_parts), reversed(pattern_parts))
+        )
 
     @classmethod
     def __get_pydantic_core_schema__(
