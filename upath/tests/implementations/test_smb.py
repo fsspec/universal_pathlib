@@ -1,19 +1,27 @@
 import pytest
-from fsspec import __version__ as fsspec_version
-from packaging.version import Version
 
 from upath import UPath
-from upath.tests.cases import BaseTests
-from upath.tests.utils import skip_on_windows
+
+from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
+from ..utils import skip_on_windows
 
 
 @skip_on_windows
-class TestUPathSMB(BaseTests):
+class TestUPathSMB(BaseTests, metaclass=OverrideMeta):
 
     @pytest.fixture(autouse=True)
     def path(self, smb_fixture):
         self.path = UPath(smb_fixture)
 
+    @overrides_base
+    def test_is_correct_class(self):
+        from upath.implementations.smb import SMBPath
+
+        assert isinstance(self.path, SMBPath)
+
+    @overrides_base
     @pytest.mark.parametrize(
         "pattern",
         (
@@ -24,14 +32,7 @@ class TestUPathSMB(BaseTests):
                     reason="SMBFileSystem.info appends '/' to dirs"
                 ),
             ),
-            pytest.param(
-                "**/*.txt",
-                marks=(
-                    pytest.mark.xfail(reason="requires fsspec>=2023.9.0")
-                    if Version(fsspec_version) < Version("2023.9.0")
-                    else ()
-                ),
-            ),
+            "**/*.txt",
         ),
     )
     def test_glob(self, pathlib_base, pattern):

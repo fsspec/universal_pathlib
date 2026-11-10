@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from upath.core import UPath
@@ -11,10 +10,8 @@ if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -48,9 +45,3 @@ class SFTPPath(UPath):
         if path_str.startswith(("ssh:///", "sftp:///")):
             return path_str.removesuffix("/")
         return path_str
-
-    def iterdir(self) -> Iterator[Self]:
-        if not self.is_dir():
-            raise NotADirectoryError(str(self))
-        else:
-            return super().iterdir()

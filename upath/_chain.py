@@ -175,6 +175,18 @@ def _iter_fileobject_protocol_options(
     yield fileobject, protocol, so
 
 
+def _merge_protocol_options(
+    protocol: str,
+    storage_options: dict[str, Any],
+    /,
+) -> dict[str, Any]:
+    """merges storage options nested under protocol, flat options take precedence"""
+    if protocol not in storage_options:
+        return storage_options
+    so = storage_options.copy()
+    return {**so.pop(protocol), **so}
+
+
 class FSSpecChainParser:
     """parse an fsspec chained urlpath"""
 
@@ -231,14 +243,14 @@ class FSSpecChainParser:
                 proto0 is None or bit == proto0
             ):  # exact match a fsspec protocol
                 proto = bit
-                path_bit = ""
+                path_bit = None
                 extra_so = {}
             elif bit in (m := set(available_implementations(fallback=True))) and (
                 proto0 is None or bit == proto0
             ):
                 self.known_protocols = m
                 proto = bit
-                path_bit = ""
+                path_bit = None
                 extra_so = {}
             else:
                 proto = get_upath_protocol(bit, protocol=proto0)
@@ -246,8 +258,8 @@ class FSSpecChainParser:
                 path_bit = flavour.strip_protocol(bit)
                 extra_so = flavour.get_kwargs_from_url(bit)
             if proto in {"blockcache", "filecache", "simplecache"}:
-                if path_bit:
-                    next_path_overwrite = path_bit
+                if path_bit is not None:
+                    next_path_overwrite = path_bit or "/"
                 path_bit = None
             elif next_path_overwrite is not None:
                 path_bit = next_path_overwrite
@@ -260,7 +272,7 @@ class FSSpecChainParser:
             _iter_fileobject_protocol_options(
                 path_bit if segments else None,
                 protocol or "",
-                storage_options,
+                _merge_protocol_options(segments[0].protocol, storage_options),
             ),
         ):
             t_fo, t_proto, t_so = proto_fo_so or (None, "", {})

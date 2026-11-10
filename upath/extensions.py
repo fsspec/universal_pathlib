@@ -16,6 +16,7 @@ from typing import overload
 from urllib.parse import SplitResult
 
 from fsspec import AbstractFileSystem
+from pathlib_abc import vfspath
 
 from upath._chain import Chain
 from upath._chain import ChainSegment
@@ -23,6 +24,7 @@ from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
+from upath.types import OnNameCollisionFunc
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
@@ -36,6 +38,9 @@ if TYPE_CHECKING:
         from typing import Self
     else:
         from typing_extensions import Self
+
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core.core_schema import CoreSchema
 
 __all__ = [
     "ProxyUPath",
@@ -160,6 +165,8 @@ class ProxyUPath:
         target: ReadablePathLike,
         target_is_directory: bool = False,
     ) -> None:
+        if not isinstance(target, str):
+            target = vfspath(target)
         self.__wrapped__.symlink_to(target, target_is_directory=target_is_directory)
 
     def mkdir(
@@ -167,8 +174,13 @@ class ProxyUPath:
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
-        self.__wrapped__.mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        kw: dict[str, Any] = {}
+        if parent_mode is not None:
+            kw["parent_mode"] = parent_mode
+        self.__wrapped__.mkdir(mode=mode, parents=parents, exist_ok=exist_ok, **kw)
 
     def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
         return self.__wrapped__.__open_writer__(mode)
@@ -428,9 +440,13 @@ class ProxyUPath:
         )
 
     def is_relative_to(self, other, /, *_deprecated) -> bool:  # type: ignore[override]
+        if not isinstance(other, str):
+            other = vfspath(other)
         return self.__wrapped__.is_relative_to(other, *_deprecated)
 
     def hardlink_to(self, target: ReadablePathLike) -> None:
+        if not isinstance(target, str):
+            target = vfspath(target)
         return self.__wrapped__.hardlink_to(target)
 
     def match(self, pattern: str, *, case_sensitive: bool | None = None) -> bool:
@@ -510,9 +526,13 @@ class ProxyUPath:
         )
 
     def _copy_from(
-        self, source: ReadablePath | Self, follow_symlinks: bool = True
+        self,
+        source: ReadablePath | Self,
+        follow_symlinks: bool = True,
+        on_name_collision: OnNameCollisionFunc | None = None,
+        **kwargs: Any,
     ) -> None:
-        self.__wrapped__._copy_from(source, follow_symlinks=follow_symlinks)  # type: ignore  # noqa: E501
+        self.__wrapped__._copy_from(source, follow_symlinks=follow_symlinks, on_name_collision=on_name_collision, **kwargs)  # type: ignore  # noqa: E501
 
     @property
     def anchor(self) -> str:
@@ -568,6 +588,13 @@ class ProxyUPath:
         case_sensitive: bool | None = None,
     ) -> bool:
         return self.__wrapped__.full_match(pattern, case_sensitive=case_sensitive)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        cs = UPath.__get_pydantic_core_schema__.__func__  # type: ignore[attr-defined]
+        return cs(cls, source_type, handler)
 
 
 UPath.register(ProxyUPath)

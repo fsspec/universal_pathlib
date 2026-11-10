@@ -2,18 +2,24 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterator
-from typing import Any, Literal
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Literal
+from typing import overload
 
-from upath._chain import DEFAULT_CHAIN_PARSER, FSSpecChainParser
+from upath import UnsupportedOperation
+from upath._chain import DEFAULT_CHAIN_PARSER
+from upath._chain import FSSpecChainParser
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 from upath.types import JoinablePathLike
-from upath.types.storage_options import (
-    AzureStorageOptions,
-    GCSStorageOptions,
-    HfStorageOptions,
-    S3StorageOptions,
-)
+from upath.types import SupportsPathLike
+from upath.types import WritablePath
+from upath.types.storage_options import AzureStorageOptions
+from upath.types.storage_options import GCSStorageOptions
+from upath.types.storage_options import HfStorageOptions
+from upath.types.storage_options import S3StorageOptions
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -21,6 +27,11 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
     from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from typing import TypeVar
+
+    _WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "CloudPath",
@@ -77,17 +88,26 @@ class CloudPath(UPath):
             return self_path + self.root
         return self_path
 
+    @property
+    def parts(self) -> Sequence[str]:
+        parts = super().parts
+        if self._relative_base is None and len(parts) == 2 and not parts[1]:
+            return parts[:1]
+        return parts
+
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         if not parents and not exist_ok and self.exists():
             raise FileExistsError(self.path)
-        super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
-
-    def iterdir(self) -> Iterator[Self]:
-        if self.is_file():
-            raise NotADirectoryError(str(self))
-        yield from super().iterdir()
+        super().mkdir(
+            mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+        )
 
 
 class GCSPath(CloudPath):
@@ -107,10 +127,17 @@ class GCSPath(CloudPath):
             raise ValueError("non key-like path provided (bucket/container missing)")
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         try:
-            super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+            super().mkdir(
+                mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+            )
         except TypeError as err:
             if "unexpected keyword argument 'create_parents'" in str(err):
                 self.fs.mkdir(self.path)
@@ -138,6 +165,30 @@ class S3Path(CloudPath):
         )
         if not self.drive and len(self.parts) > 1:
             raise ValueError("non key-like path provided (bucket/container missing)")
+
+    @overload
+    def copy(self, target: _WT, **kwargs: Any) -> _WT: ...
+
+    @overload
+    def copy(self, target: SupportsPathLike | str, **kwargs: Any) -> Self: ...
+
+    def copy(self, target: _WT | SupportsPathLike | str, **kwargs: Any) -> _WT | UPath:
+        """
+        Recursively copy this file or directory tree to the given destination.
+        """
+        # to allow _copy_from to check if a path isfile AND isdir
+        # we need to disable s3fs's dircache mechanism because it
+        # currently implements a XOR relation the two for objects
+        # ref: fsspec/s3fs#999
+        sopts = dict(self.storage_options)
+        sopts["use_listings_cache"] = False
+        new_self = type(self)(
+            self.path,
+            protocol=self.protocol,  # type: ignore
+            **sopts,
+        )
+        assert type(self) is type(new_self)
+        return super(type(new_self), new_self).copy(target, **kwargs)
 
 
 class AzurePath(CloudPath):
@@ -170,3 +221,44 @@ class HfPath(CloudPath):
         super().__init__(
             *args, protocol=protocol, chain_parser=chain_parser, **storage_options
         )
+
+    @property
+    def root(self) -> str:
+        return ""
+
+    def iterdir(self) -> Iterator[Self]:
+        try:
+            yield from super().iterdir()
+        except (NotImplementedError, ValueError):
+            # listing a namespace (e.g. a user's repositories) is unsupported:
+            # older huggingface_hub raises NotImplementedError, newer versions
+            # reject the single-segment repository id with a ValueError
+            raise UnsupportedOperation
+
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")

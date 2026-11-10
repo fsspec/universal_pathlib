@@ -34,16 +34,24 @@ local_path = UPath(tmp.name)
 assert isinstance(local_path, (pathlib.PosixPath, pathlib.WindowsPath))
 ```
 
-Want to rely on fsspec for local filesystems too? Use a `file://` URI:
+Want to rely on fsspec for local filesystems too? Pass `protocol="file"`:
 
 ```python
-local_uri = local_path.absolute().as_uri()
-# Result: 'file:///tmp/tmpXXXXXX'
-
-local_upath = UPath(local_uri)
+local_upath = UPath(local_path, protocol="file")
 # Now it uses fsspec backend
 assert isinstance(local_upath, UPath)
+str(local_upath)
+# Result: 'file:///tmp/tmpXXXXXX'
 ```
+
+!!! warning "`as_uri()` returns an RFC 8089 file URI, not an fsspec urlpath"
+    `PosixUPath.as_uri()` and `WindowsUPath.as_uri()` behave exactly like
+    `pathlib.Path.as_uri()`: special characters are percent-encoded and UNC paths use
+    the URI authority (`file://server/share/file`). fsspec, and therefore
+    `UPath("file://...")`, treats everything after `file://` literally as a path.
+    So `UPath(local_path.as_uri())` points to a different file if the path contains
+    characters like spaces, `#` or `%`, or if it's a UNC path. Use
+    `type(local_path).from_uri(uri)` to convert a file URI back to a local path.
 
 ### How do I connect to cloud storage or remote filesystems?
 
@@ -165,6 +173,38 @@ if s3path.exists():
 if s3path.is_file():
     print("It's a file!")
 ```
+
+### How does UPath handle S3 prefixes that don't exist?
+
+S3 prefixes aren't traditional POSIX directories. UPath follows `pathlib` conventions—checking a non-existent path returns `False`:
+
+```python
+from upath import UPath
+
+# Non-existent bucket returns False, just like pathlib
+fake_path = UPath("s3://bucket-that-doesnt-exist/my-dir/")
+print(fake_path.is_dir())
+# False
+```
+
+This matches standard `pathlib` behavior:
+
+```python
+import pathlib
+
+# pathlib also returns False for non-existent paths
+assert pathlib.Path('/path/that/does/not/exist').is_dir() is False
+assert pathlib.Path('/path/that/does/not/exist').exists() is False
+```
+
+!!! warning "Authentication Required"
+    If the bucket exists but you lack credentials, an authentication exception will be raised:
+
+    ```python
+    # This bucket exists but requires authentication
+    s3_path = UPath("s3://my-private-bucket/data/")
+    s3_path.is_dir()  # Raises authentication exception
+    ```
 
 ### How do I search for files matching a pattern?
 

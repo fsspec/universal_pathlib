@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sys
 import warnings
 from abc import ABCMeta
@@ -38,9 +39,12 @@ from upath._info import UPathInfo
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
+from upath.registry import _get_implementation_protocols
+from upath.registry import available_implementations
 from upath.registry import get_upath_class
 from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
+from upath.types import OnNameCollisionFunc
 from upath.types import PathInfo
 from upath.types import ReadablePath
 from upath.types import ReadablePathLike
@@ -116,11 +120,31 @@ def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
     raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
 
 
+def _accepts_keyword(func: Any, name: str) -> bool:
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return False
+    return name in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
+
+
 class _IncompatibleProtocolError(TypeError, ValueError):
     """switch to TypeError for incompatible protocols in a backward compatible way.
 
     !!! Do not use this exception directly !!!
+    Catch TypeError instead, if you need to handle incompatible protocol errors.
+
+    We'll do the switch in a future major release.
     """
+
+    # evil: make this look like a built-in TypeError
+    __module__ = "builtins"
+    __qualname__ = "TypeError"
+
+    def __repr__(self) -> str:
+        return f"TypeError({', '.join(map(repr, self.args))})"
 
 
 class _UPathMeta(ABCMeta):
@@ -403,7 +427,7 @@ class _UPathMixin(metaclass=_UPathMeta):
 
     _protocol_dispatch: bool | None = None
 
-    def __new__(
+    def __new__(  # noqa C901
         cls,
         *args: JoinablePathLike,
         protocol: str | None = None,
@@ -434,6 +458,27 @@ class _UPathMixin(metaclass=_UPathMeta):
             if "incompatible with" in str(e):
                 raise _IncompatibleProtocolError(str(e)) from e
             raise
+
+        # subclasses should default to their own protocol
+        if protocol is None and cls is not UPath:
+            impl_protocols = _get_implementation_protocols(cls)
+            if not pth_protocol and impl_protocols:
+                pth_protocol = impl_protocols[0]
+            elif pth_protocol and pth_protocol not in impl_protocols:
+                msg_protocol = pth_protocol
+                if not pth_protocol:
+                    msg_protocol = "'' (empty string)"
+                msg = (
+                    f"{cls.__name__!s}(...) detected protocol {msg_protocol!s}"
+                    f" which is incompatible with {cls.__name__}."
+                )
+                if not pth_protocol or pth_protocol not in available_implementations():
+                    msg += (
+                        " Did you forget to register the subclass for this protocol"
+                        " with upath.registry.register_implementation()?"
+                    )
+                raise _IncompatibleProtocolError(msg)
+
         # determine which UPath subclass to dispatch to
         upath_cls: type[UPath] | None
         if cls._protocol_dispatch or cls._protocol_dispatch is None:
@@ -467,26 +512,24 @@ class _UPathMixin(metaclass=_UPathMeta):
             raise RuntimeError("UPath.__new__ expected cls to be subclass of UPath")
 
         else:
-            msg_protocol = repr(pth_protocol)
+            msg_protocol = pth_protocol
             if not pth_protocol:
-                msg_protocol += " (empty string)"
+                msg_protocol = "'' (empty string)"
             msg = (
-                f"{cls.__name__!s}(...) detected protocol {msg_protocol!s} and"
-                f" returns a {upath_cls.__name__} instance that isn't a direct"
-                f" subclass of {cls.__name__}. This will raise an exception in"
-                " future universal_pathlib versions. To prevent the issue, use"
-                " UPath(...) to create instances of unrelated protocols or you"
-                f" can instead derive your subclass {cls.__name__!s}(...) from"
-                f" {upath_cls.__name__} or alternatively override behavior via"
-                f" registering the {cls.__name__} implementation with protocol"
-                f" {msg_protocol!s} replacing the default implementation."
+                f"{cls.__name__!s}(...) detected protocol {msg_protocol!s}"
+                f" which is incompatible with {cls.__name__}."
             )
-            warnings.warn(
-                msg,
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            upath_cls = cls
+            if (
+                # find a better way
+                (not pth_protocol and cls.__name__ not in ["CloudPath", "LocalPath"])
+                or pth_protocol
+                and pth_protocol not in available_implementations()
+            ):
+                msg += (
+                    " Did you forget to register the subclass for this protocol"
+                    " with upath.registry.register_implementation()?"
+                )
+            raise _IncompatibleProtocolError(msg)
 
         return object.__new__(upath_cls)
 
@@ -519,7 +562,6 @@ class _UPathMixin(metaclass=_UPathMeta):
             Additional storage options for the path.
 
         """
-
         # todo: avoid duplicating this call from __new__
         protocol = get_upath_protocol(
             args[0] if args else "",
@@ -537,6 +579,12 @@ class _UPathMixin(metaclass=_UPathMeta):
         #   is really necessary though. A warning might be enough...
         if not compatible_protocol(protocol, *args):
             raise ValueError("can't combine incompatible UPath protocols")
+
+        # subclasses should default to their own protocol
+        if not protocol:
+            impl_protocols = _get_implementation_protocols(type(self))
+            if impl_protocols:
+                protocol = impl_protocols[0]
 
         if args:
             args0 = args[0]
@@ -573,7 +621,7 @@ class _UPathMixin(metaclass=_UPathMeta):
         # FIXME: normalization needs to happen in unchain already...
         chain = Chain.from_list(Chain.from_list(segments).to_list())
         if len(args) > 1:
-            flavour = WrappedFileSystemFlavour.from_protocol(protocol)
+            flavour = WrappedFileSystemFlavour.from_protocol(chain.active_path_protocol)
             joined = flavour.join(chain.active_path, *args[1:])
             stripped = flavour.strip_protocol(joined)
             chain = chain.replace(path=stripped)
@@ -785,7 +833,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     if TYPE_CHECKING:  # noqa: C901
         _chain: Chain
         _chain_parser: FSSpecChainParser
-        _fs_cached: bool
+        _fs_cached: AbstractFileSystem
         _raw_urlpaths: Sequence[JoinablePathLike]
         _relative_base: str | None
 
@@ -963,8 +1011,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         new_instance = type(self)(
             *pathsegments,
             protocol=self._protocol,
-            **self._storage_options,
+            **self.storage_options,
         )
+        if hasattr(self, "_fs_cached"):
+            new_instance._fs_cached = self._fs_cached
 
         if is_relative:
             new_instance._relative_base = self._relative_base
@@ -1088,7 +1138,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     self._relative_base,
                     str(self),
                     protocol=self._protocol,
-                    **self._storage_options,
+                    **self.storage_options,
                 )
                 parent = pth.parent
                 parent._relative_base = self._relative_base
@@ -1119,7 +1169,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                     break
                 parent = parent.parent
                 parents.append(parent)
-            return parents
+            return tuple(parents)
         return super().parents
 
     def joinpath(self, *pathsegments: JoinablePathLike) -> Self:
@@ -1183,7 +1233,11 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         base = self
         if self.parts[-1:] == ("",):
             base = self.parent
-        for name in base.fs.listdir(base.path):
+        fs = base.fs
+        base_path = base.path
+        if not fs.isdir(base_path):
+            raise NotADirectoryError(str(self))
+        for name in fs.listdir(base_path):
             # fsspec returns dictionaries
             if isinstance(name, dict):
                 name = name.get("name")
@@ -1192,7 +1246,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 continue
             # only want the path name with iterdir
             _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
-            yield base.with_segments(base.path, name)
+            yield base.with_segments(base_path, name)
 
     def __open_reader__(self) -> BinaryIO:
         return self.fs.open(self.path, mode="rb")
@@ -1215,10 +1269,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         """
         Recursively copy this file or directory tree to the given destination.
         """
-        if not isinstance(target, UPath):
-            return super().copy(self.with_segments(target), **kwargs)
-        else:
-            return super().copy(target, **kwargs)
+        if isinstance(target, str):
+            proto = get_upath_protocol(target)
+            if proto != self.protocol:
+                target = UPath(target)
+            else:
+                target = self.with_segments(target)
+        elif not isinstance(target, UPath):
+            target = UPath(target)
+        if target.is_dir():
+            raise IsADirectoryError(str(target))
+        return super().copy(target, **kwargs)
 
     @overload
     def copy_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
@@ -1232,10 +1293,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         """
         Copy this file or directory tree into the given existing directory.
         """
-        if not isinstance(target_dir, UPath):
-            return super().copy_into(self.with_segments(target_dir), **kwargs)
-        else:
-            return super().copy_into(target_dir, **kwargs)
+        if isinstance(target_dir, str):
+            proto = get_upath_protocol(target_dir)
+            if proto != self.protocol:
+                target_dir = UPath(target_dir)
+            else:
+                target_dir = self.with_segments(target_dir)
+        elif not isinstance(target_dir, UPath):
+            target_dir = UPath(target_dir)
+        if not target_dir.exists():
+            raise FileNotFoundError(str(target_dir))
+        if not target_dir.is_dir():
+            raise NotADirectoryError(str(target_dir))
+        return super().copy_into(target_dir, **kwargs)
 
     @overload
     def move(self, target: _WT, **kwargs: Any) -> _WT: ...
@@ -1268,17 +1338,63 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise ValueError(f"{self!r} has an empty name")
         elif hasattr(target_dir, "with_segments"):
             target = target_dir.with_segments(target_dir, name)  # type: ignore
+        elif isinstance(target_dir, PurePath):
+            target = UPath(target_dir, name)
         else:
             target = self.with_segments(target_dir, name)
+        td = target.parent
+        if not td.exists():
+            raise FileNotFoundError(str(td))
+        elif not td.is_dir():
+            raise NotADirectoryError(str(td))
         return self.move(target)
 
     def _copy_from(
         self,
         source: ReadablePath,
         follow_symlinks: bool = True,
+        on_name_collision: OnNameCollisionFunc | None = None,
         **kwargs: Any,
     ) -> None:
-        return super()._copy_from(source, follow_symlinks)
+        """
+        UPath custom:: Recursively copy the given path to this path.
+        """
+        # fixme: it would be best if this would be upstreamed
+        from pathlib_abc import vfsopen
+        from pathlib_abc import vfspath
+        from pathlib_abc._os import copyfileobj
+        from pathlib_abc._os import ensure_different_files
+
+        stack: list[tuple[ReadablePath, WritablePath]] = [(source, self)]
+        while stack:
+            src, dst = stack.pop()
+            info = src.info
+            if not follow_symlinks and info.is_symlink():
+                dst.symlink_to(vfspath(src.readlink()), src.info.is_dir())
+            elif on_name_collision and info.is_file() and info.is_dir():
+                dst_file, dst_dir = on_name_collision(src, dst)
+                if dst_file is not None:
+                    ensure_different_files(src, dst_file)
+                    with vfsopen(src, "rb") as source_f:
+                        with vfsopen(dst_file, "wb") as target_f:
+                            copyfileobj(source_f, target_f)
+                if dst_dir is not None:
+                    children = src.iterdir()
+                    dst_dir.mkdir()
+                    # feed through dict.fromkeys to remove duplicates
+                    for child in dict.fromkeys(children):
+                        stack.append((child, dst_dir.joinpath(child.name)))
+            elif info.is_dir():
+                children = src.iterdir()
+                dst.mkdir()
+                # feed through dict.fromkeys to remove duplicates
+                for child in dict.fromkeys(children):
+                    stack.append((child, dst.joinpath(child.name)))
+            else:
+                ensure_different_files(src, dst)
+                with vfsopen(src, "rb") as source_f:
+                    with vfsopen(dst, "wb") as target_f:
+                        copyfileobj(source_f, target_f)
 
     # --- WritablePath attributes -------------------------------------
 
@@ -1294,10 +1410,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         """
         Create a new directory at this given path.
         """
+        if parent_mode is not None:
+            warnings.warn(
+                f"{type(self).__name__}.mkdir(): parent_mode is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -1751,7 +1875,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if exists and not exist_ok:
             raise FileExistsError(str(self))
         if not exists:
-            self.fs.touch(self.path, truncate=True)
+            try:
+                self.fs.touch(self.path, truncate=True)
+            except NotImplementedError:
+                _raise_unsupported(type(self).__name__, "touch")
         else:
             try:
                 self.fs.touch(self.path, truncate=False)
@@ -1792,7 +1919,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
-    def rename(
+    def rename(  # noqa: C901
         self,
         target: WritablePathLike,
         *,  # note: non-standard compared to pathlib
@@ -1887,6 +2014,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 stacklevel=2,
             )
             kwargs["maxdepth"] = maxdepth
+        if "recursive" not in kwargs and _accepts_keyword(self.fs.mv, "recursive"):
+            # without recursive=True some filesystems (i.e. memory, s3)
+            # fail to move directories or silently move nothing at all.
+            # Filesystems whose mv() does not accept it (i.e. sftp) do a
+            # native rename which already handles directories.
+            try:
+                is_dir = self.fs.info(source_abs.path)["type"] == "directory"
+            except FileNotFoundError:
+                is_dir = False
+            if is_dir:
+                kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
             target_abs.path,
@@ -1936,14 +2074,14 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             args = (self.__vfspath__(),)
             kwargs = {
                 "protocol": self._protocol,
-                **self._storage_options,
+                **self.storage_options,
             }
         else:
             args = (self._relative_base, self.__vfspath__())
             # Include _relative_base in the state if it's set
             kwargs = {
                 "protocol": self._protocol,
-                **self._storage_options,
+                **self.storage_options,
                 "_relative_base": self._relative_base,
             }
         return _make_instance, (type(self), args, kwargs)

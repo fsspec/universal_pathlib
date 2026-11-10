@@ -1,15 +1,22 @@
+import warnings
+
+import fsspec
 import pytest
+from packaging.version import Version
 
 from upath import UPath
 from upath.implementations.cloud import AzurePath
 
 from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import extends_base
+from ..utils import overrides_base
+from ..utils import posixify
 from ..utils import skip_on_windows
 
 
 @skip_on_windows
-@pytest.mark.usefixtures("path")
-class TestAzurePath(BaseTests):
+class TestAzurePath(BaseTests, metaclass=OverrideMeta):
     SUPPORTS_EMPTY_DIRS = False
 
     @pytest.fixture(autouse=True, scope="function")
@@ -23,9 +30,29 @@ class TestAzurePath(BaseTests):
         self.path = UPath(azure_fixture, **self.storage_options)
         self.prepare_file_system()
 
-    def test_is_AzurePath(self):
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, AzurePath)
 
+    @overrides_base
+    def test_protocol(self):
+        # test all valid protocols for azure...
+        protocol = self.path.protocol
+        protocols = ["abfs", "abfss", "adl", "az"]
+        assert protocol in protocols
+
+    @overrides_base
+    @pytest.mark.xfail(
+        Version(fsspec.__version__) >= Version("2026.6.0"),
+        reason="fsspec>=2026.6.0 AbstractFileSystem.mv(recursive=True) raises"
+        " FileNotFoundError when copying the pseudo-directory key",
+        raises=FileNotFoundError,
+        strict=False,
+    )
+    def test_rename_directory(self):
+        super().test_rename_directory()
+
+    @extends_base
     def test_rmdir(self):
         new_dir = self.path / "new_dir_rmdir"
         new_dir.mkdir()
@@ -38,11 +65,7 @@ class TestAzurePath(BaseTests):
         with pytest.raises(NotADirectoryError):
             (self.path / "a" / "file.txt").rmdir()
 
-    def test_protocol(self):
-        # test all valid protocols for azure...
-        protocol = self.path.protocol
-        assert protocol in ["abfs", "abfss", "adl", "az"]
-
+    @extends_base
     def test_broken_mkdir(self):
         path = UPath(
             "az://new-container/",
@@ -54,3 +77,56 @@ class TestAzurePath(BaseTests):
 
         (path / "file").write_text("foo")
         assert path.exists()
+
+
+@skip_on_windows
+@pytest.mark.xfail(reason="adlfs returns isdir false")
+def test_copy__object_key_collides_with_dir_prefix(azurite_credentials, tmp_path):
+    account_name, connection_string = azurite_credentials
+    storage_options = {
+        "account_name": account_name,
+        "connection_string": connection_string,
+    }
+
+    az = fsspec.filesystem("az", **storage_options, use_listings_cache=False)
+    container = "copy-into-collision-container"
+    az.mkdir(container)
+    # store more objects with same prefix
+    az.pipe_file(f"{container}/src/common_prefix/file1.txt", b"1")
+    az.pipe_file(f"{container}/src/common_prefix/file2.txt", b"2")
+    # object under common prefix as key
+    az.pipe_file(f"{container}/src/common_prefix", b"hello world")
+    az.invalidate_cache()
+
+    # make sure the sources have a collision
+    assert az.isfile(f"{container}/src/common_prefix")
+    assert az.isdir(f"{container}/src/common_prefix")
+    assert az.isfile(f"{container}/src/common_prefix/file1.txt")
+    assert az.isfile(f"{container}/src/common_prefix/file2.txt")
+    # prepare source and destination
+    src = UPath(f"az://{container}/src", **storage_options)
+    dst = UPath(tmp_path)
+
+    def on_collision_rename_file(src, dst):
+        warnings.warn(
+            f"{src!s} collides with prefix. Renaming target file object to {dst!s}",
+            UserWarning,
+            stacklevel=3,
+        )
+        return (
+            dst.with_suffix(dst.suffix + ".COLLISION"),
+            dst,
+        )
+
+    # perform copy
+    src.copy_into(dst, on_name_collision=on_collision_rename_file)
+
+    # check results
+    dst_files = sorted(posixify(x.relative_to(tmp_path)) for x in dst.glob("**/*"))
+    assert dst_files == [
+        "src",
+        "src/common_prefix",
+        "src/common_prefix.COLLISION",
+        "src/common_prefix/file1.txt",
+        "src/common_prefix/file2.txt",
+    ]

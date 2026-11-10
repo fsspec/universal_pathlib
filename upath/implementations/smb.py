@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 import warnings
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -43,6 +42,9 @@ class SMBPath(UPath):
         path = super().path
         if len(path) > 1:
             return path.removesuffix("/")
+        # At root level, return "/" to match anchor
+        if not path and self._relative_base is None:
+            return self.anchor
         return path
 
     def __str__(self) -> str:
@@ -56,6 +58,8 @@ class SMBPath(UPath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         # smbclient does not support setting mode externally
         from smbprotocol.exceptions import SMBOSError
@@ -72,12 +76,6 @@ class SMBPath(UPath):
                 raise FileExistsError(str(self))
             if not self.is_dir():
                 raise FileExistsError(str(self))
-
-    def iterdir(self) -> Iterator[Self]:
-        if not self.is_dir():
-            raise NotADirectoryError(str(self))
-        else:
-            return super().iterdir()
 
     def rename(
         self,

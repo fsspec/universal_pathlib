@@ -8,16 +8,13 @@ from upath.core import UPath
 from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from collections.abc import Mapping
     from typing import Any
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from fsspec import AbstractFileSystem
@@ -62,8 +59,3 @@ class SimpleCachePath(UPath):
         so = self._storage_options.copy()
         so.pop("fo", None)
         return MappingProxyType(so)
-
-    def iterdir(self) -> Iterator[Self]:
-        if self.is_file():
-            raise NotADirectoryError(str(self))
-        yield from super().iterdir()

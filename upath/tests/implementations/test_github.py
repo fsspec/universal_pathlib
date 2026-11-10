@@ -7,68 +7,68 @@ import pytest
 
 from upath import UPath
 from upath.implementations.github import GitHubPath
-from upath.tests.cases import BaseTests
 
-pytestmark = pytest.mark.skipif(
-    os.environ.get("CI")
-    and not (
-        platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
+from ..cases import JoinablePathTests
+from ..cases import NonWritablePathTests
+from ..cases import ReadablePathTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
+
+pytestmark = [
+    pytest.mark.skipif(
+        os.environ.get("CI", False)
+        and not (
+            platform.system() == "Linux" and sys.version_info[:2] in {(3, 9), (3, 13)}
+        ),
+        reason="Skipping GitHubPath tests to prevent rate limiting on GitHub API.",
     ),
-    reason="Skipping GitHubPath tests to prevent rate limiting on GitHub API.",
-)
+    pytest.mark.network,
+]
 
 
-def has_internet_connection():
-    import requests
-
-    try:
-        requests.get("http://example.com")
-    except requests.exceptions.ConnectionError:
-        return False
-    else:
-        return True
-
-
-def xfail_on_github_rate_limit(func):
-    """
-    Method decorator to mark test as xfail when GitHub rate limit is exceeded.
-    """
+def xfail_on_github_connection_error(func):
+    """Method decorator to xfail tests on GitHub rate limit or connection errors."""
 
     @functools.wraps(func)
-    def wrapped_method(self, *args, **kwargs):
-        import requests
-
+    def wrapper(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except AssertionError as e:
-            if "nodename nor servname provided, or not known" in str(e):
-                pytest.xfail(reason="No internet connection")
-            raise
-        except requests.exceptions.ConnectionError:
-            pytest.xfail(reason="No internet connection")
         except Exception as e:
-            if "rate limit exceeded" in str(e):
+            str_e = str(e)
+            if "rate limit exceeded" in str_e or "too many requests for url" in str_e:
                 pytest.xfail("GitHub API rate limit exceeded")
+            elif (
+                "nodename nor servname provided, or not known" in str_e
+                or "Network is unreachable" in str_e
+                or "NameResolutionError" in str_e
+            ):
+                pytest.xfail("No internet connection")
             else:
                 raise
 
-    return wrapped_method
+    return wrapper
 
 
-def wrap_github_rate_limit_check(cls):
-    """
-    Class decorator to wrap all test methods with the
-    xfail_on_github_rate_limit decorator.
-    """
-    for attr_name in dir(cls):
-        if attr_name.startswith("test_"):
-            orig_method = getattr(cls, attr_name)
-            setattr(cls, attr_name, xfail_on_github_rate_limit(orig_method))
-    return cls
+def wrap_all_tests(decorator):
+    """Class decorator factory to wrap all test methods with a given decorator."""
+
+    def class_decorator(cls):
+        for attr_name in dir(cls):
+            if attr_name.startswith("test_"):
+                orig_method = getattr(cls, attr_name)
+                setattr(cls, attr_name, decorator(orig_method))
+        return cls
+
+    return class_decorator
 
 
-@wrap_github_rate_limit_check
-class TestUPathGitHubPath(BaseTests):
+@wrap_all_tests(xfail_on_github_connection_error)
+class TestUPathGitHubPath(
+    JoinablePathTests,
+    ReadablePathTests,
+    NonWritablePathTests,
+    metaclass=OverrideMeta,
+):
     """
     Unit-tests for the GitHubPath implementation of UPath.
     """
@@ -81,78 +81,6 @@ class TestUPathGitHubPath(BaseTests):
         path = "github://ap--:universal_pathlib@test_data/data"
         self.path = UPath(path)
 
-    @pytest.fixture(autouse=True)
-    def _xfail_on_rate_limit_errors(self):
-        try:
-            yield
-        except Exception as e:
-            if "rate limit exceeded" in str(e):
-                pytest.xfail("GitHub API rate limit exceeded")
-            else:
-                raise
-
-    def test_is_GitHubPath(self):
-        """
-        Test that the path is a GitHubPath instance.
-        """
+    @overrides_base
+    def test_is_correct_class(self):
         assert isinstance(self.path, GitHubPath)
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir_exists_ok_false(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_mkdir_parents_true_exists_ok_false(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_rename(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_rename2(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_touch(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_touch_unlink(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_write_bytes(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_write_text(self):
-        pass
-
-    @pytest.mark.skip(reason="GitHub filesystem is read-only")
-    def test_fsspec_compat(self):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_into_local(self, tmp_path):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_move_into_memory(self, clear_fsspec_memory_cache):
-        pass
-
-    @pytest.mark.skip(reason="Only testing read on GithubPath")
-    def test_rename_with_target_absolute(self, target_factory):
-        return super().test_rename_with_target_str_absolute(target_factory)

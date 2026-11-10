@@ -13,6 +13,7 @@ from typing import Callable
 from typing import Literal
 from typing import overload
 from urllib.parse import SplitResult
+from urllib.parse import unquote_to_bytes
 
 from fsspec import AbstractFileSystem
 
@@ -21,6 +22,7 @@ from upath._chain import Chain
 from upath._chain import ChainSegment
 from upath._chain import FSSpecChainParser
 from upath._protocol import compatible_protocol
+from upath._protocol import get_upath_protocol
 from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.core import _UPathMixin
@@ -46,6 +48,9 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import Self
         from typing_extensions import Unpack
+
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core.core_schema import CoreSchema
 
     from upath.types.storage_options import FileStorageOptions
 
@@ -363,6 +368,53 @@ class LocalPath(_UPathMixin, pathlib.Path):
         else:
             shutil.rmtree(self)
 
+    if sys.version_info < (3, 15):
+
+        def mkdir(
+            self,
+            mode: int = 0o777,
+            parents: bool = False,
+            exist_ok: bool = False,
+            *,
+            parent_mode: int | None = None,
+        ) -> None:
+            if parent_mode is None:
+                return super().mkdir(mode, parents, exist_ok)
+            # backport of the parent_mode argument added in python 3.15
+            try:
+                super().mkdir(mode, parents=False, exist_ok=exist_ok)
+            except FileNotFoundError:
+                if not parents or self.parent == self:
+                    raise
+                self.parent.mkdir(
+                    mode=parent_mode,
+                    parents=True,
+                    exist_ok=True,
+                    parent_mode=parent_mode,
+                )
+                super().mkdir(mode, parents=False, exist_ok=exist_ok)
+
+    else:
+
+        def is_reserved(self) -> bool:
+            # pathlib.PurePath.is_reserved() was removed in python 3.15
+            warnings.warn(
+                f"{type(self).__name__}.is_reserved() is deprecated. Use"
+                " os.path.isreserved() to detect reserved paths on Windows.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if os.name == "nt":
+                import ntpath
+
+                return ntpath.isreserved(self)
+            return False
+
+    # we need to override pathlib.Path._copy_from to support it as a
+    # WritablePath._copy_from target with support for on_name_collision
+    # Issue: https://github.com/barneygale/pathlib-abc/issues/48
+    _copy_from = UPath._copy_from
+
     if sys.version_info < (3, 14):  # noqa: C901
 
         @overload
@@ -377,10 +429,17 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # hacky workaround for missing pathlib.Path.copy in python < 3.14
             # todo: revisit
             _copy: Any = ReadablePath.copy.__get__(self)
-            if not isinstance(target, UPath):
-                return _copy(self.with_segments(str(target)), **kwargs)
-            else:
-                return _copy(target, **kwargs)
+            if isinstance(target, str):
+                proto = get_upath_protocol(target)
+                if proto != self.protocol:
+                    target = UPath(target)
+                else:
+                    target = self.with_segments(target)
+            elif not isinstance(target, UPath):
+                target = UPath(target)
+            if target.is_dir():
+                raise IsADirectoryError(str(target))
+            return _copy(target, **kwargs)
 
         @overload
         def copy_into(self, target_dir: _WT, **kwargs: Any) -> _WT: ...
@@ -398,10 +457,15 @@ class LocalPath(_UPathMixin, pathlib.Path):
             # hacky workaround for missing pathlib.Path.copy_into in python < 3.14
             # todo: revisit
             _copy_into: Any = ReadablePath.copy_into.__get__(self)
-            if not isinstance(target_dir, UPath):
-                return _copy_into(self.with_segments(str(target_dir)), **kwargs)
-            else:
-                return _copy_into(target_dir, **kwargs)
+            if isinstance(target_dir, str):
+                proto = get_upath_protocol(target_dir)
+                if proto != self.protocol:
+                    target_dir = UPath(target_dir)
+                else:
+                    target_dir = self.with_segments(target_dir)
+            elif not isinstance(target_dir, UPath):
+                target_dir = UPath(target_dir)
+            return _copy_into(target_dir, **kwargs)
 
         @overload
         def move(self, target: _WT, **kwargs: Any) -> _WT: ...
@@ -432,8 +496,15 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 raise ValueError(f"{self!r} has an empty name")
             elif hasattr(target_dir, "with_segments"):
                 target = target_dir.with_segments(str(target_dir), name)  # type: ignore
+            elif isinstance(target_dir, pathlib.PurePath):
+                target = UPath(target_dir, name)
             else:
                 target = self.with_segments(str(target_dir), name)
+            td = target.parent
+            if not td.exists():
+                raise FileNotFoundError(str(td))
+            elif not td.is_dir():
+                raise NotADirectoryError(str(td))
             return self.move(target)
 
         @property
@@ -457,7 +528,26 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         @classmethod
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
-            return UPath(uri, **storage_options)  # type: ignore[return-value]
+            # backport of pathlib.Path.from_uri from python 3.13
+            if not uri.startswith("file:"):
+                raise ValueError(f"URI does not start with 'file:': {uri!r}")
+            path = uri[5:]
+            if path[:3] == "///":
+                # Remove empty authority
+                path = path[2:]
+            elif path[:12] == "//localhost/":
+                # Remove 'localhost' authority
+                path = path[11:]
+            if path[:3] == "///" or (path[:1] == "/" and path[2:3] in ":|"):
+                # Remove slash before DOS device/UNC path
+                path = path[1:]
+            if path[1:2] == "|":
+                # Replace bar with colon in DOS drive
+                path = path[:1] + ":" + path[2:]
+            pth = cls(os.fsdecode(unquote_to_bytes(path)), **storage_options)
+            if not pth.is_absolute():
+                raise ValueError(f"URI is not absolute: {uri!r}")
+            return pth
 
         def is_dir(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:
@@ -642,7 +732,7 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         def hardlink_to(self, target: ReadablePathLike) -> None:
             try:
-                os.link(target, self)  # type: ignore[arg-type]
+                os.link(os.fspath(target), os.fspath(self))  # type: ignore[arg-type]
             except AttributeError:
                 raise UnsupportedOperation("hardlink operation not supported")
 
@@ -700,16 +790,12 @@ class LocalPath(_UPathMixin, pathlib.Path):
                 )
             return super().chmod(mode)
 
-    if not hasattr(pathlib.Path, "_copy_from"):
-
-        def _copy_from(
-            self,
-            source: ReadablePath | LocalPath,
-            follow_symlinks: bool = True,
-            preserve_metadata: bool = False,
-        ) -> None:
-            _copy_from: Any = WritablePath._copy_from.__get__(self)
-            _copy_from(source, follow_symlinks=follow_symlinks)
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        cs = UPath.__get_pydantic_core_schema__.__func__  # type: ignore[attr-defined]
+        return cs(cls, source_type, handler)
 
 
 UPath.register(LocalPath)

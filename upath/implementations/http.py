@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from fsspec.asyn import sync
 
+from upath import UnsupportedOperation
 from upath._stat import UPathStatResult
 from upath.core import UPath
 from upath.types import JoinablePathLike
@@ -64,40 +65,6 @@ class HTTPPath(UPath):
     def path(self) -> str:
         sr = urlsplit(super().path)
         return sr._replace(path=sr.path or "/").geturl()
-
-    def is_file(self, *, follow_symlinks: bool = True) -> bool:
-        if not follow_symlinks:
-            warnings.warn(
-                f"{type(self).__name__}.is_file(follow_symlinks=False):"
-                " is currently ignored.",
-                UserWarning,
-                stacklevel=2,
-            )
-        try:
-            next(super().iterdir())
-        except (StopIteration, NotADirectoryError):
-            return True
-        except FileNotFoundError:
-            return False
-        else:
-            return False
-
-    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
-        if not follow_symlinks:
-            warnings.warn(
-                f"{type(self).__name__}.is_dir(follow_symlinks=False):"
-                " is currently ignored.",
-                UserWarning,
-                stacklevel=2,
-            )
-        try:
-            next(super().iterdir())
-        except (StopIteration, NotADirectoryError):
-            return False
-        except FileNotFoundError:
-            return False
-        else:
-            return True
 
     def stat(self, follow_symlinks: bool = True) -> StatResultType:
         if not follow_symlinks:
@@ -158,3 +125,31 @@ class HTTPPath(UPath):
                     break
 
         return resolved_path
+
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("DataPath does not support writing")

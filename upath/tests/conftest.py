@@ -226,6 +226,12 @@ def stop_docker(container):
         subprocess.call(["docker", "rm", "-f", "-v", cid])
 
 
+# recent gcsfs defaults to an experimental filesystem that queries the bucket
+# layout via gRPC before most operations. fake-gcs-server only speaks HTTP, so
+# every lookup stalls until its retries time out. Must be set before importing gcsfs.
+os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
+
+
 @pytest.fixture(scope="session")
 def docker_gcs():
     if "STORAGE_EMULATOR_HOST" in os.environ:
@@ -238,9 +244,19 @@ def docker_gcs():
         pytest.skip("docker not installed")
 
     container = "gcsfs_test"
-    cmd = (
-        "docker run -d -p 4443:4443 --name gcsfs_test fsouza/fake-gcs-server:latest -scheme "  # noqa: E501
-        "http -public-host http://localhost:4443 -external-url http://localhost:4443"  # noqa: E501
+    cmd = " ".join(
+        [
+            "docker",
+            "run",
+            "-d",
+            "-p 4443:4443",
+            "--name gcsfs_test",
+            "fsouza/fake-gcs-server:latest",
+            "-scheme http",
+            "-public-host http://localhost:4443",
+            "-external-url http://localhost:4443",
+            "-backend memory",
+        ]
     )
     stop_docker(container)
     subprocess.check_output(shlex.split(cmd))
@@ -286,7 +302,7 @@ def http_server(tmp_path_factory):
     requests = pytest.importorskip("requests")
     pytest.importorskip("http.server")
     proc = subprocess.Popen(
-        shlex.split(f"python -m http.server --directory {http_tempdir} 18080")
+        shlex.split(f"{sys.executable} -m http.server --directory {http_tempdir} 18080")
     )
     try:
         url = "http://127.0.0.1:18080/folder"
@@ -354,6 +370,8 @@ def webdav_fixture(local_testdir, webdav_server):
     # switch to new test directory
     fs_provider = app.provider_map["/"]
     fs_provider.root_folder_path = os.path.abspath(local_testdir)
+    # wsgidav>=4.4.0 checks access against the resolved root path
+    fs_provider.root_folder_path_real = os.path.realpath(local_testdir)
     try:
         yield webdav_url
     finally:
@@ -385,8 +403,8 @@ def docker_azurite(azurite_credentials):
     image = "mcr.microsoft.com/azure-storage/azurite"
     container_name = "azure_test"
     cmd = (
-        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}"  # noqa: E501
-        " azurite-blob --loose --blobHost 0.0.0.0"  # noqa: E501
+        f"docker run --rm -d -p {AZURITE_PORT}:10000 --name {container_name} {image}:latest"  # noqa: E501
+        " azurite-blob --loose --blobHost 0.0.0.0 --skipApiVersionCheck"  # noqa: E501
     )
     url = f"http://localhost:{AZURITE_PORT}"
 
@@ -562,7 +580,10 @@ def ssh_fixture(ssh_container, local_testdir, monkeypatch):
     else:
         raise RuntimeError("issue with openssh-container startup")
 
-    fs.put(local_testdir, "/app/testdir", recursive=True)
+    with monkeypatch.context() as m:
+        # fsspec>=2026.3.0 SFTPFileSystem.put_file can't handle directories
+        m.setattr(cls, "put_file", fsspec.AbstractFileSystem.put_file)
+        fs.put(local_testdir, "/app/testdir", recursive=True)
     try:
         yield "ssh://{username}:{password}@{host}:{port}/app/testdir/".format(
             **ssh_container
@@ -585,12 +606,16 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
     hf_file_system = pytest.importorskip(
         "huggingface_hub.hf_file_system", reason="hf tests require huggingface_hub"
     )
+    httpx = pytest.importorskip("httpx")
 
     class MockedHfApi(huggingface_hub.HfApi):
 
         def repo_info(self, repo_id, *args, repo_type=None, **kwargs):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id,
+                    response=httpx.Response(404, request=...),
+                )
             elif repo_type is None or repo_type == "model":
                 return huggingface_hub.hf_api.ModelInfo(id=repo_id)
             elif repo_type == "dataset":
@@ -602,7 +627,10 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
 
         def get_paths_info(self, repo_id, paths, *args, **kwargs):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id,
+                    response=httpx.Response(404, request=...),
+                )
             paths_info = []
             for path in paths:
                 if path:
@@ -628,7 +656,9 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
             self, repo_id, path_in_repo, *args, recursive=False, **kwargs
         ):
             if repo_id != hf_test_repo:
-                raise huggingface_hub.errors.RepositoryNotFoundError(repo_id)
+                raise huggingface_hub.errors.RepositoryNotFoundError(
+                    repo_id, response=httpx.Response(404, request=...)
+                )
             pathlib_dir = pathlib_base / path_in_repo if path_in_repo else pathlib_base
             for path in pathlib_dir.rglob("*") if recursive else pathlib_dir.glob("*"):
                 if path.is_file():
@@ -642,6 +672,11 @@ def mock_hf_api(pathlib_base, monkeypatch, hf_test_repo):  # noqa: C901
                         path=path.relative_to(pathlib_base).as_posix(),
                         oid="oid",
                     )
+
+        def _iter_repo_tree_pages(self, repo_id, path_in_repo=None, **kwargs):
+            # used by HfFileSystem in huggingface_hub>=2.3 instead of list_repo_tree
+            kwargs = {k: v for k, v in kwargs.items() if k == "recursive"}
+            yield list(self.list_repo_tree(repo_id, path_in_repo, **kwargs)), True
 
     hf_file_system.HfFileSystem.clear_instance_cache()
     monkeypatch.setattr(hf_file_system, "HfApi", MockedHfApi)

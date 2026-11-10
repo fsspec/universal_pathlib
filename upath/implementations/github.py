@@ -5,10 +5,10 @@ GitHub file system implementation
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterator
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from upath.core import UnsupportedOperation
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
@@ -16,10 +16,8 @@ if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -52,11 +50,6 @@ class GitHubPath(UPath):
             return ""
         return pth
 
-    def iterdir(self) -> Iterator[Self]:
-        if self.is_file():
-            raise NotADirectoryError(str(self))
-        yield from super().iterdir()
-
     @property
     def parts(self) -> Sequence[str]:
         parts = super().parts
@@ -64,3 +57,31 @@ class GitHubPath(UPath):
             return parts[1:]
         else:
             return parts
+
+    def touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        raise UnsupportedOperation
+
+    def mkdir(
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
+    ) -> None:
+        raise UnsupportedOperation
+
+    def unlink(self, missing_ok: bool = False) -> None:
+        raise UnsupportedOperation
+
+    def write_bytes(self, data: bytes) -> int:
+        raise UnsupportedOperation
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        raise UnsupportedOperation("GitHubPath does not support writing")

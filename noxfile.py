@@ -16,7 +16,7 @@ nox.options.sessions = "lint", "tests", "type-checking", "type-safety"
 locations = ("upath",)
 running_in_ci = os.environ.get("CI", "") != ""
 
-SUPPORTED_PYTHONS = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+SUPPORTED_PYTHONS = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 BASE_PYTHON = SUPPORTED_PYTHONS[-3]
 MIN_PYTHON = SUPPORTED_PYTHONS[0]
 
@@ -52,12 +52,7 @@ def FSSPEC_MIN_VERSION() -> str:
 @nox.session(python=SUPPORTED_PYTHONS)
 def tests(session: nox.Session) -> None:
     """Run the test suite."""
-    # workaround in case no aiohttp binary wheels are available
-    if session.python == "3.14":
-        session.env["AIOHTTP_NO_EXTENSIONS"] = "1"
-        session.install(".[tests,dev]", "pydantic>=2.12.0a1")
-    else:
-        session.install(".[tests,dev,dev-third-party]")
+    session.install(".[tests,dev,dev-third-party]")
     session.run("uv", "pip", "freeze", silent=not running_in_ci)
     session.run(
         "pytest",
