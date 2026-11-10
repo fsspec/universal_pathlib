@@ -93,7 +93,12 @@ class DataPath(UPath):
         return super().full_match(pattern, case_sensitive=case_sensitive)
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         raise FileExistsError(str(self))
 

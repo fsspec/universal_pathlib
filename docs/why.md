@@ -200,7 +200,7 @@ s3_result = process_file(UPath("s3://bucket/file.txt"))
 Universal Pathlib runs a large subset of CPython's pathlib test suite:
 
 - :white_check_mark: **Compatibility tested** against standard library pathlib
-- :white_check_mark: **Cross-version tested** on Python 3.9-3.14
+- :white_check_mark: **Cross-version tested** on Python 3.9-3.15
 - :white_check_mark: **Integration tested** with real filesystems
 - :white_check_mark: **Regression tested** for each release
 

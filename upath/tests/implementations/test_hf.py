@@ -17,6 +17,7 @@ except ImportError:
     pytestmark = pytest.mark.skip
 
 
+@pytest.mark.network
 def test_hfpath():
     path = UPath("hf://HuggingFaceTB/SmolLM2-135M")
     assert isinstance(path, HfPath)
