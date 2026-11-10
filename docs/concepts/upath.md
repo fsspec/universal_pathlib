@@ -180,6 +180,30 @@ assert not isinstance(file_path, Path)    # False (uses fsspec instead)
 - Useful for consistent fsspec-based access across all backends
 - Implements `os.PathLike` protocol
 
+**File URIs vs. fsspec urlpaths:**
+
+Both families of local paths can be written as strings starting with `file:`, but these
+strings follow different rules:
+
+| | `PosixUPath` / `WindowsUPath` | `FilePath` |
+|---|---|---|
+| string form | `as_uri()` returns an [RFC 8089](https://www.rfc-editor.org/rfc/rfc8089) file URI, identical to `pathlib.Path.as_uri()` | `str()` / `as_uri()` return an fsspec urlpath: `file://` followed by the literal path |
+| special characters | percent-encoded (`a b` → `a%20b`) | kept as is |
+| UNC paths (Windows) | `file://server/share/file` | `file:////server/share/file` |
+| convert back | `type(p).from_uri(uri)` | `UPath(urlpath)` |
+
+`UPath("file://...")` always parses an fsspec urlpath and returns a `FilePath`. fsspec does
+not interpret the authority part of a `file://` URI, so `UPath("file://server/share/file")`
+is the *relative* path `server/share/file` resolved against the current working directory.
+To switch a local path between the two implementations, pass the path object directly:
+
+```python
+p = UPath("/tmp/a b.txt")                 # PosixUPath
+f = UPath(p, protocol="file")             # FilePath('/tmp/a b.txt')
+assert type(p).from_uri(p.as_uri()) == p  # file URI round-trip
+assert UPath(str(f)) == f                 # fsspec urlpath round-trip
+```
+
 ### Remote and Cloud Paths
 
 For remote filesystems, `UPath` implementations provide the pathlib API backed by fsspec:

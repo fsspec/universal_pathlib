@@ -1,11 +1,14 @@
+import copy
 import os
 from pathlib import Path
 
 import pytest
+from fsspec.core import url_to_fs
 from fsspec.implementations.memory import MemoryFileSystem
 
 from upath import UPath
 from upath._chain import FSSpecChainParser
+from upath.tests.utils import xfail_if_version
 
 
 @pytest.mark.parametrize(
@@ -133,3 +136,88 @@ def test_chain_parser_roundtrip(urlpath: str):
     rechained, kw = parser.chain(segments)
     assert rechained == urlpath
     assert kw == {}
+
+
+_xfail_cached_fo = xfail_if_version(
+    "fsspec",
+    lt="2025.10.0",
+    reason="fsspec<2025.10.0 keeps 'fo' in CachingFileSystem.storage_options",
+)
+
+
+@pytest.mark.parametrize(
+    "urlpath,storage_options",
+    [
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"simplecache": {"same_names": True}},
+            marks=_xfail_cached_fo,
+        ),
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"same_names": True},
+            marks=_xfail_cached_fo,
+        ),
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"simplecache": {"same_names": True}, "same_names": False},
+            marks=_xfail_cached_fo,
+        ),
+        pytest.param(
+            "simplecache::memory://a/b",
+            {"simplecache": {"same_names": True}, "memory": {"key": "value"}},
+            marks=_xfail_cached_fo,
+        ),
+        ("memory://a/b", {"memory": {"key": "value"}}),
+    ],
+)
+def test_chaining_upath_storage_options_match_fsspec(urlpath, storage_options):
+    # fsspec mutates the nested dicts
+    fs, _ = url_to_fs(urlpath, **copy.deepcopy(storage_options))
+    pth = UPath(urlpath, **copy.deepcopy(storage_options))
+    assert dict(pth.storage_options) == fs.storage_options
+    assert pth.fs.storage_options == fs.storage_options
+
+
+def test_chaining_upath_storage_options_not_mutated():
+    storage_options = {
+        "simplecache": {"same_names": True},
+        "same_names": False,
+        "memory": {"key": "value"},
+    }
+    expected = copy.deepcopy(storage_options)
+    UPath("simplecache::memory://a/b", **storage_options)
+    assert storage_options == expected
+
+
+def test_read_file_outermost_storage_options(memory_file_urlpath, tmp_path):
+    pth = UPath(
+        f"simplecache::{memory_file_urlpath}",
+        simplecache={"cache_storage": str(tmp_path)},
+    )
+    assert pth.read_bytes() == b"hello world"
+    assert list(tmp_path.iterdir())
+
+
+def test_chain_parser_storage_options():
+    parser = FSSpecChainParser()
+    segments = parser.unchain(
+        "zip://file.txt::memory:///tmp.zip",
+        protocol=None,
+        storage_options={"zip": {"mode": "r"}, "memory": {"key": "value"}},
+    )
+    assert [s.storage_options for s in segments] == [
+        {"mode": "r"},
+        {"key": "value"},
+    ]
+
+
+def test_chain_parser_roundtrip_storage_options():
+    parser = FSSpecChainParser()
+    segments = parser.unchain(
+        "zip://file.txt::memory:///tmp.zip",
+        protocol=None,
+        storage_options={"zip": {"mode": "r"}, "memory": {"key": "value"}},
+    )
+    rechained, kw = parser.chain(segments)
+    assert parser.unchain(rechained, protocol=None, storage_options=kw) == segments

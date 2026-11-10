@@ -175,6 +175,18 @@ def _iter_fileobject_protocol_options(
     yield fileobject, protocol, so
 
 
+def _merge_protocol_options(
+    protocol: str,
+    storage_options: dict[str, Any],
+    /,
+) -> dict[str, Any]:
+    """merges storage options nested under protocol, flat options take precedence"""
+    if protocol not in storage_options:
+        return storage_options
+    so = storage_options.copy()
+    return {**so.pop(protocol), **so}
+
+
 class FSSpecChainParser:
     """parse an fsspec chained urlpath"""
 
@@ -260,7 +272,7 @@ class FSSpecChainParser:
             _iter_fileobject_protocol_options(
                 path_bit if segments else None,
                 protocol or "",
-                storage_options,
+                _merge_protocol_options(segments[0].protocol, storage_options),
             ),
         ):
             t_fo, t_proto, t_so = proto_fo_so or (None, "", {})

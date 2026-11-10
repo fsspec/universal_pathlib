@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sys
 import warnings
 from abc import ABCMeta
@@ -118,6 +119,16 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
 
 def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
     raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
+
+
+def _accepts_keyword(func: Any, name: str) -> bool:
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return False
+    return name in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
 
 
 class _IncompatibleProtocolError(TypeError, ValueError):
@@ -1400,10 +1411,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         """
         Create a new directory at this given path.
         """
+        if parent_mode is not None:
+            warnings.warn(
+                f"{type(self).__name__}.mkdir(): parent_mode is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -1901,7 +1920,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
-    def rename(
+    def rename(  # noqa: C901
         self,
         target: WritablePathLike,
         *,  # note: non-standard compared to pathlib
@@ -1996,6 +2015,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 stacklevel=2,
             )
             kwargs["maxdepth"] = maxdepth
+        if "recursive" not in kwargs and _accepts_keyword(self.fs.mv, "recursive"):
+            # without recursive=True some filesystems (i.e. memory, s3)
+            # fail to move directories or silently move nothing at all.
+            # Filesystems whose mv() does not accept it (i.e. sftp) do a
+            # native rename which already handles directories.
+            try:
+                is_dir = self.fs.info(source_abs.path)["type"] == "directory"
+            except FileNotFoundError:
+                is_dir = False
+            if is_dir:
+                kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
             target_abs.path,
