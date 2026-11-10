@@ -136,6 +136,40 @@ def _accepts_keyword(func: Any, name: str) -> bool:
     )
 
 
+def _generic_mv_fs(fs: AbstractFileSystem) -> AbstractFileSystem | None:
+    # returns the filesystem that would run AbstractFileSystem.mv, if any
+    mv = fs.mv
+    if getattr(mv, "__func__", None) is AbstractFileSystem.mv:
+        return mv.__self__  # type: ignore[no-any-return]
+    return None
+
+
+def _move_tree(fs: AbstractFileSystem, path1: str, path2: str) -> None:
+    # Replaces AbstractFileSystem.mv(path1, path2, recursive=True) which, with
+    # fsspec>=2026.6.0, raises after copying all files on object stores,
+    # because cp_file() fails for pseudo-directories without a backing key.
+    src = fs._strip_protocol(path1).rstrip("/")
+    dst = fs._strip_protocol(path2).rstrip("/")
+    dirs = {dst}
+    files1: list[str] = []
+    files2: list[str] = []
+    for p, info in fs.find(src, withdirs=True, detail=True).items():
+        p = p.rstrip("/")
+        if p != src and not p.startswith(f"{src}/"):
+            raise ValueError(f"unexpected path {p!r} below {src!r}")
+        t = f"{dst}{p[len(src):]}"
+        if info["type"] == "directory":
+            dirs.add(t)
+        else:
+            files1.append(p)
+            files2.append(t)
+    for d in sorted(dirs):
+        fs.makedirs(d, exist_ok=True)
+    if files1:
+        fs.copy(files1, files2, on_error="raise")
+    fs.rm(src, recursive=True)
+
+
 class _IncompatibleProtocolError(TypeError, ValueError):
     """switch to TypeError for incompatible protocols in a backward compatible way.
 
@@ -2086,6 +2120,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             except FileNotFoundError:
                 is_dir = False
             if is_dir:
+                mv_fs = None if kwargs else _generic_mv_fs(self.fs)
+                if mv_fs is not None:
+                    _move_tree(mv_fs, source_abs.path, target_abs.path)
+                    return target
                 kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
