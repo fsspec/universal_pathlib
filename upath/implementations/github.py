@@ -66,6 +66,8 @@ class GitHubPath(UPath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         raise UnsupportedOperation
 

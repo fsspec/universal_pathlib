@@ -34,8 +34,15 @@ class HDFSPath(UPath):
         ) -> None: ...
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         if not exist_ok and self.exists():
             raise FileExistsError(str(self))
-        super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        super().mkdir(
+            mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+        )
