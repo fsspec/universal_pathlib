@@ -219,7 +219,7 @@
     from upath import UPath
 
     p = UPath("")
-    reveal_type(p._url)        # NR: Revealed type is "tuple\[(builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, fallback=urllib.parse.SplitResult\]"
+    reveal_type(p._url)        # NR: Revealed type is "tuple\[(builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, (builtins\.)?str, fallback=urllib.parse.SplitResult(\[(builtins\.)?str\])?\]"
 
 # FIXME fsspec types are not available
 # - case: upath_attribute_fs

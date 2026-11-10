@@ -767,6 +767,15 @@ class WritablePathTests(_CommonWritablePathTests):
         with pytest.raises(FileExistsError):
             new_dir.mkdir(parents=True, exist_ok=False)
 
+    def test_mkdir_parent_mode(self):
+        new_dir = self.path.joinpath("parent_mode", "new_dir")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "parent_mode is currently ignored")
+            new_dir.mkdir(parents=True, parent_mode=0o755)
+        if not self.SUPPORTS_EMPTY_DIRS:
+            new_dir.joinpath(".file").touch()
+        assert new_dir.is_dir()
+
     def test_touch_exists_ok_false(self):
         f = self.path.joinpath("file1.txt")
         assert f.exists()
