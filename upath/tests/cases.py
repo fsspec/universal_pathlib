@@ -866,6 +866,17 @@ class ReadWritePathTests:
         assert not p_moved.exists()
         assert p_revert.exists()
 
+    def test_rename_directory(self):
+        p_source = self.path.joinpath("folder1")
+        p_target = self.path.joinpath("folder1_renamed")
+        children = sorted(p.name for p in p_source.iterdir())
+
+        p_moved = p_source.rename(p_target)
+        assert p_moved == p_target
+        assert not p_source.exists()
+        assert p_moved.is_dir()
+        assert sorted(p.name for p in p_moved.iterdir()) == children
+
     @pytest.fixture
     def supports_cwd(self):
         # intentionally called on the instance to support ProxyUPath().cwd()
