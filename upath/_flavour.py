@@ -19,6 +19,7 @@ from fsspec.spec import AbstractFileSystem
 
 import upath
 from upath._flavour_sources import FileSystemFlavourBase
+from upath._flavour_sources import S3FileSystemFlavour
 from upath._flavour_sources import flavour_registry
 from upath._protocol import get_upath_protocol
 from upath._protocol import normalize_empty_netloc
@@ -73,6 +74,30 @@ class AnyProtocolFileSystemFlavour(FileSystemFlavourBase):
             return cls.root_marker
 
 
+class S3HttpFileSystemFlavour(S3FileSystemFlavour):
+    """flavour for `s3+http(s)://endpoint/bucket/key` urls
+
+    see: https://github.com/jbms/url-pipeline
+    """
+
+    protocol = ("s3+http", "s3+https")
+
+    @classmethod
+    def _strip_protocol(cls, path: str) -> str:
+        if path.startswith(("s3+http://", "s3+https://")):
+            # the netloc is the endpoint, not the bucket
+            path = urlsplit(path)._replace(scheme="", netloc="").geturl()
+        return path.lstrip("/").rstrip("/") or cls.root_marker
+
+    @staticmethod
+    def _get_kwargs_from_urls(urlpath: str) -> dict[str, Any]:
+        out = S3FileSystemFlavour._get_kwargs_from_urls(urlpath)
+        if urlpath.startswith(("s3+http://", "s3+https://")):
+            url = urlsplit(urlpath)
+            out["endpoint_url"] = f"{url.scheme.partition('+')[2]}://{url.netloc}"
+        return out
+
+
 class ProtocolConfig(TypedDict):
     netloc_is_anchor: set[str]
     supports_empty_parts: set[str]
@@ -109,6 +134,8 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             "https",
             "s3",
             "s3a",
+            "s3+http",
+            "s3+https",
             "smb",
             "gs",
             "gcs",
@@ -122,6 +149,8 @@ class WrappedFileSystemFlavour(UPathParser):  # (pathlib_abc.FlavourBase)
             "https",
             "s3",
             "s3a",
+            "s3+http",
+            "s3+https",
             "gs",
             "gcs",
             "az",

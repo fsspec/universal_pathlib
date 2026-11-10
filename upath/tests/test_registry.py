@@ -31,6 +31,8 @@ IMPLEMENTATIONS = {
     "memory",
     "s3",
     "s3a",
+    "s3+http",
+    "s3+https",
     "simplecache",
     "sftp",
     "smb",

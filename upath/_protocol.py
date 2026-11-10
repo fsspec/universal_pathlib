@@ -134,12 +134,13 @@ def compatible_protocol(
     """check if UPath protocols are compatible"""
     from upath.core import UPath
 
+    # consider protocols equivalent if they match up to the first "+"
+    protocol = protocol.partition("+")[0]
     for arg in args:
         if isinstance(arg, UPath) and not arg.is_absolute():
             # relative UPath are always compatible
             continue
         other_protocol = get_upath_protocol(arg)
-        # consider protocols equivalent if they match up to the first "+"
         other_protocol = other_protocol.partition("+")[0]
         # protocols: only identical (or empty "") protocols can combine
         if other_protocol and not _fsspec_protocol_equals(other_protocol, protocol):

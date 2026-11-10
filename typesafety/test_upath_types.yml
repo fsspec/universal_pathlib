@@ -27,6 +27,8 @@
       protocol: simplecache
     - cls_fqn: upath.implementations.cloud.S3Path
       protocol: s3
+    - cls_fqn: upath.implementations.cloud.S3HttpPath
+      protocol: s3+https
     - cls_fqn: upath.implementations.cloud.GCSPath
       protocol: gcs
     - cls_fqn: upath.implementations.cloud.AzurePath
@@ -106,6 +108,8 @@
       protocol: simplecache
     - cls_fqn: upath.implementations.cloud.S3Path
       protocol: s3
+    - cls_fqn: upath.implementations.cloud.S3HttpPath
+      protocol: s3+https
     - cls_fqn: upath.implementations.cloud.GCSPath
       protocol: gcs
     - cls_fqn: upath.implementations.cloud.AzurePath

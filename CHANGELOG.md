@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- upath.implementations.cloud: support `s3+http://` and `s3+https://` urls with an explicit endpoint, as defined in [url-pipeline](https://github.com/jbms/url-pipeline)
+
+### Fixed
+- upath.implementations.cloud: fix infinite recursion in `S3Path.copy` for subclasses of `S3Path`
+
 ## [0.3.10] - 2026-02-22
 
 ### Fixed

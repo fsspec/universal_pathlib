@@ -98,6 +98,8 @@ For more examples, see the [example notebook here][example-notebook].
 - `hdfs:` Hadoop distributed filesystem
 - `gs:` and `gcs:` Google Cloud Storage _(requires `gcsfs`)_
 - `s3:` and `s3a:` AWS S3 _(requires `s3fs` to be installed)_
+- `s3+http:` and `s3+https:` S3-compatible storage at a custom endpoint, i.e.
+  `s3+https://endpoint/bucket/key` _(requires `s3fs` to be installed)_
 - `sftp:` and `ssh:` SFTP and SSH filesystems _(requires `paramiko`)_
 - `smb:` SMB filesystems _(requires `smbprotocol`)_
 - `webdav`, `webdav+http:` and `webdav+https:` WebDAV-based filesystem on top of

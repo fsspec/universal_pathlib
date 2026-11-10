@@ -56,6 +56,7 @@ if TYPE_CHECKING:
     from upath.implementations.cloud import AzurePath as _AzurePath
     from upath.implementations.cloud import GCSPath as _GCSPath
     from upath.implementations.cloud import HfPath as _HfPath
+    from upath.implementations.cloud import S3HttpPath as _S3HttpPath
     from upath.implementations.cloud import S3Path as _S3Path
     from upath.implementations.data import DataPath as _DataPath
     from upath.implementations.ftp import FTPPath as _FTPPath
@@ -104,6 +105,8 @@ class _Registry(MutableMapping[str, "type[upath.UPath]"]):
         "memory": "upath.implementations.memory.MemoryPath",
         "s3": "upath.implementations.cloud.S3Path",
         "s3a": "upath.implementations.cloud.S3Path",
+        "s3+http": "upath.implementations.cloud.S3HttpPath",
+        "s3+https": "upath.implementations.cloud.S3HttpPath",
         "simplecache": "upath.implementations.cached.SimpleCachePath",
         "sftp": "upath.implementations.sftp.SFTPPath",
         "ssh": "upath.implementations.sftp.SFTPPath",
@@ -246,7 +249,11 @@ if TYPE_CHECKING:  # noqa: C901
     def get_upath_class(protocol: Literal["simplecache"]) -> type[_SimpleCachePath]: ...
     @overload
     def get_upath_class(protocol: Literal["s3", "s3a"]) -> type[_S3Path]: ...
-    @overload
+    @overload  # noqa: E301
+    def get_upath_class(
+        protocol: Literal["s3+http", "s3+https"],
+    ) -> type[_S3HttpPath]: ...
+    @overload  # noqa: E301
     def get_upath_class(protocol: Literal["gcs", "gs"]) -> type[_GCSPath]: ...
     @overload  # noqa: E301
     def get_upath_class(

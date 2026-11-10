@@ -855,6 +855,13 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
+            protocol: Literal["s3+http", "s3+https"],
+            **_: Any,
+        ) -> _uimpl.cloud.S3HttpPath: ...
+        @overload  # noqa: E301
+        def __new__(
+            cls,
+            *args: JoinablePathLike,
             protocol: Literal["az", "abfs", "abfss", "adl"],
             **_: Any,
         ) -> _uimpl.cloud.AzurePath: ...
