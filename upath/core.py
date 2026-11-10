@@ -1399,10 +1399,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         """
         Create a new directory at this given path.
         """
+        if parent_mode is not None:
+            warnings.warn(
+                f"{type(self).__name__}.mkdir(): parent_mode is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
