@@ -982,6 +982,37 @@ class ReadWritePathTests:
         with pytest.raises(OSError, match="not empty"):
             p.rmdir(recursive=False)
 
+    def test_rmdir_not_empty_warns_about_the_future_default(self):
+        p = self.path.joinpath("folder1")
+        with pytest.warns(FutureWarning, match="0.4.0"):
+            p.rmdir()
+        assert not p.exists()
+
+    def test_rmdir_not_empty_recursive_does_not_warn(self):
+        p = self.path.joinpath("folder1")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            p.rmdir(recursive=True)
+        assert not p.exists()
+
+    def test_rmdir_empty_not_recursive(self):
+        p = self.path.joinpath("empty_folder")
+        if not self.SUPPORTS_EMPTY_DIRS:
+            pytest.skip(f"{type(p).__name__} can't represent empty directories")
+        p.mkdir()
+        p.rmdir(recursive=False)
+        assert not p.exists()
+
+    def test_rmdir_empty_does_not_warn(self):
+        p = self.path.joinpath("empty_folder")
+        if not self.SUPPORTS_EMPTY_DIRS:
+            pytest.skip(f"{type(p).__name__} can't represent empty directories")
+        p.mkdir()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            p.rmdir()
+        assert not p.exists()
+
     def test_fsspec_compat(self):
         fs = self.path.fs
         content = b"a,b,c\n1,2,3\n4,5,6"
