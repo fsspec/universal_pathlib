@@ -10,14 +10,20 @@ from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
 from upath.types import WritablePathLike
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
+        from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
+
 if TYPE_CHECKING:
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser

@@ -1,23 +1,23 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING
+from typing import Any
+
+from fsspec import AbstractFileSystem
 
 from upath.core import UPath
 from upath.types import JoinablePathLike
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-    from typing import Any
     from typing import Literal
 
     if sys.version_info >= (3, 11):
         from typing import Unpack
     else:
         from typing_extensions import Unpack
-
-    from fsspec import AbstractFileSystem
 
     from upath._chain import FSSpecChainParser
     from upath.types.storage_options import SimpleCacheStorageOptions

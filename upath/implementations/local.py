@@ -7,10 +7,14 @@ import sys
 import warnings
 from collections.abc import Iterator
 from collections.abc import Sequence
+from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import BinaryIO
 from typing import Callable
 from typing import Literal
+from typing import TextIO
+from typing import TypeVar
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import unquote_to_bytes
@@ -36,17 +40,18 @@ from upath.types import SupportsPathLike
 from upath.types import WritablePath
 from upath.types import WritablePathLike
 
-if TYPE_CHECKING:
-    from typing import IO
-    from typing import BinaryIO
-    from typing import TextIO
-    from typing import TypeVar
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
+        from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
+if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from pydantic import GetCoreSchemaHandler
@@ -54,7 +59,7 @@ if TYPE_CHECKING:
 
     from upath.types.storage_options import FileStorageOptions
 
-    _WT = TypeVar("_WT", bound="WritablePath")
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "LocalPath",
