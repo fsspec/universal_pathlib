@@ -158,7 +158,7 @@ def s3_with_double_fwd_slash_files(s3_server):
     anon, s3so = s3_server
     s3 = fsspec.filesystem("s3", anon=False, **s3so)
     bucket = "double_fwd_slash_bucket"
-    s3.mkdir(bucket + "/")
+    s3.makedirs(bucket, exist_ok=True)
     s3.pipe_file(f"{bucket}//key.txt", b"hello world")
     try:
         yield bucket, anon, s3so
@@ -226,3 +226,100 @@ def test_copy__object_key_collides_with_dir_prefix(s3_server, tmp_path):
         "src/common_prefix/file1.txt",
         "src/common_prefix/file2.txt",
     ]
+
+
+@pytest.fixture
+def s3_with_explicit_directory_marker(s3_server):
+    """issue #226: path.iterdir() yields path itself as the first item (with S3)
+
+    Creates a bucket with an explicit directory marker (zero-byte object with
+    trailing slash) plus files. This simulates folders created via the AWS
+    Console, which creates actual zero-byte objects as directory markers.
+
+    Given objects on S3:
+        s3://my-bucket/my-directory/       (zero-byte directory marker)
+        s3://my-bucket/my-directory/0.txt
+        s3://my-bucket/my-directory/1.txt
+    """
+    import boto3
+
+    anon, s3so = s3_server
+    bucket = "iterdir_issue_226_marker_bucket"
+    s3_client = boto3.client("s3", **s3so["client_kwargs"])
+    s3_client.create_bucket(Bucket=bucket)
+    # Create an explicit directory marker (zero-byte object with trailing slash)
+    # Use boto3 directly to ensure the trailing slash is preserved in the key
+    # This is what the AWS Console creates when you "Create folder"
+    s3_client.put_object(Bucket=bucket, Key="my-directory/", Body=b"")
+    # Then create files inside the directory
+    s3_client.put_object(Bucket=bucket, Key="my-directory/0.txt", Body=b"content 0")
+    s3_client.put_object(Bucket=bucket, Key="my-directory/1.txt", Body=b"content 1")
+    yield bucket, anon, s3so
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_with_explicit_directory_marker__issue_226(
+    s3_with_explicit_directory_marker,
+):
+    """issue #226: path.iterdir() yields path itself as the first item (with S3)
+
+    See: https://github.com/fsspec/universal_pathlib/issues/226
+    See: https://medium.com/cyberark-engineering/the-strange-case-of-amazon-s3-bucket-folders-c8d113a8dd01  # noqa: E501
+    """
+    bucket, anon, s3so = s3_with_explicit_directory_marker
+    directory_path = UPath(f"s3://{bucket}/my-directory", anon=anon, **s3so)
+
+    children = list(directory_path.iterdir())
+
+    assert directory_path not in children
+
+    expected_files = {
+        directory_path / "0.txt",
+        directory_path / "1.txt",
+    }
+    assert set(children) == expected_files, (
+        f"iterdir() should yield only the files in the directory. "
+        f"Expected: {[str(f) for f in expected_files]}, "
+        f"Got: {[str(c) for c in children]}"
+    )
+
+
+@pytest.fixture
+def s3_with_file_dir_name_collision(s3_server):
+    """an object key that is also the prefix of other objects
+
+    Given objects on S3:
+        s3://my-bucket/my-directory        (zero-byte object without trailing slash)
+        s3://my-bucket/my-directory/0.txt
+    """
+    import boto3
+
+    anon, s3so = s3_server
+    bucket = "iterdir_file_dir_collision_bucket"
+    s3_client = boto3.client("s3", **s3so["client_kwargs"])
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key="my-directory", Body=b"")
+    s3_client.put_object(Bucket=bucket, Key="my-directory/0.txt", Body=b"content 0")
+    yield bucket, anon, s3so
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_with_file_dir_name_collision(s3_with_file_dir_name_collision):
+    bucket, anon, s3so = s3_with_file_dir_name_collision
+    root = UPath(f"s3://{bucket}/", anon=anon, **s3so)
+
+    # the listing contains a file and a directory entry with the same name
+    children = list(root.iterdir())
+    assert children == [root / "my-directory"]
+
+    # listing the parent populated s3fs' dircache with both entries
+    assert list(children[0].iterdir()) == [root / "my-directory" / "0.txt"]
+
+
+@silence_botocore_datetime_deprecation
+def test_iterdir_skips_empty_named_prefix(s3_with_double_fwd_slash_files):
+    """issue #144: a key starting with "/" creates an empty-named prefix"""
+    bucket, anon, s3so = s3_with_double_fwd_slash_files
+    root = UPath(f"s3://{bucket}", anon=anon, **s3so)
+    # the empty-named child can't be represented as a UPath child of root
+    assert root.joinpath(bucket) not in list(root.iterdir())
