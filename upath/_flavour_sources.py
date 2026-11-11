@@ -988,7 +988,7 @@ class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
 
 class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec_xrootd.xrootd.XRootDFileSystem'
-    __orig_version__ = '0.5.1'
+    __orig_version__ = '0.5.5'
     protocol = ('root',)
     root_marker = '/'
     sep = '/'
@@ -997,7 +997,7 @@ class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
     def _strip_protocol(cls, path: str | list[str]) -> Any:
         if isinstance(path, str):
             if path.startswith(cls.protocol):
-                x = urlsplit(path); return (x.path + f'?{x.query}' if x.query else '').rstrip("/") or cls.root_marker
+                x = urlsplit(path); return (x.path + (f'?{x.query}' if x.query else '')).removeprefix('/').rstrip("/") or cls.root_marker
             # assume already stripped
             return path.rstrip("/") or cls.root_marker
         elif isinstance(path, list):

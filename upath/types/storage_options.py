@@ -392,6 +392,26 @@ class SMBStorageOptions(_AbstractStorageOptions, total=False):
     auto_mkdir: bool  # Whether to create parent directories when opening files
 
 
+class XRootDStorageOptions(_AbstractStorageOptions, total=False):
+    """Storage options for XRootD filesystem"""
+
+    # Connection settings
+    hostid: str  # The remote server to connect to (default from )
+    timeout: int  # Connection timeout; 0 means no timeout (default: 0)
+
+    # File handle cache settings
+    filehandle_cache_size: int  # Maximum number of items (default: 256)
+    filehandle_cache_ttl: int  # TTL in seconds (default: 30)
+
+    # Source lookup settings
+    locate_all_sources: (
+        bool  # For reading, find all locations hosting file, ignoring redirector
+    )
+    valid_sources: (
+        list[str] | None
+    )  # If given and locate_all_sources is True, restrict sources to this server list
+
+
 class WebdavStorageOptions(_AbstractStorageOptions, total=False):
     """Storage options for WebDAV filesystem"""
 
