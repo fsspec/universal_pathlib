@@ -1728,8 +1728,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             )
         if self._relative_base is not None:
             self = self.absolute()
-        path_pattern = self.joinpath(pattern).path
         sep = self.parser.sep
+        # joinpath drops a trailing separator, which restricts matches to directories
+        dirs_only = sep if isinstance(pattern, str) and pattern.endswith(sep) else ""
+        path_pattern = self.joinpath(pattern).path + dirs_only
         base = self.path
         for name in self.fs.glob(path_pattern):
             name = name.removeprefix(base).removeprefix(sep)
@@ -1761,18 +1763,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
+        sep = self.parser.sep
+        # joinpath drops a trailing separator, which restricts matches to directories
+        dirs_only = sep if isinstance(pattern, str) and pattern.endswith(sep) else ""
         if _FSSPEC_HAS_WORKING_GLOB:
-            r_path_pattern = self.joinpath("**", pattern).path
-            sep = self.parser.sep
+            r_path_pattern = self.joinpath("**", pattern).path + dirs_only
             base = self.path
             for name in self.fs.glob(r_path_pattern):
                 name = name.removeprefix(base).removeprefix(sep)
                 yield self.joinpath(name)
 
         else:
-            path_pattern = self.joinpath(pattern).path
-            r_path_pattern = self.joinpath("**", pattern).path
-            sep = self.parser.sep
+            path_pattern = self.joinpath(pattern).path + dirs_only
+            r_path_pattern = self.joinpath("**", pattern).path + dirs_only
             base = self.path
             seen = set()
             for p in (path_pattern, r_path_pattern):

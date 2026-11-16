@@ -334,6 +334,7 @@ class ReadablePathTests:
         (
             "*.txt",
             "*",
+            "*/",
             pytest.param(
                 "**/*.txt",
                 marks=(
@@ -478,8 +479,8 @@ class ReadablePathTests:
         content = upath.read_text(encoding="ascii", errors="strict")
         assert content == "hello world"
 
-    def test_rglob(self, pathlib_base):
-        pattern = "*.txt"
+    @pytest.mark.parametrize("pattern", ["*.txt", "*/"])
+    def test_rglob(self, pathlib_base, pattern):
         result = [*self.path.rglob(pattern)]
         expected = [*pathlib_base.rglob(pattern)]
         assert len(result) == len(expected)
