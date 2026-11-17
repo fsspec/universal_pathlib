@@ -174,6 +174,11 @@ if s3path.is_file():
     print("It's a file!")
 ```
 
+The two predicates are not always mutually exclusive on remote filesystems. For
+example, an HTTP directory index can be both an HTML document you can read and a
+listing whose links you can traverse. An HTTP path may therefore return
+`True` for both `is_file()` and `is_dir()`.
+
 ### How does UPath handle S3 prefixes that don't exist?
 
 S3 prefixes aren't traditional POSIX directories. UPath follows `pathlib` conventions—checking a non-existent path returns `False`:
