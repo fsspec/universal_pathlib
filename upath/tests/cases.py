@@ -185,8 +185,13 @@ class JoinablePathTests:
         p1 = cls(str(self.path), test_extra=1, **self.path.storage_options)
         p2 = cls(str(self.path), test_extra=2, **self.path.storage_options)
         assert p0 == p1
-        assert p0 != p2
-        assert p1 != p2
+        # When fsid is defined, paths with same path and fsid are equal
+        # regardless of storage_options. When fsid is None, paths fall back
+        # to storage_options comparison.
+        if p0.fsid is not None:
+            assert p0 == p2  # Same fsid, so equal despite different storage_options
+        else:
+            assert p0 != p2  # No fsid, falls back to storage_options comparison
 
     def test_relative_to(self):
         base = self.path
