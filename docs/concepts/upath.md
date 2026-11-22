@@ -232,6 +232,20 @@ This architecture provides several benefits:
 4. **Flexibility**: Easy to add new filesystem implementations
 5. **Future-Proof**: Ready for potential stdlib integration of pathlib-abc
 
+### Empty paths, roots, and dot segments
+
+For native local paths, `UPath("")` and `UPath(".")` both represent the current
+directory, just like `pathlib.Path`. A standalone `UPath("..")` is relative; it
+does not resolve to a specific parent directory until you resolve it against a
+location. On POSIX, `UPath("/")` is the filesystem root. On Windows, a separator
+without a drive is rooted but is not an absolute path.
+
+For paths with a protocol, interpret these forms according to the backend.
+For example, `UPath("memory://")` is the root of the in-memory filesystem, not
+the local current directory. In that backend, `UPath("memory://folder/..")`
+retains the `..` segment when converted to a string. Do not rely on local
+normalization rules to remove dot segments from a remote path.
+
 ### Writing Filesystem-Agnostic Code
 
 Use pathlib-abc types to write code that works with both `Path` and `UPath`:
