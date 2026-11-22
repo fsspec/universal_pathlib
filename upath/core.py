@@ -37,6 +37,7 @@ from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._info import UPathInfo
+from upath._protocol import _match_rootless_protocol
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
@@ -463,6 +464,22 @@ class _UPathMixin(metaclass=_UPathMeta):
             if "incompatible with" in str(e):
                 raise _IncompatibleProtocolError(str(e)) from e
             raise
+
+        if (
+            not pth_protocol
+            and protocol is None
+            and args
+            and isinstance(args[0], str)
+            and (rootless := _match_rootless_protocol(args[0]))
+        ):
+            warnings.warn(
+                f"{args[0]!r} looks like a {rootless!r} uri with a relative path,"
+                " which is not supported and is interpreted as a local path."
+                f" Use an absolute uri like '{rootless}:///path/to/file' or pass"
+                f" protocol={rootless!r} explicitly.",
+                UserWarning,
+                stacklevel=3,
+            )
 
         # subclasses should default to their own protocol
         if protocol is None and cls is not UPath:

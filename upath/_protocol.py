@@ -36,6 +36,19 @@ def _match_protocol(pth: str) -> str:
     return ""
 
 
+# Matches protocols followed by a rootless path, i.e. 'file:relative/path'
+_ROOTLESS_PROTOCOL_RE = re.compile(r"^(?P<protocol>[A-Za-z][A-Za-z0-9+]+):(?![/:])")
+
+
+def _match_rootless_protocol(pth: str) -> str:
+    """return a known fsspec protocol if pth is a rootless uri like 'file:a/b'"""
+    if m := _ROOTLESS_PROTOCOL_RE.match(pth):
+        protocol = m.group("protocol")
+        if protocol in _fsspec_registry_map:
+            return protocol
+    return ""
+
+
 _fsspec_registry_map = ChainMap(_registry, _known_implementations)
 
 

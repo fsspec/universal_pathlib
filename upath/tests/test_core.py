@@ -583,3 +583,29 @@ def test_subclass_constructor_incompatible_protocol_uri(uri, protocol):
     cls = get_upath_class(protocol)
     with pytest.raises(TypeError, match=r".*incompatible with"):
         cls(uri)
+
+
+@pytest.mark.parametrize(
+    "pth", ["file:path/to/file.txt", "memory:a/b", "s3:bucket/key"]
+)
+def test_rootless_uri_of_known_protocol_warns(pth):
+    # https://github.com/fsspec/universal_pathlib/issues/142
+    with pytest.warns(UserWarning, match="uri with a relative path"):
+        p = UPath(pth)
+    assert p.protocol == ""
+
+
+@pytest.mark.parametrize(
+    "pth,protocol",
+    [
+        ("unknownprotocol:abc.txt", None),
+        ("data:text/plain,abc", None),
+        ("file:///abs/path", None),
+        ("simplecache::memory://a/b", None),
+        ("file:path/to/file.txt", ""),
+    ],
+)
+def test_rootless_uri_no_warning(pth, protocol):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        UPath(pth, protocol=protocol)
