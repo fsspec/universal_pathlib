@@ -209,6 +209,16 @@ class JoinablePathTests:
         assert p.full_match("**/*.txt") is True
         assert p.full_match("*.doesnotexist") is False
 
+    def test_match(self):
+        p = self.path / "folder" / "file.txt"
+        # relative patterns match from the right, like pathlib
+        assert p.match("file.txt") is True
+        assert p.match("*.txt") is True
+        assert p.match("folder/*.txt") is True
+        assert p.match("*/file.txt") is True
+        assert p.match("other/*.txt") is False
+        assert p.match("*.doesnotexist") is False
+
     def test_trailing_slash_joinpath_is_identical(self):
         # setup
         cls = type(self.path)
