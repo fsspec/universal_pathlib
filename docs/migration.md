@@ -124,7 +124,19 @@ from upath import UPath
 path = UPath("s3://bucket/file.parquet", anon=True)
 
 # Open file handle with fsspec, preserving storage_options
-df = pl.scan_parquet(path.open('rb'))
+with path.open("rb") as source:
+    df = pl.scan_parquet(source).collect()
+```
+
+Collect the lazy scan inside the `with` block so the stream is still open.
+For an eager read, use `pl.read_parquet(source)` in the same block instead.
+The file-object approach also works with PyArrow's Parquet reader:
+
+```python
+import pyarrow.parquet as pq
+
+with path.open("rb") as source:
+    table = pq.read_table(source)
 ```
 
 **Option 2: Use Polars' Native Rust Backend** (with object-store options)
