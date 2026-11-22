@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sys
 import warnings
 from abc import ABCMeta
@@ -117,6 +118,16 @@ def _buffering2blocksize(mode: str, buffering: int) -> int | None:
 
 def _raise_unsupported(cls_name: str, method: str) -> NoReturn:
     raise UnsupportedOperation(f"{cls_name}.{method}() is unsupported")
+
+
+def _accepts_keyword(func: Any, name: str) -> bool:
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return False
+    return name in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
 
 
 class _IncompatibleProtocolError(TypeError, ValueError):
@@ -1225,16 +1236,34 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         fs = base.fs
         base_path = base.path
         if not fs.isdir(base_path):
-            raise NotADirectoryError(str(self))
-        for name in fs.listdir(base_path):
+            # cached listings can misreport a directory that collides with a
+            # file of the same name (i.e. s3fs), so check again without cache
+            fs.invalidate_cache(base_path)
+            if not fs.isdir(base_path):
+                raise NotADirectoryError(str(self))
+        name: str
+        seen: set[str] = set()
+        base_name = base_path.removesuffix(sep)
+        for info in fs.listdir(base_path):
             # fsspec returns dictionaries
-            if isinstance(name, dict):
-                name = name.get("name")
+            if isinstance(info, dict):
+                name = info["name"]
+            else:
+                name, info = info, {}  # type: ignore[assignment]
+            name = name.removesuffix(sep)
+            if name == base_name:
+                # the directory itself is not a child, i.e. s3 directory
+                # markers or empty-named prefixes from keys containing "//"
+                continue
+            # only want the path name with iterdir
+            _, _, name = name.rpartition(self.parser.sep)
             if name in {".", ".."}:
                 # Yielding a path object for these makes little sense
                 continue
-            # only want the path name with iterdir
-            _, _, name = name.removesuffix(sep).rpartition(self.parser.sep)
+            if name in seen:
+                # a file and a directory can share a name on object stores
+                continue
+            seen.add(name)
             yield base.with_segments(base_path, name)
 
     def __open_reader__(self) -> BinaryIO:
@@ -1399,10 +1428,18 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         """
         Create a new directory at this given path.
         """
+        if parent_mode is not None:
+            warnings.warn(
+                f"{type(self).__name__}.mkdir(): parent_mode is currently ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if parents and not exist_ok and self.exists():
             raise FileExistsError(str(self))
         try:
@@ -1900,7 +1937,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             raise OSError(f"Not recursive and directory not empty: {self}")
         self.fs.rm(self.path, recursive=recursive)
 
-    def rename(
+    def rename(  # noqa: C901
         self,
         target: WritablePathLike,
         *,  # note: non-standard compared to pathlib
@@ -1995,6 +2032,17 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 stacklevel=2,
             )
             kwargs["maxdepth"] = maxdepth
+        if "recursive" not in kwargs and _accepts_keyword(self.fs.mv, "recursive"):
+            # without recursive=True some filesystems (i.e. memory, s3)
+            # fail to move directories or silently move nothing at all.
+            # Filesystems whose mv() does not accept it (i.e. sftp) do a
+            # native rename which already handles directories.
+            try:
+                is_dir = self.fs.info(source_abs.path)["type"] == "directory"
+            except FileNotFoundError:
+                is_dir = False
+            if is_dir:
+                kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
             target_abs.path,

@@ -174,8 +174,13 @@ class ProxyUPath:
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
-        self.__wrapped__.mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        kw: dict[str, Any] = {}
+        if parent_mode is not None:
+            kw["parent_mode"] = parent_mode
+        self.__wrapped__.mkdir(mode=mode, parents=parents, exist_ok=exist_ok, **kw)
 
     def __open_writer__(self, mode: Literal["a", "w", "x"]) -> BinaryIO:
         return self.__wrapped__.__open_writer__(mode)

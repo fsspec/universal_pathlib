@@ -82,7 +82,7 @@ pathlib-abc extracts the core concepts from Python's pathlib module into abstrac
 4. **Ensure compatibility** between different path implementations
 
 !!! info "Relationship to Python's pathlib"
-    Currently (as of Python 3.14), the standard library `pathlib.Path` does **not** inherit from public pathlib-abc classes. However, there is ongoing work to incorporate these ABCs into future Python releases.
+    Currently (as of Python 3.15), the standard library `pathlib.Path` does **not** inherit from public pathlib-abc classes. However, there is ongoing work to incorporate these ABCs into future Python releases.
 
 The library defines three main abstract base classes that represent different levels of path functionality:
 

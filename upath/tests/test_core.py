@@ -448,6 +448,15 @@ def test_joinuri_on_protocol_mismatch(base, join):
     assert UPath(base).joinuri(UPath(join)) == UPath(join)
 
 
+def test_join_windows_path_segment():
+    # pathlib converts windows separators when joining, see python/cpython#103631
+    p = UPath("memory:///a")
+    segment = pathlib.PureWindowsPath("b/*.py")
+    assert p.joinpath(segment).path == "/a/b/*.py"
+    assert (p / segment).path == "/a/b/*.py"
+    assert UPath("memory:///a", segment).path == "/a/b/*.py"
+
+
 def test_upath_expanduser():
     assert UPath("~").expanduser() == UPath(os.path.expanduser("~"))
     assert UPath("~") != UPath("~").expanduser()

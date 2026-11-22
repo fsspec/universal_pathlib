@@ -43,6 +43,8 @@ def test_httppath(internet_connection):
 def test_httpspath(internet_connection):
     path = UPath("https://example.com")
     assert isinstance(path, HTTPPath)
+    # exists() swallows all errors, call info() to surface them
+    path.fs.info(path.path)
     assert path.exists()
 
 

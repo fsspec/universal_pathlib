@@ -13,6 +13,7 @@ from typing import Callable
 from typing import Literal
 from typing import overload
 from urllib.parse import SplitResult
+from urllib.parse import unquote_to_bytes
 
 from fsspec import AbstractFileSystem
 
@@ -367,6 +368,48 @@ class LocalPath(_UPathMixin, pathlib.Path):
         else:
             shutil.rmtree(self)
 
+    if sys.version_info < (3, 15):
+
+        def mkdir(
+            self,
+            mode: int = 0o777,
+            parents: bool = False,
+            exist_ok: bool = False,
+            *,
+            parent_mode: int | None = None,
+        ) -> None:
+            if parent_mode is None:
+                return super().mkdir(mode, parents, exist_ok)
+            # backport of the parent_mode argument added in python 3.15
+            try:
+                super().mkdir(mode, parents=False, exist_ok=exist_ok)
+            except FileNotFoundError:
+                if not parents or self.parent == self:
+                    raise
+                self.parent.mkdir(
+                    mode=parent_mode,
+                    parents=True,
+                    exist_ok=True,
+                    parent_mode=parent_mode,
+                )
+                super().mkdir(mode, parents=False, exist_ok=exist_ok)
+
+    else:
+
+        def is_reserved(self) -> bool:
+            # pathlib.PurePath.is_reserved() was removed in python 3.15
+            warnings.warn(
+                f"{type(self).__name__}.is_reserved() is deprecated. Use"
+                " os.path.isreserved() to detect reserved paths on Windows.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if os.name == "nt":
+                import ntpath
+
+                return ntpath.isreserved(self)
+            return False
+
     # we need to override pathlib.Path._copy_from to support it as a
     # WritablePath._copy_from target with support for on_name_collision
     # Issue: https://github.com/barneygale/pathlib-abc/issues/48
@@ -485,7 +528,26 @@ class LocalPath(_UPathMixin, pathlib.Path):
 
         @classmethod
         def from_uri(cls, uri: str, **storage_options: Any) -> Self:
-            return UPath(uri, **storage_options)  # type: ignore[return-value]
+            # backport of pathlib.Path.from_uri from python 3.13
+            if not uri.startswith("file:"):
+                raise ValueError(f"URI does not start with 'file:': {uri!r}")
+            path = uri[5:]
+            if path[:3] == "///":
+                # Remove empty authority
+                path = path[2:]
+            elif path[:12] == "//localhost/":
+                # Remove 'localhost' authority
+                path = path[11:]
+            if path[:3] == "///" or (path[:1] == "/" and path[2:3] in ":|"):
+                # Remove slash before DOS device/UNC path
+                path = path[1:]
+            if path[1:2] == "|":
+                # Replace bar with colon in DOS drive
+                path = path[:1] + ":" + path[2:]
+            pth = cls(os.fsdecode(unquote_to_bytes(path)), **storage_options)
+            if not pth.is_absolute():
+                raise ValueError(f"URI is not absolute: {uri!r}")
+            return pth
 
         def is_dir(self, *, follow_symlinks: bool = True) -> bool:
             if not follow_symlinks:

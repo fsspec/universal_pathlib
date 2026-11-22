@@ -44,9 +44,11 @@ class FTPPath(UPath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         try:
-            return super().mkdir(mode, parents, exist_ok)
+            return super().mkdir(mode, parents, exist_ok, parent_mode=parent_mode)
         except FTPPermanentError as e:
             if e.args[0].startswith("550") and exist_ok:
                 return

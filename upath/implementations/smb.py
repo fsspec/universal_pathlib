@@ -58,6 +58,8 @@ class SMBPath(UPath):
         mode: int = 0o777,
         parents: bool = False,
         exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         # smbclient does not support setting mode externally
         from smbprotocol.exceptions import SMBOSError
