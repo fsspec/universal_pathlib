@@ -20,6 +20,10 @@ try:
 except ImportError:
     pytestmark = pytest.mark.skip
 
+# HTTPFileSystem._glob compiles the pattern with the trailing slash, but matches
+# it against the listed urls with their trailing slashes stripped
+_XFAIL_GLOB_DIRS_ONLY = "fsspec's HTTPFileSystem.glob never matches a trailing '/'"
+
 
 @pytest.fixture
 def internet_connection():
@@ -62,6 +66,30 @@ class TestUPathHttp(
     @overrides_base
     def test_is_correct_class(self):
         assert isinstance(self.path, HTTPPath)
+
+    @overrides_base
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            "*",
+            pytest.param("*/", marks=pytest.mark.xfail(reason=_XFAIL_GLOB_DIRS_ONLY)),
+            "**/*.txt",
+        ),
+    )
+    def test_glob(self, pathlib_base, pattern):
+        super().test_glob(pathlib_base, pattern)
+
+    @overrides_base
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            pytest.param("*/", marks=pytest.mark.xfail(reason=_XFAIL_GLOB_DIRS_ONLY)),
+        ),
+    )
+    def test_rglob(self, pathlib_base, pattern):
+        super().test_rglob(pathlib_base, pattern)
 
     @extends_base
     def test_work_at_root(self):

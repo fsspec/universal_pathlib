@@ -116,6 +116,10 @@ class _LocalPathInfo(PathInfo):
         return os.path.islink(self._path)
 
 
+def _ends_with_sep(pattern: str) -> bool:
+    return pattern.endswith(os.sep) or bool(os.altsep and pattern.endswith(os.altsep))
+
+
 class LocalPath(_UPathMixin, pathlib.Path):
     __slots__ = (
         "_chain",
@@ -616,6 +620,9 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     UserWarning,
                     stacklevel=2,
                 )
+            if sys.version_info < (3, 11) and _ends_with_sep(pattern_str):
+                # backport: only match directories for a trailing separator
+                return (p for p in super().glob(pattern_str, **kw) if p.is_dir())
             return super().glob(pattern_str, **kw)
 
         def rglob(  # type: ignore[override]
@@ -647,6 +654,9 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     UserWarning,
                     stacklevel=2,
                 )
+            if sys.version_info < (3, 11) and _ends_with_sep(pattern_str):
+                # backport: only match directories for a trailing separator
+                return (p for p in super().rglob(pattern_str, **kw) if p.is_dir())
             return super().rglob(pattern_str, **kw)
 
         def owner(self, *, follow_symlinks: bool = True) -> str:

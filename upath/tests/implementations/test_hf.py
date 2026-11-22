@@ -16,6 +16,10 @@ try:
 except ImportError:
     pytestmark = pytest.mark.skip
 
+# HfFileSystem.glob resolves the pattern with resolve_path(), which strips the
+# trailing slash, so files are matched as well
+_XFAIL_GLOB_DIRS_ONLY = "HfFileSystem.glob ignores a trailing '/'"
+
 
 @pytest.mark.network
 def test_hfpath():
@@ -50,6 +54,30 @@ class TestUPathHf(
     @overrides_base
     def test_is_correct_class(self):
         assert isinstance(self.path, HfPath)
+
+    @overrides_base
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            "*",
+            pytest.param("*/", marks=pytest.mark.xfail(reason=_XFAIL_GLOB_DIRS_ONLY)),
+            "**/*.txt",
+        ),
+    )
+    def test_glob(self, pathlib_base, pattern):
+        super().test_glob(pathlib_base, pattern)
+
+    @overrides_base
+    @pytest.mark.parametrize(
+        "pattern",
+        (
+            "*.txt",
+            pytest.param("*/", marks=pytest.mark.xfail(reason=_XFAIL_GLOB_DIRS_ONLY)),
+        ),
+    )
+    def test_rglob(self, pathlib_base, pattern):
+        super().test_rglob(pathlib_base, pattern)
 
     @overrides_base
     def test_iterdir_parent_iteration(self):
