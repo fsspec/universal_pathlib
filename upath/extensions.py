@@ -33,12 +33,15 @@ from upath.types import SupportsPathLike
 from upath.types import UPathParser
 from upath.types import WritablePathLike
 
-if TYPE_CHECKING:
-    if sys.version_info > (3, 11):
-        from typing import Self
-    else:
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
         from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
+if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 

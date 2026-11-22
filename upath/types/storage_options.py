@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from asyncio import AbstractEventLoop
+from typing import Any
+from typing import Literal
 from typing import TypedDict
 
-if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop
-    from typing import Any
-    from typing import Literal
-
-    from fsspec.implementations.cache_mapper import AbstractCacheMapper
-    from fsspec.spec import AbstractFileSystem
-
+from fsspec.implementations.cache_mapper import AbstractCacheMapper
+from fsspec.spec import AbstractFileSystem
 
 __all__ = [
     "SimpleCacheStorageOptions",

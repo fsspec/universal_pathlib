@@ -3,6 +3,7 @@ from __future__ import annotations
 import stat
 import sys
 import warnings
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from upath._stat import UPathStatResult
@@ -11,15 +12,20 @@ from upath.core import UPath
 from upath.types import JoinablePathLike
 from upath.types import StatResultType
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
+        from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
+
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
