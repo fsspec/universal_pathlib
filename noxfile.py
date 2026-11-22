@@ -196,7 +196,8 @@ def type_safety(session):
 @nox.session(name="type-narrowing", python=BASE_PYTHON)
 def type_narrowing(session):
     """Check UPath constructor type narrowing with mypy, pyright and ty."""
-    session.install("-e", ".[typechecking]", "pyright", "ty")
+    # pinned, so that new releases don't break CI unnoticed; bump deliberately
+    session.install("-e", ".[typechecking]", "pyright==1.1.414", "ty==0.0.107")
     snippets = "typesafety/check_constructors.py"
     session.run("python", "-m", "mypy", snippets)
     python = os.path.join(session.bin, "python")
