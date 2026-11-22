@@ -887,6 +887,32 @@ class ReadWritePathTests:
         assert p_moved.is_dir()
         assert sorted(p.name for p in p_moved.iterdir()) == children
 
+    def test_rename_directory_nested(self):
+        def tree(p):
+            out, stack = [], [(p, "")]
+            while stack:
+                cur, prefix = stack.pop()
+                for c in cur.iterdir():
+                    if c.is_dir():
+                        out.append(f"{prefix}{c.name}/")
+                        stack.append((c, f"{prefix}{c.name}/"))
+                    else:
+                        out.append(f"{prefix}{c.name}")
+            return sorted(out)
+
+        p_source = self.path.joinpath("folder1")
+        p_source.joinpath("sub", "deeper").mkdir(parents=True, exist_ok=True)
+        p_source.joinpath("sub", "deeper", "file3.txt").write_text("file3")
+        if self.SUPPORTS_EMPTY_DIRS:
+            p_source.joinpath("sub", "empty").mkdir()
+        p_target = self.path.joinpath("folder1_renamed")
+        expected = tree(p_source)
+
+        p_moved = p_source.rename(p_target)
+        assert not p_source.exists()
+        assert tree(p_moved) == expected
+        assert p_moved.joinpath("sub", "deeper", "file3.txt").read_text() == "file3"
+
     @pytest.fixture
     def supports_cwd(self):
         # intentionally called on the instance to support ProxyUPath().cwd()

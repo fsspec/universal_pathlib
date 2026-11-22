@@ -95,6 +95,33 @@ class CloudPath(UPath):
             return parts[:1]
         return parts
 
+    @property
+    def key(self) -> str:
+        """The object key (blob name) of the path within its bucket/container.
+
+        This is the `path` with the bucket or container (the `anchor`)
+        removed. For the bucket root the key is an empty string.
+
+        Note
+        ----
+        Like `path`, the key is not available for relative paths and
+        trailing slashes are not preserved. Empty path segments are kept,
+        so the key matches what the fsspec filesystem uses for the object.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("gs://bucket-name/A/B/C/filename.tar.gz")
+        >>> p.key
+        'A/B/C/filename.tar.gz'
+        >>> p.anchor
+        'bucket-name/'
+        >>> UPath("s3://bucket-name/").key
+        ''
+
+        """
+        return self.path.removeprefix(self.anchor)
+
     def mkdir(
         self,
         mode: int = 0o777,
@@ -225,6 +252,15 @@ class HfPath(CloudPath):
     @property
     def root(self) -> str:
         return ""
+
+    @property
+    def key(self) -> str:
+        # the repository id can't be reliably split from the path without
+        # querying the hub, so we don't return the full path as the key
+        raise UnsupportedOperation(
+            f"{type(self).__name__}.key is unsupported, use"
+            " `p.fs.resolve_path(p.path)` to get the path within the repository"
+        )
 
     def iterdir(self) -> Iterator[Self]:
         try:

@@ -275,6 +275,19 @@ with fs.open(p.path) as f:
     data = f.read()
 ```
 
+Paths on bucket based object storage (`S3Path`, `GCSPath` and `AzurePath`)
+additionally provide a `key` property, which returns the object key without the
+bucket:
+
+```python
+from upath import UPath
+
+p = UPath("gs://bucket-name/A/B/C/filename.tar.gz")
+
+assert p.anchor == "bucket-name/"
+assert p.key == "A/B/C/filename.tar.gz"
+```
+
 ## Supported Interface
 
 Universal Pathlib provides an implementation of the `pathlib.Path` interface

@@ -229,11 +229,27 @@ nox --session=tests -- tests/test_core.py
 
 ### Run Tests with Coverage
 
+The test sessions always collect coverage data. To combine the data of all
+test sessions you ran and create a report, run:
+
 ```bash
-nox --session=tests -- --cov=upath --cov-report=html
+nox --session=tests-3.13
+nox --session=coverage
 ```
 
-Then open `htmlcov/index.html` to view the coverage report.
+Then open `htmlcov/index.html` to view the coverage report. In CI, the coverage
+data of all test jobs is combined the same way and the report is added to the
+workflow run summary.
+
+### Run Tests Against Different fsspec Versions
+
+```bash
+nox --session=tests-fsspec
+```
+
+This runs the test suite against a selection of supported fsspec versions. To
+test a single version, run e.g. `nox --session="tests-fsspec(2024.12.0)"`. In
+CI, these sessions run weekly and on demand via the "fsspec versions" workflow.
 
 ### List All Available Sessions
 
