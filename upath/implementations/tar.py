@@ -37,7 +37,7 @@ class TarPath(UPath):
         def __init__(
             self,
             *args: JoinablePathLike,
-            protocol: Literal["zip"] | None = ...,
+            protocol: Literal["tar"] | None = ...,
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Unpack[TarStorageOptions],
         ) -> None: ...
