@@ -1729,13 +1729,30 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if self._relative_base is not None:
             self = self.absolute()
         sep = self.parser.sep
-        # joinpath drops a trailing separator, which restricts matches to directories
-        dirs_only = sep if isinstance(pattern, str) and pattern.endswith(sep) else ""
-        path_pattern = self.joinpath(pattern).path + dirs_only
+        dirs_only = isinstance(pattern, str) and pattern.endswith(sep)
+        path_pattern = self.joinpath(pattern).path
         base = self.path
-        for name in self.fs.glob(path_pattern):
+        for name in self._fs_glob(path_pattern, dirs_only):
             name = name.removeprefix(base).removeprefix(sep)
             yield self.joinpath(name)
+
+    def _fs_glob(self, path_pattern: str, dirs_only: bool) -> Iterator[str]:
+        """glob the filesystem, optionally only yielding directories"""
+        if not dirs_only:
+            yield from self.fs.glob(path_pattern)
+            return
+        # filter by type instead of passing a trailing separator to fsspec,
+        # because filesystems differ in how they handle it in glob patterns
+        sep = self.parser.sep
+        seen = set()
+        path_pattern = path_pattern.rstrip(sep)
+        for name, info in self.fs.glob(path_pattern, detail=True).items():
+            if info.get("type") != "directory":
+                continue
+            name = name.rstrip(sep)
+            if name not in seen:
+                seen.add(name)
+                yield name
 
     def rglob(
         self,
@@ -1764,22 +1781,21 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             _check_fsspec_has_working_glob()
 
         sep = self.parser.sep
-        # joinpath drops a trailing separator, which restricts matches to directories
-        dirs_only = sep if isinstance(pattern, str) and pattern.endswith(sep) else ""
+        dirs_only = isinstance(pattern, str) and pattern.endswith(sep)
         if _FSSPEC_HAS_WORKING_GLOB:
-            r_path_pattern = self.joinpath("**", pattern).path + dirs_only
+            r_path_pattern = self.joinpath("**", pattern).path
             base = self.path
-            for name in self.fs.glob(r_path_pattern):
+            for name in self._fs_glob(r_path_pattern, dirs_only):
                 name = name.removeprefix(base).removeprefix(sep)
                 yield self.joinpath(name)
 
         else:
-            path_pattern = self.joinpath(pattern).path + dirs_only
-            r_path_pattern = self.joinpath("**", pattern).path + dirs_only
+            path_pattern = self.joinpath(pattern).path
+            r_path_pattern = self.joinpath("**", pattern).path
             base = self.path
             seen = set()
             for p in (path_pattern, r_path_pattern):
-                for name in self.fs.glob(p):
+                for name in self._fs_glob(p, dirs_only):
                     name = name.removeprefix(base).removeprefix(sep)
                     if name in seen:
                         continue
