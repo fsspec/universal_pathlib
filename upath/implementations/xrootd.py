@@ -34,11 +34,18 @@ class XRootDPath(UPath):
         ) -> None: ...
 
     def mkdir(
-        self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+        self,
+        mode: int = 0o777,
+        parents: bool = False,
+        exist_ok: bool = False,
+        *,
+        parent_mode: int | None = None,
     ) -> None:
         if not parents and not exist_ok and self.exists():
             raise FileExistsError(self.path)
-        super().mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        super().mkdir(
+            mode=mode, parents=parents, exist_ok=exist_ok, parent_mode=parent_mode
+        )
 
     def write_bytes(self, data: bytes) -> int:
         with self.fs.open(self.path, "wb") as f:
