@@ -48,6 +48,7 @@ nav:
     - Filesystem Spec: concepts/fsspec.md
     - Standard Library Pathlib: concepts/pathlib.md
     - Universal Pathlib: concepts/upath.md
+    - Special Paths: concepts/special-paths.md
   - Usage:
     - Basic Usage: usage.md
   - API Reference:
