@@ -1,7 +1,9 @@
 import functools
+import json
 import os
 import platform
 import sys
+import urllib.request
 
 import pytest
 
@@ -26,6 +28,17 @@ pytestmark = [
 ]
 
 
+def github_rate_limit_exhausted() -> bool:
+    """Check the GitHub API rate limit (this request doesn't count against it)."""
+    try:
+        with urllib.request.urlopen(
+            "https://api.github.com/rate_limit", timeout=10
+        ) as r:
+            return json.load(r)["resources"]["core"]["remaining"] == 0
+    except Exception:
+        return False
+
+
 def xfail_on_github_connection_error(func):
     """Method decorator to xfail tests on GitHub rate limit or connection errors."""
 
@@ -43,6 +56,10 @@ def xfail_on_github_connection_error(func):
                 or "NameResolutionError" in str_e
             ):
                 pytest.xfail("No internet connection")
+            elif github_rate_limit_exhausted():
+                # fsspec's exists() and find() swallow rate limit errors, so
+                # tests can fail with missing files instead
+                pytest.xfail("GitHub API rate limit exceeded")
             else:
                 raise
 
