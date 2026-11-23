@@ -344,6 +344,7 @@ class ReadablePathTests:
         (
             "*.txt",
             "*",
+            "*/",
             pytest.param(
                 "**/*.txt",
                 marks=(
@@ -357,6 +358,9 @@ class ReadablePathTests:
     def test_glob(self, pathlib_base, pattern):
         mock_glob = list(self.path.glob(pattern))
         path_glob = list(pathlib_base.glob(pattern))
+        if sys.version_info < (3, 11) and pattern.endswith("/"):
+            # pathlib only matches directories for a trailing separator since 3.11
+            path_glob = [p for p in path_glob if p.is_dir()]
 
         _mock_start = len(self.path.parts)
         mock_glob_normalized = sorted(
@@ -488,10 +492,13 @@ class ReadablePathTests:
         content = upath.read_text(encoding="ascii", errors="strict")
         assert content == "hello world"
 
-    def test_rglob(self, pathlib_base):
-        pattern = "*.txt"
+    @pytest.mark.parametrize("pattern", ["*.txt", "*/"])
+    def test_rglob(self, pathlib_base, pattern):
         result = [*self.path.rglob(pattern)]
         expected = [*pathlib_base.rglob(pattern)]
+        if sys.version_info < (3, 11) and pattern.endswith("/"):
+            # pathlib only matches directories for a trailing separator since 3.11
+            expected = [p for p in expected if p.is_dir()]
         assert len(result) == len(expected)
 
     def test_walk(self, local_testdir):
