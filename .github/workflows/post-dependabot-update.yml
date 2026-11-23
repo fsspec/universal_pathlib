@@ -1,31 +1,104 @@
 name: Post Dependabot Update
+
+# dev/requirements.txt pins the filesystem packages that upath/_flavour_sources.py
+# is generated from. When dependabot bumps them, regenerate the module and commit
+# it to the pull request, so the changes can be reviewed and tested there.
+
 on:
   pull_request:
     branches: [main]
     paths:
-      - dev/**
+      - dev/requirements.txt
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
-  auto-update:
-    if: github.actor == 'dependabot[bot]'
+  codegen:
+    name: regenerate flavours
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
+    # this job installs and imports the updated packages, so it gets no write access
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - uses: hynek/setup-cached-uv@v2
 
-      - name: Run tests
+      - name: Generate flavours
         run: uvx nox --sessions flavours-codegen
 
-      - name: Commit changes
+      - name: Summarize changes
         run: |
+          {
+            echo "## Generated flavours"
+            echo
+            if git diff --quiet -- upath/_flavour_sources.py; then
+              echo "\`upath/_flavour_sources.py\` is unchanged."
+            else
+              echo '```diff'
+              git diff -- upath/_flavour_sources.py
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Explain failure
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Generating the flavours failed
+
+          `nox --sessions flavours-codegen` installs `dev/requirements.txt` and imports
+          all filesystem packages. If installing failed, the updated package probably
+          requires matching versions of other pins (for example, `s3fs` and `gcsfs`
+          require a specific `fsspec` version). Bump them together in this pull request
+          and regenerate the flavours, or close it.
+          SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flavour-sources
+          path: upath/_flavour_sources.py
+          if-no-files-found: error
+
+  commit:
+    name: commit flavours
+    needs: codegen
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: flavour-sources
+          path: upath
+
+      - name: Commit and push
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if git diff --quiet -- upath/_flavour_sources.py; then
+            echo "upath/_flavour_sources.py is unchanged"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add upath/_flavour_sources.py
-          git commit -m "Auto-update generated flavours" || echo "No changes"
-          git push
+          git commit -m "Auto-update generated flavours"
+          # not forced: fails if dependabot updated the branch in the meantime
+          git push origin "HEAD:refs/heads/$HEAD_REF"
+          {
+            echo "Committed the regenerated flavours to \`$HEAD_REF\`."
+            echo "Commits pushed by this workflow don't start the tests automatically:"
+            echo "approve the workflow runs in the pull request to test them."
+          } >> "$GITHUB_STEP_SUMMARY"

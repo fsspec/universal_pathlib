@@ -524,6 +524,8 @@ UPath parses URIs without importing the filesystem package, using the `_strip_pr
 nox --session=flavours-codegen
 ```
 
+When dependabot updates `dev/requirements.txt`, the "Post Dependabot Update" workflow regenerates the module and commits it to the pull request. Approve the workflow runs on that commit to test the regenerated flavours.
+
 Protocol specific parsing rules (for example whether the netloc is the anchor of the path, like the bucket in `s3://bucket/key`) are configured in `WrappedFileSystemFlavour.protocol_config` in `upath/_flavour.py`.
 
 ### 7. Update the documentation
