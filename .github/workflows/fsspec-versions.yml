@@ -1,0 +1,63 @@
+name: fsspec versions
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"  # weekly on Monday
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/fsspec-versions.yml
+
+permissions:
+  contents: read
+
+env:
+  FORCE_COLOR: "1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  sessions:
+    runs-on: ubuntu-latest
+    outputs:
+      sessions: ${{ steps.sessions.outputs.sessions }}
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - uses: hynek/setup-cached-uv@v2
+
+    - name: Collect the tests-fsspec nox sessions
+      id: sessions
+      run: |
+        sessions=$(uvx nox --list --json --sessions tests-fsspec | jq -c '[.[].session]')
+        echo "sessions=$sessions" >> "$GITHUB_OUTPUT"
+
+  tests:
+    name: ${{ matrix.session }}
+    needs: sessions
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ${{ fromJSON(needs.sessions.outputs.sessions) }}
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - uses: hynek/setup-cached-uv@v2
+
+    - name: Run tests
+      env:
+        SESSION: ${{ matrix.session }}
+      run: uvx nox --sessions "$SESSION"

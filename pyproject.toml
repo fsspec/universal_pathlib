@@ -135,6 +135,9 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["upath"]
+omit = ["upath/_version.py"]
+# allows combining data files collected on different platforms
+relative_files = true
 
 [tool.coverage.report]
 show_missing = true
