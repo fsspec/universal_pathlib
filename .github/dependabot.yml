@@ -25,6 +25,11 @@ updates:
       interval: "weekly"
     labels:
       - "maintenance :construction:"
+    groups:
+      # Group all action updates into one PR
+      github-actions:
+        patterns:
+          - "*"
     # Update via cruft
     ignore:
       - dependency-name: "actions/checkout"
