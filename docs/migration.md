@@ -19,6 +19,12 @@ In Python, `os.PathLike` objects and `pathlib.Path` subclasses represent **local
 
 Prior to `v0.3.0`, all UPath instances incorrectly implemented `os.PathLike`, which could lead to runtime errors when non-local paths were passed to functions expecting local paths. Starting with `v0.3.0`, only local UPath implementations (`PosixUPath`, `WindowsUPath`, and `FilePath`) implement `os.PathLike`.
 
+**Why was `__fspath__` removed from non-local paths?**
+
+- `os.fspath()` promises a path on the *local* filesystem. Functions like `open()`, `os.stat()` or `shutil.copy()` use the returned string to access local files, and can't do anything sensible with `"s3://bucket/file.txt"`.
+- The string returned by the old `__fspath__` only contained the protocol and the path. The `storage_options` of the UPath (credentials, endpoints, account names, ...) can't be represented in that string. Libraries that converted a UPath via `os.fspath()` and then opened the URI with their own I/O layer (for example pandas, pyarrow, or polars) silently dropped these options, which caused authentication errors or requests to the wrong endpoint.
+- `UPath` is built on the `pathlib_abc` base classes `JoinablePath`, `ReadablePath` and `WritablePath`. Following the standard library model, only paths that point to the local filesystem implement `os.PathLike`.
+
 ### Migration Strategies
 
 If your code passes UPath instances to functions expecting `os.PathLike` objects, you have several options:
@@ -95,71 +101,200 @@ path = UPath("memory:///file.txt")
 os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
 ```
 
-### Working with Polars and Object Store
+### Code That Checks `isinstance(path, pathlib.Path)`
 
-When using UPath with [Polars](https://pola.rs/), be aware that Polars uses Rust's [object-store](https://docs.rs/object_store/) library instead of fsspec. This requires special handling to preserve storage options.
+Remote UPath implementations like `S3Path` are no longer subclasses of `pathlib.Path`. Only the implementations returned for local paths **without** a protocol are:
 
-!!! warning "Don't Rely on Implicit String Conversion"
-    Avoid passing UPath instances directly to functions that implicitly cast them to strings via `os.fspath()` or `os.path.expanduser()`. This loses storage options and can lead to authentication failures.
+| Example | Returned class | `pathlib.Path` subclass | `os.PathLike` |
+|:--------|:---------------|:-----------------------:|:-------------:|
+| `UPath("/tmp/file.txt")` | `PosixUPath` / `WindowsUPath` | ✅ | ✅ |
+| `UPath("file:///tmp/file.txt")` | `FilePath` | ❌ | ✅ |
+| `UPath("memory:///file.txt")` | `MemoryPath` | ❌ | ❌ |
+| `UPath("s3://bucket/file.txt")` | `S3Path` | ❌ | ❌ |
 
-**Problematic Pattern:**
+`PosixUPath` and `WindowsUPath` subclass `pathlib.PosixPath` and `pathlib.WindowsPath`, and they will stay `pathlib.Path` subclasses for the foreseeable future. `FilePath` and all remote implementations are not `pathlib.Path` subclasses.
+
+An `isinstance(path, pathlib.Path)` check usually tries to answer one of two questions. Replace it with a check that answers the question you actually have:
 
 ```python
-import polars as pl
+import os
+import pathlib
+
 from upath import UPath
 
-# This loses storage_options when implicitly converted to string!
-path = UPath('s3://bucket/file.parquet', anon=True)
-df = pl.read_parquet(path)  # anon=True is lost!
+
+def as_upath(path) -> UPath:
+    """Use the pathlib API for local and remote paths."""
+    if isinstance(path, UPath):
+        return path
+    # upcasts str and pathlib.Path; local paths become PosixUPath/WindowsUPath
+    return UPath(path)
+
+
+def is_local(path) -> bool:
+    """Can the path be passed to open(), os.stat(), shutil.copy(), ...?"""
+    return isinstance(path, os.PathLike)
+
+
+p = as_upath(pathlib.Path("/tmp/file.txt"))
+assert isinstance(p, UPath) and isinstance(p, pathlib.Path)
+assert is_local(p)
+assert is_local(UPath("file:///tmp/file.txt"))
+assert not is_local(UPath("s3://bucket/file.txt"))
 ```
 
-**Recommended Approaches:**
+Upcasting `pathlib.Path` instances to `UPath` has little downside: `PosixUPath` and `WindowsUPath` behave like their `pathlib` base classes, and additionally backport newer `pathlib` features to older Python versions.
 
-**Option 1: Use fsspec/s3fs as the Backend** (via file handle)
+### Using UPath with pandas, pyarrow and polars
+
+Before `v0.3.0` many data libraries accepted UPath instances, because they converted them to a string via `os.fspath()`. Now, passing a non-local UPath directly to them fails, for example with:
+
+- pandas: `ValueError: Invalid file path or buffer object type: <class 'upath.implementations.cloud.S3Path'>`
+- pyarrow: `TypeError: cannot construct a FileSource from s3://bucket/file.parquet`
+- polars: `TypeError: Object does not have a .read() method.`
+
+Even when it worked, the conversion silently dropped all storage options. Instead, pass the information these libraries need explicitly. The examples below use this path:
 
 ```python
-import polars as pl
 from upath import UPath
 
-path = UPath("s3://bucket/file.parquet", anon=True)
-
-# Open file handle with fsspec, preserving storage_options
-df = pl.scan_parquet(path.open('rb'))
+path = UPath(
+    "s3://bucket/data/file.parquet",
+    key="ACCESS_KEY",
+    secret="SECRET_KEY",
+    endpoint_url="https://s3.example.com",
+)
 ```
 
-**Option 2: Use Polars' Native Rust Backend** (with object-store options)
+!!! warning "`str(path)` and `path.as_uri()` drop the storage options"
+    Both return only the protocol and the path, i.e. `"s3://bucket/data/file.parquet"`. Credentials, endpoints and all other `storage_options` are not part of the string, so you have to pass them on separately. Also note that `as_uri()` raises a `ValueError` for relative UPaths (for example the result of `relative_to()`).
+
+#### pandas
+
+pandas uses fsspec to access URLs and accepts fsspec storage options via its `storage_options` argument:
+
+```python
+import pandas as pd
+
+df = pd.read_parquet(path.as_uri(), storage_options=dict(path.storage_options))
+df.to_parquet(path.as_uri(), storage_options=dict(path.storage_options))
+```
+
+The same works for `read_csv()`, `to_excel()` and all other pandas I/O functions with a `storage_options` argument. Alternatively, open the file via UPath and pass the file object:
+
+```python
+with path.open("rb") as f:
+    df = pd.read_parquet(f)
+```
+
+#### pyarrow
+
+pyarrow accepts fsspec filesystem instances via its `filesystem` argument and wraps them automatically. Pass the filesystem `path.fs` together with `path.path`, the path without the protocol:
+
+```python
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+
+table = pq.read_table(path.path, filesystem=path.fs)
+pq.write_table(table, path.path, filesystem=path.fs)
+
+dataset = ds.dataset(path.parent.path, filesystem=path.fs, format="parquet")
+```
+
+This also works for pandas with the pyarrow engine: `pd.read_parquet(path.path, filesystem=path.fs)`.
+
+#### polars
+
+Polars doesn't use fsspec for cloud storage, but Rust's [object-store](https://docs.rs/object_store/) library. You have two options.
+
+**Option 1: Use fsspec for I/O** by passing a file object. This works for every filesystem supported by UPath, but might be slower than polars' native readers:
 
 ```python
 import polars as pl
-from upath import UPath
 
-path = UPath("s3://bucket/file.parquet", key="ACCESS_KEY", secret="SECRET_KEY")
+with path.open("rb") as f:
+    df = pl.read_parquet(f)
 
-# Convert fsspec storage_options to object-store format
-object_store_options = {
-    "aws_access_key_id": path.storage_options.get("key"),
-    "aws_secret_access_key": path.storage_options.get("secret"),
-    # Add other options as needed
-}
+with path.with_name("output.parquet").open("wb") as f:
+    df.write_parquet(f)
+```
 
-df = pl.scan_parquet(path.as_uri(), storage_options=object_store_options)
+**Option 2: Use polars' native object-store backend** by passing the URI and translating the fsspec storage options to object-store configuration keys:
+
+```python
+import polars as pl
+
+
+def s3_object_store_options(path: UPath) -> dict:
+    """Translate common s3fs storage options to object-store config keys."""
+    so = path.storage_options
+    keys = {
+        "key": "aws_access_key_id",
+        "secret": "aws_secret_access_key",
+        "token": "aws_session_token",
+        "endpoint_url": "aws_endpoint",
+    }
+    options = {new: so[old] for old, new in keys.items() if old in so}
+    if "region_name" in so.get("client_kwargs", {}):
+        options["aws_region"] = so["client_kwargs"]["region_name"]
+    if so.get("anon"):
+        options["aws_skip_signature"] = "true"
+    return options
+
+
+df = pl.read_parquet(path.as_uri(), storage_options=s3_object_store_options(path))
+lf = pl.scan_parquet(path.as_uri(), storage_options=s3_object_store_options(path))
 ```
 
 !!! info "Storage Options Mapping"
-    Polars uses [object-store configuration keys](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html), which differ from fsspec's naming:
+    Polars uses [object-store configuration keys](https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html), which differ from fsspec's naming. For S3 the most common ones are:
 
     | fsspec/s3fs | object-store |
     |-------------|--------------|
     | `key` | `aws_access_key_id` |
     | `secret` | `aws_secret_access_key` |
+    | `token` | `aws_session_token` |
     | `endpoint_url` | `aws_endpoint` |
-    | `region_name` | `aws_region` |
+    | `client_kwargs={"region_name": ...}` | `aws_region` |
+    | `anon=True` | `aws_skip_signature="true"` |
+
+    For Google Cloud Storage and Azure, see object-store's [GoogleConfigKey](https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html) and [AzureConfigKey](https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html). A helper method to convert storage options to the object-store format is planned (see [#459](https://github.com/fsspec/universal_pathlib/issues/459)).
 
 See also: [pola-rs/polars#24921](https://github.com/pola-rs/polars/issues/24921)
 
 ### Extending UPath via `_protocol_dispatch=False`
 
-If you previously used `_protocol_dispatch=False` to enable extension of the UPath API, we now recommend subclassing `upath.extensions.ProxyUPath`. See the advanced usage documentation for examples.
+Setting `_protocol_dispatch = False` on a UPath subclass was a workaround to make `MyPath(...)` return instances of `MyPath` for all protocols. It's deprecated, emits a `DeprecationWarning`, and will be removed in a future version. Because it bypasses the protocol specific UPath implementations, it can lead to incorrect behavior, for example for relative local paths.
+
+Subclass `upath.extensions.ProxyUPath` instead. It wraps the correct UPath implementation for every protocol and returns instances of your class from all path operations:
+
+```python
+# OLD (deprecated)
+from upath import UPath
+
+class MyPath(UPath):
+    _protocol_dispatch = False
+
+    def hello(self) -> str:
+        return f"Hello {self.name}!"
+
+
+# NEW
+from upath.extensions import ProxyUPath
+
+class MyPath(ProxyUPath):
+
+    def hello(self) -> str:
+        return f"Hello {self.name}!"
+
+
+p = MyPath("relative/file.txt")
+assert str(p) == "relative/file.txt"
+assert isinstance(p.parent, MyPath)
+assert MyPath("s3://bucket/file.txt").hello() == "Hello file.txt!"
+```
+
+See [How do I add custom methods to UPath?](usage.md#how-do-i-add-custom-methods-to-upath) and the [ProxyUPath API reference](api/extensions.md) for more examples.
 
 ## Migrating to v0.2.0
 

@@ -478,6 +478,11 @@ can use this implementation already as is. If you want a call to `UPath(...)` to
 return your custom implementation when the detected protocol is `"myproto"`, you
 need to register your implementation. The next section explains your options.
 
+Note that a custom `UPath` implementation still requires an fsspec filesystem
+registered for its protocol (see Case 1), because the `UPath` methods delegate
+all filesystem access to it, and the filesystem class defines how its URIs are
+parsed.
+
 Also note: In case you develop a custom `UPath` implementation, please feel free
 to open an issue to discuss integrating it in `universal_pathlib`.
 
@@ -759,9 +764,19 @@ path = UPath("memory:///file.txt")
 os.remove(path)  # TypeError: expected str, bytes or os.PathLike, not MemoryPath
 ```
 
+#### Using UPath with pandas, pyarrow, polars and `isinstance` checks
+
+Libraries like pandas, pyarrow and polars no longer accept non-local UPath
+instances directly, and remote UPath instances are no longer `pathlib.Path`
+instances. The [migration guide][migration-guide] in the documentation shows how
+to pass paths and their storage options to these libraries, and how to replace
+`isinstance(path, pathlib.Path)` checks.
+
+[migration-guide]: https://universal-pathlib.readthedocs.io/en/latest/migration/
+
 #### Extending UPath via `_protocol_dispatch=False`
 
-If you previously used `_protocol_dipatch=False` to enable extension of the
+If you previously used `_protocol_dispatch=False` to enable extension of the
 UPath API, we now recommend to subclass `upath.extensions.ProxyUPath`. See
 the example in the main docs.
 

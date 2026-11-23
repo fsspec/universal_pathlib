@@ -219,6 +219,39 @@ assert pathlib.Path('/path/that/does/not/exist').exists() is False
     s3_path.is_dir()  # Raises authentication exception
     ```
 
+### Why can `is_file()` and `is_dir()` both return `True`?
+
+On a local filesystem a path is either a file or a directory. Many remote filesystems don't make this distinction, so `is_file()` and `is_dir()` are **not mutually exclusive**:
+
+- **HTTP(S)** has no real directories. A "directory" is an HTML page (for example a server generated index page) with links to other resources. It's a file, because you can read the HTML, and a directory, because you can list the linked resources.
+- **Object stores** like S3, GCS or Azure Blob Storage emulate directories via common key prefixes. An object `data` and objects below `data/` can exist at the same time. In that case `data` is both a file and a directory.
+
+```python
+from upath import UPath
+
+index = UPath("https://data.lsdb.io/hats/")
+index.is_dir()   # True: the index page links to the entries in this "directory"
+index.is_file()  # True: the index page itself can be read
+```
+
+To write code that works across filesystems:
+
+- Don't infer one from the other: `not path.is_dir()` doesn't imply that `path` is a file, and `not path.is_file()` doesn't imply that it's a directory.
+- Ask the question your code actually needs answered. Check `is_dir()` before listing children and `is_file()` before reading content. If your code handles directories and files differently, check `is_dir()` first:
+
+    ```python
+    def describe(path: UPath) -> str:
+        # directories can also be files on http and object stores
+        if path.is_dir():
+            return "directory"
+        elif path.is_file():
+            return "file"
+        else:
+            return "missing"
+    ```
+
+- To traverse a directory tree, use `iterdir()`, `walk()`, `glob()` or `rglob()` and let the filesystem report its children, instead of classifying every path yourself.
+
 ### How do I search for files matching a pattern?
 
 Use `glob()` for pattern matching:
@@ -235,6 +268,39 @@ for tif_file in paris_data.glob("**.TIF"):
 
 !!! note "Glob Syntax"
     The glob syntax follows [fsspec conventions](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.spec.AbstractFileSystem.glob), which may differ slightly from pathlib's glob.
+
+### How do I copy or move files between filesystems?
+
+Use `copy()`, `copy_into()`, `move()` and `move_into()`. They work for files and directory trees, within one filesystem and across different filesystems. The target can be a `UPath`, a `pathlib.Path`, or a URI string:
+
+```python
+from upath import UPath
+
+source = UPath("memory:///project/report.txt")
+source.write_text("hello world")
+
+downloads = UPath("downloads")
+downloads.mkdir(exist_ok=True)  # like in pathlib, the target's parent must exist
+
+# copy a file to a local directory
+local = source.copy(downloads / "report.txt")
+assert local.read_text() == "hello world"
+
+# copy a directory tree recursively
+UPath("memory:///project/data/2024/january.csv").write_text("a,b\n1,2\n")
+UPath("memory:///project/data").copy(downloads / "data")
+assert (downloads / "data" / "2024" / "january.csv").exists()
+
+# copy into an existing directory, keeping the name
+source.copy_into(downloads / "data")
+assert (downloads / "data" / "report.txt").exists()
+
+# move a file to another filesystem, the source is removed afterwards
+local.move(UPath("memory:///archive/report.txt"))
+assert not local.exists()
+```
+
+Copying between different filesystems streams the data through your Python process, so it works for any combination of filesystems, for example `UPath("data.csv").copy(UPath("s3://my-bucket/data.csv"))`. For large transfers between the local filesystem and a remote filesystem, the fsspec methods `path.fs.put()` and `path.fs.get()` can be faster.
 
 ---
 
@@ -257,6 +323,32 @@ s3_path = UPath(
 public_s3 = UPath("s3://spacenet-dataset", anon=True)
 ```
 
+These keyword arguments are called **storage options**. UPath passes them to the fsspec filesystem class (here `s3fs.S3FileSystem`), so check the documentation of your filesystem implementation for the supported options.
+
+### What's the difference between storage options and `open()` keyword arguments?
+
+There are two places to pass fsspec options, and they are not interchangeable:
+
+- **Storage options** are keyword arguments of the `UPath` constructor. They configure the *filesystem*: credentials, endpoints, and filesystem-wide defaults like `default_cache_type` or `default_block_size` for s3fs.
+- **`open()` keyword arguments** configure a *single file object*. `UPath.open()` passes additional keyword arguments to the `open()` method of the fsspec filesystem, which forwards them to its file implementation. Examples are `block_size`, `cache_type` or `cache_options`.
+
+```python
+from upath import UPath
+
+# configure a single file object via open()
+path = UPath("s3://my-bucket/large-file.bin", anon=True)
+with path.open("rb", cache_type="first", block_size=2**20) as f:
+    header = f.read(1024)
+
+# configure the default for all files via a storage option
+path = UPath("s3://my-bucket/large-file.bin", anon=True, default_cache_type="first")
+with path.open("rb") as f:
+    header = f.read(1024)
+```
+
+!!! warning "File options are not storage options"
+    `UPath("s3://my-bucket/file.bin", cache_type="first")` passes `cache_type` to `S3FileSystem`, which fails as soon as the filesystem is used with `TypeError: AioSession.__init__() got an unexpected keyword argument 'cache_type'`.
+
 ### How do I access the underlying filesystem?
 
 UPath gives you access to the fsspec filesystem when you need lower-level control:
@@ -277,6 +369,63 @@ options = path.storage_options
 with fs.open(path_str, 'rb') as f:
     data = f.read()
 ```
+
+### How do I use an existing fsspec filesystem instance?
+
+`UPath` can't be created from a filesystem instance, and there's no `fs=` keyword argument. All keyword arguments are storage options and get passed to the filesystem class, so `UPath(..., fs=my_fs)` doesn't do what you'd expect. For example, for S3 it fails as soon as the filesystem is used with `TypeError: AioSession.__init__() got an unexpected keyword argument 'fs'`.
+
+Instead, pass the storage options of your filesystem instance:
+
+```python
+import fsspec
+from upath import UPath
+
+fs = fsspec.filesystem("s3", anon=True, endpoint_url="https://s3.example.com")
+
+path = UPath("s3://my-bucket/data.csv", **fs.storage_options)
+assert path.storage_options == {"anon": True, "endpoint_url": "https://s3.example.com"}
+```
+
+fsspec caches filesystem instances by their storage options, so `path.fs` is usually the same instance as `fs`.
+
+### How do I store a path together with its storage options?
+
+A resource on an fsspec filesystem is defined by three pieces of information: the `protocol`, the `storage_options` and the `path`. The string representation (`str(path)` or `path.as_uri()`) only contains the protocol and the path. Storage options like credentials, endpoints or account names are not part of it, and in general they can't be encoded in a URL without ambiguity.
+
+To persist a path, store all three and recreate the UPath from them:
+
+```python
+from upath import UPath
+
+path = UPath("s3://my-bucket/data.csv", endpoint_url="https://s3.example.com", anon=True)
+
+record = {
+    "protocol": path.protocol,
+    "path": path.path,
+    "storage_options": dict(path.storage_options),
+}
+
+restored = UPath(record["path"], protocol=record["protocol"], **record["storage_options"])
+assert restored == path
+assert restored.storage_options == path.storage_options
+```
+
+UPath instances can also be pickled, and if you use [pydantic](https://docs.pydantic.dev/), UPath fields serialize to the same structure:
+
+```python
+from pydantic import BaseModel
+
+class Config(BaseModel):
+    data: UPath
+
+config = Config(data=path)
+print(config.model_dump_json())
+# {"data":{"path":"my-bucket/data.csv","protocol":"s3","storage_options":{"endpoint_url":"https://s3.example.com","anon":true}}}
+assert Config.model_validate_json(config.model_dump_json()).data == path
+```
+
+!!! warning "Storage options can contain secrets"
+    Credentials are storage options too. Be careful where you store or log them.
 
 ### How do I create a custom UPath for a new filesystem?
 
@@ -301,6 +450,49 @@ register_implementation("myproto", MyCustomPath)
 
 # Now it works!
 my_path = UPath("myproto://server/path")
+```
+
+!!! warning "A UPath subclass needs an fsspec filesystem"
+    A UPath implementation doesn't access the storage on its own. All filesystem methods delegate to `self.fs`, the fsspec filesystem registered for the protocol, and the fsspec filesystem class also defines how URIs of the protocol are parsed. Without a registered fsspec filesystem, path parsing falls back to a generic implementation, and every method using the filesystem raises `ValueError: Protocol not known: myproto`.
+
+If you need a new protocol that behaves like an existing filesystem, subclass the fsspec filesystem and the matching UPath implementation, and register both. For example, an in-memory `untitled://` protocol, separate from `memory://`:
+
+```python
+from fsspec.implementations.memory import MemoryFileSystem
+from fsspec.registry import register_implementation as fsspec_register_implementation
+
+from upath import UPath
+from upath.implementations.memory import MemoryPath
+from upath.registry import register_implementation as upath_register_implementation
+
+
+class UntitledFileSystem(MemoryFileSystem):
+    store = {}  # don't share the store with the memory filesystem
+    pseudo_dirs = [""]
+    protocol = "untitled"
+    root_marker = "/"
+
+    @classmethod
+    def _strip_protocol(cls, path):
+        if path.startswith("untitled://"):
+            path = path[len("untitled://") :]
+        return super()._strip_protocol(path)
+
+
+class UntitledPath(MemoryPath):
+    pass
+
+
+fsspec_register_implementation("untitled", UntitledFileSystem)
+upath_register_implementation("untitled", UntitledPath)
+
+path = UPath("untitled:///notes/todo.txt")
+assert isinstance(path, UntitledPath)
+assert isinstance(path.fs, UntitledFileSystem)
+
+path.write_text("write docs")
+assert path.read_text() == "write docs"
+assert not UPath("memory:///notes/todo.txt").exists()
 ```
 
 !!! note "don't extend the API in your subclass"
@@ -350,6 +542,8 @@ The key difference: `ProxyUPath` wraps a `UPath` instance and delegates to it, w
 
 If your methods only work with some filesystems, set `supported_protocols = ("s3", "gcs")` on your class. Creating an instance for any other protocol then raises a `TypeError`. See [Extensions](api/extensions.md#restricting-supported-protocols) for details.
 
+!!! note "Replaces `_protocol_dispatch = False`"
+    Subclassing `UPath` and setting `_protocol_dispatch = False` to get your class for all protocols is deprecated. Subclass `ProxyUPath` instead, see the [migration guide](migration.md#extending-upath-via-_protocol_dispatchfalse).
 
 ---
 

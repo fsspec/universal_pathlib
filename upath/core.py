@@ -615,7 +615,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         chain_parser :
             A chain parser instance for chained urlpaths. _(experimental)_
         **storage_options :
-            Additional storage options for the path.
+            Additional storage options for the path. All keyword arguments
+            are passed to the fsspec filesystem class when the filesystem
+            is instantiated. To reuse the configuration of an existing
+            fsspec filesystem instance `fs`, pass `**fs.storage_options`.
 
         """
         # todo: avoid duplicating this call from __new__
@@ -1558,14 +1561,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         **fsspec_kwargs: Any,
     ) -> IO[Any]:
         """
-        Open the file pointed by this path and return a file object, as
-        the built-in open() function does.
+        Open the file pointed to by this path and return a file object.
+
+        The file is opened via the `open()` method of the fsspec filesystem
+        (`self.fs.open(self.path, mode=mode, **fsspec_kwargs)`). The returned
+        object is the file-like object provided by the filesystem
+        implementation, and not necessarily a builtin file object.
 
         Parameters
         ----------
         mode:
             Opening mode. Default is 'r'.
         buffering:
+            Converted to the fsspec `block_size` option if provided.
             Default is the block size of the underlying fsspec filesystem.
         encoding:
             Encoding is only used in text mode. Default is None.
@@ -1574,7 +1582,26 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         newline:
             Newline handling. Only used in text mode. Default is None.
         **fsspec_kwargs:
-            Additional options for the fsspec filesystem.
+            Additional keyword arguments for the `open()` method of the fsspec
+            filesystem, which usually passes them on to its file object.
+            Common examples are `block_size`, `cache_type` and `cache_options`.
+            Supported options depend on the filesystem implementation.
+
+        Note
+        ----
+        `fsspec_kwargs` only configure the returned file object. Options that
+        configure the filesystem itself (credentials, endpoints, or filesystem
+        wide defaults like `default_cache_type` for s3fs) are storage options
+        and have to be passed to the `UPath` constructor instead.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt")
+        >>> f = p.open("rb", cache_type="first", block_size=2**20)
+        >>> p = UPath("s3://my-bucket/path/to/file.txt", default_cache_type="first")
+        >>> f = p.open("rb")
+
         """
         # match the signature of pathlib.Path.open()
         if buffering is not UNSET_DEFAULT:
