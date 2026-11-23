@@ -349,6 +349,27 @@ with path.open("rb") as f:
 !!! warning "File options are not storage options"
     `UPath("s3://my-bucket/file.bin", cache_type="first")` passes `cache_type` to `S3FileSystem`, which fails as soon as the filesystem is used with `TypeError: AioSession.__init__() got an unexpected keyword argument 'cache_type'`.
 
+### How do I get precise types from my type checker?
+
+`UPath(...)` returns the implementation registered for the detected protocol at
+runtime, but a type checker can't look inside a URI string. If you pass a literal
+`protocol` keyword argument, type checkers like mypy, pyright and ty narrow the
+return type to the matching implementation:
+
+```python
+from upath import UPath
+from upath.implementations.cloud import S3Path
+from upath.registry import get_upath_class
+
+p0 = UPath("s3://my-bucket/file.txt")  # inferred as UPath
+p1 = UPath("my-bucket/file.txt", protocol="s3")  # inferred as S3Path
+
+# to get storage option autocompletion and type checks, use the
+# implementation class directly or look it up via the registry
+p2 = S3Path("s3://my-bucket/file.txt", anon=True)
+p3 = get_upath_class("s3")("s3://my-bucket/file.txt", anon=True)
+```
+
 ### How do I access the underlying filesystem?
 
 UPath gives you access to the fsspec filesystem when you need lower-level control:
