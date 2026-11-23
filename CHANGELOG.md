@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- upath: add support for Python 3.15 (#572)
+- upath: accept the `parent_mode` argument of `mkdir()` added in Python 3.15, backported for local paths (#572)
+- upath.extensions: add `ProxyUPath.supported_protocols` to restrict the supported protocols (#437, #586)
+- docs: add migration recipes for pandas, pyarrow and polars (#460, #241, #588)
+- docs: document `is_file()`/`is_dir()` on http and object stores (#535), copying between filesystems (#315, #309), storage options vs `open()` arguments (#209, #207), custom protocols (#197, #211), and add a guide for adding filesystem implementations (#117) (#588)
+- docs: document moving files into existing directories (#578)
+- docs: explain the difference between RFC 8089 file URIs and fsspec `file://` urlpaths (#557, #574)
+- docs: define the semantics of special paths like `""`, `"."`, `".."` and `"/"` per filesystem (#498, #592)
+- ci: report combined coverage of all test jobs (#326, #584)
+- ci: test against multiple fsspec versions weekly and on demand (#325, #584)
+
+### Fixed
+- upath._chain: fix storage options nested under the outermost protocol of chained urlpaths being ignored (#566, #567)
+- upath.core: match relative patterns from the right in `match()`, like pathlib (#568)
+- upath.core: fix `rename()` of directories failing on memory and silently doing nothing on s3 (#569, #575)
+- upath.core: move directory trees without `AbstractFileSystem.mv()` in `rename()` to work around fsspec>=2026.6.0 failing on object stores (#583)
+- upath.core: fix `rmdir(recursive=False)` on empty `file://` directories (#559, #565)
+- upath.core: don't yield s3 directory markers, the directory itself or duplicate names in `iterdir()`, and handle file/directory name collisions (#226, #524, #144, #536)
+- upath.core: only match directories with `glob()` and `rglob()` patterns ending with a separator, on all python versions (#576)
+- upath.implementations.local: fix `from_uri()` backport on Python < 3.13 (#557, #574)
+- upath.implementations.local: keep `is_reserved()` on Python 3.15, where pathlib removed it (#572)
+- upath.implementations.cloud: fix `HfPath.iterdir()` with recent huggingface_hub (#562, #571)
+- upath._flavour: fix joining Windows path segments onto non-local paths (#571)
+- upath: make public type hints resolvable at runtime with `typing.get_type_hints()` (#499)
+- upath._protocol: fix protocol alias equivalence (i.e. `s3a` and `s3`) after the filesystem was imported (#586)
+- upath: fix protocol type hints of `TarPath`, `SFTPPath` and `WebdavPath` (#581)
+- upath: make type narrowing of `UPath(..., protocol=...)` work in pyright and ty, and check it in CI (#446, #591)
+
+### Changed
+- upath.core: warn when `rmdir()` removes a non-empty directory without explicitly passing `recursive`; the default will become non-recursive in 0.4.0 (#559, #565)
+- upath.core: warn on relative uris of known protocols, like `file:path/to/file` (#142, #582)
+- tests: fix CI breakage caused by upstream releases of mypy, wsgidav and huggingface_hub (#571)
+- tests: add a pytest mark for tests accessing the network (#549)
+- tests: xfail the GitHub tests when the API rate limit runs out (#590)
+- tests: improve detection of s3fs and skip tests requiring it (#548)
+- lint: remove flake8-string-format, which is broken on Python 3.14 (#573)
+- ci: updated development dependencies (#558)
+- ci: regenerate the flavour sources on dependabot updates of `dev/requirements.txt` without write access (#593)
+
 ## [0.3.10] - 2026-02-22
 
 ### Fixed
