@@ -112,7 +112,15 @@ def tests_fsspec(session: nox.Session, fsspec: str) -> None:
     else:
         session.install(f"fsspec=={fsspec}", ".[tests,dev]")
     session.run("uv", "pip", "freeze", silent=not running_in_ci)
-    session.run("pytest", "-m", "not hdfs", *session.posargs)
+    # all sessions run in parallel and would exceed the unauthenticated GitHub
+    # API rate limit, the regular test matrix covers the GitHub filesystem
+    session.run(
+        "pytest",
+        "-m",
+        "not hdfs",
+        "--ignore=upath/tests/implementations/test_github.py",
+        *session.posargs,
+    )
 
 
 @nox.session(python=BASE_PYTHON)
