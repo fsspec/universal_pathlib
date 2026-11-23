@@ -134,6 +134,21 @@ def test_proxyupath_serialization():
     assert loaded.storage_options == u.storage_options
 
 
+def test_proxyupath_supported_protocols_validation():
+    from upath.extensions import ProxyUPath
+
+    class MyProxyPath(ProxyUPath, supported_protocols=("memory",)):
+        pass
+
+    ta = pydantic.TypeAdapter(MyProxyPath)
+    assert isinstance(ta.validate_python("memory:///my/path"), MyProxyPath)
+
+    with pytest.raises(pydantic.ValidationError, match="incompatible with"):
+        ta.validate_json('"s3://bucket/path"')
+    with pytest.raises(pydantic.ValidationError):
+        ta.validate_python({"path": "bucket/path", "protocol": "s3"})
+
+
 @pytest.mark.parametrize(
     "path,cls",
     [

@@ -58,6 +58,44 @@ print(s3_path.custom_method())
 content = local_path.enhanced_read()
 ```
 
+### Restricting Supported Protocols
+
+If your extension only works with some filesystems, set the `supported_protocols`
+class attribute. Creating an instance with any other protocol raises a `TypeError`:
+
+```python
+from upath.extensions import ProxyUPath
+
+class CloudOnlyPath(ProxyUPath):
+    supported_protocols = ("s3", "gcs", "az")
+
+    def bucket(self) -> str:
+        return self.drive
+
+CloudOnlyPath("s3://bucket/file.txt").bucket()  # 'bucket'
+CloudOnlyPath("/tmp/file.txt")  # raises TypeError
+```
+
+Alternatively, you can provide the protocols as a class keyword argument:
+
+```python
+class CloudOnlyPath(ProxyUPath, supported_protocols=("s3", "gcs", "az")):
+    ...
+```
+
+A few things to keep in mind:
+
+- `supported_protocols = None` (the default) supports all protocols.
+- Protocols are considered equal if fsspec maps them to the same filesystem class.
+  So `"gcs"` also allows `"gs"` paths, `"s3"` allows `"s3a"`, `"az"` allows `"abfs"`
+  and `"abfss"`, and `"file"` allows `"local"` and local paths without a protocol.
+- The restriction is checked against the path's `protocol`. Chained paths like
+  `"simplecache::s3://bucket/file.txt"` have the `"simplecache"` protocol.
+- Subclasses inherit the restriction and can override it.
+- Methods returning paths on another filesystem, like `joinuri()`, `copy()` or
+  `move()`, raise a `TypeError` if the target protocol is not supported. `copy()`
+  and `move()` check this before any data is copied.
+
 ---
 
 ## See Also :link:
