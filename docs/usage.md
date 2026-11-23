@@ -53,6 +53,19 @@ str(local_upath)
     characters like spaces, `#` or `%`, or if it's a UNC path. Use
     `type(local_path).from_uri(uri)` to convert a file URI back to a local path.
 
+### How do I move a file into an existing directory?
+
+Use `source.move_into(directory)` to move a file into a directory and get the
+path to the moved file back. Use `source.move(target)` when `target` is the
+new filename, not a directory. For a file source, `move()` rejects an existing
+directory as its target.
+
+On fsspec-backed paths such as `file://` and `memory://`, `rename()` can move a
+file into the destination directory but return the path to the directory rather
+than the path to the moved file. Plain local paths use `pathlib` behavior and
+reject this rename. Use `move_into()` when you intend to move into a directory,
+regardless of backend.
+
 ### How do I connect to cloud storage or remote filesystems?
 
 Just use the appropriate URI scheme. UPath will automatically connect to the right filesystem:
