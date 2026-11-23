@@ -10,14 +10,21 @@ from upath.types import UNSET_DEFAULT
 from upath.types import JoinablePathLike
 from upath.types import WritablePathLike
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
+        from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
+
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Literal
 
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from upath._chain import FSSpecChainParser
@@ -76,6 +83,19 @@ class SMBPath(UPath):
                 raise FileExistsError(str(self))
             if not self.is_dir():
                 raise FileExistsError(str(self))
+
+    def _fs_glob(self, path_pattern: str, dirs_only: bool) -> Iterator[str]:
+        if not dirs_only:
+            yield from super()._fs_glob(path_pattern, dirs_only)
+            return
+        # SMBFileSystem.info appends "/" to directory names, so fsspec's glob
+        # only matches directories if the pattern ends with a separator
+        seen = set()
+        for name in self.fs.glob(path_pattern.rstrip("/") + "/"):
+            name = name.rstrip("/")
+            if name not in seen:
+                seen.add(name)
+                yield name
 
     def rename(
         self,

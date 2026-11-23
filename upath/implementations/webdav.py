@@ -41,7 +41,7 @@ class WebdavPath(UPath):
         def __init__(
             self,
             *args: JoinablePathLike,
-            protocol: Literal["webdav+http", "webdav+https"] | None = ...,
+            protocol: Literal["webdav", "webdav+http", "webdav+https"] | None = ...,
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Unpack[WebdavStorageOptions],
         ) -> None: ...

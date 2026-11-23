@@ -224,16 +224,32 @@ This runs tests using your current Python version only.
 ### Run Specific Test Files
 
 ```bash
-nox --session=tests -- tests/test_core.py
+nox --session=tests -- upath/tests/test_core.py
 ```
 
 ### Run Tests with Coverage
 
+The test sessions always collect coverage data. To combine the data of all
+test sessions you ran and create a report, run:
+
 ```bash
-nox --session=tests -- --cov=upath --cov-report=html
+nox --session=tests-3.13
+nox --session=coverage
 ```
 
-Then open `htmlcov/index.html` to view the coverage report.
+Then open `htmlcov/index.html` to view the coverage report. In CI, the coverage
+data of all test jobs is combined the same way and the report is added to the
+workflow run summary.
+
+### Run Tests Against Different fsspec Versions
+
+```bash
+nox --session=tests-fsspec
+```
+
+This runs the test suite against a selection of supported fsspec versions. To
+test a single version, run e.g. `nox --session="tests-fsspec(2024.12.0)"`. In
+CI, these sessions run weekly and on demand via the "fsspec versions" workflow.
 
 ### List All Available Sessions
 
@@ -267,8 +283,8 @@ This runs:
 ### Type Checking
 
 ```bash
-nox --session=type_checking
-nox --session=typesafety
+nox --session=type-checking
+nox --session=type-safety
 ```
 
 !!! tip "Pre-commit Hooks"
@@ -376,11 +392,140 @@ How was this tested?
 
 ```bash
 # Run specific test with verbose output
-nox --session=tests -- tests/test_core.py::test_name -v
+nox --session=tests -- upath/tests/test_core.py::test_name -v
 
 # Drop into debugger on failure
 nox --session=tests -- --pdb
 ```
+---
+
+## Adding a New Filesystem Implementation :jigsaw:
+
+UPath works with every fsspec filesystem through its default implementation, but only filesystems that are tested in the universal-pathlib test suite are officially supported. For untested filesystems `UPath` emits a warning like `UPath 'myproto' filesystem not explicitly implemented`. Here's how to add support for a new filesystem, using a hypothetical `myproto` protocol provided by the `myprotofs` package as an example. Recent additions like the `ftp`, `tar` or `zip` implementations are good references.
+
+### 1. Add the dependencies
+
+Add the package providing the fsspec filesystem (and anything you need to run a test server) to the `dev` extra in `pyproject.toml`:
+
+```toml
+[project.optional-dependencies]
+dev = [
+    # ...
+    "myprotofs",
+]
+```
+
+### 2. Create the implementation module
+
+Create `upath/implementations/myproto.py`. Start with an empty subclass, and only override methods once the tests show that the default implementation doesn't behave like `pathlib`:
+
+```python
+from __future__ import annotations
+
+import sys
+from typing import TYPE_CHECKING
+
+from upath.core import UPath
+from upath.types import JoinablePathLike
+
+if TYPE_CHECKING:
+    from typing import Literal
+
+    if sys.version_info >= (3, 11):
+        from typing import Unpack
+    else:
+        from typing_extensions import Unpack
+
+    from upath._chain import FSSpecChainParser
+    from upath.types.storage_options import MyProtoStorageOptions
+
+__all__ = ["MyProtoPath"]
+
+
+class MyProtoPath(UPath):
+    __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *args: JoinablePathLike,
+            protocol: Literal["myproto"] | None = ...,
+            chain_parser: FSSpecChainParser = ...,
+            **storage_options: Unpack[MyProtoStorageOptions],
+        ) -> None: ...
+```
+
+Add a `MyProtoStorageOptions` `TypedDict` describing the filesystem's constructor arguments to `upath/types/storage_options.py` (and its `__all__`), and list it in `docs/api/types.md`.
+
+### 3. Register the implementation
+
+In `upath/registry.py`:
+
+- add the protocol(s) to `_Registry.known_implementations`, e.g. `"myproto": "upath.implementations.myproto.MyProtoPath"`,
+- add a `get_upath_class()` overload returning `type[MyProtoPath]` for `Literal["myproto"]` (and the import in the `TYPE_CHECKING` block).
+
+Add the matching `UPath.__new__()` overload for `protocol: Literal["myproto"]` in the `TYPE_CHECKING` block in `upath/core.py`, and add the protocol to the `IMPLEMENTATIONS` set in `upath/tests/test_registry.py`.
+
+### 4. Add the tests
+
+Create `upath/tests/implementations/test_myproto.py` and reuse the shared test suite in `upath/tests/cases.py`. `BaseTests` runs the complete pathlib API against your implementation. Its fixture has to set `self.path` to a writable base directory and call `self.prepare_file_system()` to create the test files:
+
+```python
+import pytest
+
+from upath import UPath
+from upath.implementations.myproto import MyProtoPath
+
+from ..cases import BaseTests
+from ..utils import OverrideMeta
+from ..utils import overrides_base
+
+
+class TestMyProtoPath(BaseTests, metaclass=OverrideMeta):
+
+    @pytest.fixture(autouse=True)
+    def path(self, myproto_server):
+        self.path = UPath("myproto:///base/dir", **myproto_server)
+        self.prepare_file_system()
+
+    @overrides_base
+    def test_is_correct_class(self):
+        assert isinstance(self.path, MyProtoPath)
+```
+
+- Add fixtures that start a local test server or emulator (e.g. `myproto_server`) to `upath/tests/conftest.py`. Tests should not require internet access. If they do, mark them with `@pytest.mark.network`.
+- For read-only filesystems, compose the test class from `JoinablePathTests`, `ReadablePathTests` and `NonWritablePathTests` instead of `BaseTests`.
+- When a shared test doesn't apply to your filesystem, override it in your test class and decorate it with `@overrides_base` (use `@extends_base` for new tests). Prefer marking known limitations with `pytest.mark.xfail(reason=...)` over removing tests.
+
+Run the tests with:
+
+```bash
+nox --session=tests -- upath/tests/implementations/test_myproto.py
+```
+
+### 5. Add the type safety checks
+
+Add your implementation to the parametrized cases in `typesafety/test_upath_types.yml` and `typesafety/test_upath_signatures.yml` (search for an existing implementation like `FTPPath` to find all places), and run:
+
+```bash
+nox --session=type-safety
+```
+
+### 6. Check URI parsing
+
+UPath parses URIs without importing the filesystem package, using the `_strip_protocol`, `_get_kwargs_from_urls` and `_parent` methods of the fsspec filesystem class. If the filesystem class isn't imported yet, these methods are taken from the generated module `upath/_flavour_sources.py`. If your filesystem is missing there, add its package to `dev/requirements.txt` and regenerate the module:
+
+```bash
+nox --session=flavours-codegen
+```
+
+Protocol specific parsing rules (for example whether the netloc is the anchor of the path, like the bucket in `s3://bucket/key`) are configured in `WrappedFileSystemFlavour.protocol_config` in `upath/_flavour.py`.
+
+### 7. Update the documentation
+
+Add the protocol to the lists of supported filesystems in `README.md` and `docs/index.md`, and the implementation to `docs/api/implementations.md`.
+
 ---
 
 ## Getting Help :question:

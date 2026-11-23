@@ -28,7 +28,7 @@ class SFTPPath(UPath):
         def __init__(
             self,
             *args: JoinablePathLike,
-            protocol: Literal["sftp"] | None = ...,
+            protocol: Literal["sftp", "ssh"] | None = ...,
             chain_parser: FSSpecChainParser = ...,
             **storage_options: Unpack[SFTPStorageOptions],
         ) -> None: ...

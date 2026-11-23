@@ -7,10 +7,14 @@ import sys
 import warnings
 from collections.abc import Iterator
 from collections.abc import Sequence
+from typing import IO
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import BinaryIO
 from typing import Callable
 from typing import Literal
+from typing import TextIO
+from typing import TypeVar
 from typing import overload
 from urllib.parse import SplitResult
 from urllib.parse import unquote_to_bytes
@@ -36,17 +40,18 @@ from upath.types import SupportsPathLike
 from upath.types import WritablePath
 from upath.types import WritablePathLike
 
-if TYPE_CHECKING:
-    from typing import IO
-    from typing import BinaryIO
-    from typing import TextIO
-    from typing import TypeVar
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
+        from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
+if TYPE_CHECKING:
     if sys.version_info >= (3, 11):
-        from typing import Self
         from typing import Unpack
     else:
-        from typing_extensions import Self
         from typing_extensions import Unpack
 
     from pydantic import GetCoreSchemaHandler
@@ -54,7 +59,7 @@ if TYPE_CHECKING:
 
     from upath.types.storage_options import FileStorageOptions
 
-    _WT = TypeVar("_WT", bound="WritablePath")
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "LocalPath",
@@ -114,6 +119,10 @@ class _LocalPathInfo(PathInfo):
 
     def is_symlink(self) -> bool:
         return os.path.islink(self._path)
+
+
+def _ends_with_sep(pattern: str) -> bool:
+    return pattern.endswith(os.sep) or bool(os.altsep and pattern.endswith(os.altsep))
 
 
 class LocalPath(_UPathMixin, pathlib.Path):
@@ -616,6 +625,9 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     UserWarning,
                     stacklevel=2,
                 )
+            if sys.version_info < (3, 11) and _ends_with_sep(pattern_str):
+                # backport: only match directories for a trailing separator
+                return (p for p in super().glob(pattern_str, **kw) if p.is_dir())
             return super().glob(pattern_str, **kw)
 
         def rglob(  # type: ignore[override]
@@ -647,6 +659,9 @@ class LocalPath(_UPathMixin, pathlib.Path):
                     UserWarning,
                     stacklevel=2,
                 )
+            if sys.version_info < (3, 11) and _ends_with_sep(pattern_str):
+                # backport: only match directories for a trailing separator
+                return (p for p in super().rglob(pattern_str, **kw) if p.is_dir())
             return super().rglob(pattern_str, **kw)
 
         def owner(self, *, follow_symlinks: bool = True) -> str:
@@ -892,6 +907,10 @@ class FilePath(UPath):
         follow_symlinks: bool = True,
     ) -> None:
         return os.chmod(self.path, mode, follow_symlinks=follow_symlinks)
+
+    def _rmdir_empty(self) -> None:
+        # os.rmdir atomically refuses to remove non-empty directories
+        self.fs.rmdir(self.path)
 
 
 LocalPath.register(FilePath)

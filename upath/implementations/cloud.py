@@ -3,36 +3,35 @@ from __future__ import annotations
 import sys
 from collections.abc import Iterator
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
+from typing import TypeVar
 from typing import overload
 
 from upath import UnsupportedOperation
 from upath._chain import DEFAULT_CHAIN_PARSER
+from upath._chain import FSSpecChainParser
 from upath._flavour import upath_strip_protocol
 from upath.core import UPath
 from upath.types import JoinablePathLike
 from upath.types import SupportsPathLike
 from upath.types import WritablePath
+from upath.types.storage_options import AzureStorageOptions
+from upath.types.storage_options import GCSStorageOptions
+from upath.types.storage_options import HfStorageOptions
+from upath.types.storage_options import S3StorageOptions
 
-if TYPE_CHECKING:
-    from typing import Literal
-    from typing import TypeVar
-
-    if sys.version_info >= (3, 11):
-        from typing import Self
-        from typing import Unpack
-    else:
+if sys.version_info >= (3, 11):
+    from typing import Self
+    from typing import Unpack
+else:
+    try:
         from typing_extensions import Self
         from typing_extensions import Unpack
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
-    from upath._chain import FSSpecChainParser
-    from upath.types.storage_options import AzureStorageOptions
-    from upath.types.storage_options import GCSStorageOptions
-    from upath.types.storage_options import HfStorageOptions
-    from upath.types.storage_options import S3StorageOptions
-
-    _WT = TypeVar("_WT", bound="WritablePath")
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "CloudPath",

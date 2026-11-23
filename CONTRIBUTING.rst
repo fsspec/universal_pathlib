@@ -82,6 +82,15 @@ and are written using the pytest_ testing framework.
 .. _pytest: https://pytest.readthedocs.io/
 
 
+How to add a new filesystem implementation
+------------------------------------------
+
+Follow the steps in `Adding a New Filesystem Implementation`_
+in the contributing guide of the documentation.
+
+.. _Adding a New Filesystem Implementation: https://universal-pathlib.readthedocs.io/en/latest/contributing/#adding-a-new-filesystem-implementation
+
+
 How to submit changes
 ---------------------
 

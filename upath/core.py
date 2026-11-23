@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from copy import copy
+from fnmatch import fnmatchcase
 from pathlib import PurePath
 from types import MappingProxyType
 from typing import IO
@@ -36,6 +37,7 @@ from upath._flavour import WrappedFileSystemFlavour
 from upath._flavour import upath_get_kwargs_from_url
 from upath._flavour import upath_urijoin
 from upath._info import UPathInfo
+from upath._protocol import _match_rootless_protocol
 from upath._protocol import compatible_protocol
 from upath._protocol import get_upath_protocol
 from upath._stat import UPathStatResult
@@ -60,19 +62,23 @@ else:
     UnsupportedOperation = NotImplementedError
     """Raised when an unsupported operation is called on a path object."""
 
-if TYPE_CHECKING:
-    import upath.implementations as _uimpl
-
-    if sys.version_info >= (3, 11):
-        from typing import Self
-    else:
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    try:
         from typing_extensions import Self
+    except ImportError:  # only needed for resolving annotations at runtime
+        pass
 
+if TYPE_CHECKING:
     from pydantic import GetCoreSchemaHandler
     from pydantic_core.core_schema import CoreSchema
 
+    import upath.implementations as _uimpl
+
     _MT = TypeVar("_MT")
-    _WT = TypeVar("_WT", bound="WritablePath")
+
+_WT = TypeVar("_WT", bound="WritablePath")
 
 __all__ = [
     "UPath",
@@ -128,6 +134,40 @@ def _accepts_keyword(func: Any, name: str) -> bool:
     return name in params or any(
         p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
     )
+
+
+def _generic_mv_fs(fs: AbstractFileSystem) -> AbstractFileSystem | None:
+    # returns the filesystem that would run AbstractFileSystem.mv, if any
+    mv = fs.mv
+    if getattr(mv, "__func__", None) is AbstractFileSystem.mv:
+        return mv.__self__  # type: ignore[no-any-return]
+    return None
+
+
+def _move_tree(fs: AbstractFileSystem, path1: str, path2: str) -> None:
+    # Replaces AbstractFileSystem.mv(path1, path2, recursive=True) which, with
+    # fsspec>=2026.6.0, raises after copying all files on object stores,
+    # because cp_file() fails for pseudo-directories without a backing key.
+    src = fs._strip_protocol(path1).rstrip("/")
+    dst = fs._strip_protocol(path2).rstrip("/")
+    dirs = {dst}
+    files1: list[str] = []
+    files2: list[str] = []
+    for p, info in fs.find(src, withdirs=True, detail=True).items():
+        p = p.rstrip("/")
+        if p != src and not p.startswith(f"{src}/"):
+            raise ValueError(f"unexpected path {p!r} below {src!r}")
+        t = f"{dst}{p[len(src):]}"
+        if info["type"] == "directory":
+            dirs.add(t)
+        else:
+            files1.append(p)
+            files2.append(t)
+    for d in sorted(dirs):
+        fs.makedirs(d, exist_ok=True)
+    if files1:
+        fs.copy(files1, files2, on_error="raise")
+    fs.rm(src, recursive=True)
 
 
 class _IncompatibleProtocolError(TypeError, ValueError):
@@ -459,6 +499,22 @@ class _UPathMixin(metaclass=_UPathMeta):
                 raise _IncompatibleProtocolError(str(e)) from e
             raise
 
+        if (
+            not pth_protocol
+            and protocol is None
+            and args
+            and isinstance(args[0], str)
+            and (rootless := _match_rootless_protocol(args[0]))
+        ):
+            warnings.warn(
+                f"{args[0]!r} looks like a {rootless!r} uri with a relative path,"
+                " which is not supported and is interpreted as a local path."
+                f" Use an absolute uri like '{rootless}:///path/to/file' or pass"
+                f" protocol={rootless!r} explicitly.",
+                UserWarning,
+                stacklevel=3,
+            )
+
         # subclasses should default to their own protocol
         if protocol is None and cls is not UPath:
             impl_protocols = _get_implementation_protocols(cls)
@@ -559,7 +615,10 @@ class _UPathMixin(metaclass=_UPathMeta):
         chain_parser :
             A chain parser instance for chained urlpaths. _(experimental)_
         **storage_options :
-            Additional storage options for the path.
+            Additional storage options for the path. All keyword arguments
+            are passed to the fsspec filesystem class when the filesystem
+            is instantiated. To reuse the configuration of an existing
+            fsspec filesystem instance `fs`, pass `**fs.storage_options`.
 
         """
         # todo: avoid duplicating this call from __new__
@@ -950,7 +1009,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         def __new__(
             cls,
             *args: JoinablePathLike,
-            protocol: Literal["webdav"],
+            protocol: Literal["webdav", "webdav+http", "webdav+https"],
             **_: Any,
         ) -> _uimpl.webdav.WebdavPath: ...
         @overload  # noqa: E301
@@ -1502,14 +1561,19 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         **fsspec_kwargs: Any,
     ) -> IO[Any]:
         """
-        Open the file pointed by this path and return a file object, as
-        the built-in open() function does.
+        Open the file pointed to by this path and return a file object.
+
+        The file is opened via the `open()` method of the fsspec filesystem
+        (`self.fs.open(self.path, mode=mode, **fsspec_kwargs)`). The returned
+        object is the file-like object provided by the filesystem
+        implementation, and not necessarily a builtin file object.
 
         Parameters
         ----------
         mode:
             Opening mode. Default is 'r'.
         buffering:
+            Converted to the fsspec `block_size` option if provided.
             Default is the block size of the underlying fsspec filesystem.
         encoding:
             Encoding is only used in text mode. Default is None.
@@ -1518,7 +1582,26 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         newline:
             Newline handling. Only used in text mode. Default is None.
         **fsspec_kwargs:
-            Additional options for the fsspec filesystem.
+            Additional keyword arguments for the `open()` method of the fsspec
+            filesystem, which usually passes them on to its file object.
+            Common examples are `block_size`, `cache_type` and `cache_options`.
+            Supported options depend on the filesystem implementation.
+
+        Note
+        ----
+        `fsspec_kwargs` only configure the returned file object. Options that
+        configure the filesystem itself (credentials, endpoints, or filesystem
+        wide defaults like `default_cache_type` for s3fs) are storage options
+        and have to be passed to the `UPath` constructor instead.
+
+        Examples
+        --------
+        >>> from upath import UPath
+        >>> p = UPath("s3://my-bucket/path/to/file.txt")
+        >>> f = p.open("rb", cache_type="first", block_size=2**20)
+        >>> p = UPath("s3://my-bucket/path/to/file.txt", default_cache_type="first")
+        >>> f = p.open("rb")
+
         """
         # match the signature of pathlib.Path.open()
         if buffering is not UNSET_DEFAULT:
@@ -1728,12 +1811,31 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             )
         if self._relative_base is not None:
             self = self.absolute()
-        path_pattern = self.joinpath(pattern).path
         sep = self.parser.sep
+        dirs_only = isinstance(pattern, str) and pattern.endswith(sep)
+        path_pattern = self.joinpath(pattern).path
         base = self.path
-        for name in self.fs.glob(path_pattern):
+        for name in self._fs_glob(path_pattern, dirs_only):
             name = name.removeprefix(base).removeprefix(sep)
             yield self.joinpath(name)
+
+    def _fs_glob(self, path_pattern: str, dirs_only: bool) -> Iterator[str]:
+        """glob the filesystem, optionally only yielding directories"""
+        if not dirs_only:
+            yield from self.fs.glob(path_pattern)
+            return
+        # filter by type instead of passing a trailing separator to fsspec,
+        # because filesystems differ in how they handle it in glob patterns
+        sep = self.parser.sep
+        seen = set()
+        path_pattern = path_pattern.rstrip(sep)
+        for name, info in self.fs.glob(path_pattern, detail=True).items():
+            if info.get("type") != "directory":
+                continue
+            name = name.rstrip(sep)
+            if name not in seen:
+                seen.add(name)
+                yield name
 
     def rglob(
         self,
@@ -1761,22 +1863,22 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         if _FSSPEC_HAS_WORKING_GLOB is None:
             _check_fsspec_has_working_glob()
 
+        sep = self.parser.sep
+        dirs_only = isinstance(pattern, str) and pattern.endswith(sep)
         if _FSSPEC_HAS_WORKING_GLOB:
             r_path_pattern = self.joinpath("**", pattern).path
-            sep = self.parser.sep
             base = self.path
-            for name in self.fs.glob(r_path_pattern):
+            for name in self._fs_glob(r_path_pattern, dirs_only):
                 name = name.removeprefix(base).removeprefix(sep)
                 yield self.joinpath(name)
 
         else:
             path_pattern = self.joinpath(pattern).path
             r_path_pattern = self.joinpath("**", pattern).path
-            sep = self.parser.sep
             base = self.path
             seen = set()
             for p in (path_pattern, r_path_pattern):
-                for name in self.fs.glob(p):
+                for name in self._fs_glob(p, dirs_only):
                     name = name.removeprefix(base).removeprefix(sep)
                     if name in seen:
                         continue
@@ -1917,7 +2019,7 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             return
         self.fs.rm(self.path, recursive=False)
 
-    def rmdir(self, recursive: bool = True) -> None:  # fixme: non-standard
+    def rmdir(self, recursive: bool = UNSET_DEFAULT) -> None:  # fixme: non-standard
         """
         Remove this directory.
 
@@ -1927,15 +2029,37 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
         as it supports a `recursive` parameter to remove non-empty
         directories and defaults to recursive deletion.
 
-        This behavior is likely to change in future releases once
-        `.delete()` is introduced.
+        Removing a non-empty directory without passing `recursive`
+        raises a FutureWarning: in universal-pathlib 0.4.0 the default
+        becomes non-recursive, matching pathlib.Path.rmdir(). Pass
+        `recursive=True` explicitly to keep removing a directory and
+        its contents.
 
         """
         if not self.is_dir():
             raise NotADirectoryError(str(self))
-        if not recursive and next(self.iterdir()):  # type: ignore[arg-type]
-            raise OSError(f"Not recursive and directory not empty: {self}")
+        if recursive is UNSET_DEFAULT:
+            recursive = True
+            if next(self.iterdir(), None) is not None:
+                warnings.warn(
+                    f"{type(self).__name__}.rmdir() currently removes a non-empty"
+                    " directory and its contents. In universal-pathlib 0.4.0 it will"
+                    " raise, like pathlib.Path.rmdir() does. Pass recursive=True to"
+                    " keep removing the contents.",
+                    FutureWarning,
+                    stacklevel=2,
+                )
+        elif not recursive:
+            if next(self.iterdir(), None) is not None:
+                raise OSError(f"Not recursive and directory not empty: {self}")
+            self._rmdir_empty()
+            return
         self.fs.rm(self.path, recursive=recursive)
+
+    def _rmdir_empty(self) -> None:
+        # some filesystems refuse to rm a directory without recursive=True,
+        # but recursively removing an empty directory only removes itself
+        self.fs.rm(self.path, recursive=True)
 
     def rename(  # noqa: C901
         self,
@@ -2042,6 +2166,10 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
             except FileNotFoundError:
                 is_dir = False
             if is_dir:
+                mv_fs = None if kwargs else _generic_mv_fs(self.fs)
+                if mv_fs is not None:
+                    _move_tree(mv_fs, source_abs.path, target_abs.path)
+                    return target
                 kwargs["recursive"] = True
         self.fs.mv(
             source_abs.path,
@@ -2256,7 +2384,21 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
                 UserWarning,
                 stacklevel=2,
             )
-        return self.full_match(path_pattern.replace("**", "*"))
+        path_pattern = path_pattern.replace("**", "*")
+        if self.full_match(path_pattern):
+            return True
+        # Like pathlib, a relative pattern is matched from the right, so
+        # UPath("s3://bucket/a/b").match("b") is True.
+        if path_pattern.startswith("/") or "://" in path_pattern:
+            return False
+        pattern_parts = path_pattern.rstrip("/").split("/")
+        path_parts = self.parts[1:] if self.anchor else self.parts
+        if len(pattern_parts) > len(path_parts):
+            return False
+        return all(
+            fnmatchcase(part, pat)
+            for part, pat in zip(reversed(path_parts), reversed(pattern_parts))
+        )
 
     @classmethod
     def __get_pydantic_core_schema__(
