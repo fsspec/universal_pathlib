@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-11-24
+
 ### Added
 - upath: add support for Python 3.15 (#572)
 - upath: accept the `parent_mode` argument of `mkdir()` added in Python 3.15, backported for local paths (#572)
@@ -46,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - lint: remove flake8-string-format, which is broken on Python 3.14 (#573)
 - ci: updated development dependencies (#558)
 - ci: regenerate the flavour sources on dependabot updates of `dev/requirements.txt` without write access (#593)
+- ci: group dependabot updates of github actions into one pull request (#597)
+- ci: updated github actions (#598)
 
 ## [0.3.10] - 2026-02-22
 
@@ -403,7 +407,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - started a changelog to keep track of significant changes
 
-[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/fsspec/universal_pathlib/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/fsspec/universal_pathlib/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/fsspec/universal_pathlib/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/fsspec/universal_pathlib/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/fsspec/universal_pathlib/compare/v0.3.7...v0.3.8
