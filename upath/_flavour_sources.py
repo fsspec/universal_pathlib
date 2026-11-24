@@ -630,7 +630,7 @@ class HadoopFileSystemFlavour(AbstractFileSystemFlavour):
 
 class HfFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'huggingface_hub.hf_file_system.HfFileSystem'
-    __orig_version__ = '1.8.0'
+    __orig_version__ = '1.4.1'
     protocol = ('hf',)
     root_marker = ''
     sep = '/'
@@ -974,7 +974,7 @@ class WebHDFSFlavour(AbstractFileSystemFlavour):
 
 class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'webdav4.fsspec.WebdavFileSystem'
-    __orig_version__ = '0.11.0'
+    __orig_version__ = '0.10.0'
     protocol = ('webdav', 'dav')
     root_marker = ''
     sep = '/'
@@ -983,12 +983,12 @@ class WebdavFileSystemFlavour(AbstractFileSystemFlavour):
     def _strip_protocol(cls, path: str) -> str:
         """Strips protocol from the given path, overriding for type-casting."""
         stripped = super()._strip_protocol(path)
-        return cast("str", stripped)
+        return cast(str, stripped)
 
 
 class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'fsspec_xrootd.xrootd.XRootDFileSystem'
-    __orig_version__ = '0.5.4'
+    __orig_version__ = '0.5.5'
     protocol = ('root',)
     root_marker = '/'
     sep = '/'
@@ -997,7 +997,7 @@ class XRootDFileSystemFlavour(AbstractFileSystemFlavour):
     def _strip_protocol(cls, path: str | list[str]) -> Any:
         if isinstance(path, str):
             if path.startswith(cls.protocol):
-                x = urlsplit(path); return (x.path + f'?{x.query}' if x.query else '').rstrip("/") or cls.root_marker
+                x = urlsplit(path); return (x.path + (f'?{x.query}' if x.query else '')).removeprefix('/').rstrip("/") or cls.root_marker
             # assume already stripped
             return path.rstrip("/") or cls.root_marker
         elif isinstance(path, list):
@@ -1027,7 +1027,7 @@ class ZipFileSystemFlavour(AbstractFileSystemFlavour):
 
 class _DVCFileSystemFlavour(AbstractFileSystemFlavour):
     __orig_class__ = 'dvc.fs.dvc._DVCFileSystem'
-    __orig_version__ = '3.67.1'
+    __orig_version__ = '3.66.1'
     protocol = ('dvc',)
     root_marker = '/'
     sep = '/'

@@ -179,7 +179,7 @@ def _fix_oss_file_system(x: str) -> str:
 def _fix_xrootd_file_system(x: str) -> str:
     x = re.sub(
         r"return client[.]URL\(path\)[.]path_with_params",
-        "x = urlsplit(path); return (x.path + f'?{x.query}' if x.query else '')",
+        "x = urlsplit(path); return (x.path + (f'?{x.query}' if x.query else '')).removeprefix('/')",  # noqa: E501
         x,
     )
     x = re.sub(r"client[.]URL\(u\)", "urlsplit(u)", x)
