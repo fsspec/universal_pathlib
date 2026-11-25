@@ -238,7 +238,9 @@ def get_fsspec_filesystems_and_protocol_errors() -> (
             continue
         try:
             cls = get_filesystem_class(protocol)
-        except ImportError as err:
+        except (ImportError, AttributeError) as err:
+            # AttributeError: the package no longer provides the class, e.g. adlfs
+            # removed AzureDatalakeFileSystem (adl://) in 2026.8.0
             errors[protocol] = str(err)
         else:
             protos = get_protos(cls, remove="abstract", add=protocol)
