@@ -2,6 +2,7 @@ import functools
 import json
 import os
 import platform
+import re
 import sys
 import urllib.request
 
@@ -39,6 +40,10 @@ def github_rate_limit_exhausted() -> bool:
         return False
 
 
+# requests: "503 Server Error: ... for url: ...", aiohttp: "503, message='...', url=..."
+SERVER_ERROR = re.compile(r"\b5\d\d(?: Server Error:|, message=)")
+
+
 def xfail_on_github_connection_error(func):
     """Method decorator to xfail tests on GitHub rate limit or connection errors."""
 
@@ -48,8 +53,11 @@ def xfail_on_github_connection_error(func):
             return func(self, *args, **kwargs)
         except Exception as e:
             str_e = str(e)
-            if "rate limit exceeded" in str_e or "too many requests for url" in str_e:
+            lower_e = str_e.lower()
+            if "rate limit exceeded" in lower_e or "too many requests" in lower_e:
                 pytest.xfail("GitHub API rate limit exceeded")
+            elif SERVER_ERROR.search(str_e) and "github" in lower_e:
+                pytest.xfail("GitHub server error")
             elif (
                 "nodename nor servname provided, or not known" in str_e
                 or "Network is unreachable" in str_e
