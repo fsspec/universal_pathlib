@@ -9,6 +9,104 @@ This guide helps you migrate to newer versions of universal-pathlib.
     and this guide is missing information.
 
 
+## Migrating to v0.4.0
+
+Version `0.4.0` changes how `UPath` determines path equality. Previously, paths with different `storage_options` were always considered unequal. Now, equality is based on **filesystem identity** (fsid), which ignores options that don't affect which filesystem is being accessed.
+
+### Background: The Problem with storage_options Equality
+
+In versions prior to `0.4.0`, `UPath.__eq__` compared `storage_options` directly:
+
+```python
+# Pre-0.4.0 behavior (unintuitive)
+from upath import UPath
+
+# Same S3 file, but different auth options -> NOT equal
+UPath('s3://bucket/file.txt') == UPath('s3://bucket/file.txt', anon=True)  # False
+
+# Same local file, but different behavior options -> NOT equal
+UPath('/tmp/file.txt') == UPath('/tmp/file.txt', auto_mkdir=True)  # False
+```
+
+This caused subtle bugs when comparing paths that referred to the same filesystem resource. Methods like `relative_to()` and `is_relative_to()` would fail unexpectedly:
+
+```python
+# Pre-0.4.0: This raised ValueError despite referring to the same S3 bucket
+p1 = UPath('s3://bucket/dir/file.txt', anon=True)
+p2 = UPath('s3://bucket/dir')
+p1.relative_to(p2)  # ValueError: incompatible storage_options
+```
+
+### New Behavior: Filesystem Identity (fsid)
+
+Starting with `0.4.0`, equality is based on filesystem identity. Two UPaths are equal if they have the same protocol, path, and filesystem identity—regardless of authentication or performance options:
+
+```python
+# v0.4.0+ behavior
+from upath import UPath
+
+# Same filesystem, different options -> equal
+UPath('s3://bucket/file.txt') == UPath('s3://bucket/file.txt', anon=True)  # True
+UPath('/tmp/file.txt') == UPath('/tmp/file.txt', auto_mkdir=True)          # True
+
+# Different filesystems -> not equal
+UPath('s3://bucket/file.txt') != UPath('s3://bucket/file.txt',
+    endpoint_url='http://localhost:9000')  # True (MinIO vs AWS)
+```
+
+**Options ignored for equality** (don't affect filesystem identity):
+
+- Authentication: `anon`, `key`, `secret`, `token`, `profile`
+- Performance: `default_block_size`, `default_cache_type`, `max_concurrency`
+- Behavior: `auto_mkdir`, `default_acl`, `requester_pays`
+
+**Options that affect equality** (change which filesystem is accessed):
+
+- S3: Different `endpoint_url` (e.g., AWS vs MinIO vs LocalStack)
+- Azure: Different `account_name`
+- SFTP/SMB/FTP: Different `host` or `port`
+
+### Impact on Path Operations
+
+The `relative_to()` and `is_relative_to()` methods now use filesystem identity:
+
+```python
+from upath import UPath
+
+p1 = UPath('s3://bucket/dir/file.txt', anon=True)
+p2 = UPath('s3://bucket/dir')  # Different storage_options, same filesystem
+
+# v0.4.0+: Works because both paths are on the same S3 filesystem
+p1.is_relative_to(p2)  # True
+p1.relative_to(p2)     # PurePosixPath('file.txt')
+
+# Different endpoints are correctly rejected
+p3 = UPath('s3://bucket/dir', endpoint_url='http://localhost:9000')
+p1.is_relative_to(p3)  # False (different filesystem)
+p1.relative_to(p3)     # ValueError: incompatible filesystems
+```
+
+### Migration Checklist
+
+If your code relied on the previous behavior where different `storage_options` meant different paths:
+
+1. **Review equality checks**: Code that expected `UPath(url, opt1=x) != UPath(url, opt1=y)` may now return `True` if they're on the same filesystem.
+
+2. **Check set/dict usage**: Paths that were previously distinct dict keys or set members may now collide. Note that `__hash__` already ignored `storage_options`, so this is unlikely to be a new issue.
+
+3. **Update tests**: Tests that asserted inequality based on `storage_options` differences may need updating.
+
+### Fallback Behavior
+
+For filesystems where UPath cannot determine identity (e.g., memory filesystem, unknown protocols), it falls back to comparing `storage_options` directly—preserving pre-0.4.0 behavior:
+
+```python
+from upath import UPath
+
+# Memory filesystem: no fsid, falls back to storage_options comparison
+UPath('memory:///file.txt', opt=1) != UPath('memory:///file.txt', opt=2)  # True
+```
+
 ## Migrating to v0.3.0
 
 Version `0.3.0` introduced a breaking change to fix a longstanding bug related to `os.PathLike` protocol compliance. This change affects how UPath instances work with standard library functions that expect local filesystem paths.
