@@ -1186,7 +1186,8 @@ class UPath(_UPathMixin, WritablePath, ReadablePath):
     def with_name(self, name: str) -> Self:
         """Return a new path with the file name changed."""
         split = self.parser.split
-        if self.parser.sep in name:  # `split(name)[0]`
+        # `self.parser.sep in name` is `split(name)[0]`
+        if self.parser.sep in name or name in ("", "."):
             raise ValueError(f"Invalid name {name!r}")
         _path = self.__vfspath__()
         _path = _path.removesuffix(split(_path)[1]) + name

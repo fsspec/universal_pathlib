@@ -56,6 +56,13 @@ class TestUPathDataPath(
             self.path.with_name("newname")
 
     @overrides_base
+    @pytest.mark.parametrize("name", ["", "."])
+    def test_with_name_invalid(self, name):
+        # DataPath does not support name changes
+        with pytest.raises(UnsupportedOperation):
+            self.path.with_name(name)
+
+    @overrides_base
     def test_with_suffix(self):
         # DataPath does not support suffix changes
         with pytest.raises(UnsupportedOperation):
