@@ -77,6 +77,12 @@ class JoinablePathTests:
         path = path.with_name("file.zip")
         assert path.name == "file.zip"
 
+    @pytest.mark.parametrize("name", ["", "."])
+    def test_with_name_invalid(self, name):
+        path = self.path / "file.txt"
+        with pytest.raises(ValueError, match="Invalid name"):
+            path.with_name(name)
+
     def test_with_suffix(self):
         path = self.path / "file.txt"
         path = path.with_suffix(".zip")
